@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 
 const base=process.env.TEST_BASE_URL||"http://localhost:3001";
 
@@ -31,4 +32,16 @@ test("social card and bilingual content are present",async()=>{
   assert.match(html,/og:image/);
   assert.equal(image.status,200);
   assert.match(image.headers.get("content-type")||"",/image\/png/);
+});
+
+test("mastery catalog contains twelve six-unit roadmaps with strict completion",async()=>{
+  const [data,experience]=await Promise.all([
+    readFile(new URL("../app/ui/roadmap-data.ts",import.meta.url),"utf8"),
+    readFile(new URL("../app/ui/RoadmapExperience.tsx",import.meta.url),"utf8"),
+  ]);
+  const roadmapDefinitions=data.match(/^\s+\["[^"]+","/gm)||[];
+  assert.equal(roadmapDefinitions.length,12);
+  assert.match(data,/titles\.map\(\(titleUz,index\)/);
+  assert.match(experience,/quizScores\[u\.id\].*>=70&&progress\.solved\[u\.id\]/);
+  assert.match(experience,/algoyol-active-lesson/);
 });
