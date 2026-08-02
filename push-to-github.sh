@@ -73,7 +73,7 @@ fi
 git commit -m "Advanced duel arena, Supabase roles (owner/admin/user), setup docs"
 echo
 echo "==> Pushing to GitHub..."
-git push origin "$BRANCH"
+git push -u origin "$BRANCH"
 
 echo
 echo "==> Done. Open: https://github.com/khos019/CP-project"
