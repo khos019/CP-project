@@ -12,8 +12,12 @@ const { d1, r2 } = hostingConfig;
 const isCodexSeatbeltSandbox = process.env.CODEX_SANDBOX === "seatbelt";
 
 const localBindingConfig = {
+  // Worker name — this becomes the public URL: algoyol.<subdomain>.workers.dev
+  name: "algoyol",
   main: "./worker/index.ts",
-  compatibility_flags: ["nodejs_compat"],
+  compatibility_date: "2025-08-01",
+  // nodejs_compat is declared in wrangler.jsonc — listing it here too makes
+  // Cloudflare reject the deploy with "Compatibility flag specified multiple times".
   d1_databases: d1
     ? [
         {
