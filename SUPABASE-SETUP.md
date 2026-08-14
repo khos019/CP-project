@@ -1,50 +1,103 @@
-# Supabase production setup
+# Supabase — ULANDI ✅
 
-This repository does not contain a project ID, owner email, service-role key, or database password.
+Hammasi sozlangan. Pastda nima qilinganini va sizga qolgan yagona qadamni ko'rasiz.
 
-## Apply migrations
+## Sizga qolgan yagona qadam
 
-Apply these files in order to a new database:
+1. VS Code terminalida ishlab turgan serverni to'xtating: **Ctrl + C**
+2. Qayta ishga tushiring:
+   ```bash
+   npm run dev
+   ```
+3. Saytda **Kirish → Yangi hisob yaratish**:
+   - Username: `algoyolchi` (yoki xohlagan nom, 3-24 belgi, faqat harf/raqam/`_`)
+   - Email: **m.u.ubaydullayev@gmail.com**
+   - Parol: kamida 6 belgi
+4. Emailingizga kelgan tasdiqlash havolasini bosing.
+5. Sayt Profil sahifasiga qaytadi — u yerda yashil **EGA (OWNER)** nishoni
+   va **Boshqaruv (Admin studio)** tugmasi turadi.
 
-1. `001_algoyol.sql` — base types, learning/problem/duel tables, RLS.
-2. `002_assign_owner.sql` — legacy migration retained for existing installations.
-3. `003_mastery_roadmaps.sql` — original mastery/roadmap schema.
-4. `004_owner_and_roles.sql` — legacy role helpers.
-5. `005_production_foundation.sql` — current security, RBAC, mastery, placement, judge persistence, and duel foundation.
+> ⚠️ Supabase'ning bepul emaili soatiga 2-3 ta xat yuboradi. Xat kelmasa
+> spam papkasini tekshiring, 1 daqiqa kutib "Xabarni qayta yuborish" bosing.
 
-Migration 005 removes hard-coded owner behavior from the active bootstrap function. Assign the first owner through trusted Supabase `app_metadata` or a one-time audited database operation. Do not commit an email allowlist.
+---
 
-## Auth configuration
+## Nima qilindi
 
-- Enable email confirmation.
-- Enable Google only after setting its OAuth client credentials.
-- Set the production Site URL.
-- Add exact local and production callback URLs to the redirect allowlist.
-- Keep leaked-password protection and appropriate password rules enabled.
+**Project:** `nxbxxzswijceqiumuypf` · Northeast Asia (Tokyo) · Free
 
-## Environment separation
+| Qadam | Holat |
+|---|---|
+| Project yaratildi | ✅ |
+| `.env.local` ga URL va publishable key yozildi | ✅ |
+| `001_algoyol.sql` (jadvallar, rollar, RLS) | ✅ 21 ta jadval |
+| `003_mastery_roadmaps.sql` (roadmap, quiz) | ✅ 12 ta roadmap |
+| `004_owner_and_roles.sql` (owner + rol funksiyasi) | ✅ |
+| `on_auth_user_created` trigger (profil avtoyaratish) | ✅ |
+| Site URL: `http://localhost:3001` | ✅ |
+| Redirect URLs: `localhost:3001/**`, `localhost:3000/**` | ✅ |
+| Confirm email: yoqilgan | ✅ |
+| REST va Auth API tekshirildi | ✅ 200 OK |
 
-Browser-safe:
+`002_assign_owner.sql` **ataylab o'tkazib yuborildi** — u eski owner emailini
+yozardi, `004` uni to'liq almashtiradi.
 
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+Owner ro'yxati hozir: `m.u.ubaydullayev@gmail.com`
 
-Server-only:
+---
 
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `JUDGE0_URL`
-- `JUDGE0_API_KEY`
-- `JUDGE0_API_HOST`
+## Ozodbekni ham owner qilish
 
-The service-role key bypasses RLS. Store it only in the deployment secret manager and rotate it after suspected exposure.
+`supabase/migrations/004_owner_and_roles.sql` faylida `--` ni oching:
 
-## Staging checks before enabling Duel
+```sql
+select array[
+  'm.u.ubaydullayev@gmail.com',
+  'ozodbekhaydaraliyev2000@gmail.com'
+]::text[]
+```
 
-- Two different accounts are paired once and cannot join two active duels.
-- Only the current stage is returned.
-- Only an Accepted persisted submission can claim a stage.
-- Simultaneous Accepted submissions award the stage once.
-- Elo history is written once and topic mastery remains separate.
-- Expired duels finalize and queued entries expire.
+Keyin Supabase → **SQL Editor** → shu faylning to'liq matnini tashlab **Run**.
 
-Keep the seeded `duel.enabled` setting false until these checks pass.
+## Boshqa odamga admin berish
+
+Supabase → **SQL Editor**:
+
+```sql
+-- 1) id sini toping
+select id, email from auth.users where email = 'dostim@example.com';
+
+-- 2) admin qiling
+update public.profiles set role = 'admin' where id = '<yuqoridagi-id>';
+```
+
+Owner sifatida saytdan turib ham beriladi: `select public.set_user_role('<id>', 'admin');`
+
+| Rol | Huquqi |
+|---|---|
+| **owner** | Hamma narsa: barcha masala, roadmap, rol berish |
+| **admin** | Faqat o'zi yaratgan masalalarni tahrirlaydi |
+| **user** | Dars o'qiydi, masala yechadi, duelda qatnashadi |
+
+---
+
+## Xato chiqsa
+
+| Belgi | Yechimi |
+|---|---|
+| "Email tasdiqlash xizmati hali ulanmagan" | Serverni Ctrl+C bilan to'xtatib qayta ishga tushiring — `.env` faqat start paytida o'qiladi |
+| Tasdiqlash xati kelmadi | Spam papkasi; soatiga 2-3 ta limit; "Qayta yuborish" |
+| Profilda `FOYDALANUVCHI` chiqdi | Boshqa email bilan ro'yxatdan o'tgansiz. `select u.email, p.role from profiles p join auth.users u on u.id=p.id;` bilan tekshiring |
+| "Profil topilmadi" | Chiqib, qaytadan kiring |
+
+---
+
+## Xavfsizlik eslatmasi
+
+- `.env.local` `.gitignore` da — GitHub'ga ketmaydi. ✅
+- Ichidagi `sb_publishable_...` kaliti **ochiq kalit** — brauzerda ko'rinishi normal,
+  RLS himoya qiladi.
+- **Secret key** (`sb_secret_...`) `.env.local` ga yozilmagan. Kerak bo'lsa
+  Supabase → Settings → API Keys → Secret keys → Reveal orqali o'zingiz olasiz.
+  Uni hech qachon `NEXT_PUBLIC_` bilan boshlamang.
+- Database parolini saqlab qo'ying — Supabase uni qayta ko'rsatmaydi.
