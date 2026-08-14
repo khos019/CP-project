@@ -1,16 +1,13 @@
 -- AlgoYo‘l — owner emailini yangilash va rollarni boshqarish yordamchilari.
 -- 001, 002, 003 dan KEYIN ishga tushiring.
 
--- 1) Owner emaillari ro'yxati. Kerak bo'lsa shu yerga qator qo'shing/olib tashlang.
+-- 1) Legacy compatibility helper. Owner identities are not stored in source.
 create or replace function public.algoyol_owner_emails()
 returns text[]
 language sql
 immutable
 as $$
-  select array[
-    'm.u.ubaydullayev@gmail.com'
-    -- , 'ozodbekhaydaraliyev2000@gmail.com'   -- ikkinchi founder ham owner bo'lsin desangiz shu qatorni oching
-  ]::text[]
+  select array[]::text[]
 $$;
 
 -- 2) Yangi ro'yxatdan o'tgan foydalanuvchi uchun profil yaratish va rolni belgilash.
@@ -26,31 +23,23 @@ begin
     new.id,
     coalesce(new.raw_user_meta_data->>'username', 'user_' || substr(new.id::text, 1, 8)),
     coalesce(new.raw_user_meta_data->>'display_name', ''),
-    case
-      when lower(new.email) = any (public.algoyol_owner_emails()) then 'owner'::public.user_role
-      else 'user'::public.user_role
-    end
+    case when new.raw_app_meta_data->>'role' in ('owner','admin')
+      then (new.raw_app_meta_data->>'role')::public.user_role
+      else 'user'::public.user_role end
   )
   on conflict (id) do nothing;
   return new;
 end
 $$;
 
--- 3) Allaqachon ro'yxatdan o'tgan owner(lar)ni ko'tarish.
-update public.profiles as profile
-set role = 'owner'::public.user_role
-from auth.users as account
-where account.id = profile.id
-  and lower(account.email) = any (public.algoyol_owner_emails());
-
--- 4) Foydalanuvchi o'z profilini o'qiy olishi kerak (rol UI'da ishlashi uchun).
+-- 3) Foydalanuvchi o'z profilini o'qiy olishi kerak (rol UI'da ishlashi uchun).
 --    001 dagi "public profiles" policy allaqachon select ga ruxsat beradi;
 --    quyidagisi o'sha policy o'chirilgan bo'lsa ham ishlashi uchun.
 drop policy if exists "own profile read" on public.profiles;
 create policy "own profile read" on public.profiles
-  for select using (auth.uid() = id or true);
+  for select using (auth.uid() = id);
 
--- 5) Faqat owner boshqa foydalanuvchining rolini o'zgartira oladi.
+-- 4) Faqat owner boshqa foydalanuvchining rolini o'zgartira oladi.
 create or replace function public.set_user_role(p_user uuid, p_role public.user_role)
 returns void
 language plpgsql
