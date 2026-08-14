@@ -1,6 +1,4 @@
-import { unitContent } from "./roadmap-content";
-
-export type LessonUnit={id:string;titleUz:string;titleEn:string;summaryUz:string;summaryEn:string;rating:string;minutes:number;complexity:string;cpp:string;python:string;quiz:{questionUz:string;questionEn:string;choicesUz:string[];choicesEn:string[]};problemId:string};
+export type LessonUnit={id:string;titleUz:string;titleEn:string;summaryUz:string;summaryEn:string;rating:string;minutes:number;complexity:string;cpp:string;python:string;quiz:{questionUz:string;questionEn:string;choicesUz:string[];choicesEn:string[];correct:number};problemId:string};
 export type RoadmapDifficulty="beginner"|"intermediate"|"advanced"|"expert";
 export type MasteryRoadmap={slug:string;icon:string;color:string;titleUz:string;titleEn:string;descriptionUz:string;descriptionEn:string;level:string;difficulty:RoadmapDifficulty;category:string;categoryUz:string;prereqs:string[];prerequisiteUz:string;prerequisiteEn:string;units:LessonUnit[]};
 
@@ -30,15 +28,14 @@ export const roadmapCatalog:MasteryRoadmap[]=defs.map(d=>({
  slug:d.slug,icon:d.icon,color:d.color,titleUz:d.uz,titleEn:d.en,descriptionUz:d.descUz,descriptionEn:d.descEn,level:d.level,difficulty:d.difficulty,category:d.cat,categoryUz:d.catUz,prereqs:d.prereqs,
  prerequisiteUz:d.prereqs.length?d.prereqs.map(s=>defs.find(x=>x.slug===s)?.uz||s).join(" + "):"Yo‘q — boshlanish nuqtasi",
  prerequisiteEn:d.prereqs.length?d.prereqs.map(s=>defs.find(x=>x.slug===s)?.en||s).join(" + "):"None — starting point",
- units:d.units.map((titleUz,index)=>{
-  const id=`${d.slug}-${index+1}`,content=unitContent[id];
-  return {id,titleUz,titleEn:d.unitsEn[index],
-   summaryUz:content?.goalUz||`${titleUz} mavzusining asosiy g‘oyasi, qachon ishlatilishi va xatolarini bosqichma-bosqich o‘rganing.`,
-   summaryEn:content?.goalEn||`Learn the core idea behind ${d.unitsEn[index]}, when to use it, and the mistakes to avoid.`,
-   rating:`${800+index*100} → ${1100+index*150}`,minutes:18+index*4,complexity:d.complexity,cpp:d.cpp,python:d.python,
-   quiz:content?.quiz||{questionUz:`${titleUz} uchun eng muhim birinchi qadam qaysi?`,questionEn:`What is the most important first step for ${d.unitsEn[index]}?`,choicesUz:["Cheklov va invariantni aniqlash","Tasodifiy kod yozish","Har doim O(n²) ishlatish","Testlarni e’tiborsiz qoldirish"],choicesEn:["Identify constraints and the invariant","Write random code","Always use O(n²)","Ignore test cases"]},
-   problemId:problemIds[index%problemIds.length]};
- })
+ units:d.units.map((titleUz,index)=>({
+  id:`${d.slug}-${index+1}`,titleUz,titleEn:d.unitsEn[index],
+  summaryUz:`${titleUz} mavzusining asosiy g‘oyasi, qachon ishlatilishi va xatolarini bosqichma-bosqich o‘rganing.`,
+  summaryEn:`Learn the core idea behind ${d.unitsEn[index]}, when to use it, and the mistakes to avoid.`,
+  rating:`${800+index*100} → ${1100+index*150}`,minutes:18+index*4,complexity:d.complexity,cpp:d.cpp,python:d.python,
+  quiz:{questionUz:`${titleUz} uchun eng muhim birinchi qadam qaysi?`,questionEn:`What is the most important first step for ${d.unitsEn[index]}?`,choicesUz:["Cheklov va invariantni aniqlash","Tasodifiy kod yozish","Har doim O(n²) ishlatish","Testlarni e’tiborsiz qoldirish"],choicesEn:["Identify constraints and the invariant","Write random code","Always use O(n²)","Ignore test cases"],correct:0},
+  problemId:problemIds[index%problemIds.length]
+ }))
 }));
 
 export const roadmapCards=roadmapCatalog.map(r=>({slug:r.slug,icon:r.icon,color:r.color,uz:r.titleUz,en:r.titleEn,descUz:r.descriptionUz,descEn:r.descriptionEn,units:r.units.length,progress:0}));

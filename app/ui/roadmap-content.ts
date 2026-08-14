@@ -14,7 +14,7 @@ export type UnitContent={
  hintsUz:string[];hintsEn:string[];
  recapUz:string;recapEn:string;
  nextUz:string;nextEn:string;
- quiz:{questionUz:string;questionEn:string;choicesUz:string[];choicesEn:string[]};
+ quiz:{questionUz:string;questionEn:string;choicesUz:string[];choicesEn:string[];correct:number};
 };
 
 const c=(u:UnitContent)=>u;
@@ -41,7 +41,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"bits/stdc++.h, sync_with_stdio(false), cin.tie(nullptr), and \\n together give an environment ready for any input size.",
  nextUz:"Keyingi qadam — kiritish formatlarini (bitta son, qator, massiv, matn) xatolarsiz o‘qishni o‘rganish.",
  nextEn:"Next: reading every input format (single number, line, array, text) without mistakes.",
- quiz:{questionUz:"10⁶ qatorlik kiritishda dasturni eng tezlashtiradigan yozuv qaysi?",questionEn:"Which lines speed the program up most on 10⁶ lines of input?",choicesUz:["ios::sync_with_stdio(false); cin.tie(nullptr);","cout << flush har o‘qishdan keyin","faqat endl ishlatish","scanf o‘rniga getchar qo‘llash shart"],choicesEn:["ios::sync_with_stdio(false); cin.tie(nullptr);","cout << flush after every read","using endl everywhere","you must use getchar instead of scanf"]}
+ quiz:{questionUz:"10⁶ qatorlik kiritishda dasturni eng tezlashtiradigan yozuv qaysi?",questionEn:"Which lines speed the program up most on 10⁶ lines of input?",choicesUz:["ios::sync_with_stdio(false); cin.tie(nullptr);","cout << flush har o‘qishdan keyin","faqat endl ishlatish","scanf o‘rniga getchar qo‘llash shart"],choicesEn:["ios::sync_with_stdio(false); cin.tie(nullptr);","cout << flush after every read","using endl everywhere","you must use getchar instead of scanf"],correct:0}
 }),
 "programming-basics-2":c({
  goalUz:"Barcha tipik kiritish formatlarini — bitta son, n ta son, qator, massiv, ko‘p testli — xatosiz o‘qish.",
@@ -62,7 +62,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"cin >> for number streams, getline for text lines, while(t--) for multi-test problems. Every answer on its own line.",
  nextUz:"Endi o‘zgaruvchilar va ma’lumot tiplarini — ayniqsa overflow xavfini — o‘rganasiz.",
  nextEn:"Next: variables and data types — especially the danger of overflow.",
- quiz:{questionUz:"cin >> n dan so‘ng to‘liq qatorni to‘g‘ri o‘qish usuli qaysi?",questionEn:"What is the correct way to read a full line after cin >> n?",choicesUz:["getline(cin, s) darhol","getline(cin >> ws, s)","cin >> s","scanf(\"%s\")"],choicesEn:["getline(cin, s) immediately","getline(cin >> ws, s)","cin >> s","scanf(\"%s\")"]}
+ quiz:{questionUz:"cin >> n dan so‘ng to‘liq qatorni to‘g‘ri o‘qish usuli qaysi?",questionEn:"What is the correct way to read a full line after cin >> n?",choicesUz:["getline(cin, s) darhol","getline(cin >> ws, s)","cin >> s","scanf(\"%s\")"],choicesEn:["getline(cin, s) immediately","getline(cin >> ws, s)","cin >> s","scanf(\"%s\")"],correct:1}
 }),
 "programming-basics-3":c({
  goalUz:"Butun, haqiqiy, belgi tiplarini va ularning chegaralarini bilish; integer overflow dan qochish.",
@@ -83,7 +83,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"int up to ±2·10⁹, long long up to ±9·10¹⁸. Cast with 1LL before multiplying, never compare doubles with ==.",
  nextUz:"Tiplar tayyor — endi shart operatorlari bilan mantiq yozasiz.",
  nextEn:"Types are ready — now write logic with conditions.",
- quiz:{questionUz:"a = 10⁹ va b = 10⁹ uchun a * b ni to‘g‘ri hisoblash qaysi?",questionEn:"Which correctly computes a * b for a = 10⁹ and b = 10⁹?",choicesUz:["int c = a * b;","long long c = a * b;","long long c = 1LL * a * b;","double c = a * b;"],choicesEn:["int c = a * b;","long long c = a * b;","long long c = 1LL * a * b;","double c = a * b;"]}
+ quiz:{questionUz:"a = 10⁹ va b = 10⁹ uchun a * b ni to‘g‘ri hisoblash qaysi?",questionEn:"Which correctly computes a * b for a = 10⁹ and b = 10⁹?",choicesUz:["int c = a * b;","long long c = a * b;","long long c = 1LL * a * b;","double c = a * b;"],choicesEn:["int c = a * b;","long long c = a * b;","long long c = 1LL * a * b;","double c = a * b;"],correct:2}
 }),
 "programming-basics-4":c({
  goalUz:"if/else, else-if zanjirlari, mantiqiy operatorlar (&&, ||, !) va switch ni to‘g‘ri qo‘llash.",
@@ -104,7 +104,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Chains stop at the first true branch; && and || short-circuit; == compares; a < b < c is invalid.",
  nextUz:"Shartlar tayyor — endi takrorlanuvchi hisoblar uchun sikllarni o‘zlashtirasiz.",
  nextEn:"Conditions done — next, master loops for repeated computation.",
- quiz:{questionUz:"if (i < n && a[i] == x) yozuvining afzalligi nima?",questionEn:"What is the benefit of if (i < n && a[i] == x)?",choicesUz:["Kod qisqaradi","i >= n bo‘lsa a[i] tekshirilmaydi — xavfsiz","Tezroq kompilyatsiya bo‘ladi","Hech qanday farqi yo‘q"],choicesEn:["Shorter code","When i >= n, a[i] is never checked — safe","Faster compilation","No difference"]}
+ quiz:{questionUz:"if (i < n && a[i] == x) yozuvining afzalligi nima?",questionEn:"What is the benefit of if (i < n && a[i] == x)?",choicesUz:["Kod qisqaradi","i >= n bo‘lsa a[i] tekshirilmaydi — xavfsiz","Tezroq kompilyatsiya bo‘ladi","Hech qanday farqi yo‘q"],choicesEn:["Shorter code","When i >= n, a[i] is never checked — safe","Faster compilation","No difference"],correct:1}
 }),
 "programming-basics-5":c({
  goalUz:"for, while, ichma-ich sikllar va break/continue bilan hisoblarni tashkil qilish.",
@@ -125,7 +125,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"for with an index, range-for over values, while for unknown counts. break exits, continue skips.",
  nextUz:"Sikllar bilan endi funksiyalar, massivlar va STL — haqiqiy CP qurollariga o‘tasiz.",
  nextEn:"With loops ready, move to functions, arrays, and the STL — the real CP toolbox.",
- quiz:{questionUz:"n elementli massivning barcha juftliklarini bir marta ko‘rish uchun j qanday boshlanadi?",questionEn:"To visit every pair of an n-element array exactly once, where does j start?",choicesUz:["j = 0","j = i","j = i + 1","j = n - 1"],choicesEn:["j = 0","j = i","j = i + 1","j = n - 1"]}
+ quiz:{questionUz:"n elementli massivning barcha juftliklarini bir marta ko‘rish uchun j qanday boshlanadi?",questionEn:"To visit every pair of an n-element array exactly once, where does j start?",choicesUz:["j = 0","j = i","j = i + 1","j = n - 1"],choicesEn:["j = 0","j = i","j = i + 1","j = n - 1"],correct:2}
 }),
 "programming-basics-6":c({
  goalUz:"Funksiyalarga ajratish, vector/string/array bilan ishlash va eng kerakli STL vositalarini qo‘llash.",
@@ -146,7 +146,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"vector + string + sort + max_element + accumulate — these five tools solve half of all problems. Pass big data by reference (&).",
  nextUz:"Asoslar tugadi! Keyingi roadmap: murakkablik tahlili — dasturingiz vaqtga yetadimi-yo‘qmi, oldindan hisoblash.",
  nextEn:"Basics complete! Next roadmap: complexity analysis — predicting whether your program finishes in time.",
- quiz:{questionUz:"Funksiyaga katta vector uzatishning to‘g‘ri usuli?",questionEn:"What is the correct way to pass a large vector to a function?",choicesUz:["void f(vector<int> a)","void f(vector<int> &a)","void f(int a)","faqat global o‘zgaruvchi"],choicesEn:["void f(vector<int> a)","void f(vector<int> &a)","void f(int a)","only global variables"]}
+ quiz:{questionUz:"Funksiyaga katta vector uzatishning to‘g‘ri usuli?",questionEn:"What is the correct way to pass a large vector to a function?",choicesUz:["void f(vector<int> a)","void f(vector<int> &a)","void f(int a)","faqat global o‘zgaruvchi"],choicesEn:["void f(vector<int> a)","void f(vector<int> &a)","void f(int a)","only global variables"],correct:1}
 }),
 
 /* ================= FOUNDATIONS & COMPLEXITY ================= */
@@ -169,7 +169,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Budget: 10⁸ operations per second. Pick complexity from n: 10⁵→n log n, 500→n², 25→2ⁿ, 10⁹→log n.",
  nextUz:"Endi bu baholashni rasmiy tilga o‘tkazamiz — Big O belgisi.",
  nextEn:"Now we formalize this estimation — Big O notation.",
- quiz:{questionUz:"n ≤ 10⁵, 2 soniya limit uchun qaysi murakkablik xavfsiz?",questionEn:"Which complexity is safe for n ≤ 10⁵ with a 2-second limit?",choicesUz:["O(n²)","O(n log n)","O(2ⁿ)","O(n³)"],choicesEn:["O(n²)","O(n log n)","O(2ⁿ)","O(n³)"]}
+ quiz:{questionUz:"n ≤ 10⁵, 2 soniya limit uchun qaysi murakkablik xavfsiz?",questionEn:"Which complexity is safe for n ≤ 10⁵ with a 2-second limit?",choicesUz:["O(n²)","O(n log n)","O(2ⁿ)","O(n³)"],choicesEn:["O(n²)","O(n log n)","O(2ⁿ)","O(n³)"],correct:1}
 }),
 "foundations-2":c({
  goalUz:"Big O, Big Ω, Big Θ tushunchalarini va o‘sish tartiblarini (1 < log n < n < n log n < n² < 2ⁿ < n!) qo‘llash.",
@@ -190,7 +190,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Big O is a worst-case upper bound; constants are dropped; chain: 1 < log n < √n < n < n log n < n² < 2ⁿ < n!.",
  nextUz:"Nazariya tayyor — uni massiv va sikllarda amaliy tahlil qilishga o‘tamiz.",
  nextEn:"Theory done — apply it to analyzing arrays and loops.",
- quiz:{questionUz:"O(n² + 5n + 100) ifodaning soddalashtirilgan shakli?",questionEn:"Simplified form of O(n² + 5n + 100)?",choicesUz:["O(n² + n)","O(n²)","O(5n)","O(100)"],choicesEn:["O(n² + n)","O(n²)","O(5n)","O(100)"]}
+ quiz:{questionUz:"O(n² + 5n + 100) ifodaning soddalashtirilgan shakli?",questionEn:"Simplified form of O(n² + 5n + 100)?",choicesUz:["O(n² + n)","O(n²)","O(5n)","O(100)"],choicesEn:["O(n² + n)","O(n²)","O(5n)","O(100)"],correct:1}
 }),
 "foundations-3":c({
  goalUz:"Massiv ustidagi tipik operatsiyalar murakkabligini bilish va sikllarni to‘g‘ri tahlil qilish.",
@@ -211,7 +211,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Index O(1), mid-insert O(n), push_back O(1)*. i*=2 → log n; inner loop from j=i is still O(n²).",
  nextUz:"Vaqt bilan birga xotira ham cheklangan — keyingi mavzu: xotira murakkabligi.",
  nextEn:"Memory is limited too — next topic: space complexity.",
- quiz:{questionUz:"for(i<n) ichida har qadamda v.erase(v.begin()) chaqirilsa, umumiy murakkablik?",questionEn:"If v.erase(v.begin()) is called each step inside for(i<n), total complexity?",choicesUz:["O(n)","O(n log n)","O(n²)","O(1)"],choicesEn:["O(n)","O(n log n)","O(n²)","O(1)"]}
+ quiz:{questionUz:"for(i<n) ichida har qadamda v.erase(v.begin()) chaqirilsa, umumiy murakkablik?",questionEn:"If v.erase(v.begin()) is called each step inside for(i<n), total complexity?",choicesUz:["O(n)","O(n log n)","O(n²)","O(1)"],choicesEn:["O(n)","O(n log n)","O(n²)","O(1)"],correct:2}
 }),
 "foundations-4":c({
  goalUz:"Xotira chegarasini (256 MB) hisoblash va dastur xotirasini byudjetga sig‘dirish.",
@@ -232,7 +232,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"int 4 B, long long 8 B; 256 MB ≈ 6·10⁷ ints. Big arrays go global; deep recursion goes iterative; big DP uses rolling arrays.",
  nextUz:"Ba’zi operatsiyalar qimmat ko‘rinadi, lekin umumiy hisobda arzon — amortizatsiya tahlili.",
  nextEn:"Some operations look expensive but are cheap overall — amortized analysis.",
- quiz:{questionUz:"10⁶ × 10⁶ int jadval necha bayt egallaydi?",questionEn:"How many bytes does a 10⁶ × 10⁶ int table take?",choicesUz:["4 MB","400 MB","4·10¹² bayt (~4 TB)","10⁶ bayt"],choicesEn:["4 MB","400 MB","4·10¹² bytes (~4 TB)","10⁶ bytes"]}
+ quiz:{questionUz:"10⁶ × 10⁶ int jadval necha bayt egallaydi?",questionEn:"How many bytes does a 10⁶ × 10⁶ int table take?",choicesUz:["4 MB","400 MB","4·10¹² bayt (~4 TB)","10⁶ bayt"],choicesEn:["4 MB","400 MB","4·10¹² bytes (~4 TB)","10⁶ bytes"],correct:2}
 }),
 "foundations-5":c({
  goalUz:"Amortizatsiya tushunchasi: vector push_back, stack operatsiyalari va two-pointer uslubidagi umumiy narx.",
@@ -253,7 +253,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Amortization: total cost matters. vector doubling → O(1)*; monotonic stack → O(n); two pointers → O(n).",
  nextUz:"Yakuniy mavzu — barcha bilimlarni birlashtirib, real yechimni to‘liq tahlil qilish.",
  nextEn:"Final topic — combine everything and analyze a real solution end to end.",
- quiz:{questionUz:"n ta push_back ning umumiy narxi nima uchun O(n)?",questionEn:"Why do n push_backs cost O(n) in total?",choicesUz:["Har biri O(1)","Qayta ajratishlar yig‘indisi < 2n (geometrik)","Kompilyator optimallashtiradi","STL tez"],choicesEn:["Each is O(1)","Reallocation copies sum to < 2n (geometric)","The compiler optimizes it","STL is fast"]}
+ quiz:{questionUz:"n ta push_back ning umumiy narxi nima uchun O(n)?",questionEn:"Why do n push_backs cost O(n) in total?",choicesUz:["Har biri O(1)","Qayta ajratishlar yig‘indisi < 2n (geometrik)","Kompilyator optimallashtiradi","STL tez"],choicesEn:["Each is O(1)","Reallocation copies sum to < 2n (geometric)","The compiler optimizes it","STL is fast"],correct:1}
 }),
 "foundations-6":c({
  goalUz:"Butun yechimni — kiritish, algoritm, chiqish — murakkablik va xotira bo‘yicha yakuniy baholash.",
@@ -274,7 +274,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Total complexity = most expensive stage × test count. Memory = largest structures. Verify with concrete numbers, not guesses.",
  nextUz:"Asoslar va murakkablik tugadi! Keyingi roadmap: saralash algoritmlari — birinchi kuchli qurol.",
  nextEn:"Foundations complete! Next roadmap: sorting algorithms — your first powerful tool.",
- quiz:{questionUz:"t = 10 test, har birida n = 10⁵ va O(n log n) yechim. Taxminiy amallar soni?",questionEn:"t = 10 tests, each n = 10⁵ with an O(n log n) solution. Approximate operations?",choicesUz:["10⁵","10⁶","≈1.7·10⁷","10¹⁰"],choicesEn:["10⁵","10⁶","≈1.7·10⁷","10¹⁰"]}
+ quiz:{questionUz:"t = 10 test, har birida n = 10⁵ va O(n log n) yechim. Taxminiy amallar soni?",questionEn:"t = 10 tests, each n = 10⁵ with an O(n log n) solution. Approximate operations?",choicesUz:["10⁵","10⁶","≈1.7·10⁷","10¹⁰"],choicesEn:["10⁵","10⁶","≈1.7·10⁷","10¹⁰"],correct:2}
 }),
 
 /* ================= SORTING ================= */
@@ -297,7 +297,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Sorting is O(n log n) — the first step of many problems. sort() in C++ is introsort; keep indices via pairs.",
  nextUz:"Endi eng oddiy ikkita algoritmni — Selection va Bubble — o‘rganamiz: ular sekin, lekin tushunarli.",
  nextEn:"Now the two simplest algorithms — Selection and Bubble: slow, but instructive.",
- quiz:{questionUz:"C++ da sort() qanday murakkablikni KAFOLATLAYDI?",questionEn:"What complexity does C++ sort() GUARANTEE?",choicesUz:["O(n)","O(n log n)","O(n²)","O(log n)"],choicesEn:["O(n)","O(n log n)","O(n²)","O(log n)"]}
+ quiz:{questionUz:"C++ da sort() qanday murakkablikni KAFOLATLAYDI?",questionEn:"What complexity does C++ sort() GUARANTEE?",choicesUz:["O(n)","O(n log n)","O(n²)","O(log n)"],choicesEn:["O(n)","O(n log n)","O(n²)","O(log n)"],correct:1}
 }),
 "sorting-2":c({
  goalUz:"Selection sort va Bubble sort g‘oyasi, yozilishi va nima uchun O(n²) ekanini bilish.",
@@ -318,7 +318,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Selection — pick the minimum into place; Bubble — swap neighbors. Both O(n²); only for small n or learning.",
  nextUz:"Insertion sort — deyarli tartiblangan massivlarda eng tezkor O(n²) li variant.",
  nextEn:"Insertion sort — the fastest O(n²) variant on nearly sorted arrays.",
- quiz:{questionUz:"Selection sort ning Bubble sort dan afzalligi?",questionEn:"Advantage of Selection sort over Bubble sort?",choicesUz:["Tezroq — O(n log n)","≤ n ta almashtirish (yozish kam)","Har doim barqaror","Kam xotira"],choicesEn:["Faster — O(n log n)","≤ n swaps (fewer writes)","Always stable","Less memory"]}
+ quiz:{questionUz:"Selection sort ning Bubble sort dan afzalligi?",questionEn:"Advantage of Selection sort over Bubble sort?",choicesUz:["Tezroq — O(n log n)","≤ n ta almashtirish (yozish kam)","Har doim barqaror","Kam xotira"],choicesEn:["Faster — O(n log n)","≤ n swaps (fewer writes)","Always stable","Less memory"],correct:1}
 }),
 "sorting-3":c({
  goalUz:"Insertion sort mexanikasi, deyarli-tartiblangan kiritishda O(n) yaqinligi va amaliy qo‘llanilishi.",
@@ -339,7 +339,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Insertion: place key into the shifted prefix. O(n) on sorted, O(n²) on reversed; stable; std::sort builds on it.",
  nextUz:"Endi haqiqiy qurol: Merge sort — bo‘lib-yengish tamoyili bilan kafolatlangan O(n log n).",
  nextEn:"Now the real weapon: Merge sort — divide and conquer with guaranteed O(n log n).",
- quiz:{questionUz:"Insertion sort qachon O(n) ga yaqin ishlaydi?",questionEn:"When does insertion sort run close to O(n)?",choicesUz:["Tasodifiy kiritishda","Deyarli tartiblangan kiritishda","Teskari tartibda","Katta n da"],choicesEn:["Random input","Nearly sorted input","Reversed order","Large n"]}
+ quiz:{questionUz:"Insertion sort qachon O(n) ga yaqin ishlaydi?",questionEn:"When does insertion sort run close to O(n)?",choicesUz:["Tasodifiy kiritishda","Deyarli tartiblangan kiritishda","Teskari tartibda","Katta n da"],choicesEn:["Random input","Nearly sorted input","Reversed order","Large n"],correct:1}
 }),
 "sorting-4":c({
  goalUz:"Merge sort: bo‘lib-yengish, birlashtirish (merge) va kafolatlangan O(n log n) tahlili.",
@@ -360,7 +360,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Split → recurse → merge. Guaranteed O(n log n), O(n) extra memory, stable. Counting inversions builds on the same idea.",
  nextUz:"Quicksort — amaliyotning chempioni: o‘rtacha O(n log n), lekin pivot tanlovi hayotiy.",
  nextEn:"Quicksort — the practical champion: average O(n log n), but pivot choice is critical.",
- quiz:{questionUz:"Merge sort eng yomon holat murakkabligi?",questionEn:"Merge sort worst-case complexity?",choicesUz:["O(n)","O(n log n)","O(n²)","O(log n)"],choicesEn:["O(n)","O(n log n)","O(n²)","O(log n)"]}
+ quiz:{questionUz:"Merge sort eng yomon holat murakkabligi?",questionEn:"Merge sort worst-case complexity?",choicesUz:["O(n)","O(n log n)","O(n²)","O(log n)"],choicesEn:["O(n)","O(n log n)","O(n²)","O(log n)"],correct:1}
 }),
 "sorting-5":c({
  goalUz:"Quicksort: partition sxemasi, pivot strategiyasi va O(n²) dan himoyalanish.",
@@ -381,7 +381,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Pivot → partition → recurse. Average O(n log n); a random pivot makes O(n²) virtually impossible; not stable; std::sort = introsort.",
  nextUz:"Oxirgi qadam — o‘z komparatorlaringiz: pair, struct va murakkab tartiblash qoidalari.",
  nextEn:"Final step — custom comparators: pairs, structs, and complex ordering rules.",
- quiz:{questionUz:"Quicksort da O(n²) dan himoyalanishning standart usuli?",questionEn:"The standard defense against O(n²) in quicksort?",choicesUz:["Doimo birinchi element pivot","Tasodifiy pivot tanlash","Kattaroq buffer","Iterativ yozish"],choicesEn:["Always first element as pivot","Choosing a random pivot","A bigger buffer","Writing it iteratively"]}
+ quiz:{questionUz:"Quicksort da O(n²) dan himoyalanishning standart usuli?",questionEn:"The standard defense against O(n²) in quicksort?",choicesUz:["Doimo birinchi element pivot","Tasodifiy pivot tanlash","Kattaroq buffer","Iterativ yozish"],choicesEn:["Always first element as pivot","Choosing a random pivot","A bigger buffer","Writing it iteratively"],correct:1}
 }),
 "sorting-6":c({
  goalUz:"O‘z tartiblash qoidalarini komparatorlar bilan yozish: lambda, pair, struct, ko‘p kalitli tartib.",
@@ -402,7 +402,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"cmp(x,y)=true → x first. cmp(x,x)=false is mandatory. Multi-key via if chains; in Python use key=tuple. pair default: first, then second.",
  nextUz:"Saralash tugadi! Keyingi bosqich: binary search — tartiblangan dunyoda chaqmoq tezligida qidiruv.",
  nextEn:"Sorting complete! Next stage: binary search — lightning-fast lookup in an ordered world.",
- quiz:{questionUz:"Komparator uchun qaysi yozuv TO‘G‘RI?",questionEn:"Which comparator is CORRECT?",choicesUz:["return x.val <= y.val;","return x.val > y.val; (kamayish uchun)","return x.val == y.val;","return y.val >= x.val;"],choicesEn:["return x.val <= y.val;","return x.val > y.val; (for descending)","return x.val == y.val;","return y.val >= x.val;"]}
+ quiz:{questionUz:"Komparator uchun qaysi yozuv TO‘G‘RI?",questionEn:"Which comparator is CORRECT?",choicesUz:["return x.val <= y.val;","return x.val > y.val; (kamayish uchun)","return x.val == y.val;","return y.val >= x.val;"],choicesEn:["return x.val <= y.val;","return x.val > y.val; (for descending)","return x.val == y.val;","return y.val >= x.val;"],correct:1}
 }),
 
 /* ================= BINARY SEARCH ================= */
@@ -425,7 +425,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Invariant + m = l + (r-l)/2 + while (l < r). 30 comparisons suffice for 10⁹. Requirement: monotonicity.",
  nextUz:"Endi standart kutubxona vositalari: lower_bound va upper_bound — bir qatorda binary search.",
  nextEn:"Now the standard library tools: lower_bound and upper_bound — binary search in one line.",
- quiz:{questionUz:"n = 10⁹ tartiblangan massivda binary search nechtagacha taqqoslash qiladi?",questionEn:"At most how many comparisons does binary search make on a sorted array of n = 10⁹?",choicesUz:["10⁹","10⁶","≈30","≈1000"],choicesEn:["10⁹","10⁶","≈30","≈1000"]}
+ quiz:{questionUz:"n = 10⁹ tartiblangan massivda binary search nechtagacha taqqoslash qiladi?",questionEn:"At most how many comparisons does binary search make on a sorted array of n = 10⁹?",choicesUz:["10⁹","10⁶","≈30","≈1000"],choicesEn:["10⁹","10⁶","≈30","≈1000"],correct:2}
 }),
 "binary-search-2":c({
  goalUz:"lower_bound va upper_bound farqini bilish va ularni sonni sanash, oraliq topish uchun ishlatish.",
@@ -446,7 +446,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"lower = first ≥ x, upper = first > x. count = upper − lower; smaller = lower − begin. Only on sorted ranges.",
  nextUz:"Kengaytma: «birinchi rost qiymat» sxemasi — har qanday predikat uchun umumiy binary search.",
  nextEn:"Extension: the “first true value” scheme — generic binary search over any predicate.",
- quiz:{questionUz:"a = [1,2,2,2,5] da count(2) ni topish uchun qaysi juftlik?",questionEn:"Which pair finds count(2) in a = [1,2,2,2,5]?",choicesUz:["lower(2) va lower(3)","upper(2) - lower(2)","lower(2) - upper(2)","upper(5) - lower(2)"],choicesEn:["lower(2) and lower(3)","upper(2) - lower(2)","lower(2) - upper(2)","upper(5) - lower(2)"]}
+ quiz:{questionUz:"a = [1,2,2,2,5] da count(2) ni topish uchun qaysi juftlik?",questionEn:"Which pair finds count(2) in a = [1,2,2,2,5]?",choicesUz:["lower(2) va lower(3)","upper(2) - lower(2)","lower(2) - upper(2)","upper(5) - lower(2)"],choicesEn:["lower(2) and lower(3)","upper(2) - lower(2)","lower(2) - upper(2)","upper(5) - lower(2)"],correct:1}
 }),
 "binary-search-3":c({
  goalUz:"«Birinchi rost» sxemasi: monoton predikat ustida binary search yozishning universal usuli.",
@@ -467,7 +467,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"lo=false, hi=true invariant; while (hi - lo > 1); answer is hi. Every binary search variant descends from this scheme.",
  nextUz:"Kuchli texnika: javobning o‘zi bo‘yicha qidiruv — binary search on answer.",
  nextEn:"A powerful technique: searching over the answer itself — binary search on answer.",
- quiz:{questionUz:"«Birinchi rost» sxemasida sikl tugagach javob qayerda?",questionEn:"In the “first true” scheme, where is the answer after the loop?",choicesUz:["lo","hi","m","lo + hi"],choicesEn:["lo","hi","m","lo + hi"]}
+ quiz:{questionUz:"«Birinchi rost» sxemasida sikl tugagach javob qayerda?",questionEn:"In the “first true” scheme, where is the answer after the loop?",choicesUz:["lo","hi","m","lo + hi"],choicesEn:["lo","hi","m","lo + hi"],correct:1}
 }),
 "binary-search-4":c({
  goalUz:"Binary search on answer: minimallashtirish/maksimallashtirish masalalarini tekshirish funksiyasiga keltirish.",
@@ -488,7 +488,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"If the answer is monotonic, optimization = check + binary search. O(n log S). Minimize-maximum / maximize-minimum — same pattern.",
  nextUz:"Haqiqiy sonlar ustida binary search — epsilon va iteratsiya soni bilan.",
  nextEn:"Binary search over real numbers — with epsilon and iteration counts.",
- quiz:{questionUz:"Binary search on answer ishlashining ASOSIY sharti?",questionEn:"The MAIN requirement for binary search on answer?",choicesUz:["Massiv tartiblangan bo‘lishi","check(x) monoton bo‘lishi","Javob butun bo‘lishi","n kichik bo‘lishi"],choicesEn:["The array is sorted","check(x) is monotonic","The answer is an integer","n is small"]}
+ quiz:{questionUz:"Binary search on answer ishlashining ASOSIY sharti?",questionEn:"The MAIN requirement for binary search on answer?",choicesUz:["Massiv tartiblangan bo‘lishi","check(x) monoton bo‘lishi","Javob butun bo‘lishi","n kichik bo‘lishi"],choicesEn:["The array is sorted","check(x) is monotonic","The answer is an integer","n is small"],correct:1}
 }),
 "binary-search-5":c({
  goalUz:"Haqiqiy sonlar ustida binary search: epsilon aniqlik, iteratsiya soni va geometry/phys masalalari.",
@@ -509,7 +509,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Real binary search: 60 iterations or hi-lo>eps; print with setprecision; the range must contain the answer.",
  nextUz:"So‘nggi daraja — murakkab, ko‘p shartli predikatlar va parallel binary search ga kirish.",
  nextEn:"Final level — complex multi-condition predicates and an intro to parallel binary search.",
- quiz:{questionUz:"Haqiqiy sonlarda nechta iteratsiya odatda har qanday aniqlikka yetadi?",questionEn:"How many iterations usually suffice for any precision over reals?",choicesUz:["10","~60","10⁶","n ga bog‘liq"],choicesEn:["10","~60","10⁶","depends on n"]}
+ quiz:{questionUz:"Haqiqiy sonlarda nechta iteratsiya odatda har qanday aniqlikka yetadi?",questionEn:"How many iterations usually suffice for any precision over reals?",choicesUz:["10","~60","10⁶","n ga bog‘liq"],choicesEn:["10","~60","10⁶","depends on n"],correct:1}
 }),
 "binary-search-6":c({
  goalUz:"Murakkab predikatli binary search: bir nechta shart birgalikda, so‘rovlar oflayn guruhlashga kirish.",
@@ -530,7 +530,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Composite predicates must stay monotonic; keep check pure; many queries → parallel binary search.",
  nextUz:"Binary search o‘zlashtirildi! Keyingi texnika: two pointers va sliding window — chiziqli sehr.",
  nextEn:"Binary search mastered! Next technique: two pointers and sliding window — linear magic.",
- quiz:{questionUz:"P(x) = A(x) && B(x) monoton bo‘lishi uchun nima kerak?",questionEn:"For P(x) = A(x) && B(x) to be monotonic, what is required?",choicesUz:["A va B ikkalasi monoton","A o‘suvchi, B kamayuvchi","Hech narsa","faqat A monoton"],choicesEn:["Both A and B monotonic","A increasing, B decreasing","Nothing","only A monotonic"]}
+ quiz:{questionUz:"P(x) = A(x) && B(x) monoton bo‘lishi uchun nima kerak?",questionEn:"For P(x) = A(x) && B(x) to be monotonic, what is required?",choicesUz:["A va B ikkalasi monoton","A o‘suvchi, B kamayuvchi","Hech narsa","faqat A monoton"],choicesEn:["Both A and B monotonic","A increasing, B decreasing","Nothing","only A monotonic"],correct:0}
 }),
 
 /* ================= TWO POINTERS & SLIDING WINDOW ================= */
@@ -553,7 +553,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"l from the start, r from the end; too small → l++, too big → r--. O(n) time, O(1) memory. Requirement: sorted.",
  nextUz:"Bir yo‘nalishli ko‘rsatkichlar: o‘qish va yozish indekslari — dublikatlarni o‘chirish kabi.",
  nextEn:"Same-direction pointers: read and write indices — like removing duplicates.",
- quiz:{questionUz:"Tartiblangan massivda a[l]+a[r] < target bo‘lsa qaysi ko‘rsatkich siljiydi?",questionEn:"In a sorted array, if a[l]+a[r] < target, which pointer moves?",choicesUz:["r--","l++","ikkalasi","to‘xtaydi"],choicesEn:["r--","l++","both","stops"]}
+ quiz:{questionUz:"Tartiblangan massivda a[l]+a[r] < target bo‘lsa qaysi ko‘rsatkich siljiydi?",questionEn:"In a sorted array, if a[l]+a[r] < target, which pointer moves?",choicesUz:["r--","l++","ikkalasi","to‘xtaydi"],choicesEn:["r--","l++","both","stops"],correct:1}
 }),
 "two-pointers-2":c({
  goalUz:"Bir yo‘nalishli (read/write) ko‘rsatkichlar: joyida o‘zgartirib, keraksizlarni siqib tashlash.",
@@ -574,7 +574,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"r reads, w writes; kept items land in [0, w). O(n)/O(1). Duplicate filter needs a sorted array.",
  nextUz:"Sliding window — uzunligi belgilangan oyna: k ta ketma-ket element bo‘yicha optimum.",
  nextEn:"Sliding window — a fixed-length window: optimum over k consecutive elements.",
- quiz:{questionUz:"Read/write sxemada sikl tugagach natija qayerda?",questionEn:"In the read/write scheme, where is the result after the loop?",choicesUz:["[0, n)","[0, w)","[w, n)","butun massivda"],choicesEn:["[0, n)","[0, w)","[w, n)","the whole array"]}
+ quiz:{questionUz:"Read/write sxemada sikl tugagach natija qayerda?",questionEn:"In the read/write scheme, where is the result after the loop?",choicesUz:["[0, n)","[0, w)","[w, n)","butun massivda"],choicesEn:["[0, n)","[0, w)","[w, n)","the whole array"],correct:1}
 }),
 "two-pointers-3":c({
  goalUz:"Belgilangan uzunlikdagi sliding window: k ta element yig‘indisi/minimumi/maksimumi O(n) da.",
@@ -595,7 +595,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Sliding removes one and adds one: sum += a[r] - a[r-k]. Total O(n). For min/max you need a monotonic deque.",
  nextUz:"O‘zgaruvchan oyna: shart buzilguncha kengaytirib, eng uzun/eng qisqa segmentlarni topish.",
  nextEn:"Variable-size window: expand until the condition breaks to find longest/shortest segments.",
- quiz:{questionUz:"k=3, a=[2,1,5,1,3] da ikkinchi oyna yig‘indisi qanday hisoblanadi?",questionEn:"For k=3, a=[2,1,5,1,3], how is the second window's sum computed?",choicesUz:["1+5+1 qayta sikl","8 + a[3] - a[0]","8 + a[3]","qayta sort"],choicesEn:["loop 1+5+1","8 + a[3] - a[0]","8 + a[3]","re-sort"]}
+ quiz:{questionUz:"k=3, a=[2,1,5,1,3] da ikkinchi oyna yig‘indisi qanday hisoblanadi?",questionEn:"For k=3, a=[2,1,5,1,3], how is the second window's sum computed?",choicesUz:["1+5+1 qayta sikl","8 + a[3] - a[0]","8 + a[3]","qayta sort"],choicesEn:["loop 1+5+1","8 + a[3] - a[0]","8 + a[3]","re-sort"],correct:1}
 }),
 "two-pointers-4":c({
  goalUz:"O‘zgaruvchan sliding window: «eng uzun …», «eng qisqa …» segmentlar uchun kengaytir-qisqartir sxemasi.",
@@ -616,7 +616,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Expand (r++), shrink on violation (l++). l and r only move forward → O(n). State lives in a frequency map.",
  nextUz:"Prefix sum bilan qo'shilganda oyna yanada kuchayadi — kombinatsiya texnikasi.",
  nextEn:"Combined with prefix sums the window becomes stronger — the hybrid technique.",
- quiz:{questionUz:"O‘zgaruvchan oyna O(n) ekanining isboti nima?",questionEn:"Why is the variable window O(n)?",choicesUz:["r tez yuradi","l va r har biri ≤ n qadam oladi","sort tez","map O(1)"],choicesEn:["r moves fast","l and r each take ≤ n steps","sorting is fast","map is O(1)"]}
+ quiz:{questionUz:"O‘zgaruvchan oyna O(n) ekanining isboti nima?",questionEn:"Why is the variable window O(n)?",choicesUz:["r tez yuradi","l va r har biri ≤ n qadam oladi","sort tez","map O(1)"],choicesEn:["r moves fast","l and r each take ≤ n steps","sorting is fast","map is O(1)"],correct:1}
 }),
 "two-pointers-5":c({
  goalUz:"Prefix sum va two pointers kombinatsiyasi: musbat bo‘lmagan massivlarda segment yig‘indilari.",
@@ -637,7 +637,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"The window only works on non-negatives; with negatives use prefix sums + map/set. p[r+1] - p[l] gives any segment sum in O(1).",
  nextUz:"Yakun: aralash masalalar — qaysi masalada qaysi usul, tanlash mashqi.",
  nextEn:"Finale: mixed problems — choosing the right method per problem.",
- quiz:{questionUz:"Manfiy sonlar bor massivda «yig‘indi = K» segmentlarni sanash usuli?",questionEn:"Method to count segments with sum = K when negatives exist?",choicesUz:["O‘zgaruvchan oyna","Prefix sum + unordered_map","Saralash","Rekursiya"],choicesEn:["Variable window","Prefix sum + unordered_map","Sorting","Recursion"]}
+ quiz:{questionUz:"Manfiy sonlar bor massivda «yig‘indi = K» segmentlarni sanash usuli?",questionEn:"Method to count segments with sum = K when negatives exist?",choicesUz:["O‘zgaruvchan oyna","Prefix sum + unordered_map","Saralash","Rekursiya"],choicesEn:["Variable window","Prefix sum + unordered_map","Sorting","Recursion"],correct:1}
 }),
 "two-pointers-6":c({
  goalUz:"Aralash masalalarda to‘g‘ri texnikani tanlash: two pointers, oyna, prefix yoki binary search.",
@@ -658,7 +658,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Pattern = keywords + constraints. Window (non-negative), prefix (negatives), pointers (sorted), binary search (min-max).",
  nextUz:"Two pointers tugadi! Keyingi katta bob: greedy algoritmlar — mahalliy tanlovdan global optimumga.",
  nextEn:"Two pointers done! Next big chapter: greedy algorithms — from local choice to global optimum.",
- quiz:{questionUz:"«Eng uzun ketma-ket segment, yig‘indi ≤ S, barcha sonlar musbat» — qaysi usul?",questionEn:"“Longest consecutive segment with sum ≤ S, all positive” — which method?",choicesUz:["Binary search","O‘zgaruvchan oyna","Prefix + set","DP"],choicesEn:["Binary search","Variable window","Prefix + set","DP"]}
+ quiz:{questionUz:"«Eng uzun ketma-ket segment, yig‘indi ≤ S, barcha sonlar musbat» — qaysi usul?",questionEn:"“Longest consecutive segment with sum ≤ S, all positive” — which method?",choicesUz:["Binary search","O‘zgaruvchan oyna","Prefix + set","DP"],choicesEn:["Binary search","Variable window","Prefix + set","DP"],correct:1}
 }),
 
 /* ================= GREEDY ================= */
@@ -681,7 +681,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Greedy = local optimum + no backtracking. Requires greedy-choice property + optimal substructure. Prove via exchange or stays-ahead.",
  nextUz:"Endi isbot texnikalarini chuqur o‘rganamiz — greedy ni ishonch bilan yozish uchun.",
  nextEn:"Now we study proof techniques in depth — to write greedy with confidence.",
- quiz:{questionUz:"Greedy algoritm ishlashi uchun qaysi juftlik zarur?",questionEn:"Which pair is required for a greedy algorithm to work?",choicesUz:["Saralash + map","Greedy-choice + optimal substructure","Rekursiya + memo","Stack + queue"],choicesEn:["Sorting + map","Greedy-choice + optimal substructure","Recursion + memo","Stack + queue"]}
+ quiz:{questionUz:"Greedy algoritm ishlashi uchun qaysi juftlik zarur?",questionEn:"Which pair is required for a greedy algorithm to work?",choicesUz:["Saralash + map","Greedy-choice + optimal substructure","Rekursiya + memo","Stack + queue"],choicesEn:["Sorting + map","Greedy-choice + optimal substructure","Recursion + memo","Stack + queue"],correct:1}
 }),
 "greedy-2":c({
  goalUz:"Exchange argument va stays-ahead isbotlari bilan greedy yechimni himoya qilish.",
@@ -702,7 +702,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Exchange: transform optimal into greedy, show no worsening. Stays-ahead: inductively prove you never fall behind.",
  nextUz:"Klassik greedy: faoliyat tanlash (activity selection) — interval masalalarining onasi.",
  nextEn:"A greedy classic: activity selection — the mother of interval problems.",
- quiz:{questionUz:"Exchange argument nima deydi?",questionEn:"What does the exchange argument claim?",choicesUz:["Greedy har doim tez","Optimal yechim greedy ga yomonlashmasdan aylantiriladi","Saralash kifoya","DP kerak emas"],choicesEn:["Greedy is always fast","An optimal can be transformed into greedy without worsening","Sorting suffices","DP is unnecessary"]}
+ quiz:{questionUz:"Exchange argument nima deydi?",questionEn:"What does the exchange argument claim?",choicesUz:["Greedy har doim tez","Optimal yechim greedy ga yomonlashmasdan aylantiriladi","Saralash kifoya","DP kerak emas"],choicesEn:["Greedy is always fast","An optimal can be transformed into greedy without worsening","Sorting suffices","DP is unnecessary"],correct:1}
 }),
 "greedy-3":c({
  goalUz:"Activity selection masalasi: eng erta tugaydigan faoliyatni tanlash va uning variantlari.",
@@ -723,7 +723,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Sort by finish → greedily take compatible ones. O(n log n). Rooms via heap; weights via DP.",
  nextUz:"Interval masalalari chuqurroq: qamrash, nuqta joylashtirish va birlashtirish.",
  nextEn:"Deeper interval problems: covering, point placement, and merging.",
- quiz:{questionUz:"Activity selection uchun faoliyatlarni qanday saralash kerak?",questionEn:"How should activities be sorted for activity selection?",choicesUz:["Boshlanish bo‘yicha","Tugash bo‘yicha o‘sish","Davomiylik bo‘yicha","Tasodifiy"],choicesEn:["By start","By finish ascending","By duration","Randomly"]}
+ quiz:{questionUz:"Activity selection uchun faoliyatlarni qanday saralash kerak?",questionEn:"How should activities be sorted for activity selection?",choicesUz:["Boshlanish bo‘yicha","Tugash bo‘yicha o‘sish","Davomiylik bo‘yicha","Tasodifiy"],choicesEn:["By start","By finish ascending","By duration","Randomly"],correct:1}
 }),
 "greedy-4":c({
  goalUz:"Interval qamrash muammolari: minimal nuqtalar bilan barcha oraliqni urish va oraliqlarni birlashtirish.",
@@ -744,7 +744,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Points: sort by finish, if l > p then p = r. Merge: sort by start, if l ≤ R then R = max(R, r).",
  nextUz:"Rejalashtirish (scheduling): muddatlar va sovrinlar — yana bir greedy klassikasi.",
  nextEn:"Scheduling: deadlines and rewards — another greedy classic.",
- quiz:{questionUz:"Kesishuvchi oraliqlarni birlashtirishda qanday saralaymiz?",questionEn:"How do we sort to merge overlapping intervals?",choicesUz:["Tugash bo‘yicha","Boshlanish bo‘yicha","Uzunlik bo‘yicha","Saralash shart emas"],choicesEn:["By finish","By start","By length","No sort needed"]}
+ quiz:{questionUz:"Kesishuvchi oraliqlarni birlashtirishda qanday saralaymiz?",questionEn:"How do we sort to merge overlapping intervals?",choicesUz:["Tugash bo‘yicha","Boshlanish bo‘yicha","Uzunlik bo‘yicha","Saralash shart emas"],choicesEn:["By finish","By start","By length","No sort needed"],correct:1}
 }),
 "greedy-5":c({
  goalUz:"Deadline/scheduling masalalari: maksimal foyda uchun ish tartibini greedy bilan tuzish.",
@@ -765,7 +765,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Max reward: descending sort + latest free day (DSU). Min waiting: shortest first. Both are proved by exchange.",
  nextUz:"Yakuniy mavzu: murakkab greedy — ko‘p qirrali tanlovlar va counterexample ovi.",
  nextEn:"Final topic: complex greedy — multifaceted choices and counterexample hunting.",
- quiz:{questionUz:"Maksimal sovrin uchun ishlar qanday tartiblanadi?",questionEn:"How are jobs ordered for maximum reward?",choicesUz:["Deadline o‘sish","Sovrin kamayish","Davomiylik o‘sish","Tasodifiy"],choicesEn:["Deadline ascending","Reward descending","Duration ascending","Random"]}
+ quiz:{questionUz:"Maksimal sovrin uchun ishlar qanday tartiblanadi?",questionEn:"How are jobs ordered for maximum reward?",choicesUz:["Deadline o‘sish","Sovrin kamayish","Davomiylik o‘sish","Tasodifiy"],choicesEn:["Deadline ascending","Reward descending","Duration ascending","Random"],correct:1}
 }),
 "greedy-6":c({
  goalUz:"Murakkab greedy: isboti qiyin tanlovlar, counterexample topish metodikasi va greedy↔DP chegarasi.",
@@ -786,7 +786,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Methodology: hypothesis → brute stress → counterexample → proof. If greedy fails — DP. Do not mix the two!",
  nextUz:"Greedy tugadi! Endi graflar olamiga kiramiz — BFS, DFS va eng qisqa yo‘llar.",
  nextEn:"Greedy done! Now we enter the world of graphs — BFS, DFS, and shortest paths.",
- quiz:{questionUz:"Greedy yechimni tekshirishning eng ishonchli usuli?",questionEn:"The most reliable way to validate a greedy solution?",choicesUz:["Bitta misol","Brute force bilan stress-test","Tez ishlayotganini ko‘rish","Murakkablik yozish"],choicesEn:["One example","Stress-testing against brute force","Seeing it runs fast","Writing the complexity"]}
+ quiz:{questionUz:"Greedy yechimni tekshirishning eng ishonchli usuli?",questionEn:"The most reliable way to validate a greedy solution?",choicesUz:["Bitta misol","Brute force bilan stress-test","Tez ishlayotganini ko‘rish","Murakkablik yozish"],choicesEn:["One example","Stress-testing against brute force","Seeing it runs fast","Writing the complexity"],correct:1}
 }),
 
 /* ================= BACKTRACKING ================= */
@@ -809,7 +809,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Base + step + progress. Watch the stack depth. Repeated computations are the subject of memoization (later).",
  nextUz:"Backtracking ga tayyorlik: tanlovlar daraxti — har tugun bir qaror.",
  nextEn:"Preparing for backtracking: the decision tree — every node is a choice.",
- quiz:{questionUz:"Rekursiya to‘g‘ri ishlashi uchun nima SHART?",questionEn:"What is REQUIRED for recursion to work?",choicesUz:["Tez kompyuter","Baza holati va parametrning bazaga yaqinlashishi","Ko‘p xotira","Global o‘zgaruvchilar"],choicesEn:["A fast computer","A base case and the parameter moving toward it","Lots of memory","Global variables"]}
+ quiz:{questionUz:"Rekursiya to‘g‘ri ishlashi uchun nima SHART?",questionEn:"What is REQUIRED for recursion to work?",choicesUz:["Tez kompyuter","Baza holati va parametrning bazaga yaqinlashishi","Ko‘p xotira","Global o‘zgaruvchilar"],choicesEn:["A fast computer","A base case and the parameter moving toward it","Lots of memory","Global variables"],correct:1}
 }),
 "backtracking-2":c({
  goalUz:"Tanlash daraxti: barcha variantlarni tizimli kezish (generate & test) sxemasi.",
@@ -830,7 +830,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Choose → explore → undo. Tree leaves = answers. Exponential: n ≤ 20–25.",
  nextUz:"Permutatsiyalar: n! ta tartibni chiroyli generatsiya qilish.",
  nextEn:"Permutations: generating all n! orders cleanly.",
- quiz:{questionUz:"Backtracking shablonining to‘g‘ri ketma-ketligi?",questionEn:"The correct order in the backtracking pattern?",choicesUz:["Kez → tanla → bekor","Tanla → kez → bekor qil","Bekor → tanla → kez","Tanla → bekor → kez"],choicesEn:["Explore → choose → undo","Choose → explore → undo","Undo → choose → explore","Choose → undo → explore"]}
+ quiz:{questionUz:"Backtracking shablonining to‘g‘ri ketma-ketligi?",questionEn:"The correct order in the backtracking pattern?",choicesUz:["Kez → tanla → bekor","Tanla → kez → bekor qil","Bekor → tanla → kez","Tanla → bekor → kez"],choicesEn:["Explore → choose → undo","Choose → explore → undo","Undo → choose → explore","Choose → undo → explore"],correct:1}
 }),
 "backtracking-3":c({
  goalUz:"Permutatsiyalarni generatsiya qilish: swap-usuli va used-massiv usuli; narxlar tahlili.",
@@ -851,7 +851,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"used or swap; each leaf costs O(n); total O(n·n!). next_permutation starts from a sorted array.",
  nextUz:"Kombinatsiyalar: C(n, k) — tartib muhim bo‘lmagan tanlovlar.",
  nextEn:"Combinations: C(n, k) — selections where order does not matter.",
- quiz:{questionUz:"next_permutation to‘liq ro‘yxat berishi uchun massiv qanday bo‘lishi kerak?",questionEn:"For next_permutation to give the full list, the array must be?",choicesUz:["Tasodifiy","Saralangan o‘sish","Teskari","Farqi yo‘q"],choicesEn:["Random","Sorted ascending","Reversed","Irrelevant"]}
+ quiz:{questionUz:"next_permutation to‘liq ro‘yxat berishi uchun massiv qanday bo‘lishi kerak?",questionEn:"For next_permutation to give the full list, the array must be?",choicesUz:["Tasodifiy","Saralangan o‘sish","Teskari","Farqi yo‘q"],choicesEn:["Random","Sorted ascending","Reversed","Irrelevant"],correct:1}
 }),
 "backtracking-4":c({
  goalUz:"Kombinatsiyalar C(n,k): o‘suvchi indekslar bilan generatsiya va n kengaytmasi.",
@@ -872,7 +872,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"The start parameter kills duplicates. Leaves are C(n,k); symmetry C(n,k)=C(n,n-k). N-queens = combination + checking.",
  nextUz:"Pruning: daraxtni erta kesish — backtracking ni amaliy tezlikka chiqarish.",
  nextEn:"Pruning: cutting the tree early — making backtracking practically fast.",
- quiz:{questionUz:"Kombinatsiya generatsiyasida takrorlarni nima kesadi?",questionEn:"What kills duplicates in combination generation?",choicesUz:["Set ishlatish","start parametri (o‘suvchi indekslar)","Saralash","Hech narsa"],choicesEn:["Using a set","The start parameter (increasing indices)","Sorting","Nothing"]}
+ quiz:{questionUz:"Kombinatsiya generatsiyasida takrorlarni nima kesadi?",questionEn:"What kills duplicates in combination generation?",choicesUz:["Set ishlatish","start parametri (o‘suvchi indekslar)","Saralash","Hech narsa"],choicesEn:["Using a set","The start parameter (increasing indices)","Sorting","Nothing"],correct:1}
 }),
 "backtracking-5":c({
  goalUz:"Pruning (budnik kesish): yaroqsiz shoxlarni erta aniqlab, daraxtni keskin kichraytirish.",
@@ -893,7 +893,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Pruning = early proof: no solution down this branch. Feasibility, bounds, dominance + fail-first ordering.",
  nextUz:"Meet in the middle: 2⁴⁰ ni 2·2²⁰ ga aylantirish texnikasi.",
  nextEn:"Meet in the middle: turning 2⁴⁰ into 2·2²⁰.",
- quiz:{questionUz:"Pruning ning asosiy sharti?",questionEn:"The main requirement for pruning?",choicesUz:["Kod tez bo‘lsin","Kesilgan shoxda HECH QACHON javob bo‘lmasin","Rekursiya chuqur bo‘lsin","Massiv katta bo‘lsin"],choicesEn:["Code is fast","A pruned branch may NEVER hold a solution","Recursion is deep","Array is large"]}
+ quiz:{questionUz:"Pruning ning asosiy sharti?",questionEn:"The main requirement for pruning?",choicesUz:["Kod tez bo‘lsin","Kesilgan shoxda HECH QACHON javob bo‘lmasin","Rekursiya chuqur bo‘lsin","Massiv katta bo‘lsin"],choicesEn:["Code is fast","A pruned branch may NEVER hold a solution","Recursion is deep","Array is large"],correct:1}
 }),
 "backtracking-6":c({
  goalUz:"Meet in the middle: masalani ikki yarmiga bo‘lib, javobni markazda uchrashish orqali topish.",
@@ -914,7 +914,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Split (n/2 + n/2) → generate each half → meet at the center. 2⁴⁰ ≈ 10⁶ · 40. The classic subset-sum savior.",
  nextUz:"Backtracking o‘zlashtirildi! Keyingi bob: matematika va sonlar nazariyasi.",
  nextEn:"Backtracking mastered! Next chapter: math and number theory.",
- quiz:{questionUz:"Meet in the middle murakkabligi?",questionEn:"Meet-in-the-middle complexity?",choicesUz:["O(2ⁿ)","O(2^(n/2) · n)","O(n²)","O(n log n)"],choicesEn:["O(2ⁿ)","O(2^(n/2) · n)","O(n²)","O(n log n)"]}
+ quiz:{questionUz:"Meet in the middle murakkabligi?",questionEn:"Meet-in-the-middle complexity?",choicesUz:["O(2ⁿ)","O(2^(n/2) · n)","O(n²)","O(n log n)"],choicesEn:["O(2ⁿ)","O(2^(n/2) · n)","O(n²)","O(n log n)"],correct:1}
 }),
 
 /* ================= MATH ================= */
@@ -937,7 +937,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"+m for subtraction, 1LL for multiplication, % every step. Division — via modular inverse.",
  nextUz:"EKUB va EKUK — sonlar nazariyasining eng ko'p ishlatiladigan algoritmi.",
  nextEn:"GCD and LCM — the most-used algorithm of number theory.",
- quiz:{questionUz:"(a - b) % m ni to'g'ri yozish qaysi?",questionEn:"Correct way to write (a - b) % m?",choicesUz:["(a - b) % m","(a % m - b % m) % m","(a - b + m) % m","abs(a - b) % m"],choicesEn:["(a - b) % m","(a % m - b % m) % m","(a - b + m) % m","abs(a - b) % m"]}
+ quiz:{questionUz:"(a - b) % m ni to'g'ri yozish qaysi?",questionEn:"Correct way to write (a - b) % m?",choicesUz:["(a - b) % m","(a % m - b % m) % m","(a - b + m) % m","abs(a - b) % m"],choicesEn:["(a - b) % m","(a % m - b % m) % m","(a - b + m) % m","abs(a - b) % m"],correct:2}
 }),
 "math-2":c({
  goalUz:"Evklid algoritmi bilan EKUB (gcd), EKUK (lcm) va ularning o'zaro bog'lanishi.",
@@ -958,7 +958,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"gcd(a,b)=gcd(b,a mod b). lcm = a/gcd·b (divide first!). gcd·lcm = a·b. O(log min) steps.",
  nextUz:"Tub sonlar: sinov, eratosfen g'alviri va faktorlash.",
  nextEn:"Prime numbers: testing, the sieve of Eratosthenes, and factorization.",
- quiz:{questionUz:"lcm(a, b) ni overflow'siz yozish?",questionEn:"Overflow-safe way to write lcm(a, b)?",choicesUz:["a * b / gcd(a,b)","a / gcd(a,b) * b","gcd(a,b) * a * b","(a+b)/gcd"],choicesEn:["a * b / gcd(a,b)","a / gcd(a,b) * b","gcd(a,b) * a * b","(a+b)/gcd"]}
+ quiz:{questionUz:"lcm(a, b) ni overflow'siz yozish?",questionEn:"Overflow-safe way to write lcm(a, b)?",choicesUz:["a * b / gcd(a,b)","a / gcd(a,b) * b","gcd(a,b) * a * b","(a+b)/gcd"],choicesEn:["a * b / gcd(a,b)","a / gcd(a,b) * b","gcd(a,b) * a * b","(a+b)/gcd"],correct:1}
 }),
 "math-3":c({
  goalUz:"Tub sonlarni tekshirish O(√n), Eratosfen g'alviri O(n log log n) va tub faktorlash.",
@@ -979,7 +979,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Test O(√n); sieve O(n log log n); spf factorization O(log n). 1 is not prime; start at p*p.",
  nextUz:"Tez daraja: a^b mod m ni O(log b) da hisoblash.",
  nextEn:"Fast exponentiation: computing a^b mod m in O(log b).",
- quiz:{questionUz:"n = 10⁹ tubligini tekshirish nechta bo'lish talab qiladi?",questionEn:"How many divisions does testing n = 10⁹ for primality take?",choicesUz:["10⁹","≈3·10⁴ (√n)","10⁶","log n"],choicesEn:["10⁹","≈3·10⁴ (√n)","10⁶","log n"]}
+ quiz:{questionUz:"n = 10⁹ tubligini tekshirish nechta bo'lish talab qiladi?",questionEn:"How many divisions does testing n = 10⁹ for primality take?",choicesUz:["10⁹","≈3·10⁴ (√n)","10⁶","log n"],choicesEn:["10⁹","≈3·10⁴ (√n)","10⁶","log n"],correct:1}
 }),
 "math-4":c({
  goalUz:"Ikkilik daraja (binary exponentiation): a^b mod m ni O(log b) da; katta b uchun yagona yo'l.",
@@ -1000,7 +1000,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Squaring + multiplying by b's bits = O(log b). Fermat: a^(p-1) ≡ 1 — the basis of inverse and exponent reduction.",
  nextUz:"Kombinatorika: C(n,k), faktoriallar va moduli hisoblashlar.",
  nextEn:"Combinatorics: C(n,k), factorials, and counting in mod.",
- quiz:{questionUz:"binpow(a, b, m) murakkabligi?",questionEn:"binpow(a, b, m) complexity?",choicesUz:["O(b)","O(√b)","O(log b)","O(m)"],choicesEn:["O(b)","O(√b)","O(log b)","O(m)"]}
+ quiz:{questionUz:"binpow(a, b, m) murakkabligi?",questionEn:"binpow(a, b, m) complexity?",choicesUz:["O(b)","O(√b)","O(log b)","O(m)"],choicesEn:["O(b)","O(√b)","O(log b)","O(m)"],correct:2}
 }),
 "math-5":c({
  goalUz:"Kombinatorika asoslari: faktorial, C(n,k), permutatsiyalar va moduli hisoblash texnikasi.",
@@ -1021,7 +1021,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"fact up front, inv_fact via the reverse chain; C(n,k) in O(1). Division = multiplication by the inverse.",
  nextUz:"Modular inverse chuqurroq: Ferma, Evklid kengaytmasi va bo'lish moduli.",
  nextEn:"Deeper modular inverse: Fermat, extended Euclid, and division in mod.",
- quiz:{questionUz:"C(n,k) mod m (m tub) ni to'g'ri hisoblash?",questionEn:"Correct computation of C(n,k) mod m (m prime)?",choicesUz:["fact[n]/fact[k]/fact[n-k]","fact[n]·inv_fact[k]·inv_fact[n-k] % m","fact[n]-fact[k]","n*k % m"],choicesEn:["fact[n]/fact[k]/fact[n-k]","fact[n]·inv_fact[k]·inv_fact[n-k] % m","fact[n]-fact[k]","n*k % m"]}
+ quiz:{questionUz:"C(n,k) mod m (m tub) ni to'g'ri hisoblash?",questionEn:"Correct computation of C(n,k) mod m (m prime)?",choicesUz:["fact[n]/fact[k]/fact[n-k]","fact[n]·inv_fact[k]·inv_fact[n-k] % m","fact[n]-fact[k]","n*k % m"],choicesEn:["fact[n]/fact[k]/fact[n-k]","fact[n]·inv_fact[k]·inv_fact[n-k] % m","fact[n]-fact[k]","n*k % m"],correct:1}
 }),
 "math-6":c({
  goalUz:"Modular teskari (inverse): Ferma usuli, kengaytirilgan Evklid va bo'lishni modda yozish.",
@@ -1042,7 +1042,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"a·a⁻¹≡1. m prime → a^(m-2); arbitrary → Euclid; a 1..n table → O(n) recurrence. Division = multiply by inv.",
  nextUz:"Matematika tugadi! Keyingi katta qism: ma'lumot tuzilmalari — stack dan segment tree gacha.",
  nextEn:"Math complete! Next major part: data structures — from stack to segment tree.",
- quiz:{questionUz:"a⁻¹ mod m qachon mavjud?",questionEn:"When does a⁻¹ mod m exist?",choicesUz:["Har doim","gcd(a,m)=1 bo'lganda","m toq bo'lganda","a < m bo'lganda"],choicesEn:["Always","When gcd(a,m)=1","When m is odd","When a < m"]}
+ quiz:{questionUz:"a⁻¹ mod m qachon mavjud?",questionEn:"When does a⁻¹ mod m exist?",choicesUz:["Har doim","gcd(a,m)=1 bo'lganda","m toq bo'lganda","a < m bo'lganda"],choicesEn:["Always","When gcd(a,m)=1","When m is odd","When a < m"],correct:1}
 }),
 
 /* ================= DATA STRUCTURES ================= */
@@ -1065,7 +1065,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Stack LIFO, queue FIFO, deque both. The empty() check is mandatory. Brackets — stack, BFS — queue.",
  nextUz:"Set va map: kalit-qiymat dunyosi — O(log n) da hammasi.",
  nextEn:"Set and map: the key-value world — everything in O(log n).",
- quiz:{questionUz:"BFS qaysi tuzilmaga tayanadi?",questionEn:"Which structure does BFS rely on?",choicesUz:["Stack","Queue","Priority queue","Set"],choicesEn:["Stack","Queue","Priority queue","Set"]}
+ quiz:{questionUz:"BFS qaysi tuzilmaga tayanadi?",questionEn:"Which structure does BFS rely on?",choicesUz:["Stack","Queue","Priority queue","Set"],choicesEn:["Stack","Queue","Priority queue","Set"],correct:1}
 }),
 "data-structures-2":c({
  goalUz:"set, map, unordered_map: kalit bo'yicha qidiruv, sanash va tartiblangan saqlash.",
@@ -1086,7 +1086,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"map/set ordered O(log n); unordered O(1) unordered. m[key] creates; multiset.erase(value) removes all.",
  nextUz:"Heap va priority_queue: har doim eng katta/kichik elementga tez kirish.",
  nextEn:"Heap and priority_queue: fast access to the always-largest/smallest element.",
- quiz:{questionUz:"«Eng kichik ≥ x» ni topish uchun qaysi tuzilma eng qulay?",questionEn:"Which structure is most convenient for “smallest ≥ x”?",choicesUz:["vector","unordered_map","set (lower_bound)","stack"],choicesEn:["vector","unordered_map","set (lower_bound)","stack"]}
+ quiz:{questionUz:"«Eng kichik ≥ x» ni topish uchun qaysi tuzilma eng qulay?",questionEn:"Which structure is most convenient for “smallest ≥ x”?",choicesUz:["vector","unordered_map","set (lower_bound)","stack"],choicesEn:["vector","unordered_map","set (lower_bound)","stack"],correct:2}
 }),
 "data-structures-3":c({
  goalUz:"Heap va priority_queue: maksimal/minimal elementni O(log n) da chiqarib olish.",
@@ -1107,7 +1107,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"priority_queue: push/pop O(log n), top O(1). Default max-heap; use greater for min. Mid-removal — lazy deletion.",
  nextUz:"DSU (Disjoint Set Union): komponentlarni birlashuvchi sehrli tuzilma.",
  nextEn:"DSU (Disjoint Set Union): the magical structure that unites components.",
- quiz:{questionUz:"C++ da min-heap e'loni?",questionEn:"Declaration of a min-heap in C++?",choicesUz:["priority_queue<int> pq","priority_queue<int, vector<int>, greater<int>> pq","set<int> pq","queue<int> pq"],choicesEn:["priority_queue<int> pq","priority_queue<int, vector<int>, greater<int>> pq","set<int> pq","queue<int> pq"]}
+ quiz:{questionUz:"C++ da min-heap e'loni?",questionEn:"Declaration of a min-heap in C++?",choicesUz:["priority_queue<int> pq","priority_queue<int, vector<int>, greater<int>> pq","set<int> pq","queue<int> pq"],choicesEn:["priority_queue<int> pq","priority_queue<int, vector<int>, greater<int>> pq","set<int> pq","queue<int> pq"],correct:1}
 }),
 "data-structures-4":c({
  goalUz:"DSU: find/union, yo'l siqish va o'lcham bo'yicha birlashtirish — deyarli O(1) da.",
@@ -1128,7 +1128,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"find — with path compression; unite — small into large. O(α(n)) ≈ O(1). The heart of Kruskal and connectivity queries.",
  nextUz:"Fenwick tree: prefiks yig'indilari va nuqtaviy yangilanishlar O(log n) da.",
  nextEn:"Fenwick tree: prefix sums and point updates in O(log n).",
- quiz:{questionUz:"DSU da unite(a,b) ning to'g'ri yozilishi?",questionEn:"Correct way to write unite(a,b) in DSU?",choicesUz:["parent[a]=b","find vakillarini topib, kichikni kattaga ulash","parent[find(a)] = b","a ni b ga ulash"],choicesEn:["parent[a]=b","Find roots, attach smaller to larger","parent[find(a)] = b","Link a to b"]}
+ quiz:{questionUz:"DSU da unite(a,b) ning to'g'ri yozilishi?",questionEn:"Correct way to write unite(a,b) in DSU?",choicesUz:["parent[a]=b","find vakillarini topib, kichikni kattaga ulash","parent[find(a)] = b","a ni b ga ulash"],choicesEn:["parent[a]=b","Find roots, attach smaller to larger","parent[find(a)] = b","Link a to b"],correct:1}
 }),
 "data-structures-5":c({
  goalUz:"Fenwick (BIT): sum(i) va add(i, x) O(log n) da; segment tree ga qisqa alternativ.",
@@ -1149,7 +1149,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"add and sum — i += i&-i / i -= i&-i. 1-indexed, O(log n), five lines. Only for invertible ops.",
  nextUz:"Segment tree — tuzilmalar qiroli: har qanday oraliq so'rovi O(log n) da.",
  nextEn:"Segment tree — the king of structures: any range query in O(log n).",
- quiz:{questionUz:"Fenwick da sum(i) sikli qanday yoziladi?",questionEn:"How is the sum(i) loop written in Fenwick?",choicesUz:["i += i & -i","i -= i & -i","i >>= 1","i *= 2"],choicesEn:["i += i & -i","i -= i & -i","i >>= 1","i *= 2"]}
+ quiz:{questionUz:"Fenwick da sum(i) sikli qanday yoziladi?",questionEn:"How is the sum(i) loop written in Fenwick?",choicesUz:["i += i & -i","i -= i & -i","i >>= 1","i *= 2"],choicesEn:["i += i & -i","i -= i & -i","i >>= 1","i *= 2"],correct:1}
 }),
 "data-structures-6":c({
  goalUz:"Segment tree: qurish, oraliq so'rovi, nuqtaviy yangilash va lazy propagation g'oyasi.",
@@ -1170,7 +1170,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Tree: each node — a segment answer; query/update O(log n); 4n memory; lazy — for range updates.",
  nextUz:"Tuzilmalar tugadi! Keyingi ulkan bob: graf algoritmlari.",
  nextEn:"Structures complete! Next huge chapter: graph algorithms.",
- quiz:{questionUz:"Segment tree uchun nechta tugun ajratish tavsiya etiladi?",questionEn:"How many nodes are recommended for a segment tree?",choicesUz:["n","2n","4n","n log n"],choicesEn:["n","2n","4n","n log n"]}
+ quiz:{questionUz:"Segment tree uchun nechta tugun ajratish tavsiya etiladi?",questionEn:"How many nodes are recommended for a segment tree?",choicesUz:["n","2n","4n","n log n"],choicesEn:["n","2n","4n","n log n"],correct:2}
 }),
 
 /* ================= GRAPHS ================= */
@@ -1193,7 +1193,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Adjacency list — the standard: O(n+m). Matrix — only for small n. Undirected — add both directions.",
  nextUz:"BFS — to'lqin kabi yoyilish: vazinsiz grafda eng qisqa yo'l.",
  nextEn:"BFS — spreading like a wave: shortest path in an unweighted graph.",
- quiz:{questionUz:"n = 10⁵, m = 2·10⁵ graf uchun eng yaxshi saqlash?",questionEn:"Best storage for a graph with n = 10⁵, m = 2·10⁵?",choicesUz:["Matritsa","Qo'shnilik ro'yxati","Qirralar ro'yxati","Faqat global massiv"],choicesEn:["Matrix","Adjacency list","Edge list","Just a global array"]}
+ quiz:{questionUz:"n = 10⁵, m = 2·10⁵ graf uchun eng yaxshi saqlash?",questionEn:"Best storage for a graph with n = 10⁵, m = 2·10⁵?",choicesUz:["Matritsa","Qo'shnilik ro'yxati","Qirralar ro'yxati","Faqat global massiv"],choicesEn:["Matrix","Adjacency list","Edge list","Just a global array"],correct:1}
 }),
 "graphs-2":c({
  goalUz:"BFS: navbat bilan qatlam-qatlam yurish; vazinsiz eng qisqa yo'l va masofa hisoblash.",
@@ -1214,7 +1214,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"BFS = queue + dist. O(n+m). First arrival — shortest. Weighted graph — switch to Dijkstra.",
  nextUz:"DFS — chuqurlikka sho'ng'iydigan kezish: rekursiya va uning superqobiliyatlari.",
  nextEn:"DFS — the deep-diving traversal: recursion and its superpowers.",
- quiz:{questionUz:"BFS da dist[to] qachon belgilanadi?",questionEn:"When is dist[to] set in BFS?",choicesUz:["q.pop paytida","q.push paytida","sikl oxirida","farqi yo'q"],choicesEn:["At q.pop","At q.push","At loop end","Irrelevant"]}
+ quiz:{questionUz:"BFS da dist[to] qachon belgilanadi?",questionEn:"When is dist[to] set in BFS?",choicesUz:["q.pop paytida","q.push paytida","sikl oxirida","farqi yo'q"],choicesEn:["At q.pop","At q.push","At loop end","Irrelevant"],correct:1}
 }),
 "graphs-3":c({
  goalUz:"DFS: rekursiv chuqur yurish; aylanalar, komponentlar va topologik tartibga kirish.",
@@ -1235,7 +1235,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"DFS = recursion + vis. Components and cycles in O(n+m). Mind the depth; directed cycles — 3 colors.",
  nextUz:"Topologik tartib: bog'liqlikli vazifalarni to'g'ri ketma-ketlikka joylash.",
  nextEn:"Topological sort: ordering dependent tasks correctly.",
- quiz:{questionUz:"Yo'naltirilmagan grafda DFS bilan aylana qanday aniqlanadi?",questionEn:"How is a cycle detected with DFS in an undirected graph?",choicesUz:["vis[to] && to != parent","dist[to] > dist[v]","to < v","hech qanday"],choicesEn:["vis[to] && to != parent","dist[to] > dist[v]","to < v","no way"]}
+ quiz:{questionUz:"Yo'naltirilmagan grafda DFS bilan aylana qanday aniqlanadi?",questionEn:"How is a cycle detected with DFS in an undirected graph?",choicesUz:["vis[to] && to != parent","dist[to] > dist[v]","to < v","hech qanday"],choicesEn:["vis[to] && to != parent","dist[to] > dist[v]","to < v","no way"],correct:0}
 }),
 "graphs-4":c({
  goalUz:"Topologik tartib: DAG dagi tugunlarni bog'liqlikni buzmagan ketma-ketlikka joylash.",
@@ -1256,7 +1256,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Kahn: indegree 0 → queue → decrement. DFS: by finish time. If not all placed — a cycle.",
  nextUz:"Dijkstra: vazinli graflarda eng qisqa yo'llar.",
  nextEn:"Dijkstra: shortest paths in weighted graphs.",
- quiz:{questionUz:"Kahn algoritmida aylana qanday aniqlanadi?",questionEn:"How is a cycle detected in Kahn's algorithm?",choicesUz:["dist oshsa","Natija uzunligi < n","indegree < 0","Navbat bo'sh bo'lsa"],choicesEn:["dist grows","Result length < n","indegree < 0","Queue is empty"]}
+ quiz:{questionUz:"Kahn algoritmida aylana qanday aniqlanadi?",questionEn:"How is a cycle detected in Kahn's algorithm?",choicesUz:["dist oshsa","Natija uzunligi < n","indegree < 0","Navbat bo'sh bo'lsa"],choicesEn:["dist grows","Result length < n","indegree < 0","Queue is empty"],correct:1}
 }),
 "graphs-5":c({
  goalUz:"Dijkstra: musbat vazinli grafda manbadan barcha tugungacha eng qisqa masofalar.",
@@ -1277,7 +1277,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Min-heap + relax + stale check. O((n+m) log n). Non-negative weights required; negatives — Bellman-Ford.",
  nextUz:"MST: minimal skeletal daraxt — barchani eng arzon bog'lash.",
  nextEn:"MST: the minimum spanning tree — connecting everyone at the lowest cost.",
- quiz:{questionUz:"Dijkstra qaysi shartda to'g'ri ishlaydi?",questionEn:"Under which condition does Dijkstra work correctly?",choicesUz:["Har qanday grafda","Vazinlar musbat bo'lganda","Aylanasiz grafda","Zich grafda"],choicesEn:["Any graph","When weights are non-negative","In acyclic graphs","In dense graphs"]}
+ quiz:{questionUz:"Dijkstra qaysi shartda to'g'ri ishlaydi?",questionEn:"Under which condition does Dijkstra work correctly?",choicesUz:["Har qanday grafda","Vazinlar musbat bo'lganda","Aylanasiz grafda","Zich grafda"],choicesEn:["Any graph","When weights are non-negative","In acyclic graphs","In dense graphs"],correct:1}
 }),
 "graphs-6":c({
  goalUz:"Minimal spanning tree: Kruskal (DSU bilan) va Prim — eng arzon bog'lanish.",
@@ -1298,7 +1298,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Kruskal: sort + DSU; n-1 edges; O(m log m). Prim: grow with a heap. Both give the same answer.",
  nextUz:"Graflar tugadi! Keyingi bob: satr algoritmlari — hashing, KMP, Z, Trie.",
  nextEn:"Graphs complete! Next chapter: string algorithms — hashing, KMP, Z, Trie.",
- quiz:{questionUz:"Kruskal da aylana qanday aniqlanadi?",questionEn:"How is a cycle detected in Kruskal?",choicesUz:["find(u) == find(v)","BFS bilan","dist orqali","indegree bilan"],choicesEn:["find(u) == find(v)","Via BFS","Via dist","Via indegree"]}
+ quiz:{questionUz:"Kruskal da aylana qanday aniqlanadi?",questionEn:"How is a cycle detected in Kruskal?",choicesUz:["find(u) == find(v)","BFS bilan","dist orqali","indegree bilan"],choicesEn:["find(u) == find(v)","Via BFS","Via dist","Via indegree"],correct:0}
 }),
 
 /* ================= STRINGS ================= */
@@ -1321,7 +1321,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"string = a char vector. substr copies; += is fast; frequencies via a 26-array; palindrome — two pointers.",
  nextUz:"Hashing: satrlarni sonlarga aylantirib, O(1) da solishtirish.",
  nextEn:"Hashing: turning strings into numbers for O(1) comparisons.",
- quiz:{questionUz:"Ikki satr anagramma ekanini tekshirishning eng oddiy usuli?",questionEn:"The simplest way to check two strings are anagrams?",choicesUz:["Saralab solishtirish yoki 26 lik chastota massivi","BFS","Hash map da saqlash","Rekursiya"],choicesEn:["Sort and compare or a 26-frequency array","BFS","Store in a hash map","Recursion"]}
+ quiz:{questionUz:"Ikki satr anagramma ekanini tekshirishning eng oddiy usuli?",questionEn:"The simplest way to check two strings are anagrams?",choicesUz:["Saralab solishtirish yoki 26 lik chastota massivi","BFS","Hash map da saqlash","Rekursiya"],choicesEn:["Sort and compare or a 26-frequency array","BFS","Store in a hash map","Recursion"],correct:0}
 }),
 "strings-2":c({
  goalUz:"Polinom xesh: substring xeshini O(1) da olish va satr solishtirish.",
@@ -1342,7 +1342,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"pref[i+1] = pref[i]·b + s[i]; substring hash in O(1). Two moduli — safety. Pattern search in O(n).",
  nextUz:"Prefix funksiya — KMP ning yuragi: o'z-o'ziga o'xshash chekkalar.",
  nextEn:"The prefix function — the heart of KMP: self-similar borders.",
- quiz:{questionUz:"Substring [l, r) xeshini olish formulasi?",questionEn:"Formula for the substring hash on [l, r)?",choicesUz:["pref[r] - pref[l]","pref[r] - pref[l]·pw[r-l] (mod m)","pref[l]·pw[r]","pref[r]·pw[l]"],choicesEn:["pref[r] - pref[l]","pref[r] - pref[l]·pw[r-l] (mod m)","pref[l]·pw[r]","pref[r]·pw[l]"]}
+ quiz:{questionUz:"Substring [l, r) xeshini olish formulasi?",questionEn:"Formula for the substring hash on [l, r)?",choicesUz:["pref[r] - pref[l]","pref[r] - pref[l]·pw[r-l] (mod m)","pref[l]·pw[r]","pref[r]·pw[l]"],choicesEn:["pref[r] - pref[l]","pref[r] - pref[l]·pw[r-l] (mod m)","pref[l]·pw[r]","pref[r]·pw[l]"],correct:1}
 }),
 "strings-3":c({
  goalUz:"Prefix funksiya π(i): satrning o'z chekkalari (border) haqidagi ma'lumot.",
@@ -1363,7 +1363,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"π[i] — longest proper border; computed in O(n); period = n - π[n-1]; the chain enumerates all borders.",
  nextUz:"KMP: prefix funksiya yordamida naqshni O(n + m) da qidirish.",
  nextEn:"KMP: searching a pattern in O(n + m) using the prefix function.",
- quiz:{questionUz:"π hisoblashda mos kelmaganda k qanday yangilanadi?",questionEn:"On mismatch, how is k updated when computing π?",choicesUz:["k--","k = π[k-1]","k = 0","k = i/2"],choicesEn:["k--","k = π[k-1]","k = 0","k = i/2"]}
+ quiz:{questionUz:"π hisoblashda mos kelmaganda k qanday yangilanadi?",questionEn:"On mismatch, how is k updated when computing π?",choicesUz:["k--","k = π[k-1]","k = 0","k = i/2"],choicesEn:["k--","k = π[k-1]","k = 0","k = i/2"],correct:1}
 }),
 "strings-4":c({
  goalUz:"KMP algoritmi: naqshni matnda bir yo'la, orqaga qaytmasdan qidirish.",
@@ -1384,7 +1384,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"KMP = prefix function + no backtracking. O(n + m). The '#' separator and j > 0 check matter.",
  nextUz:"Z algoritmi — KMP ga egizak, ba'zida qulayroq vosita.",
  nextEn:"The Z algorithm — KMP's sibling, sometimes the more convenient tool.",
- quiz:{questionUz:"KMP murakkabligi?",questionEn:"KMP complexity?",choicesUz:["O(n·m)","O(n + m)","O(n log n)","O(m²)"],choicesEn:["O(n·m)","O(n + m)","O(n log n)","O(m²)"]}
+ quiz:{questionUz:"KMP murakkabligi?",questionEn:"KMP complexity?",choicesUz:["O(n·m)","O(n + m)","O(n log n)","O(m²)"],choicesEn:["O(n·m)","O(n + m)","O(n log n)","O(m²)"],correct:1}
 }),
 "strings-5":c({
  goalUz:"Z funksiyasi: har pozitsiyada prefiks bilan moslik uzunligi va qo'llanishlari.",
@@ -1405,7 +1405,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"z[i] = match length with the prefix; O(n); search via t#s; also for periods and compression.",
  nextUz:"Trie: ko'p satrlarni daraxt shaklida saqlash va tez qidirish.",
  nextEn:"Trie: storing many strings as a tree for fast lookup.",
- quiz:{questionUz:"Z algoritmi nega O(n)?",questionEn:"Why is the Z algorithm O(n)?",choicesUz:["Har belgi bir marta","r chegarasi faqat o'sadi","Saralash tez","Modul ishlatadi"],choicesEn:["Each char once","The r bound only grows","Sorting is fast","It uses a modulus"]}
+ quiz:{questionUz:"Z algoritmi nega O(n)?",questionEn:"Why is the Z algorithm O(n)?",choicesUz:["Har belgi bir marta","r chegarasi faqat o'sadi","Saralash tez","Modul ishlatadi"],choicesEn:["Each char once","The r bound only grows","Sorting is fast","It uses a modulus"],correct:1}
 }),
 "strings-6":c({
  goalUz:"Trie (prefiks daraxti): lug'at, avtoto'ldirish va XOR masalalari uchun.",
@@ -1426,7 +1426,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Trie = a prefix tree; insert/search O(L). Bit-trie — for XOR problems. The end flag and -1 initialization matter.",
  nextUz:"Satrlar tugadi! Keyingi: hisoblash geometriyasi — nuqtalar, vektorlar, qobiqlar.",
  nextEn:"Strings complete! Next: computational geometry — points, vectors, hulls.",
- quiz:{questionUz:"Trie da so'z qidirish murakkabligi?",questionEn:"Complexity of searching a word in a trie?",choicesUz:["O(lug'at hajmi)","O(so'z uzunligi)","O(n log n)","O(1)"],choicesEn:["O(dictionary size)","O(word length)","O(n log n)","O(1)"]}
+ quiz:{questionUz:"Trie da so'z qidirish murakkabligi?",questionEn:"Complexity of searching a word in a trie?",choicesUz:["O(lug'at hajmi)","O(so'z uzunligi)","O(n log n)","O(1)"],choicesEn:["O(dictionary size)","O(word length)","O(n log n)","O(1)"],correct:1}
 }),
 
 /* ================= GEOMETRY ================= */
@@ -1449,7 +1449,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Vector = difference; dot — perpendicularity; cross — orientation and area; dist2 — distance. Stay integral for precision.",
  nextUz:"Skalyar ko'paytma chuqurroq: burchaklar va proyeksiyalar.",
  nextEn:"Deeper dot product: angles and projections.",
- quiz:{questionUz:"Uch nuqta bir to'g'rida yotishini tekshirish?",questionEn:"Checking three points are collinear?",choicesUz:["dot == 0","cross == 0","dist == 0","sum == 0"],choicesEn:["dot == 0","cross == 0","dist == 0","sum == 0"]}
+ quiz:{questionUz:"Uch nuqta bir to'g'rida yotishini tekshirish?",questionEn:"Checking three points are collinear?",choicesUz:["dot == 0","cross == 0","dist == 0","sum == 0"],choicesEn:["dot == 0","cross == 0","dist == 0","sum == 0"],correct:1}
 }),
 "geometry-2":c({
  goalUz:"Skalyar ko'paytma (dot): burchak, proyeksiya va perpendikulyarlik tekshiruvlari.",
@@ -1470,7 +1470,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"dot > 0 acute, = 0 right, < 0 obtuse. Projection: dot(a,b)/dot(b,b). Segment test — two dot signs.",
  nextUz:"Vektor ko'paytma (cross): yo'nalish, soat strelkasi va yuza.",
  nextEn:"The cross product: orientation, clockwise order, and area.",
- quiz:{questionUz:"B burchagi o'tmash ekanini qanday tekshirasiz?",questionEn:"How do you check that angle B is obtuse?",choicesUz:["dot(a-b, c-b) < 0","cross(a-b, c-b) < 0","|a| > |c|","dot(a,c) > 0"],choicesEn:["dot(a-b, c-b) < 0","cross(a-b, c-b) < 0","|a| > |c|","dot(a,c) > 0"]}
+ quiz:{questionUz:"B burchagi o'tmash ekanini qanday tekshirasiz?",questionEn:"How do you check that angle B is obtuse?",choicesUz:["dot(a-b, c-b) < 0","cross(a-b, c-b) < 0","|a| > |c|","dot(a,c) > 0"],choicesEn:["dot(a-b, c-b) < 0","cross(a-b, c-b) < 0","|a| > |c|","dot(a,c) > 0"],correct:0}
 }),
 "geometry-3":c({
  goalUz:"Vektor ko'paytma (cross): burilish yo'nalishi, orientatsiya va ko'pburchak yuzasi.",
@@ -1491,7 +1491,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"orient(a,b,c) = cross(b−a, c−a): + CCW, − CW, 0 collinear. Shoelace: 2S = |Σ cross|. Convexity — uniform sign.",
  nextUz:"Kesishuvchi kesmalar — geometriyaning eng ko'p so'raladigan savoli.",
  nextEn:"Segment intersection — geometry's most-asked question.",
- quiz:{questionUz:"orient(a, b, c) > 0 nima degani?",questionEn:"What does orient(a, b, c) > 0 mean?",choicesUz:["Soat bo'yicha","Soatga qarshi burilish","Bir chiziqda","To'g'ri burchak"],choicesEn:["Clockwise","Counterclockwise turn","Collinear","Right angle"]}
+ quiz:{questionUz:"orient(a, b, c) > 0 nima degani?",questionEn:"What does orient(a, b, c) > 0 mean?",choicesUz:["Soat bo'yicha","Soatga qarshi burilish","Bir chiziqda","To'g'ri burchak"],choicesEn:["Clockwise","Counterclockwise turn","Collinear","Right angle"],correct:1}
 }),
 "geometry-4":c({
  goalUz:"Kesma kesishmalari: orientatsiya testlari va maxsus holatlar bilan to'liq tekshiruv.",
@@ -1512,7 +1512,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Intersection: opposite orients on both sides + collinear on_segment. t/u ∈ [0,1] — the parametric method.",
  nextUz:"Ko'pburchak yuzasi va nuqtaning ichkarida ekanligi.",
  nextEn:"Polygon area and point-in-polygon tests.",
- quiz:{questionUz:"Ikki kesma kesishishining umumiy sharti?",questionEn:"General condition for two segments to intersect?",choicesUz:["Barcha orient > 0","Qarama-qarshi orient ishoralari ikki tomonda","Uzunliklari teng","cross(s1, s2) > 0"],choicesEn:["All orients > 0","Opposite orient signs on both sides","Equal lengths","cross(s1, s2) > 0"]}
+ quiz:{questionUz:"Ikki kesma kesishishining umumiy sharti?",questionEn:"General condition for two segments to intersect?",choicesUz:["Barcha orient > 0","Qarama-qarshi orient ishoralari ikki tomonda","Uzunliklari teng","cross(s1, s2) > 0"],choicesEn:["All orients > 0","Opposite orient signs on both sides","Equal lengths","cross(s1, s2) > 0"],correct:1}
 }),
 "geometry-5":c({
  goalUz:"Ko'pburchak yuzasi aniq va nuqta-ichkarida (point-in-polygon) tekshiruvi.",
@@ -1533,7 +1533,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Shoelace 2S — a one-line formula. Inside — odd crossings. Boundary — on_segment. Convex — faster variants exist.",
  nextUz:"Qavariq qobiq (convex hull) — geometriyaning kulenbaholisi.",
  nextEn:"The convex hull — geometry's crown jewel.",
- quiz:{questionUz:"Nuqta ko'pburchak ichkarida ekanini ray casting qanday aniqlaydi?",questionEn:"How does ray casting decide a point is inside a polygon?",choicesUz:["Kesishmalar toq bo'lsa","Kesishmalar juft bo'lsa","Yuza musbat bo'lsa","Nuqta eng chapda bo'lsa"],choicesEn:["Odd crossings","Even crossings","Positive area","Point is leftmost"]}
+ quiz:{questionUz:"Nuqta ko'pburchak ichkarida ekanini ray casting qanday aniqlaydi?",questionEn:"How does ray casting decide a point is inside a polygon?",choicesUz:["Kesishmalar toq bo'lsa","Kesishmalar juft bo'lsa","Yuza musbat bo'lsa","Nuqta eng chapda bo'lsa"],choicesEn:["Odd crossings","Even crossings","Positive area","Point is leftmost"],correct:0}
 }),
 "geometry-6":c({
  goalUz:"Qavariq qobiq: Andrew monotone chain O(n log n) va qo'llanishlari.",
@@ -1554,7 +1554,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Sort → lower + upper → join. O(n log n). cross ≤ 0 cuts CW turns. Inner points no longer matter.",
  nextUz:"Geometriya tugadi! Katta finalga tayyorlaning: dinamik dasturlash.",
  nextEn:"Geometry complete! Prepare for the grand finale: dynamic programming.",
- quiz:{questionUz:"Andrew monotone chain murakkabligi?",questionEn:"Andrew monotone chain complexity?",choicesUz:["O(n)","O(n log n)","O(n²)","O(log n)"],choicesEn:["O(n)","O(n log n)","O(n²)","O(log n)"]}
+ quiz:{questionUz:"Andrew monotone chain murakkabligi?",questionEn:"Andrew monotone chain complexity?",choicesUz:["O(n)","O(n log n)","O(n²)","O(log n)"],choicesEn:["O(n)","O(n log n)","O(n²)","O(log n)"],correct:1}
 }),
 
 /* ================= DYNAMIC PROGRAMMING ================= */
@@ -1577,7 +1577,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"DP = recursion + cache (memo) or a table (tabulation). Requires optimal substructure + overlap. State choice is everything.",
  nextUz:"Tabulation chuqurroq: jadval to'ldirish tartibi va xotira tejash.",
  nextEn:"Deeper tabulation: fill order and memory saving.",
- quiz:{questionUz:"DP ishlashining ikki sharti?",questionEn:"The two requirements for DP to work?",choicesUz:["Saralash + greedy","Optimal substructure + overlapping subproblems","Rekursiya + stek","Map + set"],choicesEn:["Sorting + greedy","Optimal substructure + overlapping subproblems","Recursion + stack","Map + set"]}
+ quiz:{questionUz:"DP ishlashining ikki sharti?",questionEn:"The two requirements for DP to work?",choicesUz:["Saralash + greedy","Optimal substructure + overlapping subproblems","Rekursiya + stek","Map + set"],choicesEn:["Sorting + greedy","Optimal substructure + overlapping subproblems","Recursion + stack","Map + set"],correct:1}
 }),
 "dynamic-programming-2":c({
  goalUz:"Tabulation: pastdan yuqoriga jadval to'ldirish, tartib va rolling-array texnikasi.",
@@ -1598,7 +1598,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Tabulation = base + correct order + transition. 0/1 — j descending; unbounded — ascending. Rolling arrays cut memory 10×.",
  nextUz:"Knapsack — DP ning eng mashhur oilasi.",
  nextEn:"Knapsack — the most famous DP family.",
- quiz:{questionUz:"0/1 knapsack da j nima uchun KAMAYISH tartibida yuradi?",questionEn:"Why does j iterate DESCENDING in 0/1 knapsack?",choicesUz:["Tezroq","Bir buyum ikki marta olinmasligi uchun","Xotira tejaladi","Tartib farqsiz"],choicesEn:["Faster","So an item is not taken twice","Saves memory","Order irrelevant"]}
+ quiz:{questionUz:"0/1 knapsack da j nima uchun KAMAYISH tartibida yuradi?",questionEn:"Why does j iterate DESCENDING in 0/1 knapsack?",choicesUz:["Tezroq","Bir buyum ikki marta olinmasligi uchun","Xotira tejaladi","Tartib farqsiz"],choicesEn:["Faster","So an item is not taken twice","Saves memory","Order irrelevant"],correct:1}
 }),
 "dynamic-programming-3":c({
  goalUz:"Knapsack oilasi: 0/1, cheksiz (unbounded) va qismiy yig'indi variantlari.",
@@ -1619,7 +1619,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"dp[j] = max(dp[j], dp[j-w] + v). 0/1 — descending, unbounded — ascending. Subset-sum — bool or bitset.",
  nextUz:"Grid DP: jadval ustidagi yo'llar va minimal narxlar.",
  nextEn:"Grid DP: paths and minimal costs on a grid.",
- quiz:{questionUz:"Cheksiz knapsack da j qanday yuradi?",questionEn:"How does j iterate in unbounded knapsack?",choicesUz:["Kamayish","O'sish","Tasodifiy","Farqi yo'q"],choicesEn:["Descending","Ascending","Random","Irrelevant"]}
+ quiz:{questionUz:"Cheksiz knapsack da j qanday yuradi?",questionEn:"How does j iterate in unbounded knapsack?",choicesUz:["Kamayish","O'sish","Tasodifiy","Farqi yo'q"],choicesEn:["Descending","Ascending","Random","Irrelevant"],correct:1}
 }),
 "dynamic-programming-4":c({
  goalUz:"Grid DP: (n×m) jadvalda yo'llar soni, minimal narx va to'siqlar bilan.",
@@ -1640,7 +1640,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"dp[i][j] = top + left (or min + cost). Base — first row/column. Obstacle = 0. 1D variant: dp[j] += dp[j-1].",
  nextUz:"LIS va ketma-ketlik DP — eng uzun o'suvchi qism-ketma-ketlik.",
  nextEn:"LIS and sequence DP — the longest increasing subsequence.",
- quiz:{questionUz:"Grid DP da (n,m) ga yo'llar soni (faqat o'ng/past)?",questionEn:"Number of paths to (n,m) in grid DP (right/down only)?",choicesUz:["n·m","C(n+m-2, n-1)","2^(n+m)","n+m"],choicesEn:["n·m","C(n+m-2, n-1)","2^(n+m)","n+m"]}
+ quiz:{questionUz:"Grid DP da (n,m) ga yo'llar soni (faqat o'ng/past)?",questionEn:"Number of paths to (n,m) in grid DP (right/down only)?",choicesUz:["n·m","C(n+m-2, n-1)","2^(n+m)","n+m"],choicesEn:["n·m","C(n+m-2, n-1)","2^(n+m)","n+m"],correct:1}
 }),
 "dynamic-programming-5":c({
  goalUz:"LIS: O(n²) klassik va O(n log n) patience-tartiblash usuli.",
@@ -1661,7 +1661,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"dp[i] = max(dp[j]+1), j<i, a[j]<a[i] — O(n²). tails + lower_bound — O(n log n). Mind strict vs ≤.",
  nextUz:"Bitmask DP: holatni bitlar bilan kodlash — kichik n uchun kuchli.",
  nextEn:"Bitmask DP: encoding state in bits — powerful for small n.",
- quiz:{questionUz:"LIS ni O(n log n) da topish usuli?",questionEn:"Method to find LIS in O(n log n)?",choicesUz:["Qarama-qarshi sikllar","tails + lower_bound","Saralash","BFS"],choicesEn:["Opposite loops","tails + lower_bound","Sorting","BFS"]}
+ quiz:{questionUz:"LIS ni O(n log n) da topish usuli?",questionEn:"Method to find LIS in O(n log n)?",choicesUz:["Qarama-qarshi sikllar","tails + lower_bound","Saralash","BFS"],choicesEn:["Opposite loops","tails + lower_bound","Sorting","BFS"],correct:1}
 }),
 "dynamic-programming-6":c({
  goalUz:"Bitmask DP: to'plam holatlarini bitlarda; tayinlash (assignment) va TSP uslubi.",
@@ -1682,7 +1682,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"mask = subset; bit tricks O(1); dp[2ⁿ] or dp[2ⁿ][n]; n ≤ 20. Assignment and TSP — the classics.",
  nextUz:"DP tugadi! Keyingi bob: daraxt algoritmlari — LCA, lifting, tree DP.",
  nextEn:"DP complete! Next chapter: tree algorithms — LCA, lifting, tree DP.",
- quiz:{questionUz:"Bitmask DP qaysi chegarada qo'llanadi?",questionEn:"Within which limit is bitmask DP applicable?",choicesUz:["n ≤ 20","n ≤ 100","n ≤ 10⁵","har qanday n"],choicesEn:["n ≤ 20","n ≤ 100","n ≤ 10⁵","any n"]}
+ quiz:{questionUz:"Bitmask DP qaysi chegarada qo'llanadi?",questionEn:"Within which limit is bitmask DP applicable?",choicesUz:["n ≤ 20","n ≤ 100","n ≤ 10⁵","har qanday n"],choicesEn:["n ≤ 20","n ≤ 100","n ≤ 10⁵","any n"],correct:0}
 }),
 
 /* ================= TREES ================= */
@@ -1705,7 +1705,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Tree: n-1 edges, unique paths. Rooting — dfs(v, p); depth/parent/size in one pass. The distance formula relies on LCA.",
  nextUz:"Subtree hisoblari: har qism-daraxt bo'yicha yig'indi/min/max.",
  nextEn:"Subtree aggregates: sum/min/max over every subtree.",
- quiz:{questionUz:"Daraxtning aniqlovchi xossasi?",questionEn:"The defining property of a tree?",choicesUz:["n qirra","n-1 qirra va bog'langan","Ildiz bor","Barglar bor"],choicesEn:["n edges","n-1 edges and connected","Has a root","Has leaves"]}
+ quiz:{questionUz:"Daraxtning aniqlovchi xossasi?",questionEn:"The defining property of a tree?",choicesUz:["n qirra","n-1 qirra va bog'langan","Ildiz bor","Barglar bor"],choicesEn:["n edges","n-1 edges and connected","Has a root","Has leaves"],correct:1}
 }),
 "trees-2":c({
  goalUz:"Subtree agregatlari: post-order hisoblash va euler-tour bilan oraliqqa aylantirish.",
@@ -1726,7 +1726,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Post-order — children upward. Euler tour: subtree = [tin, tout). Ancestry — nested tin/tout intervals.",
  nextUz:"Binary lifting: k-chi ajdodga O(log n) da sakrash.",
  nextEn:"Binary lifting: jumping to the k-th ancestor in O(log n).",
- quiz:{questionUz:"u — v ning ajdodi ekanini tekshirish?",questionEn:"Checking that u is an ancestor of v?",choicesUz:["depth[u] < depth[v]","tin[u] ≤ tin[v] && tout[v] ≤ tout[u]","size[u] > size[v]","parent[v] == u"],choicesEn:["depth[u] < depth[v]","tin[u] ≤ tin[v] && tout[v] ≤ tout[u]","size[u] > size[v]","parent[v] == u"]}
+ quiz:{questionUz:"u — v ning ajdodi ekanini tekshirish?",questionEn:"Checking that u is an ancestor of v?",choicesUz:["depth[u] < depth[v]","tin[u] ≤ tin[v] && tout[v] ≤ tout[u]","size[u] > size[v]","parent[v] == u"],choicesEn:["depth[u] < depth[v]","tin[u] ≤ tin[v] && tout[v] ≤ tout[u]","size[u] > size[v]","parent[v] == u"],correct:1}
 }),
 "trees-3":c({
  goalUz:"Binary lifting: up[k][v] jadvali bilan k-chi ajdod va kuchli so'rovlar.",
@@ -1747,7 +1747,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"up[k][v] = up[k-1][up[k-1][v]] — 2^k steps. Decompose k into bits → O(log n) jumps. Build O(n log n).",
  nextUz:"LCA: ikki tugunning eng yaqin umumiy ajdodi — masofa formulasi yuragi.",
  nextEn:"LCA: the lowest common ancestor of two nodes — the heart of the distance formula.",
- quiz:{questionUz:"up[k][v] ni to'g'ri hisoblash formulasi?",questionEn:"Correct recurrence for up[k][v]?",choicesUz:["up[k-1][ up[k-1][v] ]","up[k][ up[k][v] ]","up[k-1][v] + 1","up[0][v] * k"],choicesEn:["up[k-1][ up[k-1][v] ]","up[k][ up[k][v] ]","up[k-1][v] + 1","up[0][v] * k"]}
+ quiz:{questionUz:"up[k][v] ni to'g'ri hisoblash formulasi?",questionEn:"Correct recurrence for up[k][v]?",choicesUz:["up[k-1][ up[k-1][v] ]","up[k][ up[k][v] ]","up[k-1][v] + 1","up[0][v] * k"],choicesEn:["up[k-1][ up[k-1][v] ]","up[k][ up[k][v] ]","up[k-1][v] + 1","up[0][v] * k"],correct:0}
 }),
 "trees-4":c({
  goalUz:"LCA: binary lifting bilan O(log n) da eng yaqin umumiy ajdod va masofa.",
@@ -1768,7 +1768,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Equalize depths → lift together → up[0][u]. dist = du + dv − 2·dlca. O(log n) per query.",
  nextUz:"Tree diameter: daraxtning eng uzoq yo'li — ikki BFS/DFS triki.",
  nextEn:"Tree diameter: the longest path in a tree — the two-BFS/DFS trick.",
- quiz:{questionUz:"Masofa(u, v) formulasi (lca = LCA(u,v))?",questionEn:"Distance formula for (u, v) given lca = LCA(u,v)?",choicesUz:["depth[u] + depth[v]","depth[u] + depth[v] − 2·depth[lca]","depth[u] − depth[v]","2·depth[lca]"],choicesEn:["depth[u] + depth[v]","depth[u] + depth[v] − 2·depth[lca]","depth[u] − depth[v]","2·depth[lca]"]}
+ quiz:{questionUz:"Masofa(u, v) formulasi (lca = LCA(u,v))?",questionEn:"Distance formula for (u, v) given lca = LCA(u,v)?",choicesUz:["depth[u] + depth[v]","depth[u] + depth[v] − 2·depth[lca]","depth[u] − depth[v]","2·depth[lca]"],choicesEn:["depth[u] + depth[v]","depth[u] + depth[v] − 2·depth[lca]","depth[u] − depth[v]","2·depth[lca]"],correct:1}
 }),
 "trees-5":c({
  goalUz:"Tree diameter: ikki DFS/BFS usuli va uning isboti; radius bilan bog'lanish.",
@@ -1789,7 +1789,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"dfs(s)→A, dfs(A)→B: A-B is the diameter, O(n). Radius = ⌈d/2⌉; center — path midpoint. Trees only!",
  nextUz:"Tree DP: daraxt ustidagi dinamik dasturlash va rerooting g'oyasi.",
  nextEn:"Tree DP: dynamic programming on trees and the rerooting idea.",
- quiz:{questionUz:"Diametrni topish algoritmi?",questionEn:"Algorithm for finding the diameter?",choicesUz:["Bitta BFS","Ikki DFS/BFS: s→A, A→B","Dijkstra barcha juftlikka","LCA bilan"],choicesEn:["One BFS","Two DFS/BFS: s→A, A→B","Dijkstra on all pairs","Via LCA"]}
+ quiz:{questionUz:"Diametrni topish algoritmi?",questionEn:"Algorithm for finding the diameter?",choicesUz:["Bitta BFS","Ikki DFS/BFS: s→A, A→B","Dijkstra barcha juftlikka","LCA bilan"],choicesEn:["One BFS","Two DFS/BFS: s→A, A→B","Dijkstra on all pairs","Via LCA"],correct:1}
 }),
 "trees-6":c({
  goalUz:"Tree DP va rerooting: har ildiz uchun javobni ikki o'tishda hisoblash.",
@@ -1810,7 +1810,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Post-order down[] + pre-order up[] = answers for every root in O(n). Commutativity required. ans[c] = ans[v] + n − 2·size[c].",
  nextUz:"Daraxtlar tugadi! Yakuniy cho'qqi: ilg'or CP va ICPC texnikalari.",
  nextEn:"Trees complete! The final summit: advanced CP and ICPC techniques.",
- quiz:{questionUz:"Rerooting nega O(n)?",questionEn:"Why is rerooting O(n)?",choicesUz:["Har qirra ikki marta ko'riladi","Bitta DFS yetarli","Memo bor","Daraxt kichik"],choicesEn:["Each edge is seen twice","One DFS suffices","There's memo","The tree is small"]}
+ quiz:{questionUz:"Rerooting nega O(n)?",questionEn:"Why is rerooting O(n)?",choicesUz:["Har qirra ikki marta ko'riladi","Bitta DFS yetarli","Memo bor","Daraxt kichik"],choicesEn:["Each edge is seen twice","One DFS suffices","There's memo","The tree is small"],correct:0}
 }),
 
 /* ================= ADVANCED CP ================= */
@@ -1833,7 +1833,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Immutable nodes + path copying = versions. roots[k] — history. k-th smallest — difference of two roots. Memory O((n+q) log n).",
  nextUz:"Treap va implicit treap — BST va massivning gibridi.",
  nextEn:"Treap and implicit treap — a hybrid of BST and array.",
- quiz:{questionUz:"Persistent segment tree da har yangilash qancha xotira qo'shadi?",questionEn:"How much memory does each update add in a persistent segment tree?",choicesUz:["O(n)","O(log n)","O(1)","O(n log n)"],choicesEn:["O(n)","O(log n)","O(1)","O(n log n)"]}
+ quiz:{questionUz:"Persistent segment tree da har yangilash qancha xotira qo'shadi?",questionEn:"How much memory does each update add in a persistent segment tree?",choicesUz:["O(n)","O(log n)","O(1)","O(n log n)"],choicesEn:["O(n)","O(log n)","O(1)","O(n log n)"],correct:1}
 }),
 "advanced-cp-2":c({
  goalUz:"Treap: tasodifiy prioritetli BST; split/merge va implicit treap bilan massiv operatsiyalari.",
@@ -1854,7 +1854,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Treap = BST + random heap. split/merge — the basis of everything. Implicit — by position; with lazy, range operations cost O(log n).",
  nextUz:"Mo algoritmi: so'rovlarni ayyor tartibda qayta ishlash.",
  nextEn:"Mo's algorithm: processing queries in a clever order.",
- quiz:{questionUz:"Implicit treap da pozitsiya qanday aniqlanadi?",questionEn:"How is position determined in an implicit treap?",choicesUz:["Kalit orqali","subtree size orqali","prioritet orqali","chuqurlik orqali"],choicesEn:["Via key","Via subtree size","Via priority","Via depth"]}
+ quiz:{questionUz:"Implicit treap da pozitsiya qanday aniqlanadi?",questionEn:"How is position determined in an implicit treap?",choicesUz:["Kalit orqali","subtree size orqali","prioritet orqali","chuqurlik orqali"],choicesEn:["Via key","Via subtree size","Via priority","Via depth"],correct:1}
 }),
 "advanced-cp-3":c({
  goalUz:"Mo algoritmi: oflayn oraliq so'rovlarini O((n + q)√n) da — add/remove texnikasi.",
@@ -1875,7 +1875,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Blocked sorting + add/remove = O((n+q)√n). Offline only. Distinct elements — the classic example.",
  nextUz:"HLD: og'ir-yengil ajratish — daraxt yo'llarida segment tree.",
  nextEn:"HLD: heavy-light decomposition — segment trees on tree paths.",
- quiz:{questionUz:"Mo algoritmi qaysi shartda ishlaydi?",questionEn:"Under which condition does Mo's algorithm work?",choicesUz:["Onlayn so'rovlar","Oflayn + add/remove mavjud","Saralangan massiv","Faqat yig'indi"],choicesEn:["Online queries","Offline + add/remove available","Sorted array","Sums only"]}
+ quiz:{questionUz:"Mo algoritmi qaysi shartda ishlaydi?",questionEn:"Under which condition does Mo's algorithm work?",choicesUz:["Onlayn so'rovlar","Oflayn + add/remove mavjud","Saralangan massiv","Faqat yig'indi"],choicesEn:["Online queries","Offline + add/remove available","Sorted array","Sums only"],correct:1}
 }),
 "advanced-cp-4":c({
  goalUz:"HLD: daraxtni og'ir zanjirlarga ajratib, yo'l so'rovlarini O(log²n) ga tushirish.",
@@ -1896,7 +1896,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Heavy child → chain; path = O(log n) chain segments; each a segment-tree range; query O(log²n).",
  nextUz:"FFT/NTT: ko'paytmani tezlashtirish — O(n log n) konvolyutsiya.",
  nextEn:"FFT/NTT: fast multiplication — O(n log n) convolution.",
- quiz:{questionUz:"HLD da yo'l nechta zanjir kesmasiga bo'linadi?",questionEn:"Into how many chain segments does a path decompose in HLD?",choicesUz:["O(1)","O(log n)","O(√n)","O(n)"],choicesEn:["O(1)","O(log n)","O(√n)","O(n)"]}
+ quiz:{questionUz:"HLD da yo'l nechta zanjir kesmasiga bo'linadi?",questionEn:"Into how many chain segments does a path decompose in HLD?",choicesUz:["O(1)","O(log n)","O(√n)","O(n)"],choicesEn:["O(1)","O(log n)","O(√n)","O(n)"],correct:1}
 }),
 "advanced-cp-5":c({
  goalUz:"FFT/NTT: ikki polinomni O(n log n) da ko'paytirish va konvolyutsiya masalalari.",
@@ -1917,7 +1917,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Convolution O(n²) → FFT/NTT O(n log n). Pad to n = 2^k; NTT — exact in mod; divide by n in the inverse.",
  nextUz:"O'yinlar nazariyasi: Grundy sonlari va adolatli o'yinlar.",
  nextEn:"Game theory: Grundy numbers and impartial games.",
- quiz:{questionUz:"NTT uchun modul qanday shaklda bo'lishi kerak?",questionEn:"What form must the modulus have for NTT?",choicesUz:["Ixtiyoriy tub","c·2^k + 1","2^n","Faqat 10⁹+7"],choicesEn:["Any prime","c·2^k + 1","2^n","Only 10⁹+7"]}
+ quiz:{questionUz:"NTT uchun modul qanday shaklda bo'lishi kerak?",questionEn:"What form must the modulus have for NTT?",choicesUz:["Ixtiyoriy tub","c·2^k + 1","2^n","Faqat 10⁹+7"],choicesEn:["Any prime","c·2^k + 1","2^n","Only 10⁹+7"],correct:1}
 }),
 "advanced-cp-6":c({
  goalUz:"O'yinlar nazariyasi: Grundy (nim) sonlari, mex va o'yinlar yig'indisi.",
@@ -1938,7 +1938,7 @@ export const unitContent:Record<string,UnitContent>={
  recapEn:"Grundy = mex(next states); 0 — losing; sums — XOR. Nim-sum ≠ 0 — the first player dominates.",
  nextUz:"Tabriklaymiz — AlgoYo‘l curriculumining yakuniy cho'qqisiga chiqdingiz! Endi mashq va duellar sizni kutmoqda.",
  nextEn:"Congratulations — you have reached the final summit of the AlgoYo‘l curriculum! Practice and duels await.",
- quiz:{questionUz:"Nim da yutqazuvchi holat qaysi?",questionEn:"Which position is losing in Nim?",choicesUz:["nim-sum > 0","nim-sum = 0","Eng katta to'p > 10","To'plar juft"],choicesEn:["nim-sum > 0","nim-sum = 0","Largest pile > 10","Piles are even"]}
+ quiz:{questionUz:"Nim da yutqazuvchi holat qaysi?",questionEn:"Which position is losing in Nim?",choicesUz:["nim-sum > 0","nim-sum = 0","Eng katta to'p > 10","To'plar juft"],choicesEn:["nim-sum > 0","nim-sum = 0","Largest pile > 10","Piles are even"],correct:1}
 }),
 };
 
