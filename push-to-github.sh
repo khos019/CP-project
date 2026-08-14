@@ -31,7 +31,7 @@ if [ ! -d .git ]; then
 fi
 
 git config user.name  "Muxammadali Ubaydullayev"
-git config user.email "m.u.ubaydullayev@gmail.com"
+git config user.email "algoyol-bot@users.noreply.github.com"
 
 # 3. Point at the GitHub repo ---------------------------------------------
 if git remote get-url origin >/dev/null 2>&1; then
