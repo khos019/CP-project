@@ -23,13 +23,22 @@ export const unitCode: Record<string, UnitCode> = {
   "programming-basics-14": { cpp: "void addOne(int &x) { x++; }  // reference: caller's value changes\nvoid f(const vector<int> &a) { /* read-only, no copy */ }", python: "# Python passes references to mutable objects (lists) by default\ndef add_one(lst): lst.append(1)" },
   "programming-basics-15": { cpp: "vector<int> a = {5, 3, 1, 4};\nsort(a.begin(), a.end());\nlong long s = accumulate(a.begin(), a.end(), 0LL);\nint mx = *max_element(a.begin(), a.end());", python: "a = [5, 3, 1, 4]\na.sort()\ns = sum(a)\nmx = max(a)" },
 
-  // ---- Foundations & Complexity ----
-  "foundations-1": { cpp: "// n <= 1e5, t <= 1e4 -> total work must respect sum(n) bound", python: "# n <= 1e5, t <= 1e4 -> check the constraints section first" },
-  "foundations-2": { cpp: "// O(n^2) for n<=500, O(n log n) for n<=1e5, O(2^n) for n<=25", python: "# same budget rules apply in Python, just with a smaller constant" },
-  "foundations-3": { cpp: "for (int i = 0; i < n; ++i) sum += a[i];  // O(n)", python: "total = sum(a)  # O(n)" },
-  "foundations-4": { cpp: "vector<int> a(n);      // O(n) extra memory\nint x;                  // O(1) extra memory", python: "a = [0] * n   # O(n) memory\nx = 0          # O(1) memory" },
-  "foundations-5": { cpp: "// push_back is O(1) amortized even though a resize is O(n)\nfor (int i = 0; i < n; ++i) v.push_back(i);", python: "# list.append is O(1) amortized in Python too\nfor i in range(n):\n    v.append(i)" },
-  "foundations-6": { cpp: "// combine time + memory bounds before picking an algorithm", python: "# same: read constraints, then choose the complexity class" },
+  // ---- Foundations & Complexity (15-stage deep track) ----
+  "foundations-1": { cpp: "// same answer, wildly different speed:\n// O(n) pass vs O(n^2) all-pairs -- correctness isn't enough, speed matters", python: "# same answer, wildly different speed:\n# O(n) pass vs O(n^2) all-pairs -- correctness isn't enough, speed matters" },
+  "foundations-2": { cpp: "// n <= 1e5, t <= 1e4 -> total work must respect sum(n) bound", python: "# n <= 1e5, t <= 1e4 -> check the constraints section first" },
+  "foundations-3": { cpp: "// O(f(n)): upper bound   O(g(n)): lower bound (Omega)   Theta: both\n// 3n + 5 = O(n) -- constants and lower-order terms are dropped", python: "# O(f(n)): upper bound   O(g(n)): lower bound (Omega)   Theta: both\n# 3n + 5 = O(n) -- constants and lower-order terms are dropped" },
+  "foundations-4": { cpp: "// linear search: best case O(1) (found first), worst case O(n) (found last/absent)\n// CP designs for the WORST case -- judges send adversarial tests", python: "# linear search: best case O(1) (found first), worst case O(n) (found last/absent)\n# CP designs for the WORST case -- judges send adversarial tests" },
+  "foundations-5": { cpp: "int mid = (l + r) / 2;               // O(1)\nlong long s = 0;\nfor (int x : a) s += x;              // O(n)", python: "mid = (l + r) // 2   # O(1)\ns = sum(a)            # O(n)" },
+  "foundations-6": { cpp: "int lo = 0, hi = n - 1;              // O(log n): halves the range each step\nwhile (lo < hi) { int mid = (lo+hi)/2; a[mid] < x ? lo = mid+1 : hi = mid; }", python: "lo, hi = 0, n - 1   # O(log n): halves the range each step\nwhile lo < hi:\n    mid = (lo + hi) // 2" },
+  "foundations-7": { cpp: "sort(a.begin(), a.end());  // O(n log n): the CP workhorse complexity", python: "a.sort()  # O(n log n): the CP workhorse complexity" },
+  "foundations-8": { cpp: "for (int i = 0; i < n; ++i)\n  for (int j = i + 1; j < n; ++j)  // O(n^2): all pairs", python: "for i in range(n):\n    for j in range(i + 1, n):  # O(n^2): all pairs\n        pass" },
+  "foundations-9": { cpp: "// n <= 20-25 signals 2^n: enumerate all subsets\nfor (int mask = 0; mask < (1 << n); ++mask) { /* ... */ }", python: "# n <= 20-25 signals 2**n: enumerate all subsets\nfor mask in range(1 << n):\n    pass" },
+  "foundations-10": { cpp: "for (int i = 0; i < n; ++i)\n  for (int j = 0; j < i; ++j)  // n^2/2 pairs -> still O(n^2)", python: "for i in range(n):\n    for j in range(i):  # n^2/2 pairs -> still O(n^2)\n        pass" },
+  "foundations-11": { cpp: "// T(n) = 2T(n/2) + O(n)  ->  O(n log n) by the Master Theorem (merge sort)\nlong long f(int n) { return n <= 1 ? n : f(n-1) + f(n-2); }  // exponential, no cache", python: "# T(n) = 2T(n/2) + O(n)  ->  O(n log n) by the Master Theorem (merge sort)\ndef f(n):\n    return n if n <= 1 else f(n-1) + f(n-2)  # exponential, no cache" },
+  "foundations-12": { cpp: "const int MAXN = 1e6 + 5;\nlong long dp[2][MAXN];  // rolling array: only the previous row needed", python: "MAXN = 10**6 + 5\ndp = [[0]*MAXN, [0]*MAXN]  # rolling array: only the previous row needed" },
+  "foundations-13": { cpp: "int l = 0;\nfor (int r = 0; r < n; ++r) {          // l and r each move forward <= n times\n  while (bad()) ++l;                   // amortized O(n) total, not O(n^2)\n}", python: "l = 0\nfor r in range(n):        # l and r each move forward <= n times\n    while bad(): l += 1   # amortized O(n) total, not O(n^2)" },
+  "foundations-14": { cpp: "// n<=10: anything | n<=25: 2^n | n<=5000: O(n^2) | n<=1e7: O(n log n)\n// among solutions that fit, pick the SIMPLEST one", python: "# n<=10: anything | n<=25: 2**n | n<=5000: O(n^2) | n<=1e7: O(n log n)\n# among solutions that fit, pick the SIMPLEST one" },
+  "foundations-15": { cpp: "// pipeline: read O(n) + sort O(n log n) + query O(q log n)\n// total = most expensive stage x test count -- verify with real numbers", python: "# pipeline: read O(n) + sort O(n log n) + query O(q log n)\n# total = most expensive stage x test count -- verify with real numbers" },
 
   // ---- Sorting ----
   "sorting-1": { cpp: "sort(a.begin(), a.end());  // O(n log n), introsort", python: "a.sort()  # O(n log n), Timsort" },
