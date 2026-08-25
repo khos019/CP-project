@@ -6,13 +6,22 @@
 export type UnitCode = { cpp: string; python: string };
 
 export const unitCode: Record<string, UnitCode> = {
-  // ---- Programming Basics ----
+  // ---- Programming Basics (15-stage deep track) ----
   "programming-basics-1": { cpp: "#include <bits/stdc++.h>\nusing namespace std;\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n}", python: "import sys\ninput = sys.stdin.readline" },
   "programming-basics-2": { cpp: "int n; cin >> n;\nvector<long long> a(n);\nfor (auto &x : a) cin >> x;", python: "n = int(input())\na = list(map(int, input().split()))" },
-  "programming-basics-3": { cpp: "long long p = 1LL * a * b;  // avoid int overflow", python: "p = a * b  # Python ints never overflow" },
-  "programming-basics-4": { cpp: "if (i >= 0 && i < n && a[i] == key) { /* safe */ }", python: "if 0 <= i < n and a[i] == key:\n    pass" },
-  "programming-basics-5": { cpp: "for (int i = 0; i < n; ++i)\n  for (int j = i + 1; j < n; ++j)\n    check(a[i], a[j]);", python: "for i in range(n):\n    for j in range(i + 1, n):\n        check(a[i], a[j])" },
-  "programming-basics-6": { cpp: "int mx = *max_element(a.begin(), a.end());\nlong long s = accumulate(a.begin(), a.end(), 0LL);", python: "mx = max(a)\ns = sum(a)" },
+  "programming-basics-3": { cpp: "int n = 5;\nlong long big = 5000000000LL;\ndouble pi = 3.14159;\nchar c = 'A';\nbool ok = true;\nstring s = \"hello\";", python: "n = 5\nbig = 5000000000\npi = 3.14159\nc = 'A'\nok = True\ns = \"hello\"" },
+  "programming-basics-4": { cpp: "long long p = 1LL * a * b;  // avoid int overflow", python: "p = a * b  # Python ints never overflow" },
+  "programming-basics-5": { cpp: "double avg = (double)(a + b) / 2;\nbool even = (x % 2 == 0);\nint doubled = x << 1;", python: "avg = (a + b) / 2\neven = (x % 2 == 0)\ndoubled = x << 1" },
+  "programming-basics-6": { cpp: "if (i >= 0 && i < n && a[i] == key) { /* safe */ }", python: "if 0 <= i < n and a[i] == key:\n    pass" },
+  "programming-basics-7": { cpp: "switch (day) {\n  case 1: name = \"Mon\"; break;\n  case 2: name = \"Tue\"; break;\n  default: name = \"?\";\n}\nint mx = a > b ? a : b;", python: "name = {1: \"Mon\", 2: \"Tue\"}.get(day, \"?\")\nmx = a if a > b else b" },
+  "programming-basics-8": { cpp: "for (int i = 0; i < n; ++i)\n  for (int j = i + 1; j < n; ++j)\n    check(a[i], a[j]);", python: "for i in range(n):\n    for j in range(i + 1, n):\n        check(a[i], a[j])" },
+  "programming-basics-9": { cpp: "int steps = 0;\nwhile (x > 1) { x /= 2; ++steps; }", python: "steps = 0\nwhile x > 1:\n    x //= 2\n    steps += 1" },
+  "programming-basics-10": { cpp: "const int MAXN = 1e6 + 5;\nint a[MAXN];\nfor (int i = 0; i < n; ++i) cin >> a[i];", python: "a = [0] * n\nfor i in range(n): a[i] = int(input())" },
+  "programming-basics-11": { cpp: "int dx[] = {-1, 1, 0, 0}, dy[] = {0, 0, -1, 1};\nfor (int k = 0; k < 4; ++k) {\n  int ni = i + dx[k], nj = j + dy[k];\n  if (ni >= 0 && ni < n && nj >= 0 && nj < m) { /* valid */ }\n}", python: "dx, dy = [-1, 1, 0, 0], [0, 0, -1, 1]\nfor k in range(4):\n    ni, nj = i + dx[k], j + dy[k]\n    if 0 <= ni < n and 0 <= nj < m:\n        pass" },
+  "programming-basics-12": { cpp: "string s = \"hello\";\nstring part = s.substr(1, 3);  // \"ell\"\nbool isPal = s == string(s.rbegin(), s.rend());", python: "s = \"hello\"\npart = s[1:4]  # \"ell\"\nis_pal = s == s[::-1]" },
+  "programming-basics-13": { cpp: "long long gcd(long long a, long long b) {\n  return b ? gcd(b, a % b) : a;\n}", python: "def gcd(a, b):\n    return gcd(b, a % b) if b else a" },
+  "programming-basics-14": { cpp: "void addOne(int &x) { x++; }  // reference: caller's value changes\nvoid f(const vector<int> &a) { /* read-only, no copy */ }", python: "# Python passes references to mutable objects (lists) by default\ndef add_one(lst): lst.append(1)" },
+  "programming-basics-15": { cpp: "vector<int> a = {5, 3, 1, 4};\nsort(a.begin(), a.end());\nlong long s = accumulate(a.begin(), a.end(), 0LL);\nint mx = *max_element(a.begin(), a.end());", python: "a = [5, 3, 1, 4]\na.sort()\ns = sum(a)\nmx = max(a)" },
 
   // ---- Foundations & Complexity ----
   "foundations-1": { cpp: "// n <= 1e5, t <= 1e4 -> total work must respect sum(n) bound", python: "# n <= 1e5, t <= 1e4 -> check the constraints section first" },
