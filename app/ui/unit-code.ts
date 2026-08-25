@@ -40,13 +40,22 @@ export const unitCode: Record<string, UnitCode> = {
   "foundations-14": { cpp: "// n<=10: anything | n<=25: 2^n | n<=5000: O(n^2) | n<=1e7: O(n log n)\n// among solutions that fit, pick the SIMPLEST one", python: "# n<=10: anything | n<=25: 2**n | n<=5000: O(n^2) | n<=1e7: O(n log n)\n# among solutions that fit, pick the SIMPLEST one" },
   "foundations-15": { cpp: "// pipeline: read O(n) + sort O(n log n) + query O(q log n)\n// total = most expensive stage x test count -- verify with real numbers", python: "# pipeline: read O(n) + sort O(n log n) + query O(q log n)\n# total = most expensive stage x test count -- verify with real numbers" },
 
-  // ---- Sorting ----
+  // ---- Sorting (15-stage deep track) ----
   "sorting-1": { cpp: "sort(a.begin(), a.end());  // O(n log n), introsort", python: "a.sort()  # O(n log n), Timsort" },
-  "sorting-2": { cpp: "for (int i = 0; i < n; ++i)\n  swap(a[i], a[min_element(a.begin()+i, a.end())-a.begin()]);", python: "for i in range(n):\n    j = a.index(min(a[i:]), i)\n    a[i], a[j] = a[j], a[i]" },
-  "sorting-3": { cpp: "for (int i = 1; i < n; ++i) {\n  int key = a[i], j = i - 1;\n  while (j >= 0 && a[j] > key) a[j + 1] = a[j--];\n  a[j + 1] = key;\n}", python: "for i in range(1, n):\n    key, j = a[i], i - 1\n    while j >= 0 and a[j] > key:\n        a[j + 1] = a[j]; j -= 1\n    a[j + 1] = key" },
-  "sorting-4": { cpp: "void merge(vector<int>&a,int l,int m,int r){\n  vector<int> t;\n  merge(a.begin()+l,a.begin()+m,a.begin()+m,a.begin()+r,back_inserter(t));\n}", python: "def merge(a, l, m, r):\n    return sorted(a[l:m] + a[m:r])" },
-  "sorting-5": { cpp: "int p = partition(a.begin(), a.end(), [&](int x){ return x < pivot; });", python: "pivot = a[len(a)//2]\nless = [x for x in a if x < pivot]" },
-  "sorting-6": { cpp: "sort(jobs.begin(), jobs.end(), [](auto&a, auto&b){ return a.finish < b.finish; });", python: "jobs.sort(key=lambda j: j.finish)" },
+  "sorting-2": { cpp: "for (int i = 0; i < n; ++i) {\n  int m = i;\n  for (int j = i+1; j < n; ++j) if (a[j] < a[m]) m = j;\n  swap(a[i], a[m]);\n}", python: "for i in range(n):\n    m = min(range(i, n), key=lambda j: a[j])\n    a[i], a[m] = a[m], a[i]" },
+  "sorting-3": { cpp: "for (int i = 0; i < n; ++i) {\n  bool sw = false;\n  for (int j = 0; j+1 < n-i; ++j)\n    if (a[j] > a[j+1]) { swap(a[j], a[j+1]); sw = true; }\n  if (!sw) break;\n}", python: "for i in range(n):\n    swapped = False\n    for j in range(n - i - 1):\n        if a[j] > a[j+1]: a[j], a[j+1] = a[j+1], a[j]; swapped = True\n    if not swapped: break" },
+  "sorting-4": { cpp: "for (int i = 1; i < n; ++i) {\n  int key = a[i], j = i - 1;\n  while (j >= 0 && a[j] > key) a[j + 1] = a[j--];\n  a[j + 1] = key;\n}", python: "for i in range(1, n):\n    key, j = a[i], i - 1\n    while j >= 0 and a[j] > key:\n        a[j + 1] = a[j]; j -= 1\n    a[j + 1] = key" },
+  "sorting-5": { cpp: "vector<int> cnt(k+1, 0);\nfor (int x : a) cnt[x]++;\nvector<int> out;\nfor (int v = 0; v <= k; ++v) while (cnt[v]--) out.push_back(v);", python: "cnt = [0] * (k + 1)\nfor x in a: cnt[x] += 1\nout = [v for v in range(k + 1) for _ in range(cnt[v])]" },
+  "sorting-6": { cpp: "void merge(vector<int>&a,int l,int m,int r){\n  vector<int> t;\n  merge(a.begin()+l,a.begin()+m,a.begin()+m,a.begin()+r,back_inserter(t));\n}", python: "def merge(a, l, m, r):\n    return sorted(a[l:m] + a[m:r])" },
+  "sorting-7": { cpp: "// during merge: taking from the right side means += (mid - i + 1) inversions\nif (a[j] < a[i]) { inv += (mid - i + 1); tmp.push_back(a[j++]); }", python: "# during merge: taking from the right side means += (mid - i + 1) inversions\nif a[j] < a[i]:\n    inv += mid - i + 1\n    j += 1" },
+  "sorting-8": { cpp: "int p = partition(a.begin(), a.end(), [&](int x){ return x < pivot; });", python: "pivot = a[len(a)//2]\nless = [x for x in a if x < pivot]" },
+  "sorting-9": { cpp: "void siftDown(vector<int>&a,int i,int n){\n  int l=2*i+1,r=2*i+2,largest=i;\n  if(l<n&&a[l]>a[largest])largest=l;\n  if(r<n&&a[r]>a[largest])largest=r;\n  if(largest!=i){swap(a[i],a[largest]);siftDown(a,largest,n);}\n}", python: "def sift_down(a, i, n):\n    l, r, largest = 2*i+1, 2*i+2, i\n    if l < n and a[l] > a[largest]: largest = l\n    if r < n and a[r] > a[largest]: largest = r\n    if largest != i:\n        a[i], a[largest] = a[largest], a[i]\n        sift_down(a, largest, n)" },
+  "sorting-10": { cpp: "// log2(n!) ~= n*log2(n) - n*log2(e)  ->  Theta(n log n) comparisons, provably minimal", python: "# log2(n!) ~= n*log2(n) - n*log2(e)  ->  Theta(n log n) comparisons, provably minimal" },
+  "sorting-11": { cpp: "stable_sort(a.begin(), a.end(), cmp);  // guarantees equal elements keep their order", python: "a.sort(key=cmp_key)  # Python's sort is always stable" },
+  "sorting-12": { cpp: "sort(a.begin(), a.end(), [](int x, int y){ return x > y; });  // descending", python: "a.sort(key=lambda x: -x)  # descending" },
+  "sorting-13": { cpp: "sort(v.begin(), v.end(), [](auto&a, auto&b){\n  return make_tuple(-a.score, a.age, a.name) < make_tuple(-b.score, b.age, b.name);\n});", python: "v.sort(key=lambda x: (-x.score, x.age, x.name))" },
+  "sorting-14": { cpp: "partial_sort(a.begin(), a.begin()+k, a.end());   // top-k, ordered\nnth_element(a.begin(), a.begin()+n/2, a.end()); // median, unordered sides", python: "import heapq\ntopk = heapq.nsmallest(k, a)  # partial_sort equivalent" },
+  "sorting-15": { cpp: "sort(jobs.begin(), jobs.end(), [](auto&a, auto&b){ return a.finish < b.finish; });", python: "jobs.sort(key=lambda j: j.finish)" },
 
   // ---- Recursion & Backtracking ----
   "backtracking-1": { cpp: "long long fact(int n) { return n <= 1 ? 1 : n * fact(n - 1); }", python: "def fact(n):\n    return 1 if n <= 1 else n * fact(n - 1)" },
