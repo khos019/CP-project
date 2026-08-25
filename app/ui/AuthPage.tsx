@@ -19,7 +19,7 @@ export function AuthPage({lang,done,notice}:{lang:Lang;done:(token?:string)=>voi
    const response=await fetch(`${url}/auth/v1/${endpoint}`,{method:"POST",headers:{apikey:key,"content-type":"application/json"},body:JSON.stringify({email,password,...(mode==="signup"?{data:{username,display_name:username}}:{})})});
    const result=await response.json();
    if(!response.ok){const text=result.error_description||result.msg||result.message||"Authentication failed";setMessage(String(text).toLowerCase().includes("confirm")?(lang==="uz"?"Avval emailingizdagi tasdiqlash havolasini bosing.":"Confirm your email before signing in."):text);return}
-   if(mode==="signup"){if(result.access_token){setMessage(lang==="uz"?"Supabase’da Confirm Email sozlamasini yoqing.":"Enable Confirm Email in Supabase.");return}setMode("confirm");setMessage(lang==="uz"?`Tasdiqlash xabari ${email} manziliga yuborildi.`:`A confirmation message was sent to ${email}.`);return}
+   if(mode==="signup"){if(result.access_token){storeToken(result.access_token,remember);done(result.access_token);return}setMode("confirm");setMessage(lang==="uz"?`Tasdiqlash xabari ${email} manziliga yuborildi.`:`A confirmation message was sent to ${email}.`);return}
    if(!result.user?.email_confirmed_at){setMode("confirm");setMessage(lang==="uz"?"Avval emailingizni tasdiqlang.":"Confirm your email before signing in.");return}
    storeToken(result.access_token,remember);done(result.access_token);
   }catch{setMessage(lang==="uz"?"Email xizmatiga ulanib bo‘lmadi.":"Could not connect to the email service.")}finally{setBusy(false)}
