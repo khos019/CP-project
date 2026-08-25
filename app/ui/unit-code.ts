@@ -57,13 +57,22 @@ export const unitCode: Record<string, UnitCode> = {
   "sorting-14": { cpp: "partial_sort(a.begin(), a.begin()+k, a.end());   // top-k, ordered\nnth_element(a.begin(), a.begin()+n/2, a.end()); // median, unordered sides", python: "import heapq\ntopk = heapq.nsmallest(k, a)  # partial_sort equivalent" },
   "sorting-15": { cpp: "sort(jobs.begin(), jobs.end(), [](auto&a, auto&b){ return a.finish < b.finish; });", python: "jobs.sort(key=lambda j: j.finish)" },
 
-  // ---- Recursion & Backtracking ----
+  // ---- Recursion & Backtracking (15-stage deep track) ----
   "backtracking-1": { cpp: "long long fact(int n) { return n <= 1 ? 1 : n * fact(n - 1); }", python: "def fact(n):\n    return 1 if n <= 1 else n * fact(n - 1)" },
-  "backtracking-2": { cpp: "void dfs(int v) { if (base(v)) return; choose(v); dfs(v + 1); undo(v); }", python: "def dfs(v):\n    if base(v): return\n    choose(v); dfs(v + 1); undo(v)" },
-  "backtracking-3": { cpp: "void permute(vector<int>&a,int k){\n  if(k==a.size()){emit(a);return;}\n  for(int i=k;i<a.size();++i){swap(a[k],a[i]);permute(a,k+1);swap(a[k],a[i]);}\n}", python: "from itertools import permutations\nfor p in permutations(a): emit(p)" },
-  "backtracking-4": { cpp: "void combine(int start,int k,vector<int>&cur){\n  if(k==0){emit(cur);return;}\n  for(int i=start;i<=n;++i){cur.push_back(i);combine(i+1,k-1,cur);cur.pop_back();}\n}", python: "from itertools import combinations\nfor c in combinations(range(1, n + 1), k): emit(c)" },
-  "backtracking-5": { cpp: "void dfs(int v){ if (!promising(v)) return; /* prune */ choose(v); dfs(v+1); undo(v); }", python: "def dfs(v):\n    if not promising(v): return\n    choose(v); dfs(v + 1); undo(v)" },
-  "backtracking-6": { cpp: "// split n items into two halves, enumerate each half, merge with two pointers", python: "# generate subsets of each half separately, then combine results" },
+  "backtracking-2": { cpp: "// linear: one call            // multi-branch: two+ calls, exponential w/o cache\nlong long fib(int n){ return n<2?n:fib(n-1)+fib(n-2); }", python: "# linear: one call            # multi-branch: two+ calls, exponential w/o cache\ndef fib(n):\n    return n if n < 2 else fib(n-1) + fib(n-2)" },
+  "backtracking-3": { cpp: "// recursive: long long gcd(long long a,long long b){return b?gcd(b,a%b):a;}\nwhile (b) { long long t = b; b = a % b; a = t; }  // iterative, no stack cost", python: "while b:\n    a, b = b, a % b  # iterative, no stack cost" },
+  "backtracking-4": { cpp: "void dfs(int v) { if (base(v)) return; choose(v); dfs(v + 1); undo(v); }", python: "def dfs(v):\n    if base(v): return\n    choose(v); dfs(v + 1); undo(v)" },
+  "backtracking-5": { cpp: "for (int mask = 0; mask < (1<<n); ++mask) {\n  for (int i = 0; i < n; ++i) if (mask & (1<<i)) cur.push_back(a[i]);\n  process(cur); cur.clear();\n}", python: "for mask in range(1 << n):\n    cur = [a[i] for i in range(n) if mask & (1 << i)]\n    process(cur)" },
+  "backtracking-6": { cpp: "void permute(vector<int>&a,int k){\n  if(k==a.size()){emit(a);return;}\n  for(int i=k;i<a.size();++i){swap(a[k],a[i]);permute(a,k+1);swap(a[k],a[i]);}\n}", python: "from itertools import permutations\nfor p in permutations(a): emit(p)" },
+  "backtracking-7": { cpp: "void combine(int start,int k,vector<int>&cur){\n  if(k==0){emit(cur);return;}\n  for(int i=start;i<=n;++i){cur.push_back(i);combine(i+1,k-1,cur);cur.pop_back();}\n}", python: "from itertools import combinations\nfor c in combinations(range(1, n + 1), k): emit(c)" },
+  "backtracking-8": { cpp: "bool valid(int r,int c){ return !usedCol[c] && !usedD1[r-c+n] && !usedD2[r+c]; }", python: "def valid(r, c):\n    return not used_col[c] and not used_d1[r-c+n] and not used_d2[r+c]" },
+  "backtracking-9": { cpp: "int dr[]={-1,1,0,0}, dc[]={0,0,-1,1};\nfor(int k=0;k<4;++k) if(dfs(r+dr[k],c+dc[k],idx+1)) return true;", python: "dr, dc = [-1,1,0,0], [0,0,-1,1]\nfor k in range(4):\n    if dfs(r+dr[k], c+dc[k], idx+1): return True" },
+  "backtracking-10": { cpp: "void dfs(int v){ if (!promising(v)) return; /* prune */ choose(v); dfs(v+1); undo(v); }", python: "def dfs(v):\n    if not promising(v): return\n    choose(v); dfs(v + 1); undo(v)" },
+  "backtracking-11": { cpp: "// MRV: pick the unfilled cell with the fewest candidate values first\nint pick = *min_element(candidates.begin(), candidates.end(), byCount);", python: "# MRV: pick the unfilled cell with the fewest candidate values first\npick = min(candidates, key=lambda c: len(options[c]))" },
+  "backtracking-12": { cpp: "// split n items into two halves, enumerate each half, merge with two pointers", python: "# generate subsets of each half separately, then combine results" },
+  "backtracking-13": { cpp: "// same params seen twice? -> memo[state] helps. Every call unique? -> pure backtracking\nunordered_map<int,long long> memo;", python: "# same params seen twice? -> a cache helps. Every call unique? -> pure backtracking\nfrom functools import lru_cache" },
+  "backtracking-14": { cpp: "bool dfs(State s){ if (done(s)) return true;\n  for (auto c : choices(s)) { apply(c); if (dfs(next(s,c))) return true; undo(c); }\n  return false; }", python: "def dfs(s):\n    if done(s): return True\n    for c in choices(s):\n        apply(c)\n        if dfs(next_state(s, c)): return True\n        undo(c)\n    return False" },
+  "backtracking-15": { cpp: "// decision tree: recursion -> backtracking -> pruning -> heuristics -> meet-in-middle -> DP", python: "# decision tree: recursion -> backtracking -> pruning -> heuristics -> meet-in-middle -> DP" },
 
   // ---- Math & Number Theory ----
   "math-1": { cpp: "long long m = ((a % mod) + mod) % mod;  // safe modulo", python: "m = a % mod  # Python's % is already non-negative" },
