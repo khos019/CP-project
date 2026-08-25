@@ -8,8 +8,8 @@ language sql
 immutable
 as $$
   select array[
-    'm.u.ubaydullayev@gmail.com'
-    -- , 'ozodbekhaydaraliyev2000@gmail.com'   -- ikkinchi founder ham owner bo'lsin desangiz shu qatorni oching
+    'm.u.ubaydullayev@gmail.com',
+    'ozodbekhaydaraliyev2000@gmail.com'
   ]::text[]
 $$;
 
