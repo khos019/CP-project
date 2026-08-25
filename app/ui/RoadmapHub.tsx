@@ -3,6 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { roadmapCatalog, type LessonUnit, type MasteryRoadmap } from "./roadmap-data";
 import { masteryOf, MASTERY_CONFIG } from "./mastery";
+import { can } from "./permissions";
+import type { Role } from "./AlgoYolApp";
 
 type Lang="uz"|"en";
 type Progress={quizScores:Record<string,number>;solved:Record<string,boolean>};
@@ -12,10 +14,10 @@ const empty:Progress={quizScores:{},solved:{}};
 
 export const unitDone=(p:Progress,u:LessonUnit)=>(p.quizScores[u.id]||0)>=70&&!!p.solved[u.id];
 const bySlug=(s:string)=>roadmapCatalog.find(r=>r.slug===s);
-export const roadmapStatus=(r:MasteryRoadmap,p:Progress):Status=>{
+export const roadmapStatus=(r:MasteryRoadmap,p:Progress,canReviewAll=false):Status=>{
  if(r.units.every(u=>unitDone(p,u)))return "completed";
  const open=r.prereqs.every(s=>{const pre=bySlug(s);return !pre||pre.units.every(u=>unitDone(p,u))});
- if(!open&&masteryOf(r.slug)<MASTERY_CONFIG.unlock)return "locked";
+ if(!canReviewAll&&!open&&masteryOf(r.slug)<MASTERY_CONFIG.unlock)return "locked";
  return r.units.some(u=>unitDone(p,u)||(p.quizScores[u.id]||0)>0)?"in-progress":"available";
 };
 
@@ -39,8 +41,9 @@ const L={uz:{
 export const statusLabel=(s:Status,lang:Lang)=>s==="completed"?L[lang].completed:s==="in-progress"?L[lang].inProgress:s==="available"?L[lang].available:L[lang].locked;
 const rankOf=(rating:number,lang:Lang)=>rating<1200?(lang==="uz"?"Yangi boshlovchi":"Newbie"):rating<1400?"Pupil":rating<1600?"Specialist":rating<1900?"Expert":rating<2100?"Candidate Master":"Master";
 
-export function RoadmapHub({lang,openRoadmap}:{lang:Lang;openRoadmap:(slug:string)=>void}){
+export function RoadmapHub({lang,role,openRoadmap}:{lang:Lang;role:Role;openRoadmap:(slug:string)=>void}){
  const t=L[lang];
+ const canReviewAll=can(role,"roadmap.manage");
  const [progress,setProgress]=useState<Progress>(empty),[view,setView]=useState<HubView>("path"),[query,setQuery]=useState(""),[statusFilter,setStatusFilter]=useState<"all"|Status>("all");
  useEffect(()=>{const read=()=>{try{setProgress(JSON.parse(localStorage.getItem("algoyol-roadmap-progress")||JSON.stringify(empty)))}catch{setProgress(empty)}};read();window.addEventListener("algoyol-progress",read);return()=>window.removeEventListener("algoyol-progress",read)},[]);
  const stats=useMemo(()=>{
@@ -49,7 +52,7 @@ export function RoadmapHub({lang,openRoadmap}:{lang:Lang;openRoadmap:(slug:strin
   const rating=Math.min(2400,800+done.length*35);
   return {total:all.length,done:done.length,pct:Math.round(done.length/all.length*100),xp,rating};
  },[progress]);
- const statuses=useMemo(()=>new Map(roadmapCatalog.map(r=>[r.slug,roadmapStatus(r,progress)])),[progress]);
+ const statuses=useMemo(()=>new Map(roadmapCatalog.map(r=>[r.slug,roadmapStatus(r,progress,canReviewAll)])),[progress,canReviewAll]);
  const tiers=useMemo(()=>{
   const depth=(r:MasteryRoadmap):number=>r.prereqs.length?Math.max(...r.prereqs.map(s=>{const pre=bySlug(s);return pre?depth(pre)+1:0})):0;
   const map=new Map<number,MasteryRoadmap[]>();
@@ -104,4 +107,4 @@ export function RoadmapHub({lang,openRoadmap}:{lang:Lang;openRoadmap:(slug:strin
 
 // HomeDashboard calls this with the mastery store as a third argument; the
 // store is read directly by masteryOf, so the parameter is accepted and ignored.
-export const nodeStatus=(r:MasteryRoadmap,p:Progress,_mastery?:unknown):Status=>roadmapStatus(r,p);
+export const nodeStatus=(r:MasteryRoadmap,p:Progress,_mastery?:unknown,canReviewAll=false):Status=>roadmapStatus(r,p,canReviewAll);

@@ -4,15 +4,18 @@ import { useEffect, useMemo, useState } from "react";
 import { roadmapCatalog } from "./roadmap-data";
 import { loadMastery, loadMasteryLog, masteryLabel } from "./mastery";
 import { nodeStatus, statusLabel } from "./RoadmapHub";
+import { can } from "./permissions";
+import type { Role } from "./AlgoYolApp";
 
 type Lang="uz"|"en";
 type Progress={quizScores:Record<string,number>;solved:Record<string,boolean>};
 const empty:Progress={quizScores:{},solved:{}};
 
-export function HomeDashboard({lang,go,openRoadmap,duelRating}:{lang:Lang;go:(v:string)=>void;openRoadmap:(slug:string)=>void;duelRating:number}){
+export function HomeDashboard({lang,role,go,openRoadmap,duelRating}:{lang:Lang;role:Role;go:(v:string)=>void;openRoadmap:(slug:string)=>void;duelRating:number}){
+ const canReviewAll=can(role,"roadmap.manage");
  const [progress,setProgress]=useState<Progress>(empty),[mastery,setMastery]=useState(loadMastery()),[log,setLog]=useState(loadMasteryLog());
  useEffect(()=>{const read=()=>{try{setProgress(JSON.parse(localStorage.getItem("algoyol-roadmap-progress")||JSON.stringify(empty)))}catch{setProgress(empty)}setMastery(loadMastery());setLog(loadMasteryLog())};read();window.addEventListener("algoyol-progress",read);return()=>window.removeEventListener("algoyol-progress",read)},[]);
- const statuses=useMemo(()=>new Map(roadmapCatalog.map(r=>[r.slug,nodeStatus(r,progress,mastery)])),[progress,mastery]);
+ const statuses=useMemo(()=>new Map(roadmapCatalog.map(r=>[r.slug,nodeStatus(r,progress,mastery,canReviewAll)])),[progress,mastery,canReviewAll]);
  const active=roadmapCatalog.find(r=>statuses.get(r.slug)==="in-progress")||roadmapCatalog.find(r=>statuses.get(r.slug)==="available");
  const activeUnit=active?active.units.find(u=>!((progress.quizScores[u.id]||0)>=70&&progress.solved[u.id])):null;
  const top=useMemo(()=>[...roadmapCatalog].sort((a,b)=>(mastery.scores[b.slug]||0)-(mastery.scores[a.slug]||0)).slice(0,6),[mastery]);
