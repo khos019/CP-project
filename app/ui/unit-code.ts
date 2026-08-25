@@ -1,0 +1,128 @@
+/* Per-unit illustrative code snippets. Each roadmap's 6 units previously
+   shared one roadmap-level snippet (roadmap-data.ts's cpp/python); this map
+   gives every unit its own, so "Merge sort" and "Quick sort" inside the same
+   roadmap no longer show identical code. */
+
+export type UnitCode = { cpp: string; python: string };
+
+export const unitCode: Record<string, UnitCode> = {
+  // ---- Programming Basics ----
+  "programming-basics-1": { cpp: "#include <bits/stdc++.h>\nusing namespace std;\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n}", python: "import sys\ninput = sys.stdin.readline" },
+  "programming-basics-2": { cpp: "int n; cin >> n;\nvector<long long> a(n);\nfor (auto &x : a) cin >> x;", python: "n = int(input())\na = list(map(int, input().split()))" },
+  "programming-basics-3": { cpp: "long long p = 1LL * a * b;  // avoid int overflow", python: "p = a * b  # Python ints never overflow" },
+  "programming-basics-4": { cpp: "if (i >= 0 && i < n && a[i] == key) { /* safe */ }", python: "if 0 <= i < n and a[i] == key:\n    pass" },
+  "programming-basics-5": { cpp: "for (int i = 0; i < n; ++i)\n  for (int j = i + 1; j < n; ++j)\n    check(a[i], a[j]);", python: "for i in range(n):\n    for j in range(i + 1, n):\n        check(a[i], a[j])" },
+  "programming-basics-6": { cpp: "int mx = *max_element(a.begin(), a.end());\nlong long s = accumulate(a.begin(), a.end(), 0LL);", python: "mx = max(a)\ns = sum(a)" },
+
+  // ---- Foundations & Complexity ----
+  "foundations-1": { cpp: "// n <= 1e5, t <= 1e4 -> total work must respect sum(n) bound", python: "# n <= 1e5, t <= 1e4 -> check the constraints section first" },
+  "foundations-2": { cpp: "// O(n^2) for n<=500, O(n log n) for n<=1e5, O(2^n) for n<=25", python: "# same budget rules apply in Python, just with a smaller constant" },
+  "foundations-3": { cpp: "for (int i = 0; i < n; ++i) sum += a[i];  // O(n)", python: "total = sum(a)  # O(n)" },
+  "foundations-4": { cpp: "vector<int> a(n);      // O(n) extra memory\nint x;                  // O(1) extra memory", python: "a = [0] * n   # O(n) memory\nx = 0          # O(1) memory" },
+  "foundations-5": { cpp: "// push_back is O(1) amortized even though a resize is O(n)\nfor (int i = 0; i < n; ++i) v.push_back(i);", python: "# list.append is O(1) amortized in Python too\nfor i in range(n):\n    v.append(i)" },
+  "foundations-6": { cpp: "// combine time + memory bounds before picking an algorithm", python: "# same: read constraints, then choose the complexity class" },
+
+  // ---- Sorting ----
+  "sorting-1": { cpp: "sort(a.begin(), a.end());  // O(n log n), introsort", python: "a.sort()  # O(n log n), Timsort" },
+  "sorting-2": { cpp: "for (int i = 0; i < n; ++i)\n  swap(a[i], a[min_element(a.begin()+i, a.end())-a.begin()]);", python: "for i in range(n):\n    j = a.index(min(a[i:]), i)\n    a[i], a[j] = a[j], a[i]" },
+  "sorting-3": { cpp: "for (int i = 1; i < n; ++i) {\n  int key = a[i], j = i - 1;\n  while (j >= 0 && a[j] > key) a[j + 1] = a[j--];\n  a[j + 1] = key;\n}", python: "for i in range(1, n):\n    key, j = a[i], i - 1\n    while j >= 0 and a[j] > key:\n        a[j + 1] = a[j]; j -= 1\n    a[j + 1] = key" },
+  "sorting-4": { cpp: "void merge(vector<int>&a,int l,int m,int r){\n  vector<int> t;\n  merge(a.begin()+l,a.begin()+m,a.begin()+m,a.begin()+r,back_inserter(t));\n}", python: "def merge(a, l, m, r):\n    return sorted(a[l:m] + a[m:r])" },
+  "sorting-5": { cpp: "int p = partition(a.begin(), a.end(), [&](int x){ return x < pivot; });", python: "pivot = a[len(a)//2]\nless = [x for x in a if x < pivot]" },
+  "sorting-6": { cpp: "sort(jobs.begin(), jobs.end(), [](auto&a, auto&b){ return a.finish < b.finish; });", python: "jobs.sort(key=lambda j: j.finish)" },
+
+  // ---- Recursion & Backtracking ----
+  "backtracking-1": { cpp: "long long fact(int n) { return n <= 1 ? 1 : n * fact(n - 1); }", python: "def fact(n):\n    return 1 if n <= 1 else n * fact(n - 1)" },
+  "backtracking-2": { cpp: "void dfs(int v) { if (base(v)) return; choose(v); dfs(v + 1); undo(v); }", python: "def dfs(v):\n    if base(v): return\n    choose(v); dfs(v + 1); undo(v)" },
+  "backtracking-3": { cpp: "void permute(vector<int>&a,int k){\n  if(k==a.size()){emit(a);return;}\n  for(int i=k;i<a.size();++i){swap(a[k],a[i]);permute(a,k+1);swap(a[k],a[i]);}\n}", python: "from itertools import permutations\nfor p in permutations(a): emit(p)" },
+  "backtracking-4": { cpp: "void combine(int start,int k,vector<int>&cur){\n  if(k==0){emit(cur);return;}\n  for(int i=start;i<=n;++i){cur.push_back(i);combine(i+1,k-1,cur);cur.pop_back();}\n}", python: "from itertools import combinations\nfor c in combinations(range(1, n + 1), k): emit(c)" },
+  "backtracking-5": { cpp: "void dfs(int v){ if (!promising(v)) return; /* prune */ choose(v); dfs(v+1); undo(v); }", python: "def dfs(v):\n    if not promising(v): return\n    choose(v); dfs(v + 1); undo(v)" },
+  "backtracking-6": { cpp: "// split n items into two halves, enumerate each half, merge with two pointers", python: "# generate subsets of each half separately, then combine results" },
+
+  // ---- Math & Number Theory ----
+  "math-1": { cpp: "long long m = ((a % mod) + mod) % mod;  // safe modulo", python: "m = a % mod  # Python's % is already non-negative" },
+  "math-2": { cpp: "long long gcd(long long a,long long b){ return b?gcd(b,a%b):a; }\nlong long lcm=a/gcd(a,b)*b;", python: "from math import gcd\nlcm = a // gcd(a, b) * b" },
+  "math-3": { cpp: "vector<bool> sieve(N+1,true);\nfor(int i=2;i*i<=N;++i) if(sieve[i]) for(int j=i*i;j<=N;j+=i) sieve[j]=false;", python: "sieve = [True] * (N + 1)\nfor i in range(2, int(N**0.5) + 1):\n    if sieve[i]:\n        for j in range(i*i, N + 1, i): sieve[j] = False" },
+  "math-4": { cpp: "long long binpow(long long a,long long e,long long m){\n  long long r=1;a%=m;\n  while(e){if(e&1)r=r*a%m;a=a*a%m;e>>=1;}\n  return r;\n}", python: "r = pow(a, e, m)  # built-in fast modular exponentiation" },
+  "math-5": { cpp: "long long C(int n,int r,vector<vector<long long>>&pascal){ return pascal[n][r]; }", python: "from math import comb\nc = comb(n, r)" },
+  "math-6": { cpp: "long long inv = binpow(a, mod - 2, mod);  // Fermat's little theorem", python: "inv = pow(a, mod - 2, mod)" },
+
+  // ---- Data Structures ----
+  "data-structures-1": { cpp: "stack<int> st; st.push(x); st.pop();\nqueue<int> q; q.push(x); q.pop();", python: "st = []; st.append(x); st.pop()\nfrom collections import deque\nq = deque(); q.append(x); q.popleft()" },
+  "data-structures-2": { cpp: "set<int> s; s.insert(x);\nmap<int,int> m; m[x]++;", python: "s = set(); s.add(x)\nfrom collections import defaultdict\nm = defaultdict(int); m[x] += 1" },
+  "data-structures-3": { cpp: "priority_queue<int> pq; pq.push(x); pq.top(); pq.pop();", python: "import heapq\npq = []; heapq.heappush(pq, x); heapq.heappop(pq)" },
+  "data-structures-4": { cpp: "int find(int x){ return dsu[x]==x?x:dsu[x]=find(dsu[x]); }\nvoid unite(int a,int b){ dsu[find(a)]=find(b); }", python: "def find(x):\n    if dsu[x] != x: dsu[x] = find(dsu[x])\n    return dsu[x]" },
+  "data-structures-5": { cpp: "void update(int i,int v){for(;i<=n;i+=i&-i) bit[i]+=v;}\nlong long query(int i){long long s=0;for(;i>0;i-=i&-i)s+=bit[i];return s;}", python: "def update(i, v):\n    while i <= n: bit[i] += v; i += i & -i" },
+  "data-structures-6": { cpp: "void update(int node,int l,int r,int i,int v){ /* point update */ }\nlong long query(int node,int l,int r,int ql,int qr){ /* range query */ }", python: "# segment tree: build once O(n), update O(log n), query O(log n)" },
+
+  // ---- Binary Search ----
+  "binary-search-1": { cpp: "int lo=0,hi=n-1;\nwhile(lo<=hi){int mid=(lo+hi)/2;if(a[mid]==x)return mid;a[mid]<x?lo=mid+1:hi=mid-1;}", python: "lo, hi = 0, n - 1\nwhile lo <= hi:\n    mid = (lo + hi) // 2\n    if a[mid] == x: break" },
+  "binary-search-2": { cpp: "auto it = lower_bound(a.begin(), a.end(), x);\nauto it2 = upper_bound(a.begin(), a.end(), x);", python: "from bisect import bisect_left, bisect_right\ni = bisect_left(a, x)\nj = bisect_right(a, x)" },
+  "binary-search-3": { cpp: "int lo=0,hi=n;\nwhile(lo<hi){int mid=(lo+hi)/2;pred(mid)?hi=mid:lo=mid+1;}", python: "lo, hi = 0, n\nwhile lo < hi:\n    mid = (lo + hi) // 2\n    if pred(mid): hi = mid\n    else: lo = mid + 1" },
+  "binary-search-4": { cpp: "long long lo=0,hi=1e9;\nwhile(lo<hi){long long mid=lo+(hi-lo)/2;feasible(mid)?hi=mid:lo=mid+1;}", python: "lo, hi = 0, 10**9\nwhile lo < hi:\n    mid = (lo + hi) // 2\n    if feasible(mid): hi = mid\n    else: lo = mid + 1" },
+  "binary-search-5": { cpp: "double lo=0,hi=1e6;\nfor(int i=0;i<100;++i){double mid=(lo+hi)/2;f(mid)<target?lo=mid:hi=mid;}", python: "lo, hi = 0.0, 1e6\nfor _ in range(100):\n    mid = (lo + hi) / 2\n    if f(mid) < target: lo = mid\n    else: hi = mid" },
+  "binary-search-6": { cpp: "// predicate must be monotonic: false...false true...true\nbool pred(long long mid) { return check(mid); }", python: "def pred(mid):\n    return check(mid)  # must stay monotonic across the range" },
+
+  // ---- Greedy Algorithms ----
+  "greedy-1": { cpp: "sort(a.begin(), a.end(), greater<int>());  // largest-first greedy choice", python: "a.sort(reverse=True)" },
+  "greedy-2": { cpp: "// exchange argument: swapping any two picks never improves the answer", python: "# prove greedy correctness with an exchange argument before coding" },
+  "greedy-3": { cpp: "sort(act.begin(), act.end(), [](auto&a, auto&b){ return a.finish < b.finish; });\nint last = -1, cnt = 0;\nfor (auto& x : act) if (x.start >= last) { cnt++; last = x.finish; }", python: "act.sort(key=lambda x: x.finish)\nlast, cnt = -1, 0\nfor s, f in act:\n    if s >= last: cnt += 1; last = f" },
+  "greedy-4": { cpp: "sort(iv.begin(), iv.end());\nvector<pair<int,int>> merged;\nfor (auto& x : iv) { if (!merged.empty() && merged.back().second >= x.first) merged.back().second = max(merged.back().second, x.second); else merged.push_back(x); }", python: "iv.sort()\nmerged = []\nfor s, e in iv:\n    if merged and merged[-1][1] >= s: merged[-1][1] = max(merged[-1][1], e)\n    else: merged.append([s, e])" },
+  "greedy-5": { cpp: "priority_queue<int, vector<int>, greater<int>> pq;  // earliest-deadline-first", python: "import heapq\npq = []  # earliest-deadline-first with a min-heap" },
+  "greedy-6": { cpp: "// when a simple greedy order fails, greedy + a heap/DSU often still works", python: "# combine the greedy order with a supporting data structure" },
+
+  // ---- Graph Algorithms ----
+  "graphs-1": { cpp: "vector<vector<int>> adj(n);\nadj[u].push_back(v); adj[v].push_back(u);", python: "adj = [[] for _ in range(n)]\nadj[u].append(v); adj[v].append(u)" },
+  "graphs-2": { cpp: "queue<int> q; q.push(s); dist[s]=0;\nwhile(!q.empty()){int v=q.front();q.pop();for(int to:adj[v])if(dist[to]<0){dist[to]=dist[v]+1;q.push(to);}}", python: "from collections import deque\nq = deque([s]); dist[s] = 0\nwhile q:\n    v = q.popleft()\n    for to in adj[v]:\n        if dist[to] < 0: dist[to] = dist[v] + 1; q.append(to)" },
+  "graphs-3": { cpp: "void dfs(int v){ visited[v]=true; for(int to:adj[v]) if(!visited[to]) dfs(to); }", python: "def dfs(v):\n    visited[v] = True\n    for to in adj[v]:\n        if not visited[to]: dfs(to)" },
+  "graphs-4": { cpp: "void dfs(int v){visited[v]=true;for(int to:adj[v])if(!visited[to])dfs(to);order.push_back(v);}\nreverse(order.begin(),order.end());", python: "order = []\ndef dfs(v):\n    visited[v] = True\n    for to in adj[v]:\n        if not visited[to]: dfs(to)\n    order.append(v)" },
+  "graphs-5": { cpp: "priority_queue<pair<long long,int>,vector<pair<long long,int>>,greater<>> pq;\npq.push({0,s}); dist[s]=0;", python: "import heapq\npq = [(0, s)]; dist[s] = 0\nwhile pq:\n    d, v = heapq.heappop(pq)" },
+  "graphs-6": { cpp: "sort(edges.begin(), edges.end());\nfor (auto& [w,u,v] : edges) if (find(u)!=find(v)) { unite(u,v); mst += w; }", python: "edges.sort()\nfor w, u, v in edges:\n    if find(u) != find(v): unite(u, v); mst += w" },
+
+  // ---- String Algorithms ----
+  "strings-1": { cpp: "string s = \"algo\"; s.substr(1,2); reverse(s.begin(), s.end());", python: "s = \"algo\"\ns[1:3]\ns[::-1]" },
+  "strings-2": { cpp: "long long h=0, p=31, mod=1e9+7, pw=1;\nfor(char c:s){h=(h+(c-'a'+1)*pw)%mod;pw=pw*p%mod;}", python: "h, p, mod, pw = 0, 31, 10**9 + 7, 1\nfor c in s:\n    h = (h + (ord(c) - 96) * pw) % mod\n    pw = pw * p % mod" },
+  "strings-3": { cpp: "vector<int> pi(s.size());\nfor(int i=1;i<(int)s.size();++i){int j=pi[i-1];while(j&&s[i]!=s[j])j=pi[j-1];if(s[i]==s[j])++j;pi[i]=j;}", python: "pi = [0] * len(s)\nfor i in range(1, len(s)):\n    j = pi[i - 1]\n    while j and s[i] != s[j]: j = pi[j - 1]\n    if s[i] == s[j]: j += 1\n    pi[i] = j" },
+  "strings-4": { cpp: "// KMP: search = prefix_function(pattern + '#' + text)\nvector<int> pi = prefix_function(pattern + \"#\" + text);", python: "combo = pattern + \"#\" + text\npi = prefix_function(combo)" },
+  "strings-5": { cpp: "vector<int> z(s.size());\nint l=0,r=0;\nfor(int i=1;i<(int)s.size();++i){ if(i<r) z[i]=min(r-i,z[i-l]); while(i+z[i]<(int)s.size()&&s[z[i]]==s[i+z[i]])++z[i]; if(i+z[i]>r){l=i;r=i+z[i];} }", python: "z = [0] * len(s)\nl = r = 0\nfor i in range(1, len(s)):\n    if i < r: z[i] = min(r - i, z[i - l])\n    while i + z[i] < len(s) and s[z[i]] == s[i + z[i]]: z[i] += 1\n    if i + z[i] > r: l, r = i, i + z[i]" },
+  "strings-6": { cpp: "struct Trie{ Trie* next[26]{}; bool end=false; };\nvoid insert(Trie* t,string&s){ for(char c:s){ if(!t->next[c-'a']) t->next[c-'a']=new Trie(); t=t->next[c-'a']; } t->end=true; }", python: "trie = {}\nnode = trie\nfor c in s:\n    node = node.setdefault(c, {})\nnode['#'] = True" },
+
+  // ---- Computational Geometry ----
+  "geometry-1": { cpp: "struct Point{ long long x,y; };\nPoint operator-(Point a, Point b){ return {a.x-b.x, a.y-b.y}; }", python: "def sub(a, b):\n    return (a[0] - b[0], a[1] - b[1])" },
+  "geometry-2": { cpp: "long long dot(Point a, Point b){ return a.x*b.x + a.y*b.y; }", python: "def dot(a, b):\n    return a[0]*b[0] + a[1]*b[1]" },
+  "geometry-3": { cpp: "long long cross(Point a, Point b){ return a.x*b.y - a.y*b.x; }", python: "def cross(a, b):\n    return a[0]*b[1] - a[1]*b[0]" },
+  "geometry-4": { cpp: "bool intersect(Point a,Point b,Point c,Point d){\n  return cross(b-a,c-a)*cross(b-a,d-a) < 0 && cross(d-c,a-d)*cross(d-c,b-d) < 0;\n}", python: "def intersect(a, b, c, d):\n    return cross(sub(b,a), sub(c,a)) * cross(sub(b,a), sub(d,a)) < 0" },
+  "geometry-5": { cpp: "long long area2 = 0;\nfor (int i = 0; i < n; ++i) area2 += cross(p[i], p[(i+1)%n]);\ndouble area = abs(area2) / 2.0;", python: "area2 = sum(cross(p[i], p[(i+1)%n]) for i in range(n))\narea = abs(area2) / 2" },
+  "geometry-6": { cpp: "sort(p.begin(), p.end());\n// Andrew's monotone chain: build lower + upper hulls with cross product", python: "p.sort()\n# monotone chain: keep popping while cross(...) <= 0" },
+
+  // ---- Two Pointers & Sliding Window ----
+  "two-pointers-1": { cpp: "int l=0,r=n-1;\nwhile(l<r){ if(a[l]+a[r]==target) return {l,r}; a[l]+a[r]<target?++l:--r; }", python: "l, r = 0, n - 1\nwhile l < r:\n    s = a[l] + a[r]\n    if s == target: break\n    if s < target: l += 1\n    else: r -= 1" },
+  "two-pointers-2": { cpp: "int l=0;\nfor(int r=0;r<n;++r){ /* extend with a[r] */ while(bad()) ++l; }", python: "l = 0\nfor r in range(n):\n    while bad(): l += 1" },
+  "two-pointers-3": { cpp: "int l=0; long long sum=0;\nfor(int r=0;r<n;++r){ sum+=a[r]; while(sum>k){sum-=a[l++];} }", python: "l, s = 0, 0\nfor r in range(n):\n    s += a[r]\n    while s > k: s -= a[l]; l += 1" },
+  "two-pointers-4": { cpp: "int l=0,best=0;\nfor(int r=0;r<n;++r){ while(!valid(l,r)) ++l; best=max(best,r-l+1); }", python: "l, best = 0, 0\nfor r in range(n):\n    while not valid(l, r): l += 1\n    best = max(best, r - l + 1)" },
+  "two-pointers-5": { cpp: "vector<long long> pre(n+1);\nfor(int i=0;i<n;++i) pre[i+1]=pre[i]+a[i];\n// window sum = pre[r+1]-pre[l]", python: "pre = [0] * (n + 1)\nfor i in range(n): pre[i+1] = pre[i] + a[i]" },
+  "two-pointers-6": { cpp: "// combine sliding window with a multiset/deque for min/max in range", python: "from collections import deque\ndq = deque()  # monotonic deque for sliding window min/max" },
+
+  // ---- Dynamic Programming ----
+  "dynamic-programming-1": { cpp: "unordered_map<int,long long> memo;\nlong long f(int n){ if(n<=1) return n; if(memo.count(n)) return memo[n]; return memo[n]=f(n-1)+f(n-2); }", python: "from functools import lru_cache\n@lru_cache(None)\ndef f(n):\n    return n if n <= 1 else f(n-1) + f(n-2)" },
+  "dynamic-programming-2": { cpp: "vector<long long> dp(n+1);\ndp[0]=0; dp[1]=1;\nfor(int i=2;i<=n;++i) dp[i]=dp[i-1]+dp[i-2];", python: "dp = [0] * (n + 1)\ndp[1] = 1\nfor i in range(2, n + 1): dp[i] = dp[i-1] + dp[i-2]" },
+  "dynamic-programming-3": { cpp: "vector<vector<long long>> dp(n+1, vector<long long>(cap+1));\nfor(int i=1;i<=n;++i) for(int c=0;c<=cap;++c) dp[i][c]=w[i]<=c?max(dp[i-1][c],dp[i-1][c-w[i]]+v[i]):dp[i-1][c];", python: "dp = [[0]*(cap+1) for _ in range(n+1)]\nfor i in range(1, n+1):\n    for c in range(cap+1):\n        dp[i][c] = max(dp[i-1][c], dp[i-1][c-w[i]] + v[i]) if w[i] <= c else dp[i-1][c]" },
+  "dynamic-programming-4": { cpp: "vector<vector<long long>> dp(n, vector<long long>(m));\ndp[0][0]=grid[0][0];\nfor(int i=0;i<n;++i)for(int j=0;j<m;++j) if(i||j) dp[i][j]=grid[i][j]+max(i?dp[i-1][j]:0,j?dp[i][j-1]:0);", python: "dp = [[0]*m for _ in range(n)]\ndp[0][0] = grid[0][0]\nfor i in range(n):\n    for j in range(m):\n        if i or j: dp[i][j] = grid[i][j] + max(dp[i-1][j] if i else 0, dp[i][j-1] if j else 0)" },
+  "dynamic-programming-5": { cpp: "vector<int> dp(n, 1);\nfor(int i=0;i<n;++i) for(int j=0;j<i;++j) if(a[j]<a[i]) dp[i]=max(dp[i],dp[j]+1);", python: "dp = [1] * n\nfor i in range(n):\n    for j in range(i):\n        if a[j] < a[i]: dp[i] = max(dp[i], dp[j] + 1)" },
+  "dynamic-programming-6": { cpp: "vector<long long> dp(1<<n, -1);\ndp[0]=0;\nfor(int mask=0;mask<(1<<n);++mask) if(dp[mask]>=0) for(int i=0;i<n;++i) if(!(mask>>i&1)) dp[mask|1<<i]=max(dp[mask|1<<i],dp[mask]+cost(mask,i));", python: "dp = [-1] * (1 << n)\ndp[0] = 0\nfor mask in range(1 << n):\n    if dp[mask] < 0: continue\n    for i in range(n):\n        if not (mask >> i & 1): dp[mask | 1 << i] = max(dp[mask | 1 << i], dp[mask] + cost(mask, i))" },
+
+  // ---- Tree Algorithms ----
+  "trees-1": { cpp: "vector<vector<int>> tree(n);\ntree[u].push_back(v); tree[v].push_back(u);", python: "tree = [[] for _ in range(n)]\ntree[u].append(v); tree[v].append(u)" },
+  "trees-2": { cpp: "long long dfs(int v,int p){ long long sz=1; for(int to:tree[v]) if(to!=p) sz+=dfs(to,v); return sub[v]=sz; }", python: "def dfs(v, p):\n    sz = 1\n    for to in tree[v]:\n        if to != p: sz += dfs(to, v)\n    sub[v] = sz\n    return sz" },
+  "trees-3": { cpp: "up[v][0]=parent[v];\nfor(int k=1;k<LOG;++k) up[v][k]=up[up[v][k-1]][k-1];", python: "up[v][0] = parent[v]\nfor k in range(1, LOG):\n    up[v][k] = up[up[v][k-1]][k-1]" },
+  "trees-4": { cpp: "if(depth[u]<depth[v]) swap(u,v);\nfor(int k=LOG-1;k>=0;--k) if(depth[u]-(1<<k)>=depth[v]) u=up[u][k];", python: "if depth[u] < depth[v]: u, v = v, u\nfor k in range(LOG-1, -1, -1):\n    if depth[u] - (1 << k) >= depth[v]: u = up[u][k]" },
+  "trees-5": { cpp: "pair<int,int> dfs(int v,int p){ int best=0,node=v; for(int to:tree[v]) if(to!=p){auto[d,n]=dfs(to,v); if(d+1>best){best=d+1;node=n;}} return {best,node}; }", python: "def dfs(v, p):\n    best, node = 0, v\n    for to in tree[v]:\n        if to != p:\n            d, n2 = dfs(to, v)\n            if d + 1 > best: best, node = d + 1, n2\n    return best, node" },
+  "trees-6": { cpp: "void dfs(int v,int p){ dp[v]=1; for(int to:tree[v]) if(to!=p){dfs(to,v); dp[v]+=dp[to];} }", python: "def dfs(v, p):\n    dp[v] = 1\n    for to in tree[v]:\n        if to != p: dfs(to, v); dp[v] += dp[to]" },
+
+  // ---- Advanced CP & ICPC ----
+  "advanced-cp-1": { cpp: "struct Node{ int l,r; long long sum; };\nint update(int node,int l,int r,int i,int v){ /* create O(log n) new nodes */ }", python: "# persistent segment tree: each update clones O(log n) nodes, roots[] tracks versions" },
+  "advanced-cp-2": { cpp: "struct Treap{ int priority; long long val; Treap *l,*r; };\nvoid split(Treap* t,int key,Treap*&l,Treap*&r){ /* by implicit index */ }", python: "# treap: random priority keeps the tree balanced in expectation O(log n)" },
+  "advanced-cp-3": { cpp: "int block=sqrt(n);\nsort(queries.begin(),queries.end(),[&](auto&a,auto&b){ return make_pair(a.l/block,a.r) < make_pair(b.l/block,b.r); });", python: "block = int(n**0.5)\nqueries.sort(key=lambda q: (q.l // block, q.r))" },
+  "advanced-cp-4": { cpp: "int heavy[N]; // dfs sets heavy child by subtree size, then chain-decompose the tree", python: "# HLD: heavy edges chain into O(log n) segments for path queries" },
+  "advanced-cp-5": { cpp: "// FFT multiplies two degree-n polynomials in O(n log n) via point-value form", python: "import numpy as np\nresult = np.convolve(a, b)  # naive O(n^2); real FFT needed for large n" },
+  "advanced-cp-6": { cpp: "// Sprague-Grundy: grundy(state) = mex{ grundy(next) : next reachable from state }", python: "def grundy(state):\n    reachable = {grundy(nxt) for nxt in moves(state)}\n    return mex(reachable)" },
+};

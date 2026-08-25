@@ -22,7 +22,23 @@ const defs:Def[]=[
  {slug:"advanced-cp",icon:"✦",color:"#ffd9a8",uz:"Ilg‘or CP va ICPC",en:"Advanced CP & ICPC",descUz:"Expert darajadagi tuzilmalar va optimallashtirishlar.",descEn:"Expert-level structures and optimizations.",level:"1900 → 3000",difficulty:"expert",cat:"Advanced",catUz:"Ilg‘or",prereqs:["dynamic-programming","graphs"],units:["Persistent segment tree","Treap va implicit treap","Mo algoritmi","Heavy-Light decomposition","FFT va NTT","O‘yinlar nazariyasi"],unitsEn:["Persistent segment tree","Treap and implicit treap","Mo's algorithm","Heavy-Light decomposition","FFT and NTT","Game theory"],cpp:"struct Node { int l, r, sum; } st[MAXN * 20];",python:"# persistent segtree nodes\nnodes = [(0, 0, 0)]",complexity:"O(log n) so‘rov"},
 ];
 
-const problemIds=["A01","A02","A03","B01","B02","B03"];
+// Only 7 problems exist in the bank today, so most roadmaps have no
+// topic-matched problem of their own yet. Rather than cycling the same six
+// IDs across every roadmap regardless of subject, walk up the prereq chain
+// to the nearest ancestor that does have matched problems — a Trees unit
+// links to a Graphs problem (its prereq), not to an unrelated Binary Search
+// one. Writing dedicated problems per topic is a separate, larger task.
+const problemsByTopic:Record<string,string[]>={
+ "programming-basics":["A01"],foundations:["A02","A03","B04"],"binary-search":["B01"],greedy:["B02"],graphs:["B03"],
+};
+const nearestProblemSet=(slug:string,seen=new Set<string>()):string[]=>{
+ if(seen.has(slug))return [];
+ seen.add(slug);
+ if(problemsByTopic[slug])return problemsByTopic[slug];
+ const d=defs.find(x=>x.slug===slug);if(!d)return [];
+ for(const prereq of d.prereqs){const found=nearestProblemSet(prereq,seen);if(found.length)return found}
+ return [];
+};
 
 export const roadmapCatalog:MasteryRoadmap[]=defs.map(d=>({
  slug:d.slug,icon:d.icon,color:d.color,titleUz:d.uz,titleEn:d.en,descriptionUz:d.descUz,descriptionEn:d.descEn,level:d.level,difficulty:d.difficulty,category:d.cat,categoryUz:d.catUz,prereqs:d.prereqs,
@@ -34,7 +50,7 @@ export const roadmapCatalog:MasteryRoadmap[]=defs.map(d=>({
   summaryEn:`Learn the core idea behind ${d.unitsEn[index]}, when to use it, and the mistakes to avoid.`,
   rating:`${800+index*100} → ${1100+index*150}`,minutes:18+index*4,complexity:d.complexity,cpp:d.cpp,python:d.python,
   quiz:{questionUz:`${titleUz} uchun eng muhim birinchi qadam qaysi?`,questionEn:`What is the most important first step for ${d.unitsEn[index]}?`,choicesUz:["Cheklov va invariantni aniqlash","Tasodifiy kod yozish","Har doim O(n²) ishlatish","Testlarni e’tiborsiz qoldirish"],choicesEn:["Identify constraints and the invariant","Write random code","Always use O(n²)","Ignore test cases"],correct:0},
-  problemId:problemIds[index%problemIds.length]
+  problemId:(()=>{const set=nearestProblemSet(d.slug);return set.length?set[index%set.length]:"A01"})()
  }))
 }));
 

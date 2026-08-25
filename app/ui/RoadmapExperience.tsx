@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { roadmapCatalog, type MasteryRoadmap } from "./roadmap-data";
 import { unitContent } from "./roadmap-content";
+import { unitCode } from "./unit-code";
 import { emptyProgress as empty, loadProgress, saveUnit, type Progress } from "./progress";
 import { masteryOf, masteryLabel, recordEvidence, MASTERY_CONFIG } from "./mastery";
 import { can } from "./permissions";
@@ -25,7 +26,7 @@ export function RoadmapExperience({slug,lang,role,unitId,onOpenUnit,onBack,onPra
 
 function Lesson({roadmap,unit,index,lang,progress,setProgress,onBack,onPractice}:{roadmap:MasteryRoadmap;unit:MasteryRoadmap["units"][number];index:number;lang:Lang;progress:Progress;setProgress:(p:Progress)=>void;onBack:()=>void;onPractice:(id:string)=>void}){
  const [codeLang,setCodeLang]=useState<"cpp"|"python">("cpp"),[answer,setAnswer]=useState<number|null>(null),[result,setResult]=useState("");
- const content=unitContent[unit.id],quiz=content.quiz;
+ const content=unitContent[unit.id],quiz=content.quiz,code=unitCode[unit.id]||{cpp:unit.cpp,python:unit.python};
  const saveQuiz=()=>{if(answer===null)return;const score=answer===quiz.correct?100:0;saveUnit(progress,unit.id,{quizScore:score}).then(setProgress);
   if(score>=70){const gain=recordEvidence(roadmap.slug,"quiz",`quiz:${unit.id}`,MASTERY_CONFIG.weights.quiz);setResult(lang==="uz"?`To‘g‘ri — quizdan o‘tdingiz! +${gain.delta} mahorat`:`Correct — quiz passed! +${gain.delta} mastery`)}
   else setResult(lang==="uz"?"Noto‘g‘ri. Nazariyani qayta ko‘rib chiqing.":"Not quite. Review the theory and retry.")};
@@ -33,7 +34,7 @@ function Lesson({roadmap,unit,index,lang,progress,setProgress,onBack,onPractice}
  return <div className="lesson-page"><button className="crumb" onClick={onBack}>← {lang==="uz"?roadmap.titleUz:roadmap.titleEn}</button><div className="lesson-head"><div><p className="eyebrow">UNIT {index+1}/{roadmap.units.length} · {unit.rating}</p><h1>{lang==="uz"?unit.titleUz:unit.titleEn}</h1><p className="muted">{lang==="uz"?unit.summaryUz:unit.summaryEn}</p></div><div className="lesson-state"><span className={passed?"passed":""}>Quiz {progress.quizScores[unit.id]||0}%</span><span className={solved?"passed":""}>Problem {solved?"AC":"—"}</span></div></div><div className="lesson-grid"><article className="lesson-content panel">
   <span className="lesson-number">01</span><h2>{lang==="uz"?"Maqsad":"Goal"}</h2><p>{lang==="uz"?content.goalUz:content.goalEn}</p><p>{lang==="uz"?content.intuitionUz:content.intuitionEn}</p><div className="concept-box"><b>{lang==="uz"?"Murakkablik":"Complexity"}</b><code>{unit.complexity}</code></div>
   <span className="lesson-number">02</span><h2>{lang==="uz"?"Asosiy tushuncha":"Core concept"}</h2><p>{lang==="uz"?content.coreUz:content.coreEn}</p>
-  <span className="lesson-number">03</span><h2>{lang==="uz"?"Kod namunasi":"Code example"}</h2><div className="code-tabs"><button className={codeLang==="cpp"?"active":""} onClick={()=>setCodeLang("cpp")}>C++20</button><button className={codeLang==="python"?"active":""} onClick={()=>setCodeLang("python")}>Python 3</button></div><pre className="lesson-code"><code>{codeLang==="cpp"?unit.cpp:unit.python}</code></pre>
+  <span className="lesson-number">03</span><h2>{lang==="uz"?"Kod namunasi":"Code example"}</h2><div className="code-tabs"><button className={codeLang==="cpp"?"active":""} onClick={()=>setCodeLang("cpp")}>C++20</button><button className={codeLang==="python"?"active":""} onClick={()=>setCodeLang("python")}>Python 3</button></div><pre className="lesson-code"><code>{codeLang==="cpp"?code.cpp:code.python}</code></pre>
   <span className="lesson-number">04</span><h2>{lang==="uz"?"Bosqichma-bosqich":"Walkthrough"}</h2><p>{lang==="uz"?content.walkUz:content.walkEn}</p>
   <span className="lesson-number">05</span><h2>{lang==="uz"?"Keng tarqalgan xatolar":"Common mistakes"}</h2><ul className="lesson-list">{(lang==="uz"?content.mistakesUz:content.mistakesEn).map(m=><li key={m}>{m}</li>)}</ul>
   <span className="lesson-number">06</span><h2>{lang==="uz"?"Naqsh va maslahatlar":"Pattern and hints"}</h2><p>{lang==="uz"?content.patternUz:content.patternEn}</p><ul className="lesson-list">{(lang==="uz"?content.hintsUz:content.hintsEn).map(h=><li key={h}>{h}</li>)}</ul>
