@@ -8,8 +8,8 @@ import { Placement } from "./Placement";
 import { AuthPage } from "./AuthPage";
 import { HomeDashboard } from "./HomeDashboard";
 import { ProfilePage } from "./ProfilePage";
-import { MASTERY_CONFIG, loadMastery, masteryOf, recordDuelResult, recordEvidence } from "./mastery";
-import { readLocal as readLocalProgress, syncUp } from "./progress";
+import { MASTERY_CONFIG, backfillMastery, loadMastery, masteryOf, recordDuelResult, recordEvidence } from "./mastery";
+import { loadProgress, readLocal as readLocalProgress, syncUp } from "./progress";
 import { can } from "./permissions";
 import {
  GUEST_SCOPE, adoptGuestInto, adoptLegacyInto, clearSession, dropScopeData, fetchLeaderboard, fetchLearnerCount,
@@ -56,11 +56,27 @@ export function AlgoYolApp(){
  // The app stays in "loading" until Supabase confirms it, then commits to
  // exactly one of guest / authenticated. It never renders account-shaped UI
  // on the strength of a token alone.
- const [auth,setAuth]=useState<Auth>(()=>(typeof window!=="undefined"&&readToken()&&supabaseReady()?{status:"loading"}:{status:"guest"}));
+ // The first render must be identical on the server and in the browser. The
+ // server has no session (the token lives in sessionStorage, not a cookie), so
+ // both start as "guest"; the effect below promotes to "loading" on the very
+ // next tick when a stored token exists. Deriving the initial value from
+ // readToken() made the two disagree and threw a hydration error.
+ const [auth,setAuth]=useState<Auth>({status:"guest"});
  const [authNotice,setAuthNotice]=useState("");
  const profile=auth.status==="authenticated"?auth.profile:null;
  const signed=auth.status==="authenticated";
  const role:Role=profile?.role||"user";
+
+ /* Signing out clears the account's local namespace, so a later sign-in on the
+    same browser starts empty. Quiz scores and solves live on the account
+    (unit_progress), so mastery is re-derived from that recorded evidence
+    instead of being lost — nothing is invented, and a topic the learner never
+    touched stays at zero. */
+ const hydrateAccountState=async()=>{
+  const progress=await loadProgress();
+  backfillMastery(progress);
+  window.dispatchEvent(new Event("algoyol-progress"));
+ };
 
  useEffect(()=>{const saved=localStorage.getItem("algoyol-lang") as Lang|null;if(saved)setLang(saved)},[]);
  // Boot: adopt the stored scope synchronously so the first paint reads the
@@ -69,13 +85,14 @@ export function AlgoYolApp(){
   const token=readToken(),storedId=readStoredUserId();
   if(storedId)setScope(storedId);
   if(!token||!supabaseReady()){setScope(GUEST_SCOPE);adoptLegacyInto(GUEST_SCOPE);return}
+  setAuth({status:"loading"});
   let live=true;
   fetchProfile(token).then(next=>{
    if(!live)return;
    if(!next){clearSession();setScope(GUEST_SCOPE);setAuth({status:"guest"});return}
    setScope(next.id);adoptLegacyInto(next.id);
    setAuth({status:"authenticated",profile:next});
-   window.dispatchEvent(new Event("algoyol-progress"));
+   void hydrateAccountState();
   });
   return()=>{live=false};
  },[]);
@@ -122,6 +139,7 @@ export function AlgoYolApp(){
   if(adoptGuestInto(next.id))void syncUp(readLocalProgress());
   setAuth({status:"authenticated",profile:next});
   setAuthNotice("");
+  void hydrateAccountState();
   if(next.preferred_language&&next.preferred_language!==lang)applyLang(next.preferred_language);
   window.dispatchEvent(new Event("algoyol-progress"));
   if(isNew&&!readScoped("algoyol-onboarded"))go("placement");else go("home");

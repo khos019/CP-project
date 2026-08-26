@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { supabaseConfig } from "./session";
+import { fetchAuthProviders, supabaseConfig, type AuthProviders } from "./session";
 
 type Lang = "uz" | "en";
 type Mode = "login" | "signup" | "confirm" | "reset";
@@ -54,6 +54,7 @@ const L = {
     resent: "Tasdiqlash xabari qayta yuborildi.",
     offline: "Xizmatga ulanib bo‘lmadi. Internetni tekshiring.",
     guestHint: "Ro‘yxatdan o‘tmasdan ham darslarni ko‘rishingiz mumkin — progress esa faqat hisobingizda saqlanadi.",
+    googleOff: "Google orqali kirish hozircha yoqilmagan. Email va parol bilan davom eting.",
   },
   en: {
     welcome: "Welcome back",
@@ -95,6 +96,7 @@ const L = {
     resent: "Confirmation email sent again.",
     offline: "Could not reach the service. Check your connection.",
     guestHint: "You can browse the lessons without an account — progress is only saved once you sign in.",
+    googleOff: "Google sign-in is not enabled yet. Continue with email and password.",
   },
 };
 
@@ -121,10 +123,22 @@ export function AuthPage({
   const [show, setShow] = useState(false);
   const [remember, setRemember] = useState(true);
   const firstField = useRef<HTMLInputElement>(null);
+  // null = still asking the backend which providers it accepts
+  const [providers, setProviders] = useState<AuthProviders | null>(null);
 
   useEffect(() => {
     firstField.current?.focus();
   }, [mode]);
+
+  useEffect(() => {
+    let live = true;
+    fetchAuthProviders().then((p) => {
+      if (live) setProviders(p);
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
 
   const ready = () => {
     const { url, key } = supabaseConfig();
@@ -149,6 +163,12 @@ export function AuthPage({
 
   const google = () => {
     if (!ready()) return;
+    // Belt and braces: the button is only rendered when the provider is on,
+    // but never navigate the user off-site to a provider error page.
+    if (providers && !providers.google) {
+      setNote({ kind: "error", text: t.googleOff });
+      return;
+    }
     const { url } = supabaseConfig();
     window.location.href = `${url}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(
       `${window.location.origin}/`,
@@ -293,6 +313,8 @@ export function AuthPage({
 
       {(mode === "login" || mode === "signup") && (
         <>
+          {providers?.google && (
+            <>
           <button type="button" className="google-btn" onClick={google}>
             <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden>
               <path
@@ -311,6 +333,8 @@ export function AuthPage({
           <div className="auth-divider">
             <span>{t.orEmail}</span>
           </div>
+            </>
+          )}
 
           <form onSubmit={authenticate} noValidate>
             {mode === "signup" && (

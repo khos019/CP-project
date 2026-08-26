@@ -202,6 +202,36 @@ export async function fetchProfile(token: string): Promise<Profile | null> {
   }
 }
 
+/* Which sign-in methods the backend will actually accept. The Google button
+   used to be rendered unconditionally: with the provider disabled in Supabase,
+   clicking it navigated the user off the site to a raw JSON error
+   ({"error_code":"validation_failed","msg":"Unsupported provider: provider is
+   not enabled"}) with no way back. The UI now asks first, so it offers only
+   what works — and lights up on its own once a provider is enabled, with no
+   redeploy needed. */
+export type AuthProviders = { google: boolean; github: boolean; email: boolean };
+let providerCache: AuthProviders | null = null;
+export async function fetchAuthProviders(): Promise<AuthProviders> {
+  if (providerCache) return providerCache;
+  const fallback: AuthProviders = { google: false, github: false, email: true };
+  const { url, key } = supabaseConfig();
+  if (!url || !key) return fallback;
+  try {
+    const response = await fetch(`${url}/auth/v1/settings`, { headers: { apikey: key } });
+    if (!response.ok) return fallback;
+    const settings = (await response.json()) as { external?: Record<string, boolean> };
+    const external = settings.external || {};
+    providerCache = {
+      google: external.google === true,
+      github: external.github === true,
+      email: external.email !== false,
+    };
+    return providerCache;
+  } catch {
+    return fallback;
+  }
+}
+
 export type ProfilePatch = Partial<
   Pick<Profile, "display_name" | "username" | "avatar_url" | "preferred_language" | "bio" | "country">
 >;
