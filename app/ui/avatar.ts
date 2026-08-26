@@ -17,11 +17,23 @@ export async function avatarStorageReady(): Promise<boolean> {
   if (bucketReady !== null) return bucketReady;
   const { url, key } = supabaseConfig();
   if (!url || !key) return (bucketReady = false);
+  /* Finding out whether a bucket exists, using only credentials the browser
+     has, is fiddlier than it looks:
+       - object/list answers 200 with [] even for a bucket that does not exist
+       - /bucket/<id> answers "NoSuchBucket" for the anon AND authenticated
+         roles even when the bucket is there, because reading bucket metadata
+         needs the service role
+     Asking the public object endpoint for a key that will never exist does
+     distinguish the two, with no credentials at all:
+       bucket present -> code "NoSuchKey"
+       bucket absent  -> code "NoSuchBucket"  */
   try {
-    // object/list answers 200 with [] even for a bucket that does not exist,
-    // so the bucket endpoint is the one that actually tells the truth.
-    const probe = await fetch(`${url}/storage/v1/bucket/${BUCKET}`, { headers: { apikey: key } });
-    bucketReady = probe.ok;
+    const probe = await fetch(`${url}/storage/v1/object/public/${BUCKET}/__probe__`, {
+      headers: { apikey: key },
+    });
+    if (probe.ok) return (bucketReady = true);
+    const detail = (await probe.json().catch(() => ({}))) as { code?: string };
+    bucketReady = detail.code !== "NoSuchBucket";
   } catch {
     bucketReady = false;
   }
