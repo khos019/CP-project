@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { roadmapCatalog } from "./roadmap-data";
 import { writeScoped } from "./session";
+import { BrandMark } from "./BrandMark";
 import { loadMastery, masteryLabel, seedPlacement } from "./mastery";
 
 type Lang="uz"|"en";
@@ -63,7 +64,7 @@ export function Placement({lang,signed,onFinish,onRoadmap}:{lang:Lang;signed:boo
     <button className="primary" onClick={onFinish}>{t.goRoadmap} →</button></div></div>;
  }
  return <div className="pl-page"><div className="auth pl-card">
-  {step==="intro"&&<><div className="brand"><span className="brandmark">A›</span>AlgoYo‘l</div><h1>{t.welcome}</h1><p className="muted">{t.loop}</p><h2 style={{margin:"26px 0 6px"}}>{t.question}</h2>
+  {step==="intro"&&<><div className="brand"><BrandMark className="brandmark" />AlgoYo‘l</div><h1>{t.welcome}</h1><p className="muted">{t.loop}</p><h2 style={{margin:"26px 0 6px"}}>{t.question}</h2>
    <button className="primary" style={{width:"100%",marginTop:16}} onClick={()=>signed?setStep("background"):setStep("background")}>{t.assess} →</button>
    <button className="secondary" style={{width:"100%",marginTop:10}} onClick={()=>{writeScoped("algoyol-onboarded","1");onFinish()}}>{t.fresh}</button>
    <button className="lang" style={{width:"100%",marginTop:10}} onClick={onFinish}>{t.later}</button></>}

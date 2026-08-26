@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { BrandMark } from "./BrandMark";
 import { fetchAuthProviders, supabaseConfig, type AuthProviders } from "./session";
 
 type Lang = "uz" | "en";
@@ -294,9 +295,7 @@ export function AuthPage({
   return (
     <div className="auth">
       <div className="brand">
-        <span className="brandmark" aria-hidden>
-          A›
-        </span>
+        <BrandMark className="brandmark" />
         AlgoYo‘l
       </div>
       <h1>{heading}</h1>
