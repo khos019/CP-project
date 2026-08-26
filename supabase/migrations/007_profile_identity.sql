@@ -13,8 +13,12 @@
 -- Run AFTER 001-006.
 
 alter table public.profiles
-  add column if not exists bio text not null default '' ,
+  add column if not exists bio text not null default '',
   add column if not exists country text not null default '';
+
+-- Trim anything that would fail the length checks below, so applying this on a
+-- live database can never abort halfway.
+update public.profiles set display_name = left(display_name, 40) where length(display_name) > 40;
 
 do $$
 begin
