@@ -165,7 +165,7 @@ export function AlgoYolApp(){
  const filtered=useMemo(()=>filter==="all"?problems:problems.filter(p=>p.difficulty===filter),[filter]);
  const judge=async()=>{if(!signed){setView("auth");return}if(!activeProblem.judge){setVerdict(lang==="uz"?"Bu masala uchun tekshiruvchi tez orada ulanadi":"The judge for this problem is coming soon");return}setVerdict(lang==="uz"?"Navbatda… testlar tekshirilmoqda":"In queue… running hidden tests");try{const response=await fetch("/api/judge",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({problemId:activeProblem.judge,language:codeLang,sourceCode:code})});const r=await response.json();const names:Record<string,[string,string]>={ACCEPTED:["Qabul qilindi","Accepted"],WRONG_ANSWER:["Noto‘g‘ri javob","Wrong answer"],COMPILATION_ERROR:["Kompilyatsiya xatosi","Compilation error"],RUNTIME_ERROR:["Bajarilish xatosi","Runtime error"],TIME_LIMIT_EXCEEDED:["Vaqt chegarasi oshdi","Time limit exceeded"],MEMORY_LIMIT_EXCEEDED:["Xotira chegarasi oshdi","Memory limit exceeded"],JUDGE_ERROR:["Tekshiruvchi xatosi","Judge error"]};const title=(names[r.verdict]||names.JUDGE_ERROR)[lang==="uz"?0:1];const test=r.test?` · ${lang==="uz"?"test":"test"} #${r.test}`:"";const stats=r.verdict==="ACCEPTED"?` · ${r.passed}/${r.total} · ${r.runtimeMs} ms · ${r.memoryKb} KB`:"";setVerdict(`${title}${test}${stats}${r.details?`\n${String(r.details).slice(0,900)}`:""}`)}catch{setVerdict(lang==="uz"?"Tekshiruvchi bilan aloqa uzildi":"Judge connection failed")}};
  return <div className="shell"><header className="topbar"><button className="brand" onClick={()=>go("home")} style={{border:0,background:"transparent"}}><BrandMark className="brandmark" />AlgoYo‘l</button><nav className="nav">{(["home","roadmaps","problems","duel","leaderboard"] as View[]).map(v=><button key={v} className={view===v?"active":""} onClick={()=>go(v)}>{t[v as keyof typeof t]}</button>)}</nav><div className="actions"><button className="lang" onClick={swap} aria-label={lang==="uz"?"Switch to English":"O‘zbekchaga o‘tish"}>{lang==="uz"?"EN":"UZ"}</button>{auth.status==="loading"?<span className="pill pill-loading" aria-live="polite">…</span>:<button className="pill" onClick={()=>go(signed?"profile":"auth")}>{signed?(lang==="uz"?"Profil":"Profile"):t.login}</button>}<button className="primary" onClick={()=>go("duel")}>{lang==="uz"?"Duel topish":"Find duel"}</button></div></header>
- <main className="main">{view==="home"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed&&profile?<HomeDashboard lang={lang} role={role} go={v=>go(v as View)} openRoadmap={openRoadmap} duelRating={profile.duel_rating}/>:<Home lang={lang} go={go} openRoadmap={openRoadmap}/>)} {view==="roadmaps"&&<RoadmapHub lang={lang} role={role} openRoadmap={openRoadmap}/>} {view==="roadmap"&&<RoadmapExperience slug={selectedRoadmap} lang={lang} role={role} unitId={selectedUnit} onOpenUnit={id=>pushScreen({unit:id})} onBack={back} onPractice={()=>pushScreen({view:"problem"})}/>} {view==="problems"&&<Problems lang={lang} filter={filter} setFilter={setFilter} items={filtered} go={go} onSelect={p=>{setActiveProblem(p);setCode(p.judge==="max-subarray"?duelProblems[1].cpp:p.judge==="coin-change"?duelProblems[2].cpp:cpp);setVerdict("");go("problem")}}/>} {view==="problem"&&<Problem lang={lang} item={activeProblem} code={code} setCode={setCode} codeLang={codeLang} setCodeLang={setCodeLang} verdict={verdict} submit={judge}/>} {view==="duel"&&<DuelMatchmaking lang={lang} profile={profile} signed={signed} authLoading={auth.status==="loading"} needAuth={()=>go("auth")} openRoadmap={openRoadmap}/>} {view==="leaderboard"&&<Leaderboard lang={lang} me={profile}/>} {view==="profile"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<ProfilePage lang={lang} profile={profile} onProfileChange={next=>setAuth({status:"authenticated",profile:next})} signOut={signOut} goAdmin={()=>go("admin")} goRoadmaps={()=>go("roadmaps")} openRoadmap={openRoadmap} isStaff={can(role,"content.view_management")}/>:<SignInRequired lang={lang} go={go} what="profile"/>)} {view==="auth"&&<AuthPage lang={lang} notice={authNotice} onAuthenticated={(token,remember,isNew)=>{void enterSession(token,remember,isNew)}}/>} {view==="placement"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed?<Placement lang={lang} signed={signed} onFinish={()=>go("roadmaps")} onRoadmap={openRoadmap}/>:<SignInRequired lang={lang} go={go} what="placement"/>)} {view==="admin"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<Admin lang={lang} profile={profile}/>:<SignInRequired lang={lang} go={go} what="admin"/>)}</main>
+ <main className="main">{view==="home"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed&&profile?<><HomeDashboard lang={lang} role={role} go={v=>go(v as View)} openRoadmap={openRoadmap} duelRating={profile.duel_rating}/><LandingStory lang={lang}/><LandingBrowse lang={lang} go={go} openRoadmap={openRoadmap}/><LandingCta lang={lang} go={go} signed/></>:<Home lang={lang} go={go} openRoadmap={openRoadmap}/>)} {view==="roadmaps"&&<RoadmapHub lang={lang} role={role} openRoadmap={openRoadmap}/>} {view==="roadmap"&&<RoadmapExperience slug={selectedRoadmap} lang={lang} role={role} unitId={selectedUnit} onOpenUnit={id=>pushScreen({unit:id})} onBack={back} onPractice={()=>pushScreen({view:"problem"})}/>} {view==="problems"&&<Problems lang={lang} filter={filter} setFilter={setFilter} items={filtered} go={go} onSelect={p=>{setActiveProblem(p);setCode(p.judge==="max-subarray"?duelProblems[1].cpp:p.judge==="coin-change"?duelProblems[2].cpp:cpp);setVerdict("");go("problem")}}/>} {view==="problem"&&<Problem lang={lang} item={activeProblem} code={code} setCode={setCode} codeLang={codeLang} setCodeLang={setCodeLang} verdict={verdict} submit={judge}/>} {view==="duel"&&<DuelMatchmaking lang={lang} profile={profile} signed={signed} authLoading={auth.status==="loading"} needAuth={()=>go("auth")} openRoadmap={openRoadmap}/>} {view==="leaderboard"&&<Leaderboard lang={lang} me={profile}/>} {view==="profile"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<ProfilePage lang={lang} profile={profile} onProfileChange={next=>setAuth({status:"authenticated",profile:next})} signOut={signOut} goAdmin={()=>go("admin")} goRoadmaps={()=>go("roadmaps")} openRoadmap={openRoadmap} isStaff={can(role,"content.view_management")}/>:<SignInRequired lang={lang} go={go} what="profile"/>)} {view==="auth"&&<AuthPage lang={lang} notice={authNotice} onAuthenticated={(token,remember,isNew)=>{void enterSession(token,remember,isNew)}}/>} {view==="placement"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed?<Placement lang={lang} signed={signed} onFinish={()=>go("roadmaps")} onRoadmap={openRoadmap}/>:<SignInRequired lang={lang} go={go} what="placement"/>)} {view==="admin"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<Admin lang={lang} profile={profile}/>:<SignInRequired lang={lang} go={go} what="admin"/>)}</main>
  <nav className="mobile-nav">{(["home","roadmaps","problems","duel","leaderboard"] as View[]).map(v=><button key={v} className={view===v?"active":""} onClick={()=>go(v)}>{t[v as keyof typeof t]}</button>)}</nav><footer className="footer"><span>© {new Date().getFullYear()} AlgoYo‘l · Toshkent</span><span>{lang==="uz"?"Bilimdan natijagacha.":"From learning to results."}</span></footer></div>
 }
 /* Landing copy. The old page opened straight into a roadmap grid and a problem
@@ -205,6 +205,10 @@ const LAND={uz:{
  ctaBody:"Ro‘yxatdan o‘tmasdan ham darslarni o‘qishingiz mumkin. Progress, mahorat va reyting esa hisobingizga saqlanadi.",
  ctaPrimary:"O‘rganishni boshlash",
  ctaSecondary:"Hisob yaratish",
+ ctaInTitle:"Keyingi bosqichga o‘ting.",
+ ctaInBody:"Yo‘l xaritangiz sizni kutmoqda. Tayyor bo‘lsangiz, duelda bilimingizni sinab ko‘ring.",
+ ctaInPrimary:"O‘rganishni davom ettirish",
+ ctaInSecondary:"Duel maydoni",
 },en:{
  what:"AlgoYo‘l is a complete algorithms school in Uzbek. A structured roadmap, a check at every step, a real code judge, and live duels — from zero to ICPC level.",
  whyEyebrow:"Why AlgoYo‘l",
@@ -237,27 +241,24 @@ const LAND={uz:{
  ctaBody:"You can read the lessons without registering. Progress, mastery and rating are saved to your account.",
  ctaPrimary:"Start learning",
  ctaSecondary:"Create an account",
+ ctaInTitle:"On to the next unit.",
+ ctaInBody:"Your roadmap is waiting. When you feel ready, put it to the test in the arena.",
+ ctaInPrimary:"Continue learning",
+ ctaInSecondary:"Duel arena",
 }};
 
-function Home({lang,go,openRoadmap}:{lang:Lang,go:(v:View)=>void,openRoadmap:(slug:string)=>void}){
- const t=copy[lang],L=LAND[lang];
+/* The explanation of what AlgoYo'l is and how it works is not marketing that
+   stops being true once you register — the unlock rule and the mastery scale
+   are the mechanics a learner lives inside. So the introduction is split from
+   the guest hero and shown in both states: a guest gets hero + introduction, a
+   signed-in learner gets their dashboard first and the same introduction below
+   it. Only the pieces that would contradict the state change: the marketing
+   hero and the "create an account" call to action. */
+function LandingStory({lang}:{lang:Lang}){
+ const L=LAND[lang];
  const size=roadmapCatalogSize();
  const factValues=[String(size.tracks),String(size.units),"2","30"];
  return <>
-  <section className="hero">
-   <div className="hero-copy">
-    <div className="eyebrow">{lang==="uz"?"O‘zbekiston dasturchilari uchun":"Built for Uzbekistan’s coders"}</div>
-    <h1>{lang==="uz"?<>Algoritmlarni <em>o‘rganing</em>, bellashing va o‘sing.</>:<>Learn algorithms, <em>compete</em>, and grow.</>}</h1>
-    <p>{L.what}</p>
-    <div className="hero-cta">
-     <button className="primary" onClick={()=>go("roadmaps")}>{t.start} →</button>
-     <button className="secondary" onClick={()=>go("duel")}>{t.arena}</button>
-    </div>
-    <div className="orbit"/>
-   </div>
-   <div className="hero-side"><PlatformStats lang={lang}/></div>
-  </section>
-
   <section className="lp-block">
    <div className="section-head"><div><p className="eyebrow">{L.whyEyebrow}</p><h2>{L.whyTitle}</h2></div></div>
    <p className="lp-lede muted">{L.whyLede}</p>
@@ -297,7 +298,12 @@ function Home({lang,go,openRoadmap}:{lang:Lang,go:(v:View)=>void,openRoadmap:(sl
    <div className="lp-facts">{L.facts.map(([label,note],i)=>
     <div className="lp-fact" key={label}><b className="mono">{factValues[i]}</b><span>{label}</span><small className="muted">{note}</small></div>)}</div>
   </section>
+ </>;
+}
 
+function LandingBrowse({lang,go,openRoadmap}:{lang:Lang;go:(v:View)=>void;openRoadmap:(slug:string)=>void}){
+ const t=copy[lang];
+ return <>
   <section className="lp-block">
    <div className="section-head">
     <div><p className="eyebrow">{lang==="uz"?"Bosqichma-bosqich":"Step by step"}</p><h2>{t.featured}</h2></div>
@@ -313,15 +319,40 @@ function Home({lang,go,openRoadmap}:{lang:Lang,go:(v:View)=>void,openRoadmap:(sl
    </div>
    <ProblemList lang={lang} items={problems.slice(0,4)} go={go}/>
   </section>
+ </>;
+}
 
-  <section className="lp-cta">
-   <h2>{L.ctaTitle}</h2>
-   <p className="muted">{L.ctaBody}</p>
-   <div className="hero-cta">
-    <button className="primary" onClick={()=>go("roadmaps")}>{L.ctaPrimary} →</button>
-    <button className="secondary" onClick={()=>go("auth")}>{L.ctaSecondary}</button>
+function LandingCta({lang,go,signed}:{lang:Lang;go:(v:View)=>void;signed:boolean}){
+ const L=LAND[lang];
+ return <section className="lp-cta">
+  <h2>{signed?L.ctaInTitle:L.ctaTitle}</h2>
+  <p className="muted">{signed?L.ctaInBody:L.ctaBody}</p>
+  <div className="hero-cta">
+   <button className="primary" onClick={()=>go("roadmaps")}>{signed?L.ctaInPrimary:L.ctaPrimary} →</button>
+   <button className="secondary" onClick={()=>go(signed?"duel":"auth")}>{signed?L.ctaInSecondary:L.ctaSecondary}</button>
+  </div>
+ </section>;
+}
+
+function Home({lang,go,openRoadmap}:{lang:Lang,go:(v:View)=>void,openRoadmap:(slug:string)=>void}){
+ const t=copy[lang],L=LAND[lang];
+ return <>
+  <section className="hero">
+   <div className="hero-copy">
+    <div className="eyebrow">{lang==="uz"?"O‘zbekiston dasturchilari uchun":"Built for Uzbekistan’s coders"}</div>
+    <h1>{lang==="uz"?<>Algoritmlarni <em>o‘rganing</em>, bellashing va o‘sing.</>:<>Learn algorithms, <em>compete</em>, and grow.</>}</h1>
+    <p>{L.what}</p>
+    <div className="hero-cta">
+     <button className="primary" onClick={()=>go("roadmaps")}>{t.start} →</button>
+     <button className="secondary" onClick={()=>go("duel")}>{t.arena}</button>
+    </div>
+    <div className="orbit"/>
    </div>
+   <div className="hero-side"><PlatformStats lang={lang}/></div>
   </section>
+  <LandingStory lang={lang}/>
+  <LandingBrowse lang={lang} go={go} openRoadmap={openRoadmap}/>
+  <LandingCta lang={lang} go={go} signed={false}/>
  </>;
 }
 
