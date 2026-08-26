@@ -168,7 +168,163 @@ export function AlgoYolApp(){
  <main className="main">{view==="home"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed&&profile?<HomeDashboard lang={lang} role={role} go={v=>go(v as View)} openRoadmap={openRoadmap} duelRating={profile.duel_rating}/>:<Home lang={lang} go={go} openRoadmap={openRoadmap}/>)} {view==="roadmaps"&&<RoadmapHub lang={lang} role={role} openRoadmap={openRoadmap}/>} {view==="roadmap"&&<RoadmapExperience slug={selectedRoadmap} lang={lang} role={role} unitId={selectedUnit} onOpenUnit={id=>pushScreen({unit:id})} onBack={back} onPractice={()=>pushScreen({view:"problem"})}/>} {view==="problems"&&<Problems lang={lang} filter={filter} setFilter={setFilter} items={filtered} go={go} onSelect={p=>{setActiveProblem(p);setCode(p.judge==="max-subarray"?duelProblems[1].cpp:p.judge==="coin-change"?duelProblems[2].cpp:cpp);setVerdict("");go("problem")}}/>} {view==="problem"&&<Problem lang={lang} item={activeProblem} code={code} setCode={setCode} codeLang={codeLang} setCodeLang={setCodeLang} verdict={verdict} submit={judge}/>} {view==="duel"&&<DuelMatchmaking lang={lang} profile={profile} signed={signed} authLoading={auth.status==="loading"} needAuth={()=>go("auth")} openRoadmap={openRoadmap}/>} {view==="leaderboard"&&<Leaderboard lang={lang} me={profile}/>} {view==="profile"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<ProfilePage lang={lang} profile={profile} onProfileChange={next=>setAuth({status:"authenticated",profile:next})} signOut={signOut} goAdmin={()=>go("admin")} goRoadmaps={()=>go("roadmaps")} openRoadmap={openRoadmap} isStaff={can(role,"content.view_management")}/>:<SignInRequired lang={lang} go={go} what="profile"/>)} {view==="auth"&&<AuthPage lang={lang} notice={authNotice} onAuthenticated={(token,remember,isNew)=>{void enterSession(token,remember,isNew)}}/>} {view==="placement"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed?<Placement lang={lang} signed={signed} onFinish={()=>go("roadmaps")} onRoadmap={openRoadmap}/>:<SignInRequired lang={lang} go={go} what="placement"/>)} {view==="admin"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<Admin lang={lang} profile={profile}/>:<SignInRequired lang={lang} go={go} what="admin"/>)}</main>
  <nav className="mobile-nav">{(["home","roadmaps","problems","duel","leaderboard"] as View[]).map(v=><button key={v} className={view===v?"active":""} onClick={()=>go(v)}>{t[v as keyof typeof t]}</button>)}</nav><footer className="footer"><span>© {new Date().getFullYear()} AlgoYo‘l · Toshkent</span><span>{lang==="uz"?"Bilimdan natijagacha.":"From learning to results."}</span></footer></div>
 }
-function Home({lang,go,openRoadmap}:{lang:Lang,go:(v:View)=>void,openRoadmap:(slug:string)=>void}){const t=copy[lang];return <><section className="hero"><div className="hero-copy"><div className="eyebrow">{lang==="uz"?"O‘zbekiston dasturchilari uchun":"Built for Uzbekistan’s coders"}</div><h1>{lang==="uz"?<>Algoritmlarni <em>o‘rganing</em>, bellashing va o‘sing.</>:<>Learn algorithms, <em>compete</em>, and grow.</>}</h1><p>{t.sub}</p><div className="hero-cta"><button className="primary" onClick={()=>go("roadmaps")}>{t.start} →</button><button className="secondary" onClick={()=>go("duel")}>{t.arena}</button></div><div className="orbit"/></div><div className="hero-side"><PlatformStats lang={lang}/></div></section><section><div className="section-head"><div><p className="eyebrow" style={{color:"#637068"}}>{lang==="uz"?"Bosqichma-bosqich":"Step by step"}</p><h2>{t.featured}</h2></div><button className="secondary" onClick={()=>go("roadmaps")}>{t.all} →</button></div><RoadGrid lang={lang} roads={allRoads.slice(0,3)} openRoadmap={openRoadmap}/></section><section><div className="section-head"><div><p className="eyebrow" style={{color:"#637068"}}>100 · 200 · 300</p><h2>{t.tasks}</h2></div><button className="secondary" onClick={()=>go("problems")}>{t.all} →</button></div><ProblemList lang={lang} items={problems.slice(0,4)} go={go}/></section></>}
+/* Landing copy. The old page opened straight into a roadmap grid and a problem
+   list, so a first-time visitor learned what AlgoYo'l *contains* but never what
+   it is for or how it works. Every claim below is something the product
+   actually does — the counts come from the catalogue, and the unlock rule and
+   duel format are the real mechanics. */
+const LAND={uz:{
+ what:"AlgoYo‘l — o‘zbek tilidagi to‘liq algoritmlar maktabi. Tartibli yo‘l xaritasi, har bosqichda tekshiruv, haqiqiy kod tekshiruvchi va jonli duellar. Noldan ICPC darajasigacha.",
+ whyEyebrow:"Nega AlgoYo‘l",
+ whyTitle:"Algoritmlarni ona tilingizda o‘rganing.",
+ whyLede:"Algoritmlar bo‘yicha material ko‘p, lekin deyarli barchasi chet tilida va tarqoq. AlgoYo‘l shu ikkala muammoni yechadi: bilim o‘zbek tilida va bitta tartibli yo‘lga tizilgan.",
+ why:[
+  ["Ona tilida","Har bir dars — maqsad, intuitsiya, kod namunasi, keng tarqalgan xatolar va naqshlar — o‘zbek tilida yozilgan. Ingliz tili kerak bo‘lsa, bir tugma bilan almashtiring."],
+  ["Tarqoq emas, tartibli","Nimani birinchi o‘rganishni o‘zingiz o‘ylab topmaysiz. Yo‘nalishlar bir-biriga bog‘langan: oldingisini tugatmasdan keyingisi ochilmaydi."],
+  ["Bilim emas, ko‘nikma","O‘qib chiqish yetarli emas. Har bosqichda testdan o‘tasiz va masalani haqiqiy tekshiruvchida yechasiz — shundan keyingina keyingi bosqich ochiladi."],
+ ],
+ howEyebrow:"Qanday ishlaydi",
+ howTitle:"To‘rt qadamli halqa",
+ howLede:"Har bir bosqich shu to‘rt qadamdan iborat. Bittasini tashlab ketib bo‘lmaydi — tizim ataylab shunday qurilgan.",
+ how:[
+  ["O‘rganing","Darsni o‘qiysiz: maqsad, asosiy tushuncha, C++ va Python kodi, bosqichma-bosqich tahlil, keng tarqalgan xatolar."],
+  ["Tekshiring","Qisqa test. Kamida 70% to‘plashingiz kerak — aks holda nazariyaga qaytasiz."],
+  ["Yeching","Masalani yozib, tekshiruvchiga yuborasiz. Yashirin testlar, vaqt va xotira chegarasi — haqiqiy musobaqadagidek."],
+  ["Bellashing","Tayyor bo‘lsangiz duelga chiqasiz: 30 daqiqa, 3 masala, Elo reyting."],
+ ],
+ ruleEyebrow:"Ochilish qoidasi",
+ ruleTitle:"Keyingi bosqich qachon ochiladi?",
+ ruleBody:"Bosqich faqat ikkala shart bajarilganda yopiladi: testda kamida 70% va masalada Accepted. Har bir isbot mavzu mahoratingizni 0 dan 1000 gacha shkalada oshiradi, bir xil ish uchun esa ikki marta ball berilmaydi.",
+ ruleQuiz:"Test ≥ 70%",
+ ruleSolve:"Masalada Accepted",
+ ruleMastery:"Mahorat 0 → 1000",
+ factsEyebrow:"Ichida nima bor",
+ factsTitle:"Raqamlarda",
+ facts:[["yo‘nalish","Asoslardan ilg‘or algoritmlargacha"],["bosqich","Har biri dars, test va masala"],["til","C++20 va Python 3"],["daqiqa","Duel uzunligi · 3 masala"]],
+ ctaTitle:"Birinchi bosqichdan boshlang.",
+ ctaBody:"Ro‘yxatdan o‘tmasdan ham darslarni o‘qishingiz mumkin. Progress, mahorat va reyting esa hisobingizga saqlanadi.",
+ ctaPrimary:"O‘rganishni boshlash",
+ ctaSecondary:"Hisob yaratish",
+},en:{
+ what:"AlgoYo‘l is a complete algorithms school in Uzbek. A structured roadmap, a check at every step, a real code judge, and live duels — from zero to ICPC level.",
+ whyEyebrow:"Why AlgoYo‘l",
+ whyTitle:"Learn algorithms in your own language.",
+ whyLede:"There is no shortage of algorithms material — but almost all of it is in another language and scattered across dozens of sources. AlgoYo‘l fixes both: the knowledge is in Uzbek, and it is arranged into one ordered path.",
+ why:[
+  ["In Uzbek","Every lesson — goal, intuition, code in C++ and Python, common mistakes, patterns — is written in Uzbek. Switch to English with one button whenever you want."],
+  ["Ordered, not scattered","You never have to guess what to learn next. The tracks are wired together: the next one stays locked until you finish what it builds on."],
+  ["Skill, not just reading","Reading is not enough. Each unit makes you pass a check and solve a problem on a real judge before the next one opens."],
+ ],
+ howEyebrow:"How it works",
+ howTitle:"A four-step loop",
+ howLede:"Every unit is these four steps. None of them can be skipped — the system is built that way on purpose.",
+ how:[
+  ["Learn","Read the lesson: the goal, the core concept, C++ and Python examples, a step-by-step walkthrough, and the mistakes people actually make."],
+  ["Check","A short quiz. You need at least 70% — below that, you go back to the theory."],
+  ["Solve","Write the solution and submit it to the judge. Hidden tests, time and memory limits — the same as a real contest."],
+  ["Duel","When you are ready, enter the arena: 30 minutes, 3 problems, an Elo rating."],
+ ],
+ ruleEyebrow:"The unlock rule",
+ ruleTitle:"When does the next unit open?",
+ ruleBody:"A unit closes only when both conditions are met: at least 70% on the quiz and an Accepted verdict on the problem. Every piece of evidence raises your mastery in that topic on a 0–1000 scale, and the same work is never counted twice.",
+ ruleQuiz:"Quiz ≥ 70%",
+ ruleSolve:"Problem Accepted",
+ ruleMastery:"Mastery 0 → 1000",
+ factsEyebrow:"What is inside",
+ factsTitle:"In numbers",
+ facts:[["tracks","From the basics to advanced algorithms"],["units","Each with a lesson, a quiz and a problem"],["languages","C++20 and Python 3"],["minutes","Duel length · 3 problems"]],
+ ctaTitle:"Start with the first unit.",
+ ctaBody:"You can read the lessons without registering. Progress, mastery and rating are saved to your account.",
+ ctaPrimary:"Start learning",
+ ctaSecondary:"Create an account",
+}};
+
+function Home({lang,go,openRoadmap}:{lang:Lang,go:(v:View)=>void,openRoadmap:(slug:string)=>void}){
+ const t=copy[lang],L=LAND[lang];
+ const size=roadmapCatalogSize();
+ const factValues=[String(size.tracks),String(size.units),"2","30"];
+ return <>
+  <section className="hero">
+   <div className="hero-copy">
+    <div className="eyebrow">{lang==="uz"?"O‘zbekiston dasturchilari uchun":"Built for Uzbekistan’s coders"}</div>
+    <h1>{lang==="uz"?<>Algoritmlarni <em>o‘rganing</em>, bellashing va o‘sing.</>:<>Learn algorithms, <em>compete</em>, and grow.</>}</h1>
+    <p>{L.what}</p>
+    <div className="hero-cta">
+     <button className="primary" onClick={()=>go("roadmaps")}>{t.start} →</button>
+     <button className="secondary" onClick={()=>go("duel")}>{t.arena}</button>
+    </div>
+    <div className="orbit"/>
+   </div>
+   <div className="hero-side"><PlatformStats lang={lang}/></div>
+  </section>
+
+  <section className="lp-block">
+   <div className="section-head"><div><p className="eyebrow">{L.whyEyebrow}</p><h2>{L.whyTitle}</h2></div></div>
+   <p className="lp-lede muted">{L.whyLede}</p>
+   <div className="lp-cards">{L.why.map(([title,body])=>
+    <div className="panel lp-card" key={title}><h3>{title}</h3><p className="muted">{body}</p></div>)}</div>
+  </section>
+
+  <section className="lp-block">
+   <div className="section-head"><div><p className="eyebrow">{L.howEyebrow}</p><h2>{L.howTitle}</h2></div></div>
+   <p className="lp-lede muted">{L.howLede}</p>
+   {/* Numbered because this genuinely is a sequence — the order is the mechanic. */}
+   <ol className="lp-loop">{L.how.map(([title,body],i)=>
+    <li className="lp-step" key={title}>
+     <span className="lp-step-n mono">{String(i+1).padStart(2,"0")}</span>
+     <b>{title}</b>
+     <span className="muted">{body}</span>
+    </li>)}</ol>
+  </section>
+
+  <section className="lp-block">
+   <div className="panel lp-rule">
+    <div className="lp-rule-copy">
+     <p className="eyebrow">{L.ruleEyebrow}</p>
+     <h2>{L.ruleTitle}</h2>
+     <p className="muted">{L.ruleBody}</p>
+    </div>
+    <div className="lp-rule-chips">
+     <span className="lp-chip"><i>✓</i>{L.ruleQuiz}</span>
+     <span className="lp-chip"><i>✓</i>{L.ruleSolve}</span>
+     <span className="lp-chip lime">{L.ruleMastery}</span>
+    </div>
+   </div>
+  </section>
+
+  <section className="lp-block">
+   <div className="section-head"><div><p className="eyebrow">{L.factsEyebrow}</p><h2>{L.factsTitle}</h2></div></div>
+   <div className="lp-facts">{L.facts.map(([label,note],i)=>
+    <div className="lp-fact" key={label}><b className="mono">{factValues[i]}</b><span>{label}</span><small className="muted">{note}</small></div>)}</div>
+  </section>
+
+  <section className="lp-block">
+   <div className="section-head">
+    <div><p className="eyebrow">{lang==="uz"?"Bosqichma-bosqich":"Step by step"}</p><h2>{t.featured}</h2></div>
+    <button className="secondary" onClick={()=>go("roadmaps")}>{t.all} →</button>
+   </div>
+   <RoadGrid lang={lang} roads={allRoads.slice(0,3)} openRoadmap={openRoadmap}/>
+  </section>
+
+  <section className="lp-block">
+   <div className="section-head">
+    <div><p className="eyebrow">100 · 200 · 300</p><h2>{t.tasks}</h2></div>
+    <button className="secondary" onClick={()=>go("problems")}>{t.all} →</button>
+   </div>
+   <ProblemList lang={lang} items={problems.slice(0,4)} go={go}/>
+  </section>
+
+  <section className="lp-cta">
+   <h2>{L.ctaTitle}</h2>
+   <p className="muted">{L.ctaBody}</p>
+   <div className="hero-cta">
+    <button className="primary" onClick={()=>go("roadmaps")}>{L.ctaPrimary} →</button>
+    <button className="secondary" onClick={()=>go("auth")}>{L.ctaSecondary}</button>
+   </div>
+  </section>
+ </>;
+}
+
 /* Real platform numbers only: how much curriculum exists, and how many people
    have registered. Nothing here is a decorative invention. */
 function PlatformStats({lang}:{lang:Lang}){
