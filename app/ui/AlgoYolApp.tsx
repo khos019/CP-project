@@ -5,22 +5,22 @@ import { RoadmapExperience } from "./RoadmapExperience";
 import { RoadmapHub } from "./RoadmapHub";
 import { roadmapCards } from "./roadmap-data";
 import { Placement } from "./Placement";
-import { AuthPage, readStoredToken, storeToken } from "./AuthPage";
+import { AuthPage } from "./AuthPage";
 import { HomeDashboard } from "./HomeDashboard";
-import { MASTERY_CONFIG, loadMastery, masteryLabel, masteryOf, recordEvidence } from "./mastery";
+import { ProfilePage } from "./ProfilePage";
+import { MASTERY_CONFIG, loadMastery, masteryOf, recordDuelResult, recordEvidence } from "./mastery";
+import { readLocal as readLocalProgress, syncUp } from "./progress";
 import { can } from "./permissions";
+import {
+ GUEST_SCOPE, adoptGuestInto, adoptLegacyInto, clearSession, dropScopeData, fetchLeaderboard, fetchLearnerCount,
+ fetchProfile, readScoped, readStoredUserId, readToken, removeScoped, saveDuelRating, setScope, storeSession,
+ supabaseReady, writeScoped, type LeaderRow, type Profile, type Role,
+} from "./session";
 
 type Lang="uz"|"en"; type View="home"|"roadmaps"|"roadmap"|"problems"|"problem"|"duel"|"leaderboard"|"profile"|"auth"|"admin"|"placement";
 const copy={uz:{home:"Bosh sahifa",roadmaps:"Yo‘l xaritalari",problems:"Masalalar",duel:"Duel",leaderboard:"Reyting",login:"Kirish",hero:"Algoritmlarni o‘rganing, bellashing va o‘sing.",sub:"Tushunarli o‘zbekcha darslar, haqiqiy kod tekshiruvchi va 30 daqiqalik jonli duellar — barchasi bitta maydonda.",start:"O‘rganishni boshlash",arena:"Duel maydoni",featured:"Mashhur yo‘l xaritalari",all:"Barchasini ko‘rish",tasks:"Masalalar banki",solve:"Yechish",submit:"Yechimni yuborish"},en:{home:"Home",roadmaps:"Roadmaps",problems:"Problems",duel:"Duel",leaderboard:"Leaderboard",login:"Sign in",hero:"Learn algorithms, compete, and grow.",sub:"Clear lessons, a real code checker, and live 30-minute duels — all in one focused arena.",start:"Start learning",arena:"Enter duel arena",featured:"Featured roadmaps",all:"View all",tasks:"Problem library",solve:"Solve",submit:"Submit solution"}};
-const roads=[
- {icon:"O(n)",color:"#dfff74",uz:"Murakkablik tahlili",en:"Complexity analysis",descUz:"Tezlik va xotira chegaralarini tushuning.",descEn:"Understand time and memory limits.",units:8,progress:75},
- {icon:"↕",color:"#ffd4bd",uz:"Saralash",en:"Sorting",descUz:"Oddiy usullardan tezkor saralashgacha.",descEn:"From simple methods to quick sort.",units:10,progress:40},
- {icon:"⌕",color:"#dbe2ff",uz:"Ikkilik qidiruv",en:"Binary search",descUz:"Javob bo‘yicha qidirish sirlarini oching.",descEn:"Master searching over the answer.",units:7,progress:20},
- {icon:"◆",color:"#ffe8a3",uz:"Ochko‘z algoritmlar",en:"Greedy algorithms",descUz:"Mahalliy tanlovdan optimal yechimgacha.",descEn:"Turn local choices into optimal solutions.",units:9,progress:0},
- {icon:"⌘",color:"#c9f0de",uz:"Graflar",en:"Graphs",descUz:"BFS, DFS va eng qisqa yo‘llar.",descEn:"BFS, DFS, and shortest paths.",units:14,progress:0},
- {icon:"∑",color:"#ead8ff",uz:"Dinamik dasturlash",en:"Dynamic programming",descUz:"Holatlar, o‘tishlar va optimallashtirish.",descEn:"States, transitions, and optimization.",units:16,progress:0},
-];
 const allRoads=roadmapCards;
+const roadmapCatalogSize=()=>({tracks:roadmapCards.length,units:roadmapCards.reduce((n,r)=>n+r.units,0)});
 const problems=[
  {id:"A01",uz:"Ikki son yig‘indisi",en:"Sum of two numbers",difficulty:"easy",tag:"Boshlang‘ich",points:100,topic:"programming-basics",judge:"sum-two"},
  {id:"A02",uz:"Eng katta element",en:"Maximum element",difficulty:"easy",tag:"Massiv",points:100,topic:"foundations"},
@@ -36,43 +36,50 @@ const problems=[
 ];
 type BankProblem=typeof problems[number];
 const duelTopics:Record<string,string>={"sum-two":"programming-basics","max-subarray":"foundations","coin-change":"dynamic-programming"};
-const leaders=[{n:"Sardor",u:"@sardor_ioi",r:1864,w:42},{n:"Madina",u:"@madina_dev",r:1792,w:37},{n:"Azizbek",u:"@aziz_algo",r:1718,w:29},{n:"Siz",u:"@algoyolchi",r:1462,w:12},{n:"Nilufar",u:"@nilufar_py",r:1421,w:18}];
 const cpp=`#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    long long a, b;\n    cin >> a >> b;\n    cout << a + b << "\\n";\n    return 0;\n}`;
 
-/* ---- Supabase: rol (owner / admin / user) va profil ---- */
-export type Role="user"|"admin"|"owner";
-export type Profile={id:string;email:string;username:string;display_name:string;role:Role;duel_rating:number;solved_count:number};
-export const supabaseConfig=()=>({url:process.env.NEXT_PUBLIC_SUPABASE_URL,key:process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY});
-export const supabaseReady=()=>{const {url,key}=supabaseConfig();return Boolean(url&&key)};
-const readToken=()=>typeof window==="undefined"?null:readStoredToken();
-export async function fetchProfile(token:string):Promise<Profile|null>{
- const {url,key}=supabaseConfig();if(!url||!key||!token)return null;
- const headers={apikey:key,Authorization:`Bearer ${token}`};
- try{
-  const account=await fetch(`${url}/auth/v1/user`,{headers});if(!account.ok)return null;
-  const user=await account.json() as {id?:string;email?:string};if(!user.id)return null;
-  const rows=await fetch(`${url}/rest/v1/profiles?id=eq.${user.id}&select=id,username,display_name,role,duel_rating,solved_count`,{headers});if(!rows.ok)return null;
-  const list=await rows.json() as Array<Omit<Profile,"email">>;if(!list.length)return null;
-  sessionStorage.setItem("algoyol-user-id",user.id);
-  return {...list[0],email:user.email||""};
- }catch{return null}
-}
-export async function saveDuelRating(next:number){
- const {url,key}=supabaseConfig(),token=readToken(),id=typeof window==="undefined"?null:sessionStorage.getItem("algoyol-user-id");
- if(!url||!key||!token||!id)return;
- try{await fetch(`${url}/rest/v1/profiles?id=eq.${id}`,{method:"PATCH",headers:{apikey:key,Authorization:`Bearer ${token}`,"content-type":"application/json",Prefer:"return=minimal"},body:JSON.stringify({duel_rating:next})})}catch{}
-}
+/* Session, profile and role handling live in ./session — one module owns the
+   difference between a guest and an account. Re-exported so existing imports
+   ({ Role } from "./AlgoYolApp") keep resolving. */
+export type { Role, Profile } from "./session";
+export { supabaseConfig, supabaseReady, fetchProfile } from "./session";
+
+/* Three states, never guessed: a stored token is being verified, there is no
+   account, or there is one. "authenticated" always carries a real profile. */
+type Auth={status:"loading"}|{status:"guest"}|{status:"authenticated";profile:Profile};
+
 const roleLabel=(role:Role,lang:Lang)=>role==="owner"?(lang==="uz"?"EGA (OWNER)":"OWNER"):role==="admin"?"ADMIN":(lang==="uz"?"FOYDALANUVCHI":"USER");
 
 export function AlgoYolApp(){
- const [lang,setLang]=useState<Lang>("uz"),[view,setView]=useState<View>("home"),[filter,setFilter]=useState("all"),[code,setCode]=useState(cpp),[codeLang,setCodeLang]=useState<"cpp20"|"python3">("cpp20"),[verdict,setVerdict]=useState(""),[signed,setSigned]=useState(false),[selectedRoadmap,setSelectedRoadmap]=useState("foundations"),[selectedUnit,setSelectedUnit]=useState<string|null>(null),[activeProblem,setActiveProblem]=useState<BankProblem>(problems[0]); const t=copy[lang];
- const [profile,setProfile]=useState<Profile|null>(null),[loadingProfile,setLoadingProfile]=useState(false);
- const loadProfile=async(token:string)=>{setLoadingProfile(true);const next=await fetchProfile(token);setProfile(next);setSigned(true);setLoadingProfile(false)};
- const signOut=()=>{sessionStorage.removeItem("algoyol-access-token");sessionStorage.removeItem("algoyol-user-id");localStorage.removeItem("algoyol-remember-token");setProfile(null);setSigned(false);setView("home")};
+ const [lang,setLang]=useState<Lang>("uz"),[view,setView]=useState<View>("home"),[filter,setFilter]=useState("all"),[code,setCode]=useState(cpp),[codeLang,setCodeLang]=useState<"cpp20"|"python3">("cpp20"),[verdict,setVerdict]=useState(""),[selectedRoadmap,setSelectedRoadmap]=useState("foundations"),[selectedUnit,setSelectedUnit]=useState<string|null>(null),[activeProblem,setActiveProblem]=useState<BankProblem>(problems[0]); const t=copy[lang];
+ // A stored token is not proof of an account: it can be expired or revoked.
+ // The app stays in "loading" until Supabase confirms it, then commits to
+ // exactly one of guest / authenticated. It never renders account-shaped UI
+ // on the strength of a token alone.
+ const [auth,setAuth]=useState<Auth>(()=>(typeof window!=="undefined"&&readToken()&&supabaseReady()?{status:"loading"}:{status:"guest"}));
+ const [authNotice,setAuthNotice]=useState("");
+ const profile=auth.status==="authenticated"?auth.profile:null;
+ const signed=auth.status==="authenticated";
+ const role:Role=profile?.role||"user";
+
  useEffect(()=>{const saved=localStorage.getItem("algoyol-lang") as Lang|null;if(saved)setLang(saved)},[]);
- useEffect(()=>{const token=readStoredToken();if(token&&supabaseReady())loadProfile(token)},[]);
- useEffect(()=>{const params=new URLSearchParams(window.location.hash.replace(/^#/,""));const token=params.get("access_token"),error=params.get("error_description");if(token){sessionStorage.setItem("algoyol-access-token",token);setSigned(true);setView("profile");loadProfile(token);window.history.replaceState({},"",window.location.pathname)}else if(error){setView("auth");window.history.replaceState({},"",window.location.pathname);window.setTimeout(()=>window.alert(decodeURIComponent(error.replace(/\+/g," "))),50)}},[]);
- useEffect(()=>{if(!verdict.startsWith("Qabul qilindi")&&!verdict.startsWith("Accepted"))return;if(activeProblem.judge){const base=MASTERY_CONFIG.weights.problem[activeProblem.difficulty as keyof typeof MASTERY_CONFIG.weights.problem];recordEvidence(activeProblem.topic,"problem",`problem:${activeProblem.id}`,base)}const lesson=localStorage.getItem("algoyol-active-lesson");if(!lesson)return;let data={quizScores:{},solved:{}} as {quizScores:Record<string,number>;solved:Record<string,boolean>};try{data=JSON.parse(localStorage.getItem("algoyol-roadmap-progress")||JSON.stringify(data))}catch{}if(!data.solved[lesson])recordEvidence(lesson.slice(0,lesson.lastIndexOf("-")),"lesson",`lesson:${lesson}`,MASTERY_CONFIG.weights.lesson);data.solved={...data.solved,[lesson]:true};localStorage.setItem("algoyol-roadmap-progress",JSON.stringify(data));localStorage.removeItem("algoyol-active-lesson");window.dispatchEvent(new Event("algoyol-progress"))},[verdict]);// eslint-disable-line react-hooks/exhaustive-deps
+ // Boot: adopt the stored scope synchronously so the first paint reads the
+ // right namespace, then verify the token.
+ useEffect(()=>{
+  const token=readToken(),storedId=readStoredUserId();
+  if(storedId)setScope(storedId);
+  if(!token||!supabaseReady()){setScope(GUEST_SCOPE);adoptLegacyInto(GUEST_SCOPE);return}
+  let live=true;
+  fetchProfile(token).then(next=>{
+   if(!live)return;
+   if(!next){clearSession();setScope(GUEST_SCOPE);setAuth({status:"guest"});return}
+   setScope(next.id);adoptLegacyInto(next.id);
+   setAuth({status:"authenticated",profile:next});
+   window.dispatchEvent(new Event("algoyol-progress"));
+  });
+  return()=>{live=false};
+ },[]);
+ useEffect(()=>{if(!verdict.startsWith("Qabul qilindi")&&!verdict.startsWith("Accepted"))return;if(activeProblem.judge){const base=MASTERY_CONFIG.weights.problem[activeProblem.difficulty as keyof typeof MASTERY_CONFIG.weights.problem];recordEvidence(activeProblem.topic,"problem",`problem:${activeProblem.id}`,base)}const lesson=readScoped("algoyol-active-lesson");if(!lesson)return;let data={quizScores:{},solved:{}} as {quizScores:Record<string,number>;solved:Record<string,boolean>};try{data=JSON.parse(readScoped("algoyol-roadmap-progress")||JSON.stringify(data))}catch{}if(!data.solved[lesson])recordEvidence(lesson.slice(0,lesson.lastIndexOf("-")),"lesson",`lesson:${lesson}`,MASTERY_CONFIG.weights.lesson);data.solved={...data.solved,[lesson]:true};writeScoped("algoyol-roadmap-progress",JSON.stringify(data));removeScoped("algoyol-active-lesson");window.dispatchEvent(new Event("algoyol-progress"))},[verdict]);// eslint-disable-line react-hooks/exhaustive-deps
  // The address bar reflects the current screen — /roadmaps/{slug}/{unit} —
  // so two roadmaps (or two units) are never one indistinguishable URL.
  const screenToPath=(s:{view:View;roadmap:string;unit:string|null}):string=>{
@@ -94,16 +101,68 @@ export function AlgoYolApp(){
  const go=(v:View)=>pushScreen({view:v,unit:null});
  const back=()=>{if(navDepth.current>0)window.history.back();else pushScreen({view:"roadmaps",unit:null})};
  // Browser back/forward: each screen change pushes an entry, popstate restores it.
- useEffect(()=>{applyScreen(screenRef.current);window.history.replaceState(screenRef.current,"",screenToPath(screenRef.current));const onPop=(e:PopStateEvent)=>{const st=e.state as {view:View;roadmap:string;unit:string|null}|null;applyScreen(st&&typeof st==="object"&&"view" in st?st:pathToScreen(window.location.pathname));navDepth.current=Math.max(0,navDepth.current-1)};window.addEventListener("popstate",onPop);return()=>window.removeEventListener("popstate",onPop)},[]); const swap=()=>{const n=lang==="uz"?"en":"uz";setLang(n);localStorage.setItem("algoyol-lang",n)};
+ useEffect(()=>{applyScreen(screenRef.current);window.history.replaceState(screenRef.current,"",screenToPath(screenRef.current));const onPop=(e:PopStateEvent)=>{const st=e.state as {view:View;roadmap:string;unit:string|null}|null;applyScreen(st&&typeof st==="object"&&"view" in st?st:pathToScreen(window.location.pathname));navDepth.current=Math.max(0,navDepth.current-1)};window.addEventListener("popstate",onPop);return()=>window.removeEventListener("popstate",onPop)},[]); const applyLang=(n:Lang)=>{setLang(n);localStorage.setItem("algoyol-lang",n)};
+ const swap=()=>applyLang(lang==="uz"?"en":"uz");
+ const enterSession=async(token:string,remember:boolean,isNew:boolean)=>{
+  setAuth({status:"loading"});
+  const next=await fetchProfile(token);
+  if(!next){
+   // Token rejected, or the profile row is missing (a signup whose bootstrap
+   // trigger failed). Either way this is not a signed-in user — say so.
+   clearSession();setScope(GUEST_SCOPE);setAuth({status:"guest"});
+   setAuthNotice(lang==="uz"?"Sessiya tasdiqlanmadi. Iltimos, qaytadan kiring.":"We could not verify that session. Please sign in again.");
+   setView("auth");
+   return;
+  }
+  storeSession(token,remember,next.id);
+  setScope(next.id);
+  adoptLegacyInto(next.id);
+  // Lessons finished before registering belong to the same person — carry them
+  // into the new account once, then clear the guest namespace.
+  if(adoptGuestInto(next.id))void syncUp(readLocalProgress());
+  setAuth({status:"authenticated",profile:next});
+  setAuthNotice("");
+  if(next.preferred_language&&next.preferred_language!==lang)applyLang(next.preferred_language);
+  window.dispatchEvent(new Event("algoyol-progress"));
+  if(isNew&&!readScoped("algoyol-onboarded"))go("placement");else go("home");
+ };
+
+ const signOut=()=>{
+  // Everything the previous learner did stays with the previous learner: the
+  // account namespace is removed so the next person on this browser starts clean.
+  const owner=profile?.id;
+  clearSession();
+  if(owner)dropScopeData(owner);
+  setScope(GUEST_SCOPE);
+  setAuth({status:"guest"});
+  setAuthNotice("");
+  window.dispatchEvent(new Event("algoyol-progress"));
+  pushScreen({view:"home",unit:null});
+ };
+
  const openRoadmap=(slug:string)=>{pushScreen({view:"roadmap",roadmap:slug,unit:null})};
+ // OAuth / magic-link return: the token arrives in the URL fragment.
+ useEffect(()=>{const params=new URLSearchParams(window.location.hash.replace(/^#/,""));const token=params.get("access_token"),error=params.get("error_description");if(token){window.history.replaceState({},"",window.location.pathname);void enterSession(token,true,false)}else if(error){window.history.replaceState({},"",window.location.pathname);setAuthNotice(decodeURIComponent(error.replace(/\+/g," ")));setView("auth")}},[]);// eslint-disable-line react-hooks/exhaustive-deps
  const filtered=useMemo(()=>filter==="all"?problems:problems.filter(p=>p.difficulty===filter),[filter]);
  const judge=async()=>{if(!signed){setView("auth");return}if(!activeProblem.judge){setVerdict(lang==="uz"?"Bu masala uchun tekshiruvchi tez orada ulanadi":"The judge for this problem is coming soon");return}setVerdict(lang==="uz"?"Navbatda… testlar tekshirilmoqda":"In queue… running hidden tests");try{const response=await fetch("/api/judge",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({problemId:activeProblem.judge,language:codeLang,sourceCode:code})});const r=await response.json();const names:Record<string,[string,string]>={ACCEPTED:["Qabul qilindi","Accepted"],WRONG_ANSWER:["Noto‘g‘ri javob","Wrong answer"],COMPILATION_ERROR:["Kompilyatsiya xatosi","Compilation error"],RUNTIME_ERROR:["Bajarilish xatosi","Runtime error"],TIME_LIMIT_EXCEEDED:["Vaqt chegarasi oshdi","Time limit exceeded"],MEMORY_LIMIT_EXCEEDED:["Xotira chegarasi oshdi","Memory limit exceeded"],JUDGE_ERROR:["Tekshiruvchi xatosi","Judge error"]};const title=(names[r.verdict]||names.JUDGE_ERROR)[lang==="uz"?0:1];const test=r.test?` · ${lang==="uz"?"test":"test"} #${r.test}`:"";const stats=r.verdict==="ACCEPTED"?` · ${r.passed}/${r.total} · ${r.runtimeMs} ms · ${r.memoryKb} KB`:"";setVerdict(`${title}${test}${stats}${r.details?`\n${String(r.details).slice(0,900)}`:""}`)}catch{setVerdict(lang==="uz"?"Tekshiruvchi bilan aloqa uzildi":"Judge connection failed")}};
- return <div className="shell"><header className="topbar"><button className="brand" onClick={()=>go("home")} style={{border:0,background:"transparent"}}><span className="brandmark">A›</span>AlgoYo‘l</button><nav className="nav">{(["home","roadmaps","problems","duel","leaderboard"] as View[]).map(v=><button key={v} className={view===v?"active":""} onClick={()=>go(v)}>{t[v as keyof typeof t]}</button>)}</nav><div className="actions"><button className="lang" onClick={swap}>{lang==="uz"?"EN":"UZ"}</button><button className="pill" onClick={()=>go(signed?"profile":"auth")}>{signed?(lang==="uz"?"Profil":"Profile"):t.login}</button><button className="primary" onClick={()=>go("duel")}>{lang==="uz"?"Duel topish":"Find duel"}</button></div></header>
- <main className="main">{view==="home"&&(signed?<HomeDashboard lang={lang} role={profile?.role||"user"} go={v=>go(v as View)} openRoadmap={openRoadmap} duelRating={(typeof window==="undefined"?0:Number(localStorage.getItem("algoyol-duel-rating")))||profile?.duel_rating||1462}/>:<Home lang={lang} go={go} openRoadmap={openRoadmap}/>)} {view==="roadmaps"&&<RoadmapHub lang={lang} role={profile?.role||"user"} openRoadmap={openRoadmap}/>} {view==="roadmap"&&<RoadmapExperience slug={selectedRoadmap} lang={lang} role={profile?.role||"user"} unitId={selectedUnit} onOpenUnit={id=>pushScreen({unit:id})} onBack={back} onPractice={()=>pushScreen({view:"problem"})}/>} {view==="problems"&&<Problems lang={lang} filter={filter} setFilter={setFilter} items={filtered} go={go} onSelect={p=>{setActiveProblem(p);setCode(p.judge==="max-subarray"?duelProblems[1].cpp:p.judge==="coin-change"?duelProblems[2].cpp:cpp);setVerdict("");go("problem")}}/>} {view==="problem"&&<Problem lang={lang} item={activeProblem} code={code} setCode={setCode} codeLang={codeLang} setCodeLang={setCodeLang} verdict={verdict} submit={judge}/>} {view==="duel"&&<DuelMatchmaking lang={lang} profile={profile} signed={signed} needAuth={()=>go("auth")} openRoadmap={openRoadmap}/>} {view==="leaderboard"&&<Leaderboard lang={lang}/>} {view==="profile"&&<Profile lang={lang} go={go} profile={profile} loading={loadingProfile} signOut={signOut}/>} {view==="auth"&&<AuthPage lang={lang} done={token=>{if(token)loadProfile(token);else setSigned(true);if(!localStorage.getItem("algoyol-onboarded"))go("placement");else go("profile")}}/>} {view==="placement"&&<Placement lang={lang} signed={signed} onFinish={()=>go("roadmaps")} onRoadmap={openRoadmap}/>} {view==="admin"&&<Admin lang={lang} profile={profile}/>}</main>
- <nav className="mobile-nav">{(["home","roadmaps","problems","duel","leaderboard"] as View[]).map(v=><button key={v} className={view===v?"active":""} onClick={()=>go(v)}>{t[v as keyof typeof t]}</button>)}</nav><footer className="footer"><span>© 2026 AlgoYo‘l · Toshkent</span><span>{lang==="uz"?"Bilimdan natijagacha.":"From learning to results."}</span></footer></div>
+ return <div className="shell"><header className="topbar"><button className="brand" onClick={()=>go("home")} style={{border:0,background:"transparent"}}><span className="brandmark">A›</span>AlgoYo‘l</button><nav className="nav">{(["home","roadmaps","problems","duel","leaderboard"] as View[]).map(v=><button key={v} className={view===v?"active":""} onClick={()=>go(v)}>{t[v as keyof typeof t]}</button>)}</nav><div className="actions"><button className="lang" onClick={swap} aria-label={lang==="uz"?"Switch to English":"O‘zbekchaga o‘tish"}>{lang==="uz"?"EN":"UZ"}</button>{auth.status==="loading"?<span className="pill pill-loading" aria-live="polite">…</span>:<button className="pill" onClick={()=>go(signed?"profile":"auth")}>{signed?(lang==="uz"?"Profil":"Profile"):t.login}</button>}<button className="primary" onClick={()=>go("duel")}>{lang==="uz"?"Duel topish":"Find duel"}</button></div></header>
+ <main className="main">{view==="home"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed&&profile?<HomeDashboard lang={lang} role={role} go={v=>go(v as View)} openRoadmap={openRoadmap} duelRating={profile.duel_rating}/>:<Home lang={lang} go={go} openRoadmap={openRoadmap}/>)} {view==="roadmaps"&&<RoadmapHub lang={lang} role={role} openRoadmap={openRoadmap}/>} {view==="roadmap"&&<RoadmapExperience slug={selectedRoadmap} lang={lang} role={role} unitId={selectedUnit} onOpenUnit={id=>pushScreen({unit:id})} onBack={back} onPractice={()=>pushScreen({view:"problem"})}/>} {view==="problems"&&<Problems lang={lang} filter={filter} setFilter={setFilter} items={filtered} go={go} onSelect={p=>{setActiveProblem(p);setCode(p.judge==="max-subarray"?duelProblems[1].cpp:p.judge==="coin-change"?duelProblems[2].cpp:cpp);setVerdict("");go("problem")}}/>} {view==="problem"&&<Problem lang={lang} item={activeProblem} code={code} setCode={setCode} codeLang={codeLang} setCodeLang={setCodeLang} verdict={verdict} submit={judge}/>} {view==="duel"&&<DuelMatchmaking lang={lang} profile={profile} signed={signed} authLoading={auth.status==="loading"} needAuth={()=>go("auth")} openRoadmap={openRoadmap}/>} {view==="leaderboard"&&<Leaderboard lang={lang} me={profile}/>} {view==="profile"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<ProfilePage lang={lang} profile={profile} onProfileChange={next=>setAuth({status:"authenticated",profile:next})} signOut={signOut} goAdmin={()=>go("admin")} goRoadmaps={()=>go("roadmaps")} openRoadmap={openRoadmap} isStaff={can(role,"content.view_management")}/>:<SignInRequired lang={lang} go={go} what="profile"/>)} {view==="auth"&&<AuthPage lang={lang} notice={authNotice} onAuthenticated={(token,remember,isNew)=>{void enterSession(token,remember,isNew)}}/>} {view==="placement"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed?<Placement lang={lang} signed={signed} onFinish={()=>go("roadmaps")} onRoadmap={openRoadmap}/>:<SignInRequired lang={lang} go={go} what="placement"/>)} {view==="admin"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<Admin lang={lang} profile={profile}/>:<SignInRequired lang={lang} go={go} what="admin"/>)}</main>
+ <nav className="mobile-nav">{(["home","roadmaps","problems","duel","leaderboard"] as View[]).map(v=><button key={v} className={view===v?"active":""} onClick={()=>go(v)}>{t[v as keyof typeof t]}</button>)}</nav><footer className="footer"><span>© {new Date().getFullYear()} AlgoYo‘l · Toshkent</span><span>{lang==="uz"?"Bilimdan natijagacha.":"From learning to results."}</span></footer></div>
 }
-function Home({lang,go,openRoadmap}:{lang:Lang,go:(v:View)=>void,openRoadmap:(slug:string)=>void}){const t=copy[lang];return <><section className="hero"><div className="hero-copy"><div className="eyebrow">{lang==="uz"?"O‘zbekiston dasturchilari uchun":"Built for Uzbekistan’s coders"}</div><h1>{lang==="uz"?<>Algoritmlarni <em>o‘rganing</em>, bellashing va o‘sing.</>:<>Learn algorithms, <em>compete</em>, and grow.</>}</h1><p>{t.sub}</p><div className="hero-cta"><button className="primary" onClick={()=>go("roadmaps")}>{t.start} →</button><button className="secondary" onClick={()=>go("duel")}>{t.arena}</button></div><div className="orbit"/></div><div className="hero-side"><div className="stat-card"><span className="eyebrow" style={{color:"#637068"}}>{lang==="uz"?"Bugun faol":"Active today"}</span><span className="big">1,284</span><div className="mini-row"><span className="avatar">S</span><span className="avatar">M</span><span className="avatar">A</span><span className="avatar">+9</span></div></div><div className="stat-card duel"><span className="eyebrow" style={{color:"#6f3516"}}>{lang==="uz"?"Jonli duellar":"Live duels"}</span><span className="big">24</span><span>{lang==="uz"?"Hozir bellashmoqda":"competing right now"} ⚡</span></div></div></section><section><div className="section-head"><div><p className="eyebrow" style={{color:"#637068"}}>{lang==="uz"?"Bosqichma-bosqich":"Step by step"}</p><h2>{t.featured}</h2></div><button className="secondary" onClick={()=>go("roadmaps")}>{t.all} →</button></div><RoadGrid lang={lang} roads={allRoads.slice(0,3)} openRoadmap={openRoadmap}/></section><section><div className="section-head"><div><p className="eyebrow" style={{color:"#637068"}}>100 · 200 · 300</p><h2>{t.tasks}</h2></div><button className="secondary" onClick={()=>go("problems")}>{t.all} →</button></div><ProblemList lang={lang} items={problems.slice(0,4)} go={go}/></section></>}
-function RoadGrid({lang,roads,openRoadmap}:{lang:Lang,roads:typeof allRoads,openRoadmap:(slug:string)=>void}){return <div className="grid">{roads.map((r)=><button className="road-card" style={{textAlign:"left"}} key={r.en} onClick={()=>openRoadmap(r.slug)}><span className="road-icon" style={{background:r.color}}>{r.icon}</span><h3>{lang==="uz"?r.uz:r.en}</h3><p className="muted">{lang==="uz"?r.descUz:r.descEn}</p><div className="progress"><span style={{width:r.progress+"%"}}/></div><div className="meta"><span>{r.units} {lang==="uz"?"bosqich":"units"}</span><span>800 → 2200</span></div></button>)}</div>}
+function Home({lang,go,openRoadmap}:{lang:Lang,go:(v:View)=>void,openRoadmap:(slug:string)=>void}){const t=copy[lang];return <><section className="hero"><div className="hero-copy"><div className="eyebrow">{lang==="uz"?"O‘zbekiston dasturchilari uchun":"Built for Uzbekistan’s coders"}</div><h1>{lang==="uz"?<>Algoritmlarni <em>o‘rganing</em>, bellashing va o‘sing.</>:<>Learn algorithms, <em>compete</em>, and grow.</>}</h1><p>{t.sub}</p><div className="hero-cta"><button className="primary" onClick={()=>go("roadmaps")}>{t.start} →</button><button className="secondary" onClick={()=>go("duel")}>{t.arena}</button></div><div className="orbit"/></div><div className="hero-side"><PlatformStats lang={lang}/></div></section><section><div className="section-head"><div><p className="eyebrow" style={{color:"#637068"}}>{lang==="uz"?"Bosqichma-bosqich":"Step by step"}</p><h2>{t.featured}</h2></div><button className="secondary" onClick={()=>go("roadmaps")}>{t.all} →</button></div><RoadGrid lang={lang} roads={allRoads.slice(0,3)} openRoadmap={openRoadmap}/></section><section><div className="section-head"><div><p className="eyebrow" style={{color:"#637068"}}>100 · 200 · 300</p><h2>{t.tasks}</h2></div><button className="secondary" onClick={()=>go("problems")}>{t.all} →</button></div><ProblemList lang={lang} items={problems.slice(0,4)} go={go}/></section></>}
+/* Real platform numbers only: how much curriculum exists, and how many people
+   have registered. Nothing here is a decorative invention. */
+function PlatformStats({lang}:{lang:Lang}){
+ const [learners,setLearners]=useState<number|null>(null);
+ useEffect(()=>{let live=true;fetchLearnerCount().then(n=>{if(live)setLearners(n)});return()=>{live=false}},[]);
+ const units=useMemo(()=>roadmapCatalogSize(),[]);
+ return <>
+  <div className="stat-card"><span className="eyebrow">{lang==="uz"?"O‘quv dasturi":"Curriculum"}</span><span className="big">{units.tracks}</span><span className="muted">{lang==="uz"?`yo‘nalish · ${units.units} bosqich`:`tracks · ${units.units} units`}</span></div>
+  <div className="stat-card duel"><span className="eyebrow" style={{color:"#6f3516"}}>{lang==="uz"?"Ro‘yxatdan o‘tganlar":"Registered learners"}</span><span className="big">{learners===null?"—":String(learners).replace(/\B(?=(\d{3})+(?!\d))/g," ")}</span><span>{lang==="uz"?"AlgoYo‘lda o‘rganmoqda":"learning on AlgoYo‘l"} ⚡</span></div>
+ </>;
+}
+
+function RoadGrid({lang,roads,openRoadmap}:{lang:Lang,roads:typeof allRoads,openRoadmap:(slug:string)=>void}){return <div className="grid">{roads.map((r)=><button className="road-card" style={{textAlign:"left"}} key={r.en} onClick={()=>openRoadmap(r.slug)}><span className="road-icon" style={{background:r.color}}>{r.icon}</span><h3>{lang==="uz"?r.uz:r.en}</h3><p className="muted">{lang==="uz"?r.descUz:r.descEn}</p><div className="meta"><span>{r.units} {lang==="uz"?"bosqich":"units"}</span><span>800 → 2200</span></div></button>)}</div>}
 function ProblemList({lang,items,go,onSelect}:{lang:Lang;items:typeof problems;go:(v:View)=>void;onSelect?:(p:BankProblem)=>void}){const mastery=loadMastery();return <div className="problem-list">{items.map(p=>{const solved=mastery.evidence[`problem:${p.id}`]!==undefined;return <button className="problem-row" style={{textAlign:"left"}} key={p.id} onClick={()=>onSelect?onSelect(p):go("problem")}><span className="num">{p.id}</span><span><h3>{lang==="uz"?p.uz:p.en}</h3><span className={`difficulty ${p.difficulty}`}>{p.difficulty.toUpperCase()} · {p.points}</span></span><span className="tag">{p.tag}</span><span className={`pb-status ${solved?"solved":""}`}>{solved?"✓":"○"}</span></button>})}</div>}
 function Problems({lang,filter,setFilter,items,go,onSelect}:{lang:Lang,filter:string,setFilter:(x:string)=>void,items:typeof problems,go:(v:View)=>void,onSelect:(p:BankProblem)=>void}){
  const [topic,setTopic]=useState("all");
@@ -122,7 +181,7 @@ type DuelProblem={key:string;code:string;difficulty:"easy"|"medium"|"hard";point
 type DuelClaim={by:"me"|"opp";at:number}|null;
 type DuelEvent={at:number;by:"me"|"opp"|"sys";uz:string;en:string};
 type DuelResultState=null|{reason:"time"|"sweep"|"forfeit";outcome:"win"|"loss"|"draw";delta:number;claims:DuelClaim[];at:number};
-const DUEL_LENGTH=1800,DUEL_K=32;
+const DUEL_LENGTH=1800,DUEL_K=32,DEFAULT_RATING=1200;
 const duelOpponents:DuelOpponent[]=[{name:"Jasur",handle:"@jasur_cpp",rating:1488,wins:18,letter:"J"},{name:"Nilufar",handle:"@nilufar_py",rating:1421,wins:18,letter:"N"},{name:"Bekzod",handle:"@bek_ds",rating:1395,wins:9,letter:"B"},{name:"Azizbek",handle:"@aziz_algo",rating:1718,wins:29,letter:"A"},{name:"Madina",handle:"@madina_dev",rating:1792,wins:37,letter:"M"},{name:"Sardor",handle:"@sardor_ioi",rating:1864,wins:42,letter:"S"}];
 const duelProblems:DuelProblem[]=[
  {key:"sum-two",code:"A01",difficulty:"easy",points:100,uz:"Ikki son yig‘indisi",en:"Sum of two numbers",
@@ -153,7 +212,7 @@ const expectedScore=(mine:number,theirs:number)=>1/(1+Math.pow(10,(theirs-mine)/
 const scoreOf=(list:DuelClaim[],who:"me"|"opp")=>list.reduce((n,c,i)=>c&&c.by===who?n+duelProblems[i].points:n,0);
 const topicTitle=(slug:string,lang:Lang)=>{const r=roadmapCards.find(x=>x.slug===slug);return r?(lang==="uz"?r.uz:r.en):slug};
 
-function Duel({lang,opponent,rating,matchId,onFinish,onRematch,onExit,openRoadmap}:{lang:Lang;opponent:DuelOpponent;rating:number;matchId:number;onFinish:(next:number)=>void;onRematch:()=>void;onExit:()=>void;openRoadmap:(slug:string)=>void}){
+function Duel({lang,opponent,rating,matchId,onFinish,onRematch,onExit,openRoadmap}:{lang:Lang;opponent:DuelOpponent;rating:number;matchId:number;onFinish:(next:number,entry:{outcome:"win"|"loss"|"draw";myScore:number;oppScore:number;delta:number})=>void;onRematch:()=>void;onExit:()=>void;openRoadmap:(slug:string)=>void}){
  const [elapsed,setElapsed]=useState(0),[stage,setStage]=useState(0),[claims,setClaims]=useState<DuelClaim[]>([null,null,null]);
  const [gains,setGains]=useState<{topic:string;delta:number}[]>([]);
  const [feed,setFeed]=useState<DuelEvent[]>([{at:0,by:"sys",uz:"Duel boshlandi · 1-masala ochildi",en:"Duel started · problem 1 unlocked"}]);
@@ -168,7 +227,7 @@ function Duel({lang,opponent,rating,matchId,onFinish,onRematch,onExit,openRoadma
   const mine=scoreOf(final,"me"),theirs=scoreOf(final,"opp");
   const outcome=reason==="forfeit"?"loss":mine>theirs?"win":mine<theirs?"loss":"draw";
   const delta=Math.round(DUEL_K*((outcome==="win"?1:outcome==="draw"?.5:0)-expectedScore(rating,opponent.rating)));
-  plan.current=null;setResult({reason,outcome,delta,claims:final,at:Math.min(at,DUEL_LENGTH)});onFinish(rating+delta)};
+  plan.current=null;setResult({reason,outcome,delta,claims:final,at:Math.min(at,DUEL_LENGTH)});onFinish(rating+delta,{outcome,myScore:mine,oppScore:theirs,delta})};
  const claimStage=(by:"me"|"opp",at:number)=>{
   if(result||stage>2||claims[stage])return;
   const problem=duelProblems[stage],next=[...claims];next[stage]={by,at};setClaims(next);setStage(stage+1);
@@ -197,7 +256,7 @@ function Duel({lang,opponent,rating,matchId,onFinish,onRematch,onExit,openRoadma
  const problem=duelProblems[Math.min(stage,2)],leader=myScore>oppScore?"me":oppScore>myScore?"opp":"";
  return <><div className="page-head"><div><p className="eyebrow" style={{color:"#637068"}}>RATED DUEL · #{matchId}</p><h1 className="page-title">{lang==="uz"?"Duel maydoni":"Duel arena"}</h1></div><span className="tag">{lang==="uz"?"Ulangan":"Connected"} ●</span></div>
  <div className="duel-layout"><section className="arena"><div className="duel-top"><b>{lang==="uz"?"30 daqiqalik duel":"30-minute duel"}</b><span className={`timer ${remaining<=300?"low":""}`}>{clock(remaining)}</span></div>
-  <div className="players"><div className={`player ${leader==="me"?"lead":""}`}><span className="sub">@algoyolchi · {rating}</span><div className="who">{lang==="uz"?"Siz":"You"}</div><span className="score">{myScore}</span></div><span className="versus">VS</span>
+  <div className="players"><div className={`player ${leader==="me"?"lead":""}`}><span className="sub">{rating} Elo</span><div className="who">{lang==="uz"?"Siz":"You"}</div><span className="score">{myScore}</span></div><span className="versus">VS</span>
    <div className={`player ${leader==="opp"?"lead":""}`}><span className="sub">{opponent.handle} · {opponent.rating}</span><div className="who">{opponent.name}</div><span className="score">{oppScore}</span></div></div>
   <div className="duel-steps">{duelProblems.map((p,i)=>{const claim=claims[i],state=claim?(claim.by==="me"?"mine":"theirs"):i===stage?"open":"locked";return <div key={p.key} className={`step ${state}`}><b>{String(i+1).padStart(2,"0")} · {p.difficulty.toUpperCase()}</b><span>{p.points} {lang==="uz"?"ball":"points"}</span><span className="claim">{claim?`${claim.by==="me"?(lang==="uz"?"Siz":"You"):opponent.name} · ${clock(claim.at)}`:i===stage?(lang==="uz"?"Ochiq":"Open"):(lang==="uz"?"Qulflangan":"Locked")}</span></div>})}</div>
   <div className="duel-problem"><span className="tag">{problem.code} · {problem.difficulty.toUpperCase()} · {problem.points}</span><h2>{lang==="uz"?problem.uz:problem.en}</h2>
@@ -230,14 +289,22 @@ function DuelResult({lang,opponent,result,attempts,rating,gains,onRematch,onExit
   <div className="match-actions"><button className="primary" onClick={onRematch}>{lang==="uz"?"Yangi duel":"New duel"} →</button><button className="secondary" onClick={onExit}>{lang==="uz"?"Maydondan chiqish":"Leave arena"}</button></div></div></>
 }
 
-function DuelMatchmaking({lang,profile,signed,needAuth,openRoadmap}:{lang:Lang,profile?:Profile|null,signed:boolean,needAuth:()=>void,openRoadmap:(slug:string)=>void}){
- const [phase,setPhase]=useState<"idle"|"searching"|"found"|"active">("idle"),[rating,setRating]=useState(1462),[opponent,setOpponent]=useState<DuelOpponent>(duelOpponents[0]),[matchId,setMatchId]=useState(4821);
- useEffect(()=>{if(profile?.duel_rating){setRating(profile.duel_rating);return}const saved=Number(localStorage.getItem("algoyol-duel-rating"));if(saved>0)setRating(saved)},[profile]);
+function DuelMatchmaking({lang,profile,signed,authLoading,needAuth,openRoadmap}:{lang:Lang,profile?:Profile|null,signed:boolean,authLoading:boolean,needAuth:()=>void,openRoadmap:(slug:string)=>void}){
+ const [phase,setPhase]=useState<"idle"|"searching"|"found"|"active">("idle"),[rating,setRating]=useState(profile?.duel_rating??DEFAULT_RATING),[opponent,setOpponent]=useState<DuelOpponent>(duelOpponents[0]),[matchId,setMatchId]=useState(4821);
+ // The account is the source of truth for rating; the local copy is only a
+ // cache for a session that has not synced yet.
+ useEffect(()=>{if(profile?.duel_rating!==undefined){setRating(profile.duel_rating);return}const saved=Number(readScoped("algoyol-duel-rating"));if(saved>0)setRating(saved)},[profile]);
  useEffect(()=>{if(phase!=="searching")return;const found=window.setTimeout(()=>{const pool=[...duelOpponents].sort((a,b)=>Math.abs(a.rating-rating)-Math.abs(b.rating-rating)).slice(0,3);setOpponent(pool[Math.floor(Math.random()*pool.length)]);setMatchId(4000+Math.floor(Math.random()*1800));setPhase("found")},1800);return()=>window.clearTimeout(found)},[phase,rating]);
- const settle=(next:number)=>{setRating(next);localStorage.setItem("algoyol-duel-rating",String(next));void saveDuelRating(next)};
+ const settle=(next:number,entry:{outcome:"win"|"loss"|"draw";myScore:number;oppScore:number;delta:number})=>{
+  setRating(next);writeScoped("algoyol-duel-rating",String(next));
+  // Recorded so the profile can show a real duel record instead of a guess.
+  recordDuelResult({matchId,opponent:opponent.name,opponentRating:opponent.rating,outcome:entry.outcome,myScore:entry.myScore,oppScore:entry.oppScore,ratingBefore:rating,ratingAfter:next,delta:entry.delta});
+  if(profile?.id)void saveDuelRating(profile.id,next);
+ };
+ if(authLoading)return <ScreenLoading lang={lang}/>;
  if(phase==="active")return <Duel key={matchId} lang={lang} opponent={opponent} rating={rating} matchId={matchId} onFinish={settle} onRematch={()=>setPhase("searching")} onExit={()=>setPhase("idle")} openRoadmap={openRoadmap}/>;
  const gap=Math.abs(opponent.rating-rating);
- return <><div className="page-head"><div><p className="eyebrow" style={{color:"#637068"}}>RATED MATCHMAKING</p><h1 className="page-title">{lang==="uz"?"Duel uchun raqib toping":"Find a duel opponent"}</h1><p className="muted">{lang==="uz"?"Tizim sizga reytingi yaqin bo‘lgan raqibni qidiradi.":"We will match you with a player near your rating."}</p></div><span className="tag">ELO {rating}</span></div>
+ return <><div className="page-head"><div><p className="eyebrow" style={{color:"#637068"}}>RATED MATCHMAKING</p><h1 className="page-title">{lang==="uz"?"Duel uchun raqib toping":"Find a duel opponent"}</h1><p className="muted">{lang==="uz"?"Tizim sizga reytingi yaqin bo‘lgan raqibni qidiradi.":"We will match you with a player near your rating."}</p></div>{signed&&<span className="tag">ELO {rating}</span>}</div>
  <div className="matchmaking panel"><div className={`search-orb ${phase==="searching"?"pulse":""}`}>{phase==="found"?"✓":"⚡"}</div>
   <h2>{phase==="idle"?(lang==="uz"?"Bellashishga tayyormisiz?":"Ready to compete?"):phase==="searching"?(lang==="uz"?"Raqib qidirilmoqda…":"Searching for an opponent…"):(lang==="uz"?"Raqib topildi!":"Opponent found!")}</h2>
   {phase==="found"?<><div className="found-player"><span className="avatar">{opponent.letter}</span><span><b>{opponent.name} · {opponent.handle}</b><br/><span className="muted">{opponent.rating} Elo · {opponent.wins} {lang==="uz"?"g‘alaba":"wins"}</span></span></div>
@@ -246,19 +313,41 @@ function DuelMatchmaking({lang,profile,signed,needAuth,openRoadmap}:{lang:Lang,p
   :<><p className="muted">{phase==="searching"?(lang==="uz"?"Odatda 10 soniyadan kam vaqt oladi.":"This usually takes less than 10 seconds."):(lang==="uz"?"Easy, Medium va Hard masalalar ketma-ket ochiladi.":"Easy, Medium, and Hard problems unlock in order.")}</p>
     <button className={phase==="searching"?"secondary":"primary"} onClick={()=>{if(!signed){needAuth();return}setPhase(phase==="searching"?"idle":"searching")}}>{phase==="searching"?(lang==="uz"?"Qidiruvni bekor qilish":"Cancel search"):signed?(lang==="uz"?"Raqib qidirish":"Search for competitor"):(lang==="uz"?"Kirish talab qilinadi":"Sign in required")} {phase==="idle"&&signed&&"→"}</button></>}</div></>
 }
-function Leaderboard({lang}:{lang:Lang}){return <><div className="page-head"><div><p className="eyebrow" style={{color:"#637068"}}>ELO · K=32</p><h1 className="page-title">{lang==="uz"?"Duel reytingi":"Duel leaderboard"}</h1><p className="muted">{lang==="uz"?"Eng kuchli AlgoYo‘lchilar safi.":"The strongest competitors on AlgoYo‘l."}</p></div></div><div className="leaderboard">{leaders.map((x,i)=><div className={`leader-row ${x.n==="Siz"?"me":""}`} key={x.u}><span className="rank">#{i+1}</span><span><b>{lang==="en"&&x.n==="Siz"?"You":x.n}</b><br/><span className="muted">{x.u}</span></span><span className="tag">{x.w} W</span><span className="rating">{x.r}</span></div>)}</div></>}
-function Profile({lang,go,profile,loading,signOut}:{lang:Lang,go:(v:View)=>void,profile:Profile|null,loading:boolean,signOut:()=>void}){
- const role:Role=profile?.role||"user",staff=role==="admin"||role==="owner";
- const name=profile?.display_name||profile?.username||"AlgoYo‘lchi",handle=profile?`@${profile.username}`:"@algoyolchi";
- const initials=name.trim().slice(0,2).toUpperCase()||"AY";
- return <><div className="page-head"><h1 className="page-title">{lang==="uz"?"Mening profilim":"My profile"}</h1><div className="actions">{staff&&<button className="secondary" onClick={()=>go("admin")}>{lang==="uz"?"Boshqaruv":"Admin studio"}</button>}<button className="lang" onClick={signOut}>{lang==="uz"?"Chiqish":"Sign out"}</button></div></div>
- {!supabaseReady()&&<div className="notice" style={{marginBottom:18}}>{lang==="uz"?"Supabase ulanmagan — profil va rollar demo rejimida ko‘rsatilmoqda. .env.local faylga NEXT_PUBLIC_SUPABASE_URL va NEXT_PUBLIC_SUPABASE_ANON_KEY ni yozing.":"Supabase is not connected — the profile and roles are shown in demo mode. Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to .env.local."}</div>}
- {supabaseReady()&&!profile&&!loading&&<div className="notice" style={{marginBottom:18}}>{lang==="uz"?"Profil topilmadi. Supabase’ga kiring — profil birinchi kirishda avtomatik yaratiladi.":"No profile found. Sign in to Supabase — the profile is created automatically on first login."}</div>}
- <div className="profile-grid"><div className="panel profile-card"><div className="profile-avatar">{initials}</div><h2>{name}</h2><p className="muted">{handle}{profile?.email?` · ${profile.email}`:" · Toshkent"}</p><span className={`tag role-${role}`}>{loading?"…":roleLabel(role,lang)}</span>
-  <div className="kpis"><div className="kpi"><b>{profile?.duel_rating??1462}</b>Elo</div><div className="kpi"><b>{profile?.solved_count??27}</b>AC</div><div className="kpi"><b>{staff?"∞":"12"}</b>{staff?(lang==="uz"?"Huquq":"Access"):"W"}</div></div>
-  <p className="muted" style={{marginTop:18,fontSize:13}}>{role==="owner"?(lang==="uz"?"Owner barcha masalalar, roadmap va adminlarni boshqaradi.":"The owner manages every problem, roadmap, and admin."):role==="admin"?(lang==="uz"?"Admin faqat o‘zi yaratgan masalalarni tahrirlaydi.":"Admins edit only the problems they created."):(lang==="uz"?"Foydalanuvchi darslarni o‘qiydi, masalalar yechadi va duellarda qatnashadi.":"Users read lessons, solve problems, and enter duels.")}</p></div>
-   <div className="panel"><h2>{lang==="uz"?"Mavzu mahorati":"Topic mastery"}</h2>{roadmapCards.map(r=>{const s=masteryOf(r.slug);return <div key={r.slug} className="pl-bar" style={{margin:"14px 0"}}><span className="pl-bar-name">{lang==="uz"?r.uz:r.en}</span><div className="progress"><span style={{width:`${s/10}%`}}/></div><b className="mono">{s}</b><small className="muted">{masteryLabel(s,lang)}</small></div>})}</div></div></>}
-function Admin({lang,profile}:{lang:Lang,profile:Profile|null}){
-  const role:Role=profile?.role||"user";
+/* Shown while a stored session is being verified — the app commits to neither
+   guest nor account until it knows which one is true. */
+function ScreenLoading({lang}:{lang:Lang}){
+ return <div className="screen-state" role="status" aria-live="polite"><span className="spinner" aria-hidden/><p className="muted">{lang==="uz"?"Sessiya tekshirilmoqda…":"Checking your session…"}</p></div>;
+}
+
+/* A guest who lands on a protected URL gets a real explanation and a way in,
+   not a profile made of placeholder numbers. */
+function SignInRequired({lang,go,what}:{lang:Lang;go:(v:View)=>void;what:"profile"|"admin"|"placement"}){
+ const copyUz={profile:["Profilingizni ko‘rish uchun kiring","Profil, progress va reyting faqat hisobingizga bog‘langan. Hisob yarating yoki kiring."],admin:["Bu sahifa uchun kirish talab qilinadi","Boshqaruv studiyasi faqat admin va owner rollari uchun."],placement:["Darajani aniqlash uchun kiring","Natijalar hisobingizga saqlanadi, shuning uchun avval kiring."]}[what];
+ const copyEn={profile:["Sign in to see your profile","Your profile, progress and rating belong to an account. Create one or sign in."],admin:["Sign in to continue","The admin studio is available to the admin and owner roles only."],placement:["Sign in to take the placement","Your results are saved to your account, so sign in first."]}[what];
+ const [title,body]=lang==="uz"?copyUz:copyEn;
+ return <div className="screen-state panel">
+  <span className="screen-state-ic" aria-hidden>🔒</span>
+  <h1 className="page-title">{title}</h1>
+  <p className="muted">{body}</p>
+  <div className="match-actions"><button className="primary" onClick={()=>go("auth")}>{lang==="uz"?"Kirish yoki ro‘yxatdan o‘tish":"Sign in or register"} →</button><button className="secondary" onClick={()=>go("roadmaps")}>{lang==="uz"?"Yo‘l xaritalarini ko‘rish":"Browse roadmaps"}</button></div>
+ </div>;
+}
+
+/* The ranking is read from the profiles table. It used to be a hard-coded list
+   containing a row called "Siz" (You) with an invented rating — every visitor,
+   signed in or not, appeared to hold 4th place. */
+function Leaderboard({lang,me}:{lang:Lang;me:Profile|null}){
+ const [rows,setRows]=useState<LeaderRow[]|null>(null),[state,setState]=useState<"loading"|"ready"|"error">("loading");
+ useEffect(()=>{let live=true;fetchLeaderboard(50).then(list=>{if(!live)return;if(!list){setState("error");return}setRows(list);setState("ready")});return()=>{live=false}},[]);
+ const myRank=me&&rows?rows.findIndex(r=>r.id===me.id):-1;
+ return <><div className="page-head"><div><p className="eyebrow">ELO · K=32</p><h1 className="page-title">{lang==="uz"?"Duel reytingi":"Duel leaderboard"}</h1><p className="muted">{lang==="uz"?"Reyting duel natijalaridan hisoblanadi.":"Ratings come from real duel results."}</p></div>{me&&myRank>=0&&<span className="tag">{lang==="uz"?"Sizning o‘rningiz":"Your rank"} #{myRank+1}</span>}</div>
+ {state==="loading"&&<div className="screen-state" role="status"><span className="spinner" aria-hidden/><p className="muted">{lang==="uz"?"Yuklanmoqda…":"Loading…"}</p></div>}
+ {state==="error"&&<div className="panel"><div className="notice notice-error">{lang==="uz"?"Reytingni yuklab bo‘lmadi. Keyinroq urinib ko‘ring.":"Could not load the leaderboard. Try again later."}</div></div>}
+ {state==="ready"&&(rows&&rows.length?<div className="leaderboard">{rows.map((x,i)=>{const mine=me?.id===x.id;const name=x.display_name?.trim()||x.username;return <div className={`leader-row ${mine?"me":""}`} key={x.id}><span className="rank">#{i+1}</span><span className="leader-who"><b>{name}{mine&&<span className="tag tag-you">{lang==="uz"?"Siz":"You"}</span>}</b><span className="muted">@{x.username}</span></span><span className="tag">{x.solved_count} AC</span><span className="rating">{x.duel_rating}</span></div>})}</div>
+ :<div className="screen-state panel"><p className="muted">{lang==="uz"?"Hali reytingda hech kim yo‘q. Birinchi bo‘ling!":"Nobody is ranked yet. Be the first."}</p></div>)}</>;
+}
+
+function Admin({lang,profile}:{lang:Lang,profile:Profile}){
+  const role:Role=profile.role;
   if(!can(role,"content.view_management"))return <><div className="page-head"><div><span className="tag">ADMIN STUDIO</span><h1 className="page-title" style={{marginTop:12}}>{lang==="uz"?"Ruxsat yo‘q":"Access denied"}</h1></div></div><div className="panel"><div className="notice">{lang==="uz"?"Bu sahifa faqat admin va owner rollari uchun. Supabase’da profilingiz roli hozir: ":"This page is for the admin and owner roles only. Your Supabase profile role is currently: "}<b>{roleLabel(role,lang)}</b>.</div></div></>;
- return <><div className="page-head"><div><span className="tag">ADMIN STUDIO · {roleLabel(role,lang)}</span><h1 className="page-title" style={{marginTop:12}}>{lang==="uz"?"Yangi masala":"New problem"}</h1></div><button className="primary">{lang==="uz"?"Qoralamani saqlash":"Save draft"}</button></div><div className="panel"><div className="admin-grid"><div className="field"><label>O‘zbekcha nomi</label><input placeholder="Masala nomi"/></div><div className="field"><label>English title</label><input placeholder="Problem title"/></div><div className="field"><label>{lang==="uz"?"Qiyinlik":"Difficulty"}</label><select><option>Easy · 100</option><option>Medium · 200</option><option>Hard · 300</option></select></div><div className="field"><label>Taglar</label><input placeholder="binary-search, arrays"/></div></div><div className="admin-grid"><div className="field"><label>O‘zbekcha shart</label><textarea rows={9} placeholder="Masala shartini yozing…"/></div><div className="field"><label>English statement</label><textarea rows={9} placeholder="Write the problem statement…"/></div></div><div className="admin-grid"><div className="field"><label>{lang==="uz"?"Vaqt chegarasi":"Time limit"}</label><input value="1000 ms" readOnly/></div><div className="field"><label>{lang==="uz"?"Xotira chegarasi":"Memory limit"}</label><input value="256 MB" readOnly/></div></div><div className="field"><label>{lang==="uz"?"Yashirin testlar":"Hidden tests"}</label><textarea rows={5} placeholder="Input → Expected output"/></div><div className="notice">{lang==="uz"?"Admin faqat o‘zi yaratgan masalalarni tahrirlaydi. Owner barcha masalalarni boshqaradi.":"Admins edit only their own problems. The owner can manage all content."}</div></div></>}
+ return <><div className="page-head"><div><span className="tag">ADMIN STUDIO · {roleLabel(role,lang)}</span><h1 className="page-title" style={{marginTop:12}}>{lang==="uz"?"Yangi masala":"New problem"}</h1></div><button className="primary" disabled title={lang==="uz"?"Masala muharriri hali ulanmagan":"The problem editor is not connected yet"}>{lang==="uz"?"Qoralamani saqlash":"Save draft"}</button></div><div className="panel"><div className="admin-grid"><div className="field"><label>O‘zbekcha nomi</label><input placeholder="Masala nomi"/></div><div className="field"><label>English title</label><input placeholder="Problem title"/></div><div className="field"><label>{lang==="uz"?"Qiyinlik":"Difficulty"}</label><select><option>Easy · 100</option><option>Medium · 200</option><option>Hard · 300</option></select></div><div className="field"><label>Taglar</label><input placeholder="binary-search, arrays"/></div></div><div className="admin-grid"><div className="field"><label>O‘zbekcha shart</label><textarea rows={9} placeholder="Masala shartini yozing…"/></div><div className="field"><label>English statement</label><textarea rows={9} placeholder="Write the problem statement…"/></div></div><div className="admin-grid"><div className="field"><label>{lang==="uz"?"Vaqt chegarasi":"Time limit"}</label><input value="1000 ms" readOnly/></div><div className="field"><label>{lang==="uz"?"Xotira chegarasi":"Memory limit"}</label><input value="256 MB" readOnly/></div></div><div className="field"><label>{lang==="uz"?"Yashirin testlar":"Hidden tests"}</label><textarea rows={5} placeholder="Input → Expected output"/></div><div className="notice notice-info">{lang==="uz"?"Bu forma ko‘rib chiqish rejimida — masala muharriri hali backendga ulanmagan, shuning uchun saqlash o‘chirilgan. Admin faqat o‘zi yaratgan masalalarni tahrirlaydi, owner esa barchasini.":"This form is a preview — the problem editor is not connected to the backend yet, so saving is disabled. Admins edit only their own problems; the owner manages all content."}</div></div></>}

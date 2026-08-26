@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { roadmapCatalog, type LessonUnit, type MasteryRoadmap } from "./roadmap-data";
 import { masteryOf, MASTERY_CONFIG } from "./mastery";
+import { readLocal } from "./progress";
 import { can } from "./permissions";
 import type { Role } from "./AlgoYolApp";
 
@@ -45,7 +46,7 @@ export function RoadmapHub({lang,role,openRoadmap}:{lang:Lang;role:Role;openRoad
  const t=L[lang];
  const canReviewAll=can(role,"roadmap.manage");
  const [progress,setProgress]=useState<Progress>(empty),[view,setView]=useState<HubView>("path"),[query,setQuery]=useState(""),[statusFilter,setStatusFilter]=useState<"all"|Status>("all");
- useEffect(()=>{const read=()=>{try{setProgress(JSON.parse(localStorage.getItem("algoyol-roadmap-progress")||JSON.stringify(empty)))}catch{setProgress(empty)}};read();window.addEventListener("algoyol-progress",read);return()=>window.removeEventListener("algoyol-progress",read)},[]);
+ useEffect(()=>{const read=()=>{setProgress(readLocal())};read();window.addEventListener("algoyol-progress",read);return()=>window.removeEventListener("algoyol-progress",read)},[]);
  const stats=useMemo(()=>{
   const all=roadmapCatalog.flatMap(r=>r.units),done=all.filter(u=>unitDone(progress,u));
   const xp=roadmapCatalog.reduce((n,r)=>n+r.units.reduce((m,u)=>m+((progress.quizScores[u.id]||0)>=70?10:0)+(progress.solved[u.id]?20:0),0)+(r.units.every(u=>unitDone(progress,u))?100:0),0);

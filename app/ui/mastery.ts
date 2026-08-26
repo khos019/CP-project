@@ -4,8 +4,12 @@ export type MasterySource="lesson"|"quiz"|"problem"|"duel"|"placement"|"challeng
 export type MasteryStore={scores:Record<string,number>;evidence:Record<string,number>;unlocks:Record<string,boolean>;validated:Record<string,boolean>};
 export type MasteryEvent={topic:string;source:MasterySource;sourceId:string;delta:number;at:number};
 export type DuelHistoryEntry={matchId:number;opponent:string;opponentRating:number;outcome:"win"|"loss"|"draw";myScore:number;oppScore:number;ratingBefore:number;ratingAfter:number;delta:number;at:number};
+import { readScoped, writeScoped } from "./session";
+
 export type MasteryConfig={unlock:number;complete:number;advanced:number;weights:{quiz:number;lesson:number;problem:{easy:number;medium:number;hard:number};duelMultiplier:number;placementQuestion:number;challenge:number}};
 
+/* Every key below is resolved through the active account scope (see session.ts),
+   so one browser can hold two learners' work without either seeing the other's. */
 const KEY="algoyol-mastery";
 const LOG="algoyol-mastery-log";
 const CONFIG_KEY="algoyol-mastery-config";
@@ -25,7 +29,7 @@ export const DEFAULT_MASTERY_CONFIG:MasteryConfig={
 export function loadMasteryConfig():MasteryConfig{
  if(typeof window==="undefined")return DEFAULT_MASTERY_CONFIG;
  try{
-  const raw=localStorage.getItem(CONFIG_KEY);
+  const raw=readScoped(CONFIG_KEY);
   if(!raw)return DEFAULT_MASTERY_CONFIG;
   const o=JSON.parse(raw) as Partial<MasteryConfig>;
   return {
@@ -38,7 +42,7 @@ export function loadMasteryConfig():MasteryConfig{
 }
 export function saveMasteryConfig(next:MasteryConfig){
  if(typeof window==="undefined")return;
- localStorage.setItem(CONFIG_KEY,JSON.stringify(next));
+ writeScoped(CONFIG_KEY,JSON.stringify(next));
  window.dispatchEvent(new Event("algoyol-progress"));
 }
 /* Back-compat: existing imports use MASTERY_CONFIG as a constant. */
@@ -46,15 +50,15 @@ export const MASTERY_CONFIG=DEFAULT_MASTERY_CONFIG;
 
 export function loadMastery():MasteryStore{
  if(typeof window==="undefined")return empty;
- try{const raw=localStorage.getItem(KEY);if(!raw)return empty;const parsed=JSON.parse(raw) as MasteryStore;return {scores:parsed.scores||{},evidence:parsed.evidence||{},unlocks:parsed.unlocks||{},validated:parsed.validated||{}}}catch{return empty}
+ try{const raw=readScoped(KEY);if(!raw)return empty;const parsed=JSON.parse(raw) as MasteryStore;return {scores:parsed.scores||{},evidence:parsed.evidence||{},unlocks:parsed.unlocks||{},validated:parsed.validated||{}}}catch{return empty}
 }
 export function loadMasteryLog():MasteryEvent[]{
  if(typeof window==="undefined")return[];
- try{return JSON.parse(localStorage.getItem(LOG)||"[]")}catch{return[]}
+ try{return JSON.parse(readScoped(LOG)||"[]")}catch{return[]}
 }
 const persist=(store:MasteryStore,event?:MasteryEvent)=>{
- localStorage.setItem(KEY,JSON.stringify(store));
- if(event){const log=loadMasteryLog();log.push(event);localStorage.setItem(LOG,JSON.stringify(log.slice(-400)))}
+ writeScoped(KEY,JSON.stringify(store));
+ if(event){const log=loadMasteryLog();log.push(event);writeScoped(LOG,JSON.stringify(log.slice(-400)))}
  window.dispatchEvent(new Event("algoyol-progress"));
 };
 
@@ -112,8 +116,8 @@ export function applyChallengePass(topic:string):{score:number}{
    evidence leaves a topic low — we never invent mastery. Runs exactly once per browser. */
 export function backfillMastery(progress:{quizScores:Record<string,number>;solved:Record<string,boolean>}){
  if(typeof window==="undefined")return;
- if(localStorage.getItem(BACKFILLED))return;
- localStorage.setItem(BACKFILLED,"1");
+ if(readScoped(BACKFILLED))return;
+ writeScoped(BACKFILLED,"1");
  const store=loadMastery();
  if(Object.keys(store.scores).length>0)return; // mastery already in use — nothing to migrate
  const byTopic:Record<string,{quiz:number;solved:number}>={};
@@ -142,13 +146,13 @@ export function backfillMastery(progress:{quizScores:Record<string,number>;solve
 /* ---- Duel + rating history (profile evidence of growth) ---- */
 export function loadDuelHistory():DuelHistoryEntry[]{
  if(typeof window==="undefined")return[];
- try{return JSON.parse(localStorage.getItem(DUEL_HISTORY)||"[]")}catch{return[]}
+ try{return JSON.parse(readScoped(DUEL_HISTORY)||"[]")}catch{return[]}
 }
 export function recordDuelResult(entry:Omit<DuelHistoryEntry,"at">){
  if(typeof window==="undefined")return;
  const list=loadDuelHistory();
  if(list.some(e=>e.matchId===entry.matchId))return;
  list.push({...entry,at:Date.now()});
- localStorage.setItem(DUEL_HISTORY,JSON.stringify(list.slice(-120)));
+ writeScoped(DUEL_HISTORY,JSON.stringify(list.slice(-120)));
  window.dispatchEvent(new Event("algoyol-progress"));
 }

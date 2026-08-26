@@ -8,20 +8,19 @@
 // losing a learner's quiz history because a request failed is worse than
 // keeping a device-local copy.
 
+import { readScoped, writeScoped, readToken, supabaseConfig } from "./session";
+
 export type Progress = { quizScores: Record<string, number>; solved: Record<string, boolean> };
 export const emptyProgress: Progress = { quizScores: {}, solved: {} };
 
 const KEY = "algoyol-roadmap-progress";
-const config = () => ({
-  url: process.env.NEXT_PUBLIC_SUPABASE_URL,
-  key: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-});
-const token = () => (typeof window === "undefined" ? null : sessionStorage.getItem("algoyol-access-token"));
+const config = supabaseConfig;
+const token = readToken;
 
 export function readLocal(): Progress {
   if (typeof window === "undefined") return emptyProgress;
   try {
-    const raw = JSON.parse(localStorage.getItem(KEY) || "{}");
+    const raw = JSON.parse(readScoped(KEY) || "{}");
     return { quizScores: raw.quizScores || {}, solved: raw.solved || {} };
   } catch {
     return emptyProgress;
@@ -31,7 +30,7 @@ export function readLocal(): Progress {
 export function writeLocal(next: Progress) {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(KEY, JSON.stringify(next));
+    writeScoped(KEY, JSON.stringify(next));
   } catch {}
 }
 

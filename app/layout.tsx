@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
-const geist = Geist({ variable: "--font-sans", subsets: ["latin"] });
-const mono = Geist_Mono({ variable: "--font-mono", subsets: ["latin"] });
+// next/font/google emitted absolute build-machine paths
+// (file:///C:/.../.vinext/fonts/...) into the deployed stylesheet, so every
+// @font-face failed in production and the whole site fell back to an unstyled
+// default. Typography now comes from a native stack defined in globals.css,
+// which needs no network request and cannot break on deploy.
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3001"),
@@ -17,7 +19,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="uz">
-      <body className={`${geist.variable} ${mono.variable}`}>{children}</body>
+      <body>{children}</body>
     </html>
   );
 }

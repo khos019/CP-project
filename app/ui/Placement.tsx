@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { roadmapCatalog } from "./roadmap-data";
+import { writeScoped } from "./session";
 import { loadMastery, masteryLabel, seedPlacement } from "./mastery";
 
 type Lang="uz"|"en";
@@ -52,7 +53,7 @@ export function Placement({lang,signed,onFinish,onRoadmap}:{lang:Lang;signed:boo
  const answer=()=>{if(picked===null)return;setAnswers(a=>({...a,[qi]:picked===questions[qi].correct?1:0}));setPicked(null);if(qi<questions.length-1)setQi(qi+1);else setStep("coding")};
  const submitCode=async()=>{if(judging)return;setJudging(true);setVerdict(lang==="uz"?"Tekshirilmoqda…":"Judging…");try{const r=await (await fetch("/api/judge",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({problemId:codingTasks[ci].id,language:codeLang,sourceCode:code})})).json();const ok=r.verdict==="ACCEPTED";setVerdict(ok?(lang==="uz"?"Qabul qilindi":"Accepted"):(lang==="uz"?"Noto‘g‘ri":"Wrong answer"));if(ok)setCodingScores(s=>({...s,[codingTasks[ci].id]:1}))}catch{setVerdict("Judge error")}finally{setJudging(false)}};
  const nextTask=()=>{if(ci<codingTasks.length-1){const n=ci+1;setCi(n);setCode(codeLang==="cpp20"?codingTasks[n].cpp:codingTasks[n].py);setVerdict("")}else finish()};
- const finish=()=>{seedPlacement(scores);localStorage.setItem("algoyol-onboarded","1");setStep("result")};
+ const finish=()=>{seedPlacement(scores);writeScoped("algoyol-onboarded","1");setStep("result")};
  if(step==="result"){
   const mastery=loadMastery(),unlocked=roadmapCatalog.filter(r=>mastery.unlocks[r.slug]||r.prereqs.length===0),rec=unlocked[unlocked.length-1];
   return <div className="pl-page"><div className="page-head"><div><p className="eyebrow" style={{color:"#637068"}}>PLACEMENT</p><h1 className="page-title">{t.result}</h1></div><span className="tag">{t.overall}: {level}</span></div>
@@ -64,7 +65,7 @@ export function Placement({lang,signed,onFinish,onRoadmap}:{lang:Lang;signed:boo
  return <div className="pl-page"><div className="auth pl-card">
   {step==="intro"&&<><div className="brand"><span className="brandmark">A›</span>AlgoYo‘l</div><h1>{t.welcome}</h1><p className="muted">{t.loop}</p><h2 style={{margin:"26px 0 6px"}}>{t.question}</h2>
    <button className="primary" style={{width:"100%",marginTop:16}} onClick={()=>signed?setStep("background"):setStep("background")}>{t.assess} →</button>
-   <button className="secondary" style={{width:"100%",marginTop:10}} onClick={()=>{localStorage.setItem("algoyol-onboarded","1");onFinish()}}>{t.fresh}</button>
+   <button className="secondary" style={{width:"100%",marginTop:10}} onClick={()=>{writeScoped("algoyol-onboarded","1");onFinish()}}>{t.fresh}</button>
    <button className="lang" style={{width:"100%",marginTop:10}} onClick={onFinish}>{t.later}</button></>}
   {step==="background"&&<><h1>{t.bgTitle}</h1>
    <div className="field"><label>{t.lang}</label><select value={bg.lang} onChange={e=>setBg({...bg,lang:e.target.value})}><option>C++</option><option>Python</option></select></div>

@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
-const base=process.env.TEST_BASE_URL||"http://localhost:3001";
+const base=process.env.TEST_BASE_URL||"http://localhost:3000";
 
 test("server-renders the AlgoYo‘l Uzbek product shell",async()=>{
   const response=await fetch(base);
@@ -34,14 +34,44 @@ test("social card and bilingual content are present",async()=>{
   assert.match(image.headers.get("content-type")||"",/image\/png/);
 });
 
-test("mastery catalog contains twelve six-unit roadmaps with strict completion",async()=>{
+test("mastery catalog and strict unit completion hold",async()=>{
   const [data,experience]=await Promise.all([
     readFile(new URL("../app/ui/roadmap-data.ts",import.meta.url),"utf8"),
     readFile(new URL("../app/ui/RoadmapExperience.tsx",import.meta.url),"utf8"),
   ]);
-  const roadmapDefinitions=data.match(/^\s+\["[^"]+","/gm)||[];
-  assert.equal(roadmapDefinitions.length,12);
-  assert.match(data,/titles\.map\(\(titleUz,index\)/);
+  const roadmapDefinitions=data.match(/^ \{slug:"[a-z-]+"/gm)||[];
+  assert.equal(roadmapDefinitions.length,15);
   assert.match(experience,/quizScores\[u\.id\].*>=70&&progress\.solved\[u\.id\]/);
   assert.match(experience,/algoyol-active-lesson/);
+});
+
+test("no screen fabricates a signed-out identity",async()=>{
+  const [app,profile]=await Promise.all([
+    readFile(new URL("../app/ui/AlgoYolApp.tsx",import.meta.url),"utf8"),
+    readFile(new URL("../app/ui/ProfilePage.tsx",import.meta.url),"utf8"),
+  ]);
+  // The old profile and leaderboard invented a learner ("@algoyolchi", 1462
+  // Elo, 27 AC) that every visitor saw, signed in or not.
+  for(const source of [app,profile]){
+    assert.doesNotMatch(source,/@algoyolchi/);
+    assert.doesNotMatch(source,/1462/);
+  }
+  // The profile screen must never render without a real account behind it.
+  assert.match(app,/view==="profile"&&\(auth\.status==="loading"/);
+  assert.match(app,/SignInRequired/);
+});
+
+test("learner storage is namespaced by account",async()=>{
+  const [session,mastery,progress]=await Promise.all([
+    readFile(new URL("../app/ui/session.ts",import.meta.url),"utf8"),
+    readFile(new URL("../app/ui/mastery.ts",import.meta.url),"utf8"),
+    readFile(new URL("../app/ui/progress.ts",import.meta.url),"utf8"),
+  ]);
+  assert.match(session,/scopedKey\s*=\s*\(base: string\)\s*=>\s*`algoyol:\$\{scope\}:\$\{base\}`/);
+  // Signing out must drop the account namespace, not just the token.
+  assert.match(session,/export function dropScopeData/);
+  // Neither store may reach localStorage directly any more.
+  for(const source of [mastery,progress]){
+    assert.doesNotMatch(source,/localStorage\.(get|set|remove)Item/);
+  }
 });
