@@ -503,3 +503,11 @@ body{background:radial-gradient(circle at 12% -10%,rgba(119,210,68,.13),transpar
    without shouting: tinted surface and border, not a solid red block. */
 .pill.danger{background:rgba(215,60,82,.11);border-color:rgba(215,60,82,.4);color:#ff93a2}
 .pill.danger:hover{background:rgba(215,60,82,.19);border-color:rgba(215,60,82,.66);color:#ffb3bd}
+
+/* Vertical rhythm between landing blocks belonged to the block, not to the
+   heading inside it: the spacing came from .section-head's own 62px top
+   margin, so the one block built without a section head — the unlock rule —
+   sat flush against the four-step loop above it. The block owns its spacing
+   now, and the heading no longer doubles it. */
+.lp-block{margin-top:62px}
+.lp-block>.section-head{margin-top:0}
