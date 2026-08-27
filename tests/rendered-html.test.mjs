@@ -89,3 +89,25 @@ test("the OAuth return is captured before the URL is rewritten",async()=>{
   // the effect consumes the captured value rather than re-reading the URL
   assert.match(app,/const ret=authReturn\.current/);
 });
+
+test("every class used in the markup has a CSS rule",async()=>{
+  const {readdir}=await import("node:fs/promises");
+  const css=await readFile(new URL("../app/globals.css",import.meta.url),"utf8");
+  const defined=new Set([...css.matchAll(/\.([a-zA-Z][a-zA-Z0-9_-]*)/g)].map(m=>m[1]));
+  const dir=new URL("../app/ui/",import.meta.url);
+  const files=(await readdir(dir)).filter(f=>f.endsWith(".tsx"));
+  const missing=new Set();
+  for(const file of files){
+    const source=await readFile(new URL(file,dir),"utf8");
+    for(const m of source.matchAll(/className=(?:"([^"]*)"|\{`([^`]*)`\})/g)){
+      const raw=(m[1]||m[2]||"").replace(/\$\{[^}]*\}/g," ");
+      for(const cls of raw.split(/\s+/)){
+        // trailing "-" is the stub left by stripping a `${...}` interpolation
+        if(cls&&!cls.endsWith("-")&&!defined.has(cls))missing.add(cls);
+      }
+    }
+  }
+  // Eighteen class names once shipped with no rule at all, which is why the
+  // signed-in home rendered as unspaced blocks and .mono never applied.
+  assert.deepEqual([...missing].sort(),[]);
+});

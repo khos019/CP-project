@@ -105,7 +105,3 @@ export function RoadmapHub({lang,role,openRoadmap}:{lang:Lang;role:Role;openRoad
   :<div className="rm-map">{categories.map(([cat,list])=><div className="rm-col" key={cat}><h3>{lang==="uz"?list[0].categoryUz:cat}</h3>{list.filter(matches).map(r=>{const s=statuses.get(r.slug)||"locked";return <button key={r.slug} className="rm-item" disabled={s==="locked"} onClick={()=>openRoadmap(r.slug)}><span className={`rm-dot ${s}`}/><span className="rm-item-copy"><b>{lang==="uz"?r.titleUz:r.titleEn}</b><small className="muted">{r.level} · {doneIn(r)}/{r.units.length} · {masteryOf(r.slug)}</small></span><span className="rm-item-state">{s==="completed"?"✓":""}</span></button>})}</div>)}</div>}
  </>;
 }
-
-// HomeDashboard calls this with the mastery store as a third argument; the
-// store is read directly by masteryOf, so the parameter is accepted and ignored.
-export const nodeStatus=(r:MasteryRoadmap,p:Progress,_mastery?:unknown,canReviewAll=false):Status=>roadmapStatus(r,p,canReviewAll);
