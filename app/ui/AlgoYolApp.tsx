@@ -49,6 +49,26 @@ export { supabaseConfig, supabaseReady, fetchProfile } from "./session";
    account, or there is one. "authenticated" always carries a real profile. */
 type Auth={status:"loading"}|{status:"guest"}|{status:"authenticated";profile:Profile};
 
+/* What an OAuth / email-link redirect left in the URL.
+   This has to be read during the first render, not from an effect: the history
+   effect calls replaceState to put the canonical path in the address bar, which
+   drops the fragment. Reading it from an effect made the result depend on the
+   order the effects happen to be declared in — and a reorder silently threw
+   every Google sign-in away. */
+type AuthReturn={kind:"token";token:string}|{kind:"code";code:string}|{kind:"error";message:string}|null;
+function readAuthReturn():AuthReturn{
+ if(typeof window==="undefined")return null;
+ const hash=new URLSearchParams(window.location.hash.replace(/^#/,""));
+ const query=new URLSearchParams(window.location.search);
+ const token=hash.get("access_token");
+ if(token)return {kind:"token",token};
+ const error=hash.get("error_description")||query.get("error_description")||hash.get("error")||query.get("error");
+ if(error)return {kind:"error",message:decodeURIComponent(error.replace(/\+/g," "))};
+ const code=query.get("code");
+ if(code)return {kind:"code",code};
+ return null;
+}
+
 const roleLabel=(role:Role,lang:Lang)=>role==="owner"?(lang==="uz"?"EGA (OWNER)":"OWNER"):role==="admin"?"ADMIN":(lang==="uz"?"FOYDALANUVCHI":"USER");
 
 export function AlgoYolApp(){
@@ -64,6 +84,7 @@ export function AlgoYolApp(){
  // readToken() made the two disagree and threw a hydration error.
  const [auth,setAuth]=useState<Auth>({status:"guest"});
  const [authNotice,setAuthNotice]=useState("");
+ const authReturn=useRef<AuthReturn>(readAuthReturn());
  const profile=auth.status==="authenticated"?auth.profile:null;
  const signed=auth.status==="authenticated";
  const role:Role=profile?.role||"user";
@@ -160,8 +181,21 @@ export function AlgoYolApp(){
  };
 
  const openRoadmap=(slug:string)=>{pushScreen({view:"roadmap",roadmap:slug,unit:null})};
- // OAuth / magic-link return: the token arrives in the URL fragment.
- useEffect(()=>{const params=new URLSearchParams(window.location.hash.replace(/^#/,""));const token=params.get("access_token"),error=params.get("error_description");if(token){window.history.replaceState({},"",window.location.pathname);void enterSession(token,true,false)}else if(error){window.history.replaceState({},"",window.location.pathname);setAuthNotice(decodeURIComponent(error.replace(/\+/g," ")));setView("auth")}},[]);// eslint-disable-line react-hooks/exhaustive-deps
+ // OAuth / email-link return, consumed from the value captured at first render.
+ useEffect(()=>{
+  const ret=authReturn.current;
+  authReturn.current=null;
+  if(!ret)return;
+  window.history.replaceState({},"",window.location.pathname);
+  if(ret.kind==="token"){void enterSession(ret.token,true,false);return}
+  if(ret.kind==="error"){setAuthNotice(ret.message);setView("auth");return}
+  // A PKCE authorisation code needs the verifier that produced its challenge.
+  // We never issued one, so say so plainly rather than failing in silence.
+  setAuthNotice(lang==="uz"
+   ?"Google javobi PKCE rejimida qaytdi. Administratorga xabar bering."
+   :"Google returned a PKCE authorisation code this client cannot exchange. Please report this.");
+  setView("auth");
+ },[]);// eslint-disable-line react-hooks/exhaustive-deps
  const filtered=useMemo(()=>filter==="all"?problems:problems.filter(p=>p.difficulty===filter),[filter]);
  const judge=async()=>{if(!signed){setView("auth");return}if(!activeProblem.judge){setVerdict(lang==="uz"?"Bu masala uchun tekshiruvchi tez orada ulanadi":"The judge for this problem is coming soon");return}setVerdict(lang==="uz"?"Navbatda… testlar tekshirilmoqda":"In queue… running hidden tests");try{const response=await fetch("/api/judge",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({problemId:activeProblem.judge,language:codeLang,sourceCode:code})});const r=await response.json();const names:Record<string,[string,string]>={ACCEPTED:["Qabul qilindi","Accepted"],WRONG_ANSWER:["Noto‘g‘ri javob","Wrong answer"],COMPILATION_ERROR:["Kompilyatsiya xatosi","Compilation error"],RUNTIME_ERROR:["Bajarilish xatosi","Runtime error"],TIME_LIMIT_EXCEEDED:["Vaqt chegarasi oshdi","Time limit exceeded"],MEMORY_LIMIT_EXCEEDED:["Xotira chegarasi oshdi","Memory limit exceeded"],JUDGE_ERROR:["Tekshiruvchi xatosi","Judge error"]};const title=(names[r.verdict]||names.JUDGE_ERROR)[lang==="uz"?0:1];const test=r.test?` · ${lang==="uz"?"test":"test"} #${r.test}`:"";const stats=r.verdict==="ACCEPTED"?` · ${r.passed}/${r.total} · ${r.runtimeMs} ms · ${r.memoryKb} KB`:"";setVerdict(`${title}${test}${stats}${r.details?`\n${String(r.details).slice(0,900)}`:""}`)}catch{setVerdict(lang==="uz"?"Tekshiruvchi bilan aloqa uzildi":"Judge connection failed")}};
  return <div className="shell"><header className="topbar"><button className="brand" onClick={()=>go("home")} style={{border:0,background:"transparent"}}><BrandMark className="brandmark" />AlgoYo‘l</button><nav className="nav">{(["home","roadmaps","problems","duel","leaderboard"] as View[]).map(v=><button key={v} className={view===v?"active":""} onClick={()=>go(v)}>{t[v as keyof typeof t]}</button>)}</nav><div className="actions"><button className="lang" onClick={swap} aria-label={lang==="uz"?"Switch to English":"O‘zbekchaga o‘tish"}>{lang==="uz"?"EN":"UZ"}</button>{auth.status==="loading"?<span className="pill pill-loading" aria-live="polite">…</span>:<button className="pill" onClick={()=>go(signed?"profile":"auth")}>{signed?(lang==="uz"?"Profil":"Profile"):t.login}</button>}<button className="primary" onClick={()=>go("duel")}>{lang==="uz"?"Duel topish":"Find duel"}</button></div></header>

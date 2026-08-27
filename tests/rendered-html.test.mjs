@@ -75,3 +75,17 @@ test("learner storage is namespaced by account",async()=>{
     assert.doesNotMatch(source,/localStorage\.(get|set|remove)Item/);
   }
 });
+
+test("the OAuth return is captured before the URL is rewritten",async()=>{
+  const app=await readFile(new URL("../app/ui/AlgoYolApp.tsx",import.meta.url),"utf8");
+  // Google hands the session back as #access_token=... The history effect calls
+  // replaceState to put the canonical path in the address bar, which drops the
+  // fragment -- so reading it from an effect makes the whole sign-in depend on
+  // which effect happens to be declared first. It must be read during render.
+  assert.match(app,/const authReturn=useRef<AuthReturn>\(readAuthReturn\(\)\)/);
+  // and nowhere else: exactly one place touches location.hash
+  const hashReads=app.match(/location\.hash/g)||[];
+  assert.equal(hashReads.length,1);
+  // the effect consumes the captured value rather than re-reading the URL
+  assert.match(app,/const ret=authReturn\.current/);
+});
