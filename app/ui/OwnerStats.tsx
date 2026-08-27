@@ -40,7 +40,7 @@ const T = {
     confirmed: "Email tasdiqlangan",
     unconfirmed: "Tasdiqlanmagan",
     signups: "Ro‘yxatdan o‘tish · oxirgi 30 kun",
-    signupsHint: "Kunlik yangi hisoblar. Ustunga sichqonchani olib boring.",
+    signupsHint: "Kunlik yangi hisoblar. Ustunga bosing — o‘sha kuni kim qo‘shilganini ko‘rasiz.",
     noSignups: "Oxirgi 30 kunda yangi hisob yo‘q.",
     learning: "O‘rganish faoliyati",
     withProgress: "Progressi bor",
@@ -84,7 +84,7 @@ const T = {
     confirmed: "Email confirmed",
     unconfirmed: "Unconfirmed",
     signups: "Sign-ups · last 30 days",
-    signupsHint: "New accounts per day. Hover a bar for the exact figure.",
+    signupsHint: "New accounts per day. Click a bar to see who joined that day.",
     noSignups: "No new accounts in the last 30 days.",
     learning: "Learning activity",
     withProgress: "Have progress",
@@ -122,7 +122,7 @@ const dayLabel = (iso: string, lang: Lang) => {
   return `${d.getUTCDate()} ${MONTHS_SHORT[lang][d.getUTCMonth()]}`;
 };
 
-export function OwnerStats({ lang, goProfile }: { lang: Lang; goProfile: () => void }) {
+export function OwnerStats({ lang, goProfile, onPickDay }: { lang: Lang; goProfile: () => void; onPickDay: (day: string) => void }) {
   const t = T[lang];
   const [stats, setStats] = useState<Stats | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "not-migrated" | "forbidden" | "error">("loading");
@@ -184,12 +184,12 @@ export function OwnerStats({ lang, goProfile }: { lang: Lang; goProfile: () => v
         </div>
       )}
 
-      {state === "ready" && stats && <StatsBody lang={lang} t={t} stats={stats} />}
+      {state === "ready" && stats && <StatsBody lang={lang} t={t} stats={stats} onPickDay={onPickDay} />}
     </>
   );
 }
 
-function StatsBody({ lang, t, stats }: { lang: Lang; t: (typeof T)["uz"]; stats: Stats }) {
+function StatsBody({ lang, t, stats, onPickDay }: { lang: Lang; t: (typeof T)["uz"]; stats: Stats; onPickDay: (day: string) => void }) {
   const langRows = useMemo(
     () => Object.entries(stats.by_language || {}).sort((a, b) => b[1] - a[1]),
     [stats],
@@ -214,7 +214,7 @@ function StatsBody({ lang, t, stats }: { lang: Lang; t: (typeof T)["uz"]; stats:
 
       <section className="os-section">
         <div className="panel">
-          <SignupChart lang={lang} t={t} series={stats.signups_daily || []} />
+          <SignupChart lang={lang} t={t} series={stats.signups_daily || []} onPickDay={onPickDay} />
         </div>
       </section>
 
@@ -274,7 +274,17 @@ function Tile({ label, value, accent }: { label: string; value: number; accent?:
 /* Daily counts over a fixed 30-day window: discrete time buckets, so bars, not a
    line. Zero days are drawn as a baseline tick so "nobody joined" reads as a
    real zero rather than missing data. */
-function SignupChart({ lang, t, series }: { lang: Lang; t: (typeof T)["uz"]; series: { day: string; count: number }[] }) {
+function SignupChart({
+  lang,
+  t,
+  series,
+  onPickDay,
+}: {
+  lang: Lang;
+  t: (typeof T)["uz"];
+  series: { day: string; count: number }[];
+  onPickDay: (day: string) => void;
+}) {
   const [focus, setFocus] = useState<number | null>(null);
   const max = Math.max(1, ...series.map((d) => d.count));
   const total = series.reduce((n, d) => n + d.count, 0);
@@ -317,6 +327,13 @@ function SignupChart({ lang, t, series }: { lang: Lang; t: (typeof T)["uz"]; ser
           setFocus(Math.min(series.length - 1, Math.max(0, Math.floor(ratio * series.length))));
         }}
         onPointerLeave={() => setFocus(null)}
+        onClick={() => {
+          // Statistics stays aggregate; the names live on the Users page, which
+          // is also where anything can be done about them. So a bar does not
+          // expand here, it opens that page already filtered to its day.
+          if (shown && shown.count > 0) onPickDay(shown.day);
+        }}
+        style={{ cursor: shown && shown.count > 0 ? "pointer" : "default" }}
       >
         <line x1="0" y1={H} x2={W} y2={H} className="os-axis" vectorEffect="non-scaling-stroke" />
         {focus !== null && (

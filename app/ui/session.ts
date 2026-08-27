@@ -441,8 +441,11 @@ export type AdminUser = {
   suspended_reason: string | null;
 };
 
-export const ownerSearchUsers = (query: string, limit = 25) =>
-  rpc<AdminUser[]>("owner_search_users", { p_query: query, p_limit: limit });
+/* One call answers three questions: who is this person (a query), who joined
+   on this day (a date, from the statistics chart), and — with neither — who is
+   on the platform at all, newest first. Migration 012. */
+export const ownerSearchUsers = (query: string, day: string | null = null, limit = 25) =>
+  rpc<AdminUser[]>("owner_search_users", { p_query: query || null, p_day: day, p_limit: limit });
 
 export const ownerSetRole = (userId: string, role: Role) =>
   rpc<null>("set_user_role", { p_user: userId, p_role: role });

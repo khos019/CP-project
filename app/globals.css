@@ -514,11 +514,24 @@ body{background:radial-gradient(circle at 12% -10%,rgba(119,210,68,.13),transpar
 
 /* --- Owner user administration (UsersAdmin) ------------------------------- */
 .ua-lede{margin:10px 0 0;max-width:62ch;font-size:14.5px;line-height:1.6}
-.ua-search{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
-.ua-field{margin:0}
-.ua-hint{margin:0;font-size:12.5px}
+.ua-toolbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:10px}
+.ua-searchbox{position:relative;display:flex;align-items:center;flex:1 1 320px;min-width:0}
+.ua-searchbox input{width:100%;padding:14px 42px 14px 44px;border:1px solid var(--line);border-radius:14px;background:#0b100e;color:var(--ink);font-size:15px}
+.ua-searchbox input::placeholder{color:#69796f}
+.ua-searchbox input:focus{outline:0;border-color:#4d6b52;box-shadow:0 0 0 3px rgba(154,239,79,.12)}
+.ua-searchic{position:absolute;left:16px;font-size:19px;color:var(--muted);pointer-events:none;line-height:1}
+.ua-clear{position:absolute;right:10px;width:26px;height:26px;display:grid;place-items:center;border:0;border-radius:8px;background:#1a241f;color:var(--muted);font-size:12px}
+.ua-clear:hover{background:#24312a;color:var(--ink)}
+.ua-daychip{display:inline-flex;align-items:center;gap:9px;padding:11px 15px;border:1px solid rgba(200,255,118,.34);border-radius:999px;background:rgba(200,255,118,.09);color:var(--lime);font-weight:750;font-size:13.5px}
+.ua-daychip:hover{background:rgba(200,255,118,.16);border-color:rgba(200,255,118,.5)}
+.ua-daychip i{font-style:normal;font-size:11px;opacity:.75}
+.ua-hint{margin:0 0 14px;font-size:12.5px}
+.ua-empty{display:grid;justify-items:center;gap:10px;text-align:center;padding:44px 24px}
+.ua-empty span{font-size:30px;opacity:.5}
+.ua-empty p{margin:0}
 .ua-list{display:grid;gap:10px}
-.ua-card{padding:0;overflow:hidden;transition:border-color .2s}
+.ua-card{padding:0;overflow:hidden;transition:border-color .2s,transform .2s}
+.ua-card:hover{border-color:#3a4d42}
 .ua-card.suspended{border-color:rgba(215,60,82,.42)}
 .ua-row{display:grid;grid-template-columns:44px minmax(0,1fr) auto 22px;align-items:center;gap:14px;width:100%;padding:16px 18px;border:0;background:transparent;color:var(--ink);text-align:left}
 .ua-row:hover{background:#131c17}

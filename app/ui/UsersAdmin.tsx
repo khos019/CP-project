@@ -37,6 +37,11 @@ const T = {
     searching: "Qidirilmoqda…",
     noQuery: "Qidiruvni boshlash uchun kamida 2 ta belgi kiriting.",
     empty: "Hech kim topilmadi. Boshqa yozuv bilan urinib ko‘ring.",
+    emptyAll: "Hali birorta hisob yo‘q.",
+    emptyDay: "Bu kuni hech kim qo‘shilmagan.",
+    clear: "Tozalash",
+    newestFirst: "eng so‘nggilari birinchi",
+    onDay: (d: string) => `${d} kuni qo‘shilganlar`,
     found: (n: number) => `${n} ta hisob topildi`,
     notMigrated:
       "Foydalanuvchi boshqaruvi hali qo‘shilmagan. 010_user_administration.sql migratsiyasini SQL Editor’da ishga tushiring.",
@@ -81,6 +86,11 @@ const T = {
     searching: "Searching…",
     noQuery: "Type at least 2 characters to search.",
     empty: "Nobody matched. Try a different spelling.",
+    emptyAll: "There are no accounts yet.",
+    emptyDay: "Nobody joined on that day.",
+    clear: "Clear",
+    newestFirst: "newest first",
+    onDay: (d: string) => `Joined on ${d}`,
     found: (n: number) => `${n} account${n === 1 ? "" : "s"} found`,
     notMigrated:
       "User administration is not installed yet. Run 010_user_administration.sql in the SQL Editor.",
@@ -122,6 +132,14 @@ const MONTHS = {
   uz: ["yan", "fev", "mar", "apr", "may", "iyn", "iyl", "avg", "sen", "okt", "noy", "dek"],
   en: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
 };
+/* The chart hands over a plain UTC date ("2026-08-27"); read it as UTC so the
+   chip names the same day the bar counted. */
+const dayLabel = (iso: string, lang: Lang) => {
+  const d = new Date(`${iso}T00:00:00Z`);
+  if (Number.isNaN(d.getTime())) return iso;
+  return `${d.getUTCDate()} ${MONTHS[lang][d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+};
+
 const shortDate = (iso: string | null, lang: Lang, never: string) => {
   if (!iso) return never;
   const d = new Date(iso);
@@ -141,30 +159,40 @@ export function UsersAdmin({
   meId,
   goProfile,
   onMessage,
+  initialDay,
+  onDayConsumed,
 }: {
   lang: Lang;
   meId: string;
   goProfile: () => void;
   onMessage: (userId: string) => void;
+  /* A UTC day handed over from the statistics chart: "show me the five people
+     behind this bar". Consumed once, so leaving and returning to the page does
+     not silently re-apply a filter the owner already cleared. */
+  initialDay?: string | null;
+  onDayConsumed?: () => void;
 }) {
   const t = T[lang];
   const [query, setQuery] = useState("");
+  const [day, setDay] = useState<string | null>(initialDay ?? null);
   const [rows, setRows] = useState<AdminUser[] | null>(null);
-  const [state, setState] = useState<"idle" | "loading" | "ready" | "error">("idle");
+  const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [failure, setFailure] = useState<ApiError | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
   const seq = useRef(0);
 
-  const run = async (term: string) => {
+  /* The day was already captured by useState above — this screen is mounted
+     fresh each time it is opened — so all that is left is to tell the parent
+     it has been taken, which stops the filter reappearing on a later visit. */
+  useEffect(() => {
+    if (initialDay) onDayConsumed?.();
+  }, [initialDay, onDayConsumed]);
+
+  const run = async (term: string, onDay: string | null) => {
     const ticket = ++seq.current;
-    if (term.trim().length < 2) {
-      setRows(null);
-      setState("idle");
-      return;
-    }
     setState("loading");
-    const result = await ownerSearchUsers(term.trim());
-    // A slower earlier search must not overwrite a newer one's results.
+    const result = await ownerSearchUsers(term.trim(), onDay, onDay ? 200 : 40);
+    // A slower earlier request must not overwrite a newer one's results.
     if (ticket !== seq.current) return;
     if (result.ok) {
       setRows(result.data || []);
@@ -176,14 +204,17 @@ export function UsersAdmin({
     }
   };
 
-  // Search as you type, but only once typing pauses — one request per word,
-  // not one per keystroke.
+  /* The page opens on the newest accounts rather than on an empty screen: an
+     owner who wants to see who is here should not have to guess a name first.
+     Typing narrows that list, and does so a moment after the last keystroke —
+     one request per word, not one per letter. */
   useEffect(() => {
-    const id = setTimeout(() => void run(query), 320);
+    const id = setTimeout(() => void run(query, day), query ? 320 : 0);
     return () => clearTimeout(id);
-  }, [query]);
+  }, [query, day]);
 
   const patch = (next: AdminUser) => setRows((list) => (list || []).map((u) => (u.id === next.id ? next : u)));
+  const browsing = !query.trim();
 
   return (
     <>
@@ -199,9 +230,11 @@ export function UsersAdmin({
         </div>
       </div>
 
-      <div className="panel ua-search">
-        <label className="field ua-field">
-          <span>{t.search}</span>
+      <div className="ua-toolbar">
+        <div className="ua-searchbox">
+          <span className="ua-searchic" aria-hidden>
+            ⌕
+          </span>
           <input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
@@ -210,13 +243,26 @@ export function UsersAdmin({
             spellCheck={false}
             aria-label={t.search}
           />
-        </label>
-        <p className="muted ua-hint">
-          {state === "loading" ? t.searching
-            : state === "ready" && rows ? t.found(rows.length)
-            : t.noQuery}
-        </p>
+          {query && (
+            <button className="ua-clear" onClick={() => setQuery("")} aria-label={t.clear}>
+              ✕
+            </button>
+          )}
+        </div>
+        {day && (
+          <button className="ua-daychip" onClick={() => setDay(null)}>
+            {t.onDay(dayLabel(day, lang))} <i aria-hidden>✕</i>
+          </button>
+        )}
       </div>
+
+      <p className="muted ua-hint">
+        {state === "loading"
+          ? t.searching
+          : state === "ready" && rows
+            ? `${t.found(rows.length)}${browsing && !day ? ` · ${t.newestFirst}` : ""}`
+            : ""}
+      </p>
 
       {state === "error" && failure && (
         <div className="panel">
@@ -227,8 +273,9 @@ export function UsersAdmin({
       )}
 
       {state === "ready" && rows && rows.length === 0 && (
-        <div className="panel">
-          <p className="muted">{t.empty}</p>
+        <div className="panel ua-empty">
+          <span aria-hidden>🔍</span>
+          <p className="muted">{day ? t.emptyDay : browsing ? t.emptyAll : t.empty}</p>
         </div>
       )}
 
