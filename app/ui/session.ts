@@ -368,3 +368,213 @@ export async function saveDuelRating(id: string, next: number) {
     });
   } catch {}
 }
+
+/* ---------------------------------------------------------------------------
+   User administration and messaging (migrations 010 and 011)
+
+   Every owner action is a security-definer RPC that re-checks the caller's
+   role in the database. Nothing here is a permission decision — the UI hides
+   what a learner may not do, and the database refuses it regardless.
+   --------------------------------------------------------------------------- */
+
+export type ApiError =
+  | "not-migrated"
+  | "forbidden"
+  | "network"
+  | "no-session"
+  | "username-taken"
+  | "invalid"
+  | "suspended"
+  | "blocked"
+  | "rate-limited";
+
+type RpcResult<T> = { ok: true; data: T } | { ok: false; error: ApiError; message?: string };
+
+/* Postgres speaks in SQLSTATE codes; the UI speaks in reasons a person can
+   act on. This is the only place the two are mapped. */
+const rpcError = (status: number, detail: { code?: string; message?: string }): ApiError => {
+  const text = detail.message || "";
+  if (status === 404 || detail.code === "PGRST202") return "not-migrated";
+  if (/username_taken/.test(text) || detail.code === "23505") return "username-taken";
+  if (/invalid_username|invalid_display_name/.test(text) || detail.code === "23514") return "invalid";
+  if (/account_suspended/.test(text)) return "suspended";
+  if (/blocked_by_recipient/.test(text)) return "blocked";
+  if (/rate_limited/.test(text) || detail.code === "53400") return "rate-limited";
+  if (status === 403 || status === 401 || detail.code === "42501") return "forbidden";
+  return "network";
+};
+
+async function rpc<T>(name: string, args: Record<string, unknown> = {}): Promise<RpcResult<T>> {
+  const { url, key } = supabaseConfig();
+  const token = readToken();
+  if (!url || !key || !token) return { ok: false, error: "no-session" };
+  try {
+    const response = await fetch(`${url}/rest/v1/rpc/${name}`, {
+      method: "POST",
+      headers: { apikey: key, Authorization: `Bearer ${token}`, "content-type": "application/json" },
+      body: JSON.stringify(args),
+    });
+    if (response.ok) {
+      const text = await response.text();
+      return { ok: true, data: (text ? JSON.parse(text) : null) as T };
+    }
+    const detail = (await response.json().catch(() => ({}))) as { code?: string; message?: string };
+    return { ok: false, error: rpcError(response.status, detail), message: detail.message };
+  } catch {
+    return { ok: false, error: "network" };
+  }
+}
+
+export type AdminUser = {
+  id: string;
+  username: string;
+  display_name: string;
+  avatar_url: string | null;
+  email: string;
+  role: Role;
+  duel_rating: number;
+  solved_count: number;
+  created_at: string;
+  last_sign_in_at: string | null;
+  email_confirmed: boolean;
+  suspended_at: string | null;
+  suspended_reason: string | null;
+};
+
+export const ownerSearchUsers = (query: string, limit = 25) =>
+  rpc<AdminUser[]>("owner_search_users", { p_query: query, p_limit: limit });
+
+export const ownerSetRole = (userId: string, role: Role) =>
+  rpc<null>("set_user_role", { p_user: userId, p_role: role });
+
+export const ownerSetSuspended = (userId: string, suspended: boolean, reason?: string) =>
+  rpc<null>("owner_set_suspended", { p_user: userId, p_suspended: suspended, p_reason: reason ?? null });
+
+export const ownerUpdateIdentity = (userId: string, username: string, displayName: string) =>
+  rpc<null>("owner_update_identity", { p_user: userId, p_username: username, p_display_name: displayName });
+
+export type MessageThread = {
+  user_id: string;
+  username: string;
+  display_name: string;
+  avatar_url: string | null;
+  role: Role;
+  last_body: string;
+  last_at: string;
+  last_as_site: boolean;
+  last_mine: boolean;
+  unread: number;
+  blocked: boolean;
+};
+
+export type Message = {
+  id: string;
+  sender_id: string;
+  recipient_id: string;
+  body: string;
+  as_site: boolean;
+  created_at: string;
+  read_at: string | null;
+};
+
+export const fetchThreads = (limit = 50) => rpc<MessageThread[]>("my_message_threads", { p_limit: limit });
+export const fetchUnreadCount = () => rpc<number>("my_unread_count");
+export const markThreadRead = (otherId: string) => rpc<number>("mark_thread_read", { p_other: otherId });
+
+/* A conversation is every message between the two of us, in either direction.
+   RLS already restricts the table to conversations the caller is part of, so
+   this filter picks which conversation, it does not decide what may be read. */
+export async function fetchConversation(otherId: string, me: string): Promise<Message[] | null> {
+  const { url, key } = supabaseConfig();
+  const token = readToken();
+  if (!url || !key || !token) return null;
+  const pair = `or=(and(sender_id.eq.${me},recipient_id.eq.${otherId}),and(sender_id.eq.${otherId},recipient_id.eq.${me}))`;
+  try {
+    const response = await fetch(
+      `${url}/rest/v1/messages?${pair}&select=id,sender_id,recipient_id,body,as_site,created_at,read_at&order=created_at.asc&limit=500`,
+      { headers: { apikey: key, Authorization: `Bearer ${token}` } },
+    );
+    if (!response.ok) return null;
+    return (await response.json()) as Message[];
+  } catch {
+    return null;
+  }
+}
+
+export async function sendMessage(recipientId: string, body: string, asSite = false): Promise<RpcResult<Message>> {
+  const { url, key } = supabaseConfig();
+  const token = readToken();
+  const me = readStoredUserId();
+  if (!url || !key || !token || !me) return { ok: false, error: "no-session" };
+  try {
+    const response = await fetch(`${url}/rest/v1/messages`, {
+      method: "POST",
+      headers: {
+        apikey: key,
+        Authorization: `Bearer ${token}`,
+        "content-type": "application/json",
+        Prefer: "return=representation",
+      },
+      body: JSON.stringify({ sender_id: me, recipient_id: recipientId, body, as_site: asSite }),
+    });
+    if (response.ok) {
+      const rows = (await response.json()) as Message[];
+      return { ok: true, data: rows[0] };
+    }
+    const detail = (await response.json().catch(() => ({}))) as { code?: string; message?: string };
+    if (response.status === 404 || detail.code === "42P01") return { ok: false, error: "not-migrated" };
+    return { ok: false, error: rpcError(response.status, detail), message: detail.message };
+  } catch {
+    return { ok: false, error: "network" };
+  }
+}
+
+export async function setBlocked(otherId: string, blocked: boolean): Promise<boolean> {
+  const { url, key } = supabaseConfig();
+  const token = readToken();
+  const me = readStoredUserId();
+  if (!url || !key || !token || !me) return false;
+  const headers = { apikey: key, Authorization: `Bearer ${token}`, "content-type": "application/json" };
+  try {
+    const response = blocked
+      ? await fetch(`${url}/rest/v1/message_blocks`, {
+          method: "POST",
+          headers: { ...headers, Prefer: "resolution=merge-duplicates,return=minimal" },
+          body: JSON.stringify({ blocker_id: me, blocked_id: otherId }),
+        })
+      : await fetch(`${url}/rest/v1/message_blocks?blocker_id=eq.${me}&blocked_id=eq.${otherId}`, {
+          method: "DELETE",
+          headers,
+        });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
+/* Who you can write to. Profiles are public by design, so this needs no
+   privileged function, and it returns only what a profile page already shows.
+   Email is not searchable here: that is the owner's tool, not everyone's. */
+export type Person = { id: string; username: string; display_name: string; avatar_url: string | null; role: Role };
+
+export async function searchPeople(query: string, limit = 12): Promise<Person[] | null> {
+  const { url, key } = supabaseConfig();
+  const token = readToken();
+  const term = query.trim();
+  if (!url || !key || !token || term.length < 2) return [];
+  // PostgREST splits `or=(...)` on commas, so a comma in the term would read
+  // as another condition. Wildcards are stripped for the same reason.
+  const safe = encodeURIComponent(term.replace(/[,()*\\%_]/g, ""));
+  if (!safe) return [];
+  try {
+    const response = await fetch(
+      `${url}/rest/v1/profiles?or=(username.ilike.*${safe}*,display_name.ilike.*${safe}*)` +
+        `&select=id,username,display_name,avatar_url,role&order=username.asc&limit=${limit}`,
+      { headers: { apikey: key, Authorization: `Bearer ${token}` } },
+    );
+    if (!response.ok) return null;
+    return (await response.json()) as Person[];
+  } catch {
+    return null;
+  }
+}

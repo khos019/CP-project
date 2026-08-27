@@ -20,6 +20,8 @@ const T = {
     signOut: "Chiqish",
     admin: "Boshqaruv",
     stats: "Statistika",
+    users: "Foydalanuvchilar",
+    messages: "Xabarlar",
     joined: "Qo‘shildi",
     rating: "Duel reytingi",
     units: "Tugatilgan bosqichlar",
@@ -75,6 +77,8 @@ const T = {
     signOut: "Sign out",
     admin: "Admin studio",
     stats: "Statistics",
+    users: "Users",
+    messages: "Messages",
     joined: "Joined",
     rating: "Duel rating",
     units: "Units completed",
@@ -165,6 +169,9 @@ export function ProfilePage({
   signOut,
   goAdmin,
   goStats,
+  goUsers,
+  goMessages,
+  isOwner,
   goRoadmaps,
   openRoadmap,
   isStaff,
@@ -175,6 +182,9 @@ export function ProfilePage({
   signOut: () => void;
   goAdmin: () => void;
   goStats: () => void;
+  goUsers: () => void;
+  goMessages: () => void;
+  isOwner: boolean;
   goRoadmaps: () => void;
   openRoadmap: (slug: string) => void;
   isStaff: boolean;
@@ -271,6 +281,14 @@ export function ProfilePage({
               {t.admin}
             </button>
           )}
+          {isOwner && (
+            <button className="secondary" onClick={goUsers}>
+              {t.users}
+            </button>
+          )}
+          <button className="secondary" onClick={goMessages}>
+            {t.messages}
+          </button>
           <button className="pill danger" onClick={signOut}>
             {t.signOut}
           </button>
