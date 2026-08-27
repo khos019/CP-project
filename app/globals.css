@@ -604,3 +604,31 @@ body{background:radial-gradient(circle at 12% -10%,rgba(119,210,68,.13),transpar
   .ua-marks{grid-column:1/-1;justify-content:flex-start}
   .ua-avatar{width:40px;height:40px}
 }
+
+/* --- Somebody else's account (/u/<handle>) --------------------------------- */
+.pp-card{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:26px;align-items:center;padding:30px}
+.pp-avatar{width:104px;height:104px;border-radius:30px;display:grid;place-items:center;background:var(--green);color:#07130a;font-size:36px;font-weight:900;overflow:hidden;flex-shrink:0}
+.pp-avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.pp-identity{display:grid;gap:5px;min-width:0}
+.pp-identity h1{display:flex;align-items:center;gap:11px;flex-wrap:wrap;font-size:clamp(26px,3.4vw,38px);letter-spacing:-.04em;margin:2px 0 0}
+.pp-role{font-style:normal;font-size:11px;font-weight:850;letter-spacing:.08em;padding:5px 9px;border-radius:7px;background:#17301c;color:#a5f181}
+.pp-handle{margin:0;font-size:14px;color:var(--muted)}
+.pp-bio{margin:8px 0 0;font-size:15px;line-height:1.6;color:#aab8b0;max-width:56ch}
+.pp-meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:8px 0 0;font-size:13px}
+.pp-dot{opacity:.55}
+.pp-actions{display:grid;gap:9px;justify-items:end;text-align:right}
+.pp-self{margin:0;font-size:12.5px;max-width:22ch}
+.pp-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:11px;margin-top:14px}
+
+/* The name at the top of a conversation is the way into the account. */
+.msg-who{display:grid;grid-template-columns:44px minmax(0,1fr);align-items:center;gap:11px;padding:6px 9px 6px 6px;margin:-6px 0 -6px -6px;border:0;border-radius:13px;background:transparent;color:var(--ink);text-align:left;min-width:0}
+.msg-who:hover{background:#151f1a}
+.msg-who-copy{display:grid;gap:2px;min-width:0}
+.msg-who-copy b{display:flex;align-items:center;gap:8px;font-size:17px}
+.msg-who-copy small{font-size:12.5px}
+
+@media(max-width:760px){
+  .pp-card{grid-template-columns:auto minmax(0,1fr);gap:18px;padding:22px}
+  .pp-actions{grid-column:1/-1;justify-items:stretch;text-align:left}
+  .pp-avatar{width:76px;height:76px;border-radius:22px;font-size:27px}
+}

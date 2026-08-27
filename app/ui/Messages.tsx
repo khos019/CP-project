@@ -46,6 +46,7 @@ const T = {
     asSiteHint: "Bu xabar yonida sizning ismingiz emas, AlgoYo‘l nishoni turadi.",
     site: "AlgoYo‘l",
     official: "RASMIY",
+    openProfile: "Akkountni ochish",
     block: "Bloklash",
     unblock: "Blokdan chiqarish",
     blocked: "Siz bu odamni blokladingiz — uning xabarlari sizga yetib kelmaydi.",
@@ -79,6 +80,7 @@ const T = {
     asSiteHint: "This message carries the AlgoYo‘l mark instead of your name.",
     site: "AlgoYo‘l",
     official: "OFFICIAL",
+    openProfile: "Open account",
     block: "Block",
     unblock: "Unblock",
     blocked: "You blocked this person — their messages do not reach you.",
@@ -126,6 +128,7 @@ export function Messages({
   openWith,
   onOpened,
   onUnreadChange,
+  onOpenProfile,
 }: {
   lang: Lang;
   me: Profile;
@@ -134,6 +137,10 @@ export function Messages({
   openWith?: string | null;
   onOpened?: () => void;
   onUnreadChange?: () => void;
+  /* "Who am I talking to?" is the question a conversation raises, and until
+     now it had no answer: the name at the top of the thread opens the
+     account. */
+  onOpenProfile: (username: string) => void;
 }) {
   const t = T[lang];
   const [threads, setThreads] = useState<MessageThread[] | null>(null);
@@ -357,10 +364,28 @@ export function Messages({
           ) : (
             <>
               <header className="msg-head">
-                <div>
-                  <b>{activeThread?.display_name || activeThread?.username || "…"}</b>
-                  {activeThread && <small className="mono muted"> @{activeThread.username}</small>}
-                </div>
+                {activeThread ? (
+                  <button className="msg-who" onClick={() => onOpenProfile(activeThread.username)} title={t.openProfile}>
+                    <span className="ua-avatar" aria-hidden>
+                      {activeThread.avatar_url ? (
+                        <img src={activeThread.avatar_url} alt="" />
+                      ) : (
+                        (activeThread.display_name || activeThread.username)[0]?.toUpperCase()
+                      )}
+                    </span>
+                    <span className="msg-who-copy">
+                      <b>
+                        {activeThread.display_name || activeThread.username}
+                        {t.roles[activeThread.role] && <i className="msg-rolemark">{t.roles[activeThread.role]}</i>}
+                      </b>
+                      <small className="mono muted">@{activeThread.username}</small>
+                    </span>
+                  </button>
+                ) : (
+                  <div>
+                    <b>…</b>
+                  </div>
+                )}
                 {activeThread && (
                   <button className={activeThread.blocked ? "secondary" : "pill danger"} onClick={() => void toggleBlock()}>
                     {activeThread.blocked ? t.unblock : t.block}

@@ -67,6 +67,7 @@ const T = {
     saving: "Saqlanmoqda…",
     saved: "Saqlandi.",
     message: "Xabar yozish",
+    openProfile: "Akkountni ochish",
     suspend: "Hisobni bloklash",
     restore: "Blokdan chiqarish",
     reason: "Sabab (ixtiyoriy, foydalanuvchiga ko‘rinadi)",
@@ -116,6 +117,7 @@ const T = {
     saving: "Saving…",
     saved: "Saved.",
     message: "Send a message",
+    openProfile: "Open account",
     suspend: "Suspend account",
     restore: "Restore account",
     reason: "Reason (optional, shown to the person)",
@@ -162,6 +164,7 @@ export function UsersAdmin({
   meId,
   goProfile,
   onMessage,
+  onOpenProfile,
   initialDay,
   onDayConsumed,
 }: {
@@ -169,6 +172,7 @@ export function UsersAdmin({
   meId: string;
   goProfile: () => void;
   onMessage: (userId: string) => void;
+  onOpenProfile: (username: string) => void;
   /* A UTC day handed over from the statistics chart: "show me the five people
      behind this bar". Consumed once, so leaving and returning to the page does
      not silently re-apply a filter the owner already cleared. */
@@ -295,6 +299,7 @@ export function UsersAdmin({
               onToggle={() => setOpenId(openId === u.id ? null : u.id)}
               onPatch={patch}
               onMessage={() => onMessage(u.id)}
+              onOpenProfile={() => onOpenProfile(u.username)}
             />
           ))}
         </div>
@@ -312,6 +317,7 @@ function UserRow({
   onToggle,
   onPatch,
   onMessage,
+  onOpenProfile,
 }: {
   user: AdminUser;
   lang: Lang;
@@ -321,6 +327,7 @@ function UserRow({
   onToggle: () => void;
   onPatch: (u: AdminUser) => void;
   onMessage: () => void;
+  onOpenProfile: () => void;
 }) {
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
@@ -420,6 +427,9 @@ function UserRow({
           {note && <div className={`notice ${note.kind === "error" ? "notice-error" : ""}`}>{note.text}</div>}
 
           <div className="ua-actions">
+            <button className="secondary" onClick={onOpenProfile} disabled={busy}>
+              {t.openProfile}
+            </button>
             <button className="secondary" onClick={onMessage} disabled={busy}>
               {t.message}
             </button>

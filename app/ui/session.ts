@@ -581,3 +581,52 @@ export async function searchPeople(query: string, limit = 12): Promise<Person[] 
     return null;
   }
 }
+
+/* Somebody else's account, by handle.
+ *
+ * Only the columns a profile page already shows in public: no email, and no
+ * suspension state — whether an account is in trouble is between it and the
+ * owner, and the owner has the users page for that. Profiles are publicly
+ * readable by design, so this works for a signed-out visitor too, which is
+ * what makes /u/<handle> a link worth sending.
+ */
+export type PublicPerson = {
+  id: string;
+  username: string;
+  display_name: string;
+  avatar_url: string | null;
+  bio?: string;
+  country?: string;
+  role: Role;
+  duel_rating: number;
+  solved_count: number;
+  created_at: string;
+};
+
+const PUBLIC_COLUMNS = "id,username,display_name,avatar_url,role,duel_rating,solved_count,created_at";
+
+export async function fetchPersonByUsername(
+  username: string,
+): Promise<{ ok: true; person: PublicPerson } | { ok: false; error: "not-found" | "network" }> {
+  const { url, key } = supabaseConfig();
+  const handle = username.trim();
+  if (!url || !key || !handle) return { ok: false, error: "network" };
+  // Handles are [A-Za-z0-9_], so anything else cannot match an account and has
+  // no business being interpolated into the query.
+  if (!/^[a-zA-Z0-9_]{1,24}$/.test(handle)) return { ok: false, error: "not-found" };
+  const token = readToken();
+  const headers: Record<string, string> = { apikey: key };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const columns = (await hasExtendedProfile()) ? `${PUBLIC_COLUMNS},bio,country` : PUBLIC_COLUMNS;
+  try {
+    // Matched case-insensitively: 012 made handles unique without regard to
+    // case, so /u/Ozodbek and /u/ozodbek are the same person.
+    const response = await fetch(`${url}/rest/v1/profiles?username=ilike.${handle}&select=${columns}`, { headers });
+    if (!response.ok) return { ok: false, error: "network" };
+    const list = (await response.json()) as PublicPerson[];
+    if (!list.length) return { ok: false, error: "not-found" };
+    return { ok: true, person: list[0] };
+  } catch {
+    return { ok: false, error: "network" };
+  }
+}
