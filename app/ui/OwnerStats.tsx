@@ -142,6 +142,9 @@ export function OwnerStats({ lang, goProfile }: { lang: Lang; goProfile: () => v
 
   return (
     <>
+      <button className="crumb crumb-btn" onClick={goProfile}>
+        ← {lang === "uz" ? "Profilga qaytish" : "Back to profile"}
+      </button>
       <div className="page-head">
         <div>
           <p className="eyebrow">{t.eyebrow}</p>
@@ -181,22 +184,12 @@ export function OwnerStats({ lang, goProfile }: { lang: Lang; goProfile: () => v
         </div>
       )}
 
-      {state === "ready" && stats && <StatsBody lang={lang} t={t} stats={stats} goProfile={goProfile} />}
+      {state === "ready" && stats && <StatsBody lang={lang} t={t} stats={stats} />}
     </>
   );
 }
 
-function StatsBody({
-  lang,
-  t,
-  stats,
-  goProfile,
-}: {
-  lang: Lang;
-  t: (typeof T)["uz"];
-  stats: Stats;
-  goProfile: () => void;
-}) {
+function StatsBody({ lang, t, stats }: { lang: Lang; t: (typeof T)["uz"]; stats: Stats }) {
   const langRows = useMemo(
     () => Object.entries(stats.by_language || {}).sort((a, b) => b[1] - a[1]),
     [stats],
@@ -264,9 +257,6 @@ function StatsBody({
       <section className="panel os-note">
         <h3>{t.notTracked}</h3>
         <p className="muted">{t.notTrackedBody}</p>
-        <button className="secondary" onClick={goProfile}>
-          ← {lang === "uz" ? "Profilga qaytish" : "Back to profile"}
-        </button>
       </section>
     </>
   );

@@ -271,7 +271,7 @@ export function ProfilePage({
               {t.admin}
             </button>
           )}
-          <button className="pill" onClick={signOut}>
+          <button className="pill danger" onClick={signOut}>
             {t.signOut}
           </button>
         </div>
