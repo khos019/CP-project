@@ -43,8 +43,11 @@ const T = {
     newestFirst: "eng so‘nggilari birinchi",
     onDay: (d: string) => `${d} kuni qo‘shilganlar`,
     found: (n: number) => `${n} ta hisob topildi`,
+    // This page needs 010 (the gate and the actions) and 012 (the browse and
+    // day filter). Naming only 010 sent an owner who had already run it
+    // looking in the wrong place, so the message names both and the order.
     notMigrated:
-      "Foydalanuvchi boshqaruvi hali qo‘shilmagan. 010_user_administration.sql migratsiyasini SQL Editor’da ishga tushiring.",
+      "Foydalanuvchi boshqaruvi to‘liq o‘rnatilmagan. SQL Editor’da 010_user_administration.sql, so‘ng 012_user_browse.sql ni ishga tushiring. 010 ni bajargan bo‘lsangiz — 012 yetishmayapti.",
     forbidden: "Bu sahifa faqat ega (owner) roli uchun.",
     networkErr: "Ma’lumotni olib bo‘lmadi. Internetni tekshirib, qayta urining.",
     joined: "Qo‘shildi",
@@ -93,7 +96,7 @@ const T = {
     onDay: (d: string) => `Joined on ${d}`,
     found: (n: number) => `${n} account${n === 1 ? "" : "s"} found`,
     notMigrated:
-      "User administration is not installed yet. Run 010_user_administration.sql in the SQL Editor.",
+      "User administration is not fully installed. Run 010_user_administration.sql, then 012_user_browse.sql, in the SQL Editor. If you already ran 010, the missing one is 012.",
     forbidden: "This page is for the owner role only.",
     networkErr: "Could not load the data. Check your connection and try again.",
     joined: "Joined",
