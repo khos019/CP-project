@@ -19,6 +19,7 @@ const T = {
     saved: "Profil yangilandi.",
     signOut: "Chiqish",
     admin: "Boshqaruv",
+    stats: "Statistika",
     joined: "Qo‘shildi",
     rating: "Duel reytingi",
     units: "Tugatilgan bosqichlar",
@@ -73,6 +74,7 @@ const T = {
     saved: "Profile updated.",
     signOut: "Sign out",
     admin: "Admin studio",
+    stats: "Statistics",
     joined: "Joined",
     rating: "Duel rating",
     units: "Units completed",
@@ -162,6 +164,7 @@ export function ProfilePage({
   onProfileChange,
   signOut,
   goAdmin,
+  goStats,
   goRoadmaps,
   openRoadmap,
   isStaff,
@@ -171,6 +174,7 @@ export function ProfilePage({
   onProfileChange: (next: Profile) => void;
   signOut: () => void;
   goAdmin: () => void;
+  goStats: () => void;
   goRoadmaps: () => void;
   openRoadmap: (slug: string) => void;
   isStaff: boolean;
@@ -257,6 +261,11 @@ export function ProfilePage({
           <h1 className="page-title">{name}</h1>
         </div>
         <div className="actions">
+          {profile.role === "owner" && (
+            <button className="secondary" onClick={goStats}>
+              {t.stats}
+            </button>
+          )}
           {isStaff && (
             <button className="secondary" onClick={goAdmin}>
               {t.admin}

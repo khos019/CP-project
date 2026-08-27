@@ -271,6 +271,49 @@ export async function updateProfile(
   }
 }
 
+
+/* Platform statistics for the owner. The aggregates live behind a
+   security-definer function (migration 009) because the underlying data is
+   deliberately unreadable from a browser: unit_progress is RLS-scoped to the
+   caller's own rows, and auth.users is not exposed to client roles at all.
+   A missing function means the migration has not been applied yet — the page
+   says so rather than showing nothing. */
+export type OwnerStats = {
+  generated_at: string;
+  learners_total: number; new_today: number; new_7d: number; new_30d: number;
+  active_today: number; active_7d: number; active_30d: number;
+  never_signed_in: number; confirmed: number; unconfirmed: number;
+  signups_daily: { day: string; count: number }[];
+  by_language: Record<string, number>;
+  by_role: Record<string, number>;
+  rating_avg: number; rating_max: number;
+  learners_with_progress: number; units_completed: number;
+  quizzes_passed: number; problems_solved: number;
+  top_topics: { topic: string; units: number; learners: number }[];
+};
+
+export async function fetchOwnerStats(): Promise<
+  { ok: true; stats: OwnerStats } | { ok: false; error: "not-migrated" | "forbidden" | "network" }
+> {
+  const { url, key } = supabaseConfig();
+  const token = readToken();
+  if (!url || !key || !token) return { ok: false, error: "network" };
+  try {
+    const response = await fetch(`${url}/rest/v1/rpc/owner_platform_stats`, {
+      method: "POST",
+      headers: { apikey: key, Authorization: `Bearer ${token}`, "content-type": "application/json" },
+      body: "{}",
+    });
+    if (response.ok) return { ok: true, stats: (await response.json()) as OwnerStats };
+    const detail = (await response.json().catch(() => ({}))) as { code?: string; message?: string };
+    if (response.status === 404 || detail.code === "PGRST202") return { ok: false, error: "not-migrated" };
+    if (response.status === 403 || detail.code === "42501") return { ok: false, error: "forbidden" };
+    return { ok: false, error: "network" };
+  } catch {
+    return { ok: false, error: "network" };
+  }
+}
+
 /* Leaderboard reads the real profiles table. Anonymous visitors can read it —
    profiles are public by design — so a guest sees a genuine ranking rather
    than a fabricated row claiming to be them. */

@@ -427,3 +427,69 @@ body{background:radial-gradient(circle at 12% -10%,rgba(119,210,68,.13),transpar
  .pl-bar .progress{grid-column:1/-1}
  .pl-bar small{grid-column:1/-1;text-align:left}
 }
+
+/* ==========================================================================
+   Owner statistics
+   Single-hue charts: the three brand limes fail a categorical separation check
+   against one another, so colour encodes magnitude only and labels carry
+   identity. Grid and axis stay recessive; text never wears the series colour.
+   ========================================================================== */
+.os-updated{margin:8px 0 0;font-size:12.5px}
+.os-section{display:flex;flex-direction:column;gap:12px;margin-bottom:20px}
+.os-h2{font-size:19px;letter-spacing:-.02em;margin:0 0 2px}
+
+.os-tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:11px}
+.os-tile{display:grid;gap:2px;align-content:start;padding:18px 18px 16px;border-radius:16px;border:1px solid var(--line);background:linear-gradient(155deg,rgba(20,29,24,.96),rgba(11,16,14,.96))}
+.os-tile b{font-size:32px;line-height:1.05;letter-spacing:-.035em;color:var(--ink)}
+.os-tile.accent b{color:var(--lime)}
+.os-tile small{color:var(--muted);font-size:12px;line-height:1.35}
+
+/* ---- signup chart ------------------------------------------------------ */
+.os-chart{margin:0;display:flex;flex-direction:column;gap:12px}
+.os-chart figcaption{display:flex;flex-direction:column;gap:3px}
+.os-chart-hint{font-size:13px;min-height:19px;margin:0}
+.os-chart-hint b{color:var(--lime)}
+.os-chart-svg{width:100%;height:132px;display:block;overflow:visible}
+.os-axis{stroke:#2a3a31;stroke-width:1}
+.os-bar{fill:var(--lime);transition:fill .12s;pointer-events:none}
+.os-guide{fill:rgba(255,255,255,.05)}
+.os-bar.zero{fill:#2a3a31}
+.os-bar:hover,.os-bar.on{fill:#eaffc4}
+.os-bar.zero:hover,.os-bar.zero.on{fill:#40564a}
+.os-chart-axis{display:flex;justify-content:space-between;font-size:11px;color:var(--muted)}
+
+/* ---- topic bars -------------------------------------------------------- */
+.os-topics{list-style:none;margin:0;padding:0;display:grid;gap:9px}
+.os-topics li{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(60px,1fr) auto;gap:12px;align-items:center}
+.os-topic-name{font-size:14px;font-weight:650;min-width:0;overflow-wrap:anywhere}
+.os-topic-track{display:block;height:8px;border-radius:99px;background:#1b2721;overflow:hidden}
+.os-topic-fill{display:block;height:100%;border-radius:99px;background:var(--lime)}
+.os-topic-num{font-size:12px;color:var(--ink);white-space:nowrap}
+.os-topic-num small{font-size:11px}
+
+/* ---- composition ------------------------------------------------------- */
+.os-breakdown{margin-bottom:18px;display:grid;gap:7px}
+.os-break-row{display:grid;grid-template-columns:minmax(56px,auto) minmax(60px,1fr) auto;gap:12px;align-items:center;font-size:13.5px}
+.os-break-key{text-transform:uppercase;letter-spacing:.06em;font-size:11.5px;font-weight:800;color:var(--muted)}
+.os-break-row b{font-size:13.5px;color:var(--ink)}
+.os-rating{display:flex;flex-wrap:wrap;gap:14px;align-items:baseline;padding-top:14px;border-top:1px solid var(--line);font-size:13.5px}
+.os-rating b{color:var(--lime);margin-left:4px}
+
+.os-split{display:grid;grid-template-columns:1.15fr 1fr;gap:14px;align-items:start;margin-bottom:20px}
+.os-empty{padding:18px 0 4px;font-size:14px}
+.os-note{display:flex;flex-direction:column;align-items:flex-start;gap:10px}
+.os-note h3{margin:0;font-size:16px}
+.os-note p{margin:0;font-size:13.5px;line-height:1.65;max-width:70ch}
+
+@media(max-width:900px){
+ .os-tiles{grid-template-columns:repeat(2,1fr)}
+ .os-split{grid-template-columns:1fr}
+ .os-topics li{grid-template-columns:minmax(0,1fr) auto;row-gap:7px}
+ .os-topic-track{grid-column:1/-1}
+}
+@media(max-width:600px){
+ .os-tile b{font-size:26px}
+ .os-chart-svg{height:104px}
+ .os-break-row{grid-template-columns:minmax(0,1fr) auto;row-gap:6px}
+ .os-break-row .os-topic-track{grid-column:1/-1}
+}
