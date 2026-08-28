@@ -632,3 +632,31 @@ body{background:radial-gradient(circle at 12% -10%,rgba(119,210,68,.13),transpar
   .pp-actions{grid-column:1/-1;justify-items:stretch;text-align:left}
   .pp-avatar{width:76px;height:76px;border-radius:22px;font-size:27px}
 }
+/* Shop centre — coins, the streak ladder and gift cards. */
+.coin-balance{display:flex;align-items:center;gap:9px;padding:12px 18px;border-radius:12px;background:#141d17;border:1px solid #2a3a31;font-size:26px;font-weight:800;color:var(--lime);font-family:var(--font-mono)}
+.coin-balance small{font-size:12px;color:var(--muted);font-weight:600}
+.coin-chip{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--lime);color:#071008;font-size:17px}
+.shop-top{display:grid;grid-template-columns:1.35fr 1fr;gap:18px;margin-bottom:26px}
+.ladder{display:grid;gap:9px;margin:16px 0}
+.ladder-step{display:grid;grid-template-columns:auto 1fr auto;gap:12px;align-items:center;padding:12px 15px;border-radius:11px;background:#0d1310;border:1px solid #22302a;color:#8d9d93}
+.ladder-step.done{border-color:#3f7a44;background:#122017;color:#d6f5dd}
+.ladder-step b{color:inherit;font-size:15px}
+.ladder-step span{font-family:var(--font-mono);font-size:13px;color:var(--muted)}
+.ladder-step.done span{color:var(--lime)}
+.ladder-step i{font-style:normal;font-size:17px}
+.ladder-foot{display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;margin-top:8px}
+.order-list{list-style:none;padding:0;margin:12px 0;display:grid;gap:8px}
+.order-list li{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:10px 12px;border-radius:10px;background:#0d1310;border:1px solid #22302a}
+.shop-field{display:grid;gap:6px;margin-top:10px}
+.shop-field span{font-size:12px;text-transform:uppercase;letter-spacing:.09em;color:var(--muted)}
+.shop-field input{padding:11px 13px;border-radius:9px;background:#080d0a;border:1px solid #27372e;color:var(--ink);font-family:var(--font-mono)}
+.shop-field input:focus{outline:2px solid #4d7a3f;outline-offset:1px}
+.gift-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:16px}
+.gift-card{display:flex;flex-direction:column;gap:9px;padding:20px;border-radius:16px;background:linear-gradient(160deg,#131c17,#0a100c);border:1px solid #27372e;text-align:center}
+.gift-card.locked{opacity:.6}
+.gift-card h3{margin:0;font-size:19px}
+.gift-card .primary{margin-top:auto}
+.gift-art{display:grid;place-items:center;padding:10px;border-radius:13px;background:#0a100d;border:1px solid #1e2b24}
+.gift-meta{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
+.gift-meta b{color:var(--lime)}
+@media(max-width:900px){.shop-top{grid-template-columns:1fr}}

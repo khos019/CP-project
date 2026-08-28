@@ -1,0 +1,174 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { GiftArtwork } from "./gift-art";
+import {
+  COIN_RULES, DAY_DUELS_REQUIRED, DAY_SECONDS_REQUIRED, FALLBACK_ITEMS, TOTAL_LADDER_COINS,
+  claimLocal, claimServer, coinsForStreak, fetchBalance, fetchOrders, fetchShopItems, fetchStreak,
+  localBalance, localStreak, nextMilestone, purchase, readActivity,
+  type Order, type ShopItem,
+} from "./coins";
+
+type Lang = "uz" | "en";
+
+const T = {
+  uz: {
+    title: "Do‘kon markazi", sub: "Faollik uchun tanga yig‘ing va Telegram sovg‘asiga almashtiring.",
+    balance: "Tangalaringiz", streak: "Ketma-ket kunlar", day: "kun", coins: "tanga",
+    ladder: "Tanga ishlash zinapoyasi", ladderNote: `Hisoblanadigan kun: kamida 30 daqiqa faollik + ${DAY_DUELS_REQUIRED} ta duel.`,
+    today: "Bugun", minutes: "daqiqa", duels: "duel", claim: "Tangalarni olish",
+    claimed: "tanga qo‘shildi!", nothing: "Hozircha yangi tanga yo‘q.",
+    next: "Keyingi bosqich", buy: "Sotib olish", cost: "narxi", stars: "yulduz",
+    tgLabel: "Telegram username", tgPlaceholder: "@username",
+    need: "Yetarli tanga yo‘q", pending: "Buyurtma qabul qilindi — owner yetkazadi.",
+    orders: "Buyurtmalaringiz", none: "Buyurtmalar yo‘q.",
+    localWarn: "Hisobga kirmagansiz — tangalar faqat shu qurilmada saqlanmoqda va rasmiy emas.",
+    notMigrated: "Server hali ulanmagan (013-migratsiya ishga tushmagan) — bu ko‘rinish namuna.",
+    fulfilNote: "Sovg‘a Telegram orqali qo‘lda yuboriladi.",
+    statusPending: "Kutilmoqda", statusFulfilled: "Yuborildi", statusCancelled: "Bekor qilindi",
+  },
+  en: {
+    title: "Shop centre", sub: "Earn coins for staying active, then trade them for a Telegram gift.",
+    balance: "Your coins", streak: "Day streak", day: "days", coins: "coins",
+    ladder: "Coin ladder", ladderNote: `A qualifying day is 30+ active minutes and ${DAY_DUELS_REQUIRED} duels.`,
+    today: "Today", minutes: "min", duels: "duels", claim: "Claim coins",
+    claimed: "coins added!", nothing: "No new coins yet.",
+    next: "Next milestone", buy: "Buy", cost: "costs", stars: "stars",
+    tgLabel: "Telegram username", tgPlaceholder: "@username",
+    need: "Not enough coins", pending: "Order received — the owner will deliver it.",
+    orders: "Your orders", none: "No orders yet.",
+    localWarn: "You are signed out — coins are stored on this device only and are not official.",
+    notMigrated: "Server not connected yet (migration 013 has not run) — this view is a preview.",
+    fulfilNote: "The gift is sent manually over Telegram.",
+    statusPending: "Pending", statusFulfilled: "Sent", statusCancelled: "Cancelled",
+  },
+};
+
+export function Shop({ lang, signed }: { lang: Lang; signed: boolean }) {
+  const t = T[lang];
+  const [items, setItems] = useState<ShopItem[]>(FALLBACK_ITEMS);
+  const [balance, setBalance] = useState(0);
+  const [streak, setStreak] = useState(0);
+  const [server, setServer] = useState(false);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [telegram, setTelegram] = useState("");
+  const [message, setMessage] = useState("");
+  const [busy, setBusy] = useState("");
+
+  const refresh = async () => {
+    const [remoteBalance, remoteStreak, remoteItems, remoteOrders] = await Promise.all([
+      fetchBalance(), fetchStreak(), fetchShopItems(), fetchOrders(),
+    ]);
+    const online = remoteBalance !== null;
+    setServer(online);
+    setBalance(online ? remoteBalance : localBalance());
+    setStreak(remoteStreak !== null ? remoteStreak : localStreak());
+    if (remoteItems?.length) setItems(remoteItems);
+    if (remoteOrders) setOrders(remoteOrders);
+  };
+  useEffect(() => { void refresh(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
+
+  const act = readActivity()[new Date().toISOString().slice(0, 10)] || { activeSeconds: 0, duels: 0 };
+  const upcoming = nextMilestone(streak);
+
+  const claim = async () => {
+    setBusy("claim");
+    const gained = server ? await claimServer() : claimLocal();
+    setMessage(gained && gained > 0 ? `+${gained} ${t.claimed}` : t.nothing);
+    await refresh();
+    setBusy("");
+  };
+
+  const buy = async (item: ShopItem) => {
+    if (balance < item.costCoins) { setMessage(t.need); return; }
+    if (!telegram.trim()) { setMessage(t.tgLabel); return; }
+    setBusy(item.slug);
+    const result = await purchase(item.slug, telegram.trim());
+    setMessage(result.ok ? t.pending : result.error === "insufficient" ? t.need : result.error === "auth" ? t.localWarn : t.notMigrated);
+    await refresh();
+    setBusy("");
+  };
+
+  return (
+    <>
+      <div className="page-head">
+        <div>
+          <p className="eyebrow" style={{ color: "#637068" }}>SHOP</p>
+          <h1 className="page-title">{t.title}</h1>
+          <p className="muted">{t.sub}</p>
+        </div>
+        <span className="coin-balance"><span className="coin-chip">◎</span> {balance} <small>{t.coins}</small></span>
+      </div>
+
+      {!signed && <div className="notice" style={{ marginBottom: 16 }}>{t.localWarn}</div>}
+      {signed && !server && <div className="notice" style={{ marginBottom: 16 }}>{t.notMigrated}</div>}
+
+      <div className="shop-top">
+        <section className="panel">
+          <h3>{t.ladder}</h3>
+          <p className="muted">{t.ladderNote}</p>
+          <div className="ladder">
+            {COIN_RULES.map(rule => {
+              const reached = streak >= rule.days;
+              return (
+                <div key={rule.days} className={`ladder-step ${reached ? "done" : ""}`}>
+                  <b>{rule.days} {t.day}</b>
+                  <span>+{rule.coins} {t.coins}</span>
+                  <i>{reached ? "✓" : "○"}</i>
+                </div>
+              );
+            })}
+          </div>
+          <div className="ladder-foot">
+            <span className="mono">{t.streak}: <b style={{ color: "var(--lime)" }}>{streak}</b> · {t.today}: {Math.floor(act.activeSeconds / 60)}/{DAY_SECONDS_REQUIRED / 60} {t.minutes} · {act.duels}/{DAY_DUELS_REQUIRED} {t.duels}</span>
+            <button className="primary" onClick={claim} disabled={busy === "claim"}>{t.claim}</button>
+          </div>
+          {upcoming && <p className="muted">{t.next}: {upcoming.days} {t.day} → +{upcoming.coins} {t.coins} · {coinsForStreak(streak)}/{TOTAL_LADDER_COINS}</p>}
+          {message && <div className="quiz-result" style={{ marginTop: 12 }}>{message}</div>}
+        </section>
+
+        <section className="panel">
+          <h3>{t.orders}</h3>
+          {orders.length === 0 ? <p className="muted">{t.none}</p> : (
+            <ul className="order-list">
+              {orders.map(o => (
+                <li key={o.id}>
+                  <b>{o.slug}</b>
+                  <span className={`tag ${o.status === "fulfilled" ? "tag-solved" : ""}`}>
+                    {o.status === "fulfilled" ? t.statusFulfilled : o.status === "cancelled" ? t.statusCancelled : t.statusPending}
+                  </span>
+                  <small className="mono">−{o.costCoins}</small>
+                </li>
+              ))}
+            </ul>
+          )}
+          <p className="muted" style={{ marginTop: 14 }}>{t.fulfilNote}</p>
+          <label className="shop-field">
+            <span>{t.tgLabel}</span>
+            <input value={telegram} onChange={e => setTelegram(e.target.value)} placeholder={t.tgPlaceholder} aria-label={t.tgLabel} />
+          </label>
+        </section>
+      </div>
+
+      <div className="gift-grid">
+        {items.map(item => {
+          const affordable = balance >= item.costCoins;
+          return (
+            <article key={item.slug} className={`gift-card ${affordable ? "" : "locked"}`}>
+              <div className="gift-art"><GiftArtwork art={item.art} /></div>
+              <h3>{lang === "uz" ? item.nameUz : item.nameEn}</h3>
+              <p className="muted">{lang === "uz" ? item.descriptionUz : item.descriptionEn}</p>
+              <div className="gift-meta">
+                <span className="mono">{t.cost} <b>{item.costCoins}</b> {t.coins}</span>
+                {item.telegramStars && <span className="tag">★ {item.telegramStars} {t.stars}</span>}
+              </div>
+              <button className="primary" disabled={!affordable || busy === item.slug} onClick={() => buy(item)}>
+                {affordable ? t.buy : t.need}
+              </button>
+            </article>
+          );
+        })}
+      </div>
+    </>
+  );
+}
