@@ -1,13 +1,9 @@
 import { NextResponse } from "next/server";
 
 const languageIds={cpp20:54,python3:71} as const;
-const tests={
-  "sum-two":[{stdin:"12 30\n",expected_output:"42\n"},{stdin:"-5 2\n",expected_output:"-3\n"},{stdin:"0 0\n",expected_output:"0\n"},{stdin:"1000000000 1000000000\n",expected_output:"2000000000\n"},{stdin:"-1000000000 999999999\n",expected_output:"-1\n"}],
-  // Duel stage 2 — maximum contiguous subarray sum.
-  "max-subarray":[{stdin:"9\n-2 1 -3 4 -1 2 1 -5 4\n",expected_output:"6\n"},{stdin:"1\n-7\n",expected_output:"-7\n"},{stdin:"5\n1 2 3 4 5\n",expected_output:"15\n"},{stdin:"4\n-1 -2 -3 -4\n",expected_output:"-1\n"},{stdin:"6\n5 -9 6 -2 3 -1\n",expected_output:"7\n"}],
-  // Duel stage 3 — minimum number of coins for an exact target.
-  "coin-change":[{stdin:"3 11\n1 2 5\n",expected_output:"3\n"},{stdin:"1 3\n2\n",expected_output:"-1\n"},{stdin:"4 0\n1 2 5 10\n",expected_output:"0\n"},{stdin:"2 27\n4 7\n",expected_output:"6\n"},{stdin:"5 63\n1 5 12 19 25\n",expected_output:"3\n"}],
-} as const;
+// moved to ./tests so the browser bundle never carries expected outputs
+import { tests } from "./tests";
+
 type Result={token:string;status?:{id:number;description:string};time?:string;memory?:number;stderr?:string|null;compile_output?:string|null;message?:string|null};
 type Submission={language_id:number;source_code:string;stdin:string;expected_output:string;cpu_time_limit:number;wall_time_limit:number;memory_limit:number;max_file_size:number};
 const sleep=(ms:number)=>new Promise(resolve=>setTimeout(resolve,ms));
