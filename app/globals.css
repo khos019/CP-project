@@ -662,3 +662,11 @@ body{background:radial-gradient(circle at 12% -10%,rgba(119,210,68,.13),transpar
 @media(max-width:900px){.shop-top{grid-template-columns:1fr}}
 .tier-badge{align-self:center;padding:3px 10px;border-radius:999px;background:#1d2a23;color:#ffc94d;font-family:var(--font-mono);font-size:12px;font-weight:800}
 .art-credit{margin-top:20px;font-size:12px;text-align:right}
+.rating-chip{font-family:var(--font-mono);font-weight:850;font-size:13px}
+.rating-tag{font-family:var(--font-mono);font-weight:850}
+.statement .story{color:#93a49a;font-style:italic;border-left:2px solid #2a3a31;padding-left:12px;margin-bottom:14px}
+.statement .sample{margin:10px 0;padding:12px 14px;border-radius:10px;background:#070c09;border:1px solid #1e2d25}
+.statement .sample b{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.statement .sample pre{margin:0 0 8px;font-family:var(--font-mono);color:#c8f7d3;white-space:pre-wrap}
+.statement .sample pre:last-child{margin-bottom:0}
+.rating-banner{margin-top:12px;padding:11px 14px;border-radius:10px;background:#142719;border:1px solid #315d36;color:#9ee27f;font-family:var(--font-mono)}
