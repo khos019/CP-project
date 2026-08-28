@@ -66,7 +66,12 @@ export function Shop({ lang, signed }: { lang: Lang; signed: boolean }) {
     if (remoteItems?.length) setItems(remoteItems);
     if (remoteOrders) setOrders(remoteOrders);
   };
-  useEffect(() => { void refresh(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
+  useEffect(() => {
+    // refresh awaits the four reads before it sets anything, so nothing is
+    // written during this render; the rule cannot see past the async boundary.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void refresh();
+  }, []);
 
   const act = readActivity()[new Date().toISOString().slice(0, 10)] || { activeSeconds: 0, duels: 0 };
   const upcoming = nextMilestone(streak);

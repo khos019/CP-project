@@ -127,8 +127,10 @@ export function OwnerStats({ lang, goProfile, onPickDay }: { lang: Lang; goProfi
   const [stats, setStats] = useState<Stats | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "not-migrated" | "forbidden" | "error">("loading");
 
-  const load = () => {
-    setState("loading");
+  /* The read is shared by the first load and the refresh button, but only the
+     button needs to announce it: on mount the screen is already in "loading",
+     so setting it again was a second render that painted the same thing. */
+  const read = () =>
     fetchOwnerStats().then((result) => {
       if (result.ok) {
         setStats(result.stats);
@@ -137,8 +139,13 @@ export function OwnerStats({ lang, goProfile, onPickDay }: { lang: Lang; goProfi
         setState(result.error === "not-migrated" ? "not-migrated" : result.error === "forbidden" ? "forbidden" : "error");
       }
     });
+  const load = () => {
+    setState("loading");
+    void read();
   };
-  useEffect(load, []);
+  useEffect(() => {
+    void read();
+  }, []);
 
   return (
     <>

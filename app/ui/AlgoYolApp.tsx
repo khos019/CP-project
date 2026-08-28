@@ -106,13 +106,18 @@ export function AlgoYolApp(){
   window.dispatchEvent(new Event("algoyol-progress"));
  };
 
+ // Seeded after mount on purpose: the server has no localStorage, so reading
+ // it during the first render would make the two disagree and break hydration.
+ // eslint-disable-next-line react-hooks/set-state-in-effect
  useEffect(()=>{const saved=localStorage.getItem("algoyol-lang") as Lang|null;if(saved)setLang(saved)},[]);
  // Boot: adopt the stored scope synchronously so the first paint reads the
- // right namespace, then verify the token.
+ // right namespace, then verify the token. The "loading" flip has to happen
+ // here for the same hydration reason as the language above.
  useEffect(()=>{
   const token=readToken(),storedId=readStoredUserId();
   if(storedId)setScope(storedId);
   if(!token||!supabaseReady()){setScope(GUEST_SCOPE);adoptLegacyInto(GUEST_SCOPE);return}
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   setAuth({status:"loading"});
   let live=true;
   fetchProfile(token).then(next=>{
@@ -142,6 +147,9 @@ export function AlgoYolApp(){
   const id=setInterval(tick,60000);
   return()=>{live=false;clearInterval(id)};
  },[auth.status]);
+ // Reacts to a verdict that arrived from the judge, so the state it sets is a
+ // consequence of a response rather than of rendering.
+ // eslint-disable-next-line react-hooks/set-state-in-effect
  useEffect(()=>{if(!verdict.startsWith("Qabul qilindi")&&!verdict.startsWith("Accepted"))return;if(activeProblem.judge){const gained=applySolve(activeProblem.id,activeProblem.rating||1200);if(gained.delta>0)setRatingGain(gained);const base=MASTERY_CONFIG.weights.problem[activeProblem.difficulty as keyof typeof MASTERY_CONFIG.weights.problem];recordEvidence(activeProblem.topic,"problem",`problem:${activeProblem.id}`,base)}const lesson=readScoped("algoyol-active-lesson");if(!lesson)return;let data={quizScores:{},solved:{}} as {quizScores:Record<string,number>;solved:Record<string,boolean>};try{data=JSON.parse(readScoped("algoyol-roadmap-progress")||JSON.stringify(data))}catch{}if(!data.solved[lesson])recordEvidence(lesson.slice(0,lesson.lastIndexOf("-")),"lesson",`lesson:${lesson}`,MASTERY_CONFIG.weights.lesson);data.solved={...data.solved,[lesson]:true};writeScoped("algoyol-roadmap-progress",JSON.stringify(data));removeScoped("algoyol-active-lesson");window.dispatchEvent(new Event("algoyol-progress"))},[verdict]);// eslint-disable-line react-hooks/exhaustive-deps
  // The address bar reflects the current screen — /roadmaps/{slug}/{unit} —
  // so two roadmaps (or two units) are never one indistinguishable URL.
@@ -515,7 +523,10 @@ function Duel({lang,opponent,rating,matchId,onFinish,onRematch,onExit,openRoadma
   else finish("sweep",next,at)};
  useEffect(()=>{if(result||stage>2){plan.current=null;return}const problem=duelProblems[stage];const skill=Math.min(1.45,Math.max(.6,1-(opponent.rating-rating)/1800));const span=problem.bot[0]+Math.random()*(problem.bot[1]-problem.bot[0]);const duration=Math.max(45,Math.round(span*skill));plan.current={stage,solveAt:elapsed+duration,missAt:elapsed+Math.round(duration*.55),missed:false,fails:Math.random()<problem.fail}},[stage,result]);// eslint-disable-line react-hooks/exhaustive-deps
  useEffect(()=>{if(result)return;const id=window.setInterval(()=>setElapsed(e=>Math.min(DUEL_LENGTH,e+1)),1000);return()=>window.clearInterval(id)},[result]);
+ // Driven by the duel clock: each tick may retire the round or record the
+ // opponent's attempt, which is a timer event, not a render cascade.
  useEffect(()=>{if(result)return;
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   if(elapsed>=DUEL_LENGTH){finish("time",claims,DUEL_LENGTH);return}
   const current=plan.current;if(!current||current.stage!==stage||claims[stage])return;
   if(!current.missed&&elapsed>=current.missAt){current.missed=true;setAttempts(a=>({...a,opp:a.opp+1}));push("opp",`${opponent.name} yechim yubordi — noto‘g‘ri javob`,`${opponent.name} submitted — wrong answer`,elapsed)}
@@ -571,6 +582,7 @@ function DuelMatchmaking({lang,profile,signed,authLoading,needAuth,openRoadmap}:
  const [phase,setPhase]=useState<"idle"|"searching"|"found"|"active">("idle"),[rating,setRating]=useState(profile?.duel_rating??DEFAULT_RATING),[opponent,setOpponent]=useState<DuelOpponent>(duelOpponents[0]),[matchId,setMatchId]=useState(4821);
  // The account is the source of truth for rating; the local copy is only a
  // cache for a session that has not synced yet.
+ // eslint-disable-next-line react-hooks/set-state-in-effect
  useEffect(()=>{if(profile?.duel_rating!==undefined){setRating(profile.duel_rating);return}const saved=Number(readScoped("algoyol-duel-rating"));if(saved>0)setRating(saved)},[profile]);
  useEffect(()=>{if(phase!=="searching")return;const found=window.setTimeout(()=>{const pool=[...duelOpponents].sort((a,b)=>Math.abs(a.rating-rating)-Math.abs(b.rating-rating)).slice(0,3);setOpponent(pool[Math.floor(Math.random()*pool.length)]);setMatchId(4000+Math.floor(Math.random()*1800));setPhase("found")},1800);return()=>window.clearTimeout(found)},[phase,rating]);
  const settle=(next:number,entry:{outcome:"win"|"loss"|"draw";myScore:number;oppScore:number;delta:number})=>{
