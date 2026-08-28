@@ -1,7 +1,7 @@
 name: Deploy to Cloudflare
 
 # Every push to main rebuilds the site and deploys it to
-# https://algoyol.m-u-ubaydullayev.workers.dev
+# https://algoyol.cp-project.workers.dev
 # Run it by hand from the Actions tab with "Run workflow".
 on:
   push:
@@ -61,7 +61,7 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-          NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL || 'https://algoyol.m-u-ubaydullayev.workers.dev' }}
+          NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL || 'https://algoyol.cp-project.workers.dev' }}
           # Optional. Left empty, app/api/judge falls back to the public
           # ce.judge0.com endpoint.
           JUDGE0_URL: ${{ secrets.JUDGE0_URL }}
@@ -72,7 +72,7 @@ jobs:
       # Proves the deploy actually took, instead of trusting a green check.
       - name: Verify the site responds
         run: |
-          url="${{ secrets.NEXT_PUBLIC_SITE_URL || 'https://algoyol.m-u-ubaydullayev.workers.dev' }}"
+          url="${{ secrets.NEXT_PUBLIC_SITE_URL || 'https://algoyol.cp-project.workers.dev' }}"
           for attempt in 1 2 3 4 5; do
             code=$(curl -s -o /dev/null -w '%{http_code}' "$url" || echo 000)
             if [ "$code" = "200" ]; then
