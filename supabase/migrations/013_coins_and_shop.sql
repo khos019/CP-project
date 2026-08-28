@@ -106,16 +106,36 @@ begin
   return v_streak;
 end $$;
 
--- Award every milestone the streak has reached, each at most once.
+-- The first day of the current run, so each milestone pays once per streak
+-- rather than once per account. Without this a learner could earn 15 coins in
+-- their lifetime and never afford anything above the 15-star tier.
+create or replace function public.streak_start(p_user uuid default auth.uid())
+returns date language plpgsql stable security definer set search_path = public as $$
+declare v_streak int; v_last date; v_req_sec int; v_req_duels int;
+begin
+  v_streak := qualifying_streak(p_user);
+  if v_streak = 0 then return null; end if;
+  select active_seconds_required, duels_required into v_req_sec, v_req_duels
+  from coin_rules order by streak_days limit 1;
+  select max(day) into v_last from daily_activity
+   where user_id = p_user and active_seconds >= coalesce(v_req_sec,1800) and duels >= coalesce(v_req_duels,3)
+     and day >= (now() at time zone 'utc')::date - 1;
+  return v_last - (v_streak - 1);
+end $$;
+
+-- Award every milestone this streak run has reached, each at most once per run.
 create or replace function public.claim_streak_coins()
 returns int language plpgsql security definer set search_path = public as $$
-declare v_streak int; v_row record; v_awarded int := 0;
+declare v_streak int; v_start date; v_row record; v_awarded int := 0;
 begin
   if auth.uid() is null then raise exception 'not_authenticated'; end if;
   v_streak := qualifying_streak(auth.uid());
+  v_start := streak_start(auth.uid());
+  if v_start is null then return 0; end if;
   for v_row in select streak_days, coins from coin_rules where streak_days <= v_streak order by streak_days loop
     insert into coin_events(user_id, delta, reason, dedupe_key)
-    values (auth.uid(), v_row.coins, 'streak_' || v_row.streak_days, 'streak:' || v_row.streak_days)
+    values (auth.uid(), v_row.coins, 'streak_' || v_row.streak_days,
+            'streak:' || v_start::text || ':' || v_row.streak_days)
     on conflict (user_id, dedupe_key) do nothing;
     if found then v_awarded := v_awarded + v_row.coins; end if;
   end loop;
@@ -201,15 +221,31 @@ end $$;
 --    Art is drawn in the app as original SVG; no Telegram artwork is copied.
 -- ---------------------------------------------------------------------------
 insert into public.shop_items(slug,name_uz,name_en,description_uz,description_en,cost_coins,telegram_stars,art,sort_order) values
- ('tg-bear','Ayiqcha','Teddy Bear','Telegram sovg‘asi — 15 yulduz.','Telegram gift — 15 stars.',15,15,'bear',1),
- ('tg-heart','Yurak','Heart','Telegram sovg‘asi — 15 yulduz.','Telegram gift — 15 stars.',15,15,'heart',2),
- ('tg-cake','Tort','Cake','Telegram sovg‘asi — 15 yulduz.','Telegram gift — 15 stars.',15,15,'cake',3),
- ('tg-star','Yulduz','Star','Telegram sovg‘asi — 15 yulduz.','Telegram gift — 15 stars.',15,15,'star',4),
- ('tg-rocket','Raketa','Rocket','Telegram sovg‘asi — 15 yulduz.','Telegram gift — 15 stars.',15,15,'rocket',5),
- ('tg-rose','Atirgul','Rose','Telegram sovg‘asi — 15 yulduz.','Telegram gift — 15 stars.',15,15,'rose',6)
+ -- 15-star tier: reachable from one full 10-day streak run (1+2+3+4+5 = 15).
+ ('tg-evil-eye','Ko‘z munchoq','Evil Eye','Telegram sovg‘asi.','Telegram gift.',15,15,'eye',1),
+ ('tg-spiced-wine','Ziravorli vino','Spiced Wine','Telegram sovg‘asi.','Telegram gift.',15,15,'wine',2),
+ ('tg-kissed-frog','O‘pilgan qurbaqa','Kissed Frog','Telegram sovg‘asi.','Telegram gift.',15,15,'frog',3),
+ ('tg-hex-pot','Sehrli qozon','Hex Pot','Telegram sovg‘asi.','Telegram gift.',15,15,'pot',4),
+ ('tg-spy-agaric','Qizil qo‘ziqorin','Spy Agaric','Telegram sovg‘asi.','Telegram gift.',15,15,'mushroom',5),
+ -- 25-star tier
+ ('tg-trapped-heart','Bandi yurak','Trapped Heart','Telegram sovg‘asi.','Telegram gift.',25,25,'heart',6),
+ ('tg-jelly-bunny','Jele quyon','Jelly Bunny','Telegram sovg‘asi.','Telegram gift.',25,25,'bunny',7),
+ ('tg-scared-cat','Qo‘rqqan mushuk','Scared Cat','Telegram sovg‘asi.','Telegram gift.',25,25,'cat',8),
+ -- 50-star tier
+ ('tg-berry-box','Rezavor quti','Berry Box','Telegram sovg‘asi.','Telegram gift.',50,50,'berries',9),
+ ('tg-magic-potion','Sehrli iksir','Magic Potion','Telegram sovg‘asi.','Telegram gift.',50,50,'potion',10),
+ -- 100-star tier
+ ('tg-eternal-rose','Abadiy atirgul','Eternal Rose','Telegram sovg‘asi.','Telegram gift.',100,100,'rose',11),
+ -- 500-star tier
+ ('tg-homemade-cake','Uy torti','Homemade Cake','Telegram sovg‘asi.','Telegram gift.',500,500,'cake',12)
 on conflict (slug) do update set
  name_uz=excluded.name_uz,name_en=excluded.name_en,cost_coins=excluded.cost_coins,
  telegram_stars=excluded.telegram_stars,art=excluded.art,sort_order=excluded.sort_order;
+
+-- Retire the placeholder catalogue from the first draft, which priced every
+-- gift at 15 stars regardless of what Telegram actually charges.
+update public.shop_items set active = false
+ where slug in ('tg-bear','tg-heart','tg-cake','tg-star','tg-rocket','tg-rose');
 
 -- ---------------------------------------------------------------------------
 -- 7. Security. Read your own; write nothing.
@@ -252,4 +288,5 @@ grant execute on function public.claim_streak_coins()          to authenticated;
 grant execute on function public.purchase_item(text, text)     to authenticated;
 grant execute on function public.coin_balance(uuid)            to authenticated;
 grant execute on function public.qualifying_streak(uuid)       to authenticated;
+grant execute on function public.streak_start(uuid)            to authenticated;
 grant execute on function public.fulfil_order(uuid, text)      to authenticated; -- role checked inside

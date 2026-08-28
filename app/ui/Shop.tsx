@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { GiftArtwork } from "./gift-art";
+import { GiftArtwork, ART_CREDIT, ART_CREDIT_EN } from "./gift-art";
 import {
   COIN_RULES, DAY_DUELS_REQUIRED, DAY_SECONDS_REQUIRED, FALLBACK_ITEMS, TOTAL_LADDER_COINS,
   claimLocal, claimServer, coinsForStreak, fetchBalance, fetchOrders, fetchShopItems, fetchStreak,
@@ -156,6 +156,7 @@ export function Shop({ lang, signed }: { lang: Lang; signed: boolean }) {
           return (
             <article key={item.slug} className={`gift-card ${affordable ? "" : "locked"}`}>
               <div className="gift-art"><GiftArtwork art={item.art} /></div>
+              <span className="tier-badge">★ {item.telegramStars}</span>
               <h3>{lang === "uz" ? item.nameUz : item.nameEn}</h3>
               <p className="muted">{lang === "uz" ? item.descriptionUz : item.descriptionEn}</p>
               <div className="gift-meta">
@@ -169,6 +170,7 @@ export function Shop({ lang, signed }: { lang: Lang; signed: boolean }) {
           );
         })}
       </div>
+      <p className="muted art-credit">{lang === "uz" ? ART_CREDIT : ART_CREDIT_EN}</p>
     </>
   );
 }

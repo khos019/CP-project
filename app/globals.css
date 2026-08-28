@@ -660,3 +660,5 @@ body{background:radial-gradient(circle at 12% -10%,rgba(119,210,68,.13),transpar
 .gift-meta{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:12px;color:var(--muted)}
 .gift-meta b{color:var(--lime)}
 @media(max-width:900px){.shop-top{grid-template-columns:1fr}}
+.tier-badge{align-self:center;padding:3px 10px;border-radius:999px;background:#1d2a23;color:#ffc94d;font-family:var(--font-mono);font-size:12px;font-weight:800}
+.art-credit{margin-top:20px;font-size:12px;text-align:right}

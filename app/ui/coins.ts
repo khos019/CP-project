@@ -85,12 +85,27 @@ export function nextMilestone(streak: number) {
   return COIN_RULES.find(r => r.days > streak) || null;
 }
 
-function localClaims(): number[] {
+function localClaims(): string[] {
   try { return JSON.parse(readScoped(CLAIM_KEY) || "[]"); } catch { return []; }
+}
+
+/** First day of the current run — milestones pay once per run, not per account. */
+export function localStreakStart(): string | null {
+  const streak = localStreak();
+  if (!streak) return null;
+  const all = readActivity();
+  const days = Object.keys(all).filter(d => all[d].activeSeconds >= DAY_SECONDS_REQUIRED && all[d].duels >= DAY_DUELS_REQUIRED).sort();
+  const last = days[days.length - 1];
+  const t = new Date(last + "T00:00:00Z");
+  t.setUTCDate(t.getUTCDate() - (streak - 1));
+  return t.toISOString().slice(0, 10);
 }
 export function localBalance(): number {
   const claimed = localClaims();
-  const earned = COIN_RULES.filter(r => claimed.includes(r.days)).reduce((n, r) => n + r.coins, 0);
+  const earned = claimed.reduce((n, key) => {
+    const days = Number(key.split(":").pop());
+    return n + (COIN_RULES.find(r => r.days === days)?.coins || 0);
+  }, 0);
   let spent = 0;
   try { spent = JSON.parse(readScoped("algoyol-coin-spent") || "0") || 0; } catch {}
   return earned - spent;
@@ -98,10 +113,12 @@ export function localBalance(): number {
 /** Records milestones reached locally; returns coins newly granted. */
 export function claimLocal(): number {
   const streak = localStreak();
+  const start = localStreakStart();
+  if (!start) return 0;
   const claimed = localClaims();
-  const fresh = COIN_RULES.filter(r => r.days <= streak && !claimed.includes(r.days));
+  const fresh = COIN_RULES.filter(r => r.days <= streak && !claimed.includes(`${start}:${r.days}`));
   if (!fresh.length) return 0;
-  writeScoped(CLAIM_KEY, JSON.stringify([...claimed, ...fresh.map(r => r.days)]));
+  writeScoped(CLAIM_KEY, JSON.stringify([...claimed, ...fresh.map(r => `${start}:${r.days}`)]));
   return fresh.reduce((n, r) => n + r.coins, 0);
 }
 
@@ -197,11 +214,19 @@ export async function fetchOrders(): Promise<Order[] | null> {
 }
 
 /** Fallback catalogue so the shop still renders before migration 013 runs. */
+/** Fallback catalogue so the shop still renders before migration 013 runs.
+ *  Coin cost mirrors the gift's real Telegram Stars price. */
 export const FALLBACK_ITEMS: ShopItem[] = [
-  { slug: "tg-bear", nameUz: "Ayiqcha", nameEn: "Teddy Bear", descriptionUz: "Telegram sovg‘asi — 15 yulduz.", descriptionEn: "Telegram gift — 15 stars.", costCoins: 15, telegramStars: 15, art: "bear" },
-  { slug: "tg-heart", nameUz: "Yurak", nameEn: "Heart", descriptionUz: "Telegram sovg‘asi — 15 yulduz.", descriptionEn: "Telegram gift — 15 stars.", costCoins: 15, telegramStars: 15, art: "heart" },
-  { slug: "tg-cake", nameUz: "Tort", nameEn: "Cake", descriptionUz: "Telegram sovg‘asi — 15 yulduz.", descriptionEn: "Telegram gift — 15 stars.", costCoins: 15, telegramStars: 15, art: "cake" },
-  { slug: "tg-star", nameUz: "Yulduz", nameEn: "Star", descriptionUz: "Telegram sovg‘asi — 15 yulduz.", descriptionEn: "Telegram gift — 15 stars.", costCoins: 15, telegramStars: 15, art: "star" },
-  { slug: "tg-rocket", nameUz: "Raketa", nameEn: "Rocket", descriptionUz: "Telegram sovg‘asi — 15 yulduz.", descriptionEn: "Telegram gift — 15 stars.", costCoins: 15, telegramStars: 15, art: "rocket" },
-  { slug: "tg-rose", nameUz: "Atirgul", nameEn: "Rose", descriptionUz: "Telegram sovg‘asi — 15 yulduz.", descriptionEn: "Telegram gift — 15 stars.", costCoins: 15, telegramStars: 15, art: "rose" },
+  { slug: "tg-evil-eye", nameUz: "Ko‘z munchoq", nameEn: "Evil Eye", descriptionUz: "Telegram sovg‘asi.", descriptionEn: "Telegram gift.", costCoins: 15, telegramStars: 15, art: "eye" },
+  { slug: "tg-spiced-wine", nameUz: "Ziravorli vino", nameEn: "Spiced Wine", descriptionUz: "Telegram sovg‘asi.", descriptionEn: "Telegram gift.", costCoins: 15, telegramStars: 15, art: "wine" },
+  { slug: "tg-kissed-frog", nameUz: "O‘pilgan qurbaqa", nameEn: "Kissed Frog", descriptionUz: "Telegram sovg‘asi.", descriptionEn: "Telegram gift.", costCoins: 15, telegramStars: 15, art: "frog" },
+  { slug: "tg-hex-pot", nameUz: "Sehrli qozon", nameEn: "Hex Pot", descriptionUz: "Telegram sovg‘asi.", descriptionEn: "Telegram gift.", costCoins: 15, telegramStars: 15, art: "pot" },
+  { slug: "tg-spy-agaric", nameUz: "Qizil qo‘ziqorin", nameEn: "Spy Agaric", descriptionUz: "Telegram sovg‘asi.", descriptionEn: "Telegram gift.", costCoins: 15, telegramStars: 15, art: "mushroom" },
+  { slug: "tg-trapped-heart", nameUz: "Bandi yurak", nameEn: "Trapped Heart", descriptionUz: "Telegram sovg‘asi.", descriptionEn: "Telegram gift.", costCoins: 25, telegramStars: 25, art: "heart" },
+  { slug: "tg-jelly-bunny", nameUz: "Jele quyon", nameEn: "Jelly Bunny", descriptionUz: "Telegram sovg‘asi.", descriptionEn: "Telegram gift.", costCoins: 25, telegramStars: 25, art: "bunny" },
+  { slug: "tg-scared-cat", nameUz: "Qo‘rqqan mushuk", nameEn: "Scared Cat", descriptionUz: "Telegram sovg‘asi.", descriptionEn: "Telegram gift.", costCoins: 25, telegramStars: 25, art: "cat" },
+  { slug: "tg-berry-box", nameUz: "Rezavor quti", nameEn: "Berry Box", descriptionUz: "Telegram sovg‘asi.", descriptionEn: "Telegram gift.", costCoins: 50, telegramStars: 50, art: "berries" },
+  { slug: "tg-magic-potion", nameUz: "Sehrli iksir", nameEn: "Magic Potion", descriptionUz: "Telegram sovg‘asi.", descriptionEn: "Telegram gift.", costCoins: 50, telegramStars: 50, art: "potion" },
+  { slug: "tg-eternal-rose", nameUz: "Abadiy atirgul", nameEn: "Eternal Rose", descriptionUz: "Telegram sovg‘asi.", descriptionEn: "Telegram gift.", costCoins: 100, telegramStars: 100, art: "rose" },
+  { slug: "tg-homemade-cake", nameUz: "Uy torti", nameEn: "Homemade Cake", descriptionUz: "Telegram sovg‘asi.", descriptionEn: "Telegram gift.", costCoins: 500, telegramStars: 500, art: "cake" },
 ];
