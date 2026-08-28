@@ -8,8 +8,7 @@
 // would be redistributing someone else's assets.
 
 export const GIFT_ART_KEYS = [
-  "eye", "wine", "frog", "pot", "mushroom", "heart",
-  "bunny", "cat", "berries", "potion", "rose", "cake",
+  "heart", "bear", "giftbox", "rose", "cake", "bouquet", "rocket", "trophy", "ring",
 ] as const;
 
 export function GiftArtwork({ art, size = 96 }: { art: string; size?: number }) {

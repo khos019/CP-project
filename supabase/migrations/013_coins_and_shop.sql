@@ -221,31 +221,27 @@ end $$;
 --    Art is drawn in the app as original SVG; no Telegram artwork is copied.
 -- ---------------------------------------------------------------------------
 insert into public.shop_items(slug,name_uz,name_en,description_uz,description_en,cost_coins,telegram_stars,art,sort_order) values
- -- 15-star tier: reachable from one full 10-day streak run (1+2+3+4+5 = 15).
- ('tg-evil-eye','Ko‘z munchoq','Evil Eye','Telegram sovg‘asi.','Telegram gift.',15,15,'eye',1),
- ('tg-spiced-wine','Ziravorli vino','Spiced Wine','Telegram sovg‘asi.','Telegram gift.',15,15,'wine',2),
- ('tg-kissed-frog','O‘pilgan qurbaqa','Kissed Frog','Telegram sovg‘asi.','Telegram gift.',15,15,'frog',3),
- ('tg-hex-pot','Sehrli qozon','Hex Pot','Telegram sovg‘asi.','Telegram gift.',15,15,'pot',4),
- ('tg-spy-agaric','Qizil qo‘ziqorin','Spy Agaric','Telegram sovg‘asi.','Telegram gift.',15,15,'mushroom',5),
- -- 25-star tier
- ('tg-trapped-heart','Bandi yurak','Trapped Heart','Telegram sovg‘asi.','Telegram gift.',25,25,'heart',6),
- ('tg-jelly-bunny','Jele quyon','Jelly Bunny','Telegram sovg‘asi.','Telegram gift.',25,25,'bunny',7),
- ('tg-scared-cat','Qo‘rqqan mushuk','Scared Cat','Telegram sovg‘asi.','Telegram gift.',25,25,'cat',8),
- -- 50-star tier
- ('tg-berry-box','Rezavor quti','Berry Box','Telegram sovg‘asi.','Telegram gift.',50,50,'berries',9),
- ('tg-magic-potion','Sehrli iksir','Magic Potion','Telegram sovg‘asi.','Telegram gift.',50,50,'potion',10),
- -- 100-star tier
- ('tg-eternal-rose','Abadiy atirgul','Eternal Rose','Telegram sovg‘asi.','Telegram gift.',100,100,'rose',11),
- -- 500-star tier
- ('tg-homemade-cake','Uy torti','Homemade Cake','Telegram sovg‘asi.','Telegram gift.',500,500,'cake',12)
+ -- Telegram's nine standard gifts. Coins are priced 1:1 against stars, so one
+ -- full 10-day streak run (15 coins) buys exactly one 15-star gift.
+ ('tg-heart','Yurak','Heart','Telegram sovg‘asi.','Telegram gift.',15,15,'heart',1),
+ ('tg-bear','Ayiqcha','Teddy Bear','Telegram sovg‘asi.','Telegram gift.',15,15,'bear',2),
+ ('tg-gift','Sovg‘a qutisi','Gift Box','Telegram sovg‘asi.','Telegram gift.',25,25,'giftbox',3),
+ ('tg-rose','Atirgul','Rose','Telegram sovg‘asi.','Telegram gift.',25,25,'rose',4),
+ ('tg-cake','Tort','Cake','Telegram sovg‘asi.','Telegram gift.',50,50,'cake',5),
+ ('tg-bouquet','Guldasta','Bouquet','Telegram sovg‘asi.','Telegram gift.',50,50,'bouquet',6),
+ ('tg-rocket','Raketa','Rocket','Telegram sovg‘asi.','Telegram gift.',50,50,'rocket',7),
+ ('tg-trophy','Kubok','Trophy','Telegram sovg‘asi.','Telegram gift.',100,100,'trophy',8),
+ ('tg-ring','Uzuk','Ring','Telegram sovg‘asi.','Telegram gift.',100,100,'ring',9)
 on conflict (slug) do update set
  name_uz=excluded.name_uz,name_en=excluded.name_en,cost_coins=excluded.cost_coins,
- telegram_stars=excluded.telegram_stars,art=excluded.art,sort_order=excluded.sort_order;
+ telegram_stars=excluded.telegram_stars,art=excluded.art,sort_order=excluded.sort_order,active=true;
 
--- Retire the placeholder catalogue from the first draft, which priced every
--- gift at 15 stars regardless of what Telegram actually charges.
+-- Retire earlier drafts: the all-15-star placeholders and the limited/seasonal
+-- collectibles, neither of which are Telegram's standard catalogue.
 update public.shop_items set active = false
- where slug in ('tg-bear','tg-heart','tg-cake','tg-star','tg-rocket','tg-rose');
+ where slug in ('tg-star','tg-evil-eye','tg-spiced-wine','tg-kissed-frog','tg-hex-pot',
+                'tg-spy-agaric','tg-trapped-heart','tg-jelly-bunny','tg-scared-cat',
+                'tg-berry-box','tg-magic-potion','tg-eternal-rose','tg-homemade-cake');
 
 -- ---------------------------------------------------------------------------
 -- 7. Security. Read your own; write nothing.

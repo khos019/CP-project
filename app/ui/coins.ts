@@ -216,17 +216,16 @@ export async function fetchOrders(): Promise<Order[] | null> {
 /** Fallback catalogue so the shop still renders before migration 013 runs. */
 /** Fallback catalogue so the shop still renders before migration 013 runs.
  *  Coin cost mirrors the gift's real Telegram Stars price. */
+/** Fallback catalogue so the shop still renders before migration 013 runs.
+ *  These are Telegram's nine standard gifts; coins mirror their star price. */
 export const FALLBACK_ITEMS: ShopItem[] = [
-  { slug: "tg-evil-eye", nameUz: "Ko‘z munchoq", nameEn: "Evil Eye", descriptionUz: "Telegram sovg‘asi.", descriptionEn: "Telegram gift.", costCoins: 15, telegramStars: 15, art: "eye" },
-  { slug: "tg-spiced-wine", nameUz: "Ziravorli vino", nameEn: "Spiced Wine", descriptionUz: "Telegram sovg‘asi.", descriptionEn: "Telegram gift.", costCoins: 15, telegramStars: 15, art: "wine" },
-  { slug: "tg-kissed-frog", nameUz: "O‘pilgan qurbaqa", nameEn: "Kissed Frog", descriptionUz: "Telegram sovg‘asi.", descriptionEn: "Telegram gift.", costCoins: 15, telegramStars: 15, art: "frog" },
-  { slug: "tg-hex-pot", nameUz: "Sehrli qozon", nameEn: "Hex Pot", descriptionUz: "Telegram sovg‘asi.", descriptionEn: "Telegram gift.", costCoins: 15, telegramStars: 15, art: "pot" },
-  { slug: "tg-spy-agaric", nameUz: "Qizil qo‘ziqorin", nameEn: "Spy Agaric", descriptionUz: "Telegram sovg‘asi.", descriptionEn: "Telegram gift.", costCoins: 15, telegramStars: 15, art: "mushroom" },
-  { slug: "tg-trapped-heart", nameUz: "Bandi yurak", nameEn: "Trapped Heart", descriptionUz: "Telegram sovg‘asi.", descriptionEn: "Telegram gift.", costCoins: 25, telegramStars: 25, art: "heart" },
-  { slug: "tg-jelly-bunny", nameUz: "Jele quyon", nameEn: "Jelly Bunny", descriptionUz: "Telegram sovg‘asi.", descriptionEn: "Telegram gift.", costCoins: 25, telegramStars: 25, art: "bunny" },
-  { slug: "tg-scared-cat", nameUz: "Qo‘rqqan mushuk", nameEn: "Scared Cat", descriptionUz: "Telegram sovg‘asi.", descriptionEn: "Telegram gift.", costCoins: 25, telegramStars: 25, art: "cat" },
-  { slug: "tg-berry-box", nameUz: "Rezavor quti", nameEn: "Berry Box", descriptionUz: "Telegram sovg‘asi.", descriptionEn: "Telegram gift.", costCoins: 50, telegramStars: 50, art: "berries" },
-  { slug: "tg-magic-potion", nameUz: "Sehrli iksir", nameEn: "Magic Potion", descriptionUz: "Telegram sovg‘asi.", descriptionEn: "Telegram gift.", costCoins: 50, telegramStars: 50, art: "potion" },
-  { slug: "tg-eternal-rose", nameUz: "Abadiy atirgul", nameEn: "Eternal Rose", descriptionUz: "Telegram sovg‘asi.", descriptionEn: "Telegram gift.", costCoins: 100, telegramStars: 100, art: "rose" },
-  { slug: "tg-homemade-cake", nameUz: "Uy torti", nameEn: "Homemade Cake", descriptionUz: "Telegram sovg‘asi.", descriptionEn: "Telegram gift.", costCoins: 500, telegramStars: 500, art: "cake" },
+  { slug: "tg-heart", nameUz: "Yurak", nameEn: "Heart", descriptionUz: "Telegram sovg‘asi.", descriptionEn: "Telegram gift.", costCoins: 15, telegramStars: 15, art: "heart" },
+  { slug: "tg-bear", nameUz: "Ayiqcha", nameEn: "Teddy Bear", descriptionUz: "Telegram sovg‘asi.", descriptionEn: "Telegram gift.", costCoins: 15, telegramStars: 15, art: "bear" },
+  { slug: "tg-gift", nameUz: "Sovg‘a qutisi", nameEn: "Gift Box", descriptionUz: "Telegram sovg‘asi.", descriptionEn: "Telegram gift.", costCoins: 25, telegramStars: 25, art: "giftbox" },
+  { slug: "tg-rose", nameUz: "Atirgul", nameEn: "Rose", descriptionUz: "Telegram sovg‘asi.", descriptionEn: "Telegram gift.", costCoins: 25, telegramStars: 25, art: "rose" },
+  { slug: "tg-cake", nameUz: "Tort", nameEn: "Cake", descriptionUz: "Telegram sovg‘asi.", descriptionEn: "Telegram gift.", costCoins: 50, telegramStars: 50, art: "cake" },
+  { slug: "tg-bouquet", nameUz: "Guldasta", nameEn: "Bouquet", descriptionUz: "Telegram sovg‘asi.", descriptionEn: "Telegram gift.", costCoins: 50, telegramStars: 50, art: "bouquet" },
+  { slug: "tg-rocket", nameUz: "Raketa", nameEn: "Rocket", descriptionUz: "Telegram sovg‘asi.", descriptionEn: "Telegram gift.", costCoins: 50, telegramStars: 50, art: "rocket" },
+  { slug: "tg-trophy", nameUz: "Kubok", nameEn: "Trophy", descriptionUz: "Telegram sovg‘asi.", descriptionEn: "Telegram gift.", costCoins: 100, telegramStars: 100, art: "trophy" },
+  { slug: "tg-ring", nameUz: "Uzuk", nameEn: "Ring", descriptionUz: "Telegram sovg‘asi.", descriptionEn: "Telegram gift.", costCoins: 100, telegramStars: 100, art: "ring" },
 ];
