@@ -123,16 +123,28 @@ export function claimLocal(): number {
 }
 
 // ---------------------------------------------------------------- server copy
-/** null when the account copy is unavailable (signed out / 013 not applied). */
-export async function fetchBalance(): Promise<number | null> {
+/* Why the account copy is unavailable. This used to collapse into a single
+   null, and the shop reported every one of these causes as "migration 013 has
+   not run" — including an expired session, which is what learners actually
+   hit. Each cause now names itself so the banner can tell the truth. */
+export type CoinServer =
+  | { state: "online"; balance: number }
+  | { state: "signed-out" }   // no token, or one the server rejected
+  | { state: "not-migrated" } // the RPC is missing: 013 really has not run
+  | { state: "offline" };     // network, or a server-side failure
+
+export async function fetchBalance(): Promise<CoinServer> {
   const r = rest("rpc/coin_balance");
-  if (!r) return null;
+  if (!r) return { state: "signed-out" };
   try {
     const res = await fetch(r.url, { method: "POST", headers: r.headers, body: "{}" });
-    if (!res.ok) return null;
+    if (res.status === 401 || res.status === 403) return { state: "signed-out" };
+    // PostgREST answers 404/PGRST202 when the function is not in the schema.
+    if (res.status === 404) return { state: "not-migrated" };
+    if (!res.ok) return { state: "offline" };
     const value = await res.json();
-    return typeof value === "number" ? value : null;
-  } catch { return null; }
+    return typeof value === "number" ? { state: "online", balance: value } : { state: "offline" };
+  } catch { return { state: "offline" }; }
 }
 
 export async function fetchStreak(): Promise<number | null> {

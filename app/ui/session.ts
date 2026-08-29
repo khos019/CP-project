@@ -34,6 +34,8 @@ export type Profile = {
 export const GUEST_SCOPE = "guest";
 const TOKEN_SESSION = "algoyol-access-token";
 const TOKEN_REMEMBER = "algoyol-remember-token";
+const REFRESH_SESSION = "algoyol-refresh-token";
+const REFRESH_REMEMBER = "algoyol-remember-refresh";
 const USER_ID = "algoyol-user-id";
 
 /* Learner keys that predate namespacing; adopted once into the active scope. */
@@ -74,14 +76,23 @@ export const readToken = () =>
   typeof window === "undefined"
     ? null
     : sessionStorage.getItem(TOKEN_SESSION) || localStorage.getItem(TOKEN_REMEMBER);
+export const readRefreshToken = () =>
+  typeof window === "undefined"
+    ? null
+    : sessionStorage.getItem(REFRESH_SESSION) || localStorage.getItem(REFRESH_REMEMBER);
 export const readStoredUserId = () =>
   typeof window === "undefined" ? null : sessionStorage.getItem(USER_ID) || localStorage.getItem(USER_ID);
 
-export function storeSession(token: string, remember: boolean, userId?: string) {
+export function storeSession(token: string, remember: boolean, userId?: string, refreshToken?: string) {
   if (typeof window === "undefined") return;
   sessionStorage.setItem(TOKEN_SESSION, token);
   if (remember) localStorage.setItem(TOKEN_REMEMBER, token);
   else localStorage.removeItem(TOKEN_REMEMBER);
+  if (refreshToken) {
+    sessionStorage.setItem(REFRESH_SESSION, refreshToken);
+    if (remember) localStorage.setItem(REFRESH_REMEMBER, refreshToken);
+    else localStorage.removeItem(REFRESH_REMEMBER);
+  }
   if (userId) {
     sessionStorage.setItem(USER_ID, userId);
     if (remember) localStorage.setItem(USER_ID, userId);
@@ -91,9 +102,63 @@ export function storeSession(token: string, remember: boolean, userId?: string) 
 export function clearSession() {
   if (typeof window === "undefined") return;
   sessionStorage.removeItem(TOKEN_SESSION);
+  sessionStorage.removeItem(REFRESH_SESSION);
   sessionStorage.removeItem(USER_ID);
   localStorage.removeItem(TOKEN_REMEMBER);
+  localStorage.removeItem(REFRESH_REMEMBER);
   localStorage.removeItem(USER_ID);
+}
+
+/* A Supabase access token lives for an hour, and nothing here used to renew
+   it: the refresh token that comes back with every sign-in was thrown away.
+   An hour into a session every authenticated read therefore started failing —
+   and the shop, whose balance is an RPC call, reported that as "migration 013
+   has not run". The token is now swapped for a fresh one before it expires. */
+const EXPIRY_MARGIN_SECONDS = 120;
+
+/** Seconds-since-epoch this JWT expires at, or null if it cannot be read. */
+function tokenExpiry(token: string): number | null {
+  try {
+    const payload = token.split(".")[1];
+    if (!payload) return null;
+    const json = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/"))) as { exp?: number };
+    return typeof json.exp === "number" ? json.exp : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Trades the stored refresh token for a new access token. Null on failure —
+    the refresh token is single-use, so a rejected one means "sign in again". */
+export async function refreshSession(): Promise<string | null> {
+  const { url, key } = supabaseConfig();
+  const refresh = readRefreshToken();
+  if (!url || !key || !refresh) return null;
+  try {
+    const response = await fetch(`${url}/auth/v1/token?grant_type=refresh_token`, {
+      method: "POST",
+      headers: { apikey: key, "content-type": "application/json" },
+      body: JSON.stringify({ refresh_token: refresh }),
+    });
+    if (!response.ok) return null;
+    const result = (await response.json()) as { access_token?: string; refresh_token?: string };
+    if (!result.access_token) return null;
+    const remember = localStorage.getItem(REFRESH_REMEMBER) !== null || localStorage.getItem(TOKEN_REMEMBER) !== null;
+    storeSession(result.access_token, remember, readStoredUserId() || undefined, result.refresh_token);
+    return result.access_token;
+  } catch {
+    return null;
+  }
+}
+
+/** A token that is still valid, renewing it first when it is close to expiry.
+    Null means there is no usable session left. */
+export async function ensureFreshToken(): Promise<string | null> {
+  const token = readToken();
+  if (!token) return null;
+  const exp = tokenExpiry(token);
+  if (exp === null || exp - EXPIRY_MARGIN_SECONDS > Date.now() / 1000) return token;
+  return refreshSession();
 }
 
 /* Sign-out must not leave the previous learner's work readable by whoever uses
