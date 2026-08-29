@@ -630,25 +630,42 @@ export async function setBlocked(otherId: string, blocked: boolean): Promise<boo
   }
 }
 
-/* Who you can write to. Profiles are public by design, so this needs no
+/* Finding a person by name. Profiles are public by design, so this needs no
    privileged function, and it returns only what a profile page already shows.
-   Email is not searchable here: that is the owner's tool, not everyone's. */
-export type Person = { id: string; username: string; display_name: string; avatar_url: string | null; role: Role };
+   Email is not searchable here: that is the owner's tool, not everyone's.
+
+   Two screens ask this question — "who do I write to?" and "who is this on the
+   leaderboard?" — so the row carries rating and solves too, rather than there
+   being a second search differing only in its select list. No token is
+   required: a signed-out visitor can already read any profile, and making them
+   sign in to find one would only hide what is already public. */
+export type Person = {
+  id: string;
+  username: string;
+  display_name: string;
+  avatar_url: string | null;
+  role: Role;
+  duel_rating: number;
+  solved_count: number;
+};
 
 export async function searchPeople(query: string, limit = 12): Promise<Person[] | null> {
   const { url, key } = supabaseConfig();
   const token = readToken();
   const term = query.trim();
-  if (!url || !key || !token || term.length < 2) return [];
+  if (!url || !key || !term) return [];
   // PostgREST splits `or=(...)` on commas, so a comma in the term would read
   // as another condition. Wildcards are stripped for the same reason.
+  const headers: Record<string, string> = { apikey: key };
+  if (token) headers.Authorization = `Bearer ${token}`;
   const safe = encodeURIComponent(term.replace(/[,()*\\%_]/g, ""));
   if (!safe) return [];
   try {
     const response = await fetch(
       `${url}/rest/v1/profiles?or=(username.ilike.*${safe}*,display_name.ilike.*${safe}*)` +
-        `&select=id,username,display_name,avatar_url,role&order=username.asc&limit=${limit}`,
-      { headers: { apikey: key, Authorization: `Bearer ${token}` } },
+        `&select=id,username,display_name,avatar_url,role,duel_rating,solved_count` +
+        `&order=duel_rating.desc,username.asc&limit=${limit}`,
+      { headers },
     );
     if (!response.ok) return null;
     return (await response.json()) as Person[];

@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { fetchPersonByUsername, type PublicPerson, type Role } from "./session";
+import { fetchFriendIds } from "./social";
+import { AvatarZoom, FriendStar, SubmissionHistory } from "./social-ui";
 
 type Lang = "uz" | "en";
 
@@ -90,6 +92,7 @@ export function PublicProfile({
   const t = T[lang];
   const [person, setPerson] = useState<PublicPerson | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "not-found" | "error">("loading");
+  const [isFriend, setIsFriend] = useState(false);
 
   /* No reset of state here: the parent keys this screen by the handle, so a
      different handle is a different component and starts at "loading" on its
@@ -109,6 +112,19 @@ export function PublicProfile({
       live = false;
     };
   }, [username]);
+
+  /* Whether the star is lit is about the viewer, not about this page, so it is
+     read separately — the profile renders without waiting for it. */
+  useEffect(() => {
+    if (!signedIn) return;
+    let live = true;
+    fetchFriendIds().then((ids) => {
+      if (live && ids && person) setIsFriend(ids.has(person.id));
+    });
+    return () => {
+      live = false;
+    };
+  }, [signedIn, person]);
 
   const isMe = !!person && !!meId && person.id === meId;
   const name = person ? person.display_name || person.username : username;
@@ -145,12 +161,23 @@ export function PublicProfile({
       {state === "ready" && person && (
         <>
           <section className="panel pp-card">
-            <span className="pp-avatar" aria-hidden>
-              {person.avatar_url ? <img src={person.avatar_url} alt="" /> : initialsOf(name)}
-            </span>
+            <AvatarZoom lang={lang} src={person.avatar_url} name={name}>
+              <span className="pp-avatar" aria-hidden>
+                {person.avatar_url ? <img src={person.avatar_url} alt="" /> : initialsOf(name)}
+              </span>
+            </AvatarZoom>
             <div className="pp-identity">
               <p className="eyebrow">{t.eyebrow}</p>
               <h1>
+                {!isMe && (
+                  <FriendStar
+                    lang={lang}
+                    isFriend={isFriend}
+                    signedIn={signedIn}
+                    userId={person.id}
+                    onChange={setIsFriend}
+                  />
+                )}
                 {name}
                 {t.roles[person.role] && <i className="pp-role">{t.roles[person.role]}</i>}
               </h1>
@@ -203,6 +230,8 @@ export function PublicProfile({
               <small>{t.solved}</small>
             </div>
           </div>
+
+          <SubmissionHistory lang={lang} userId={person.id} isMe={isMe} signedIn={signedIn} />
         </>
       )}
     </>
