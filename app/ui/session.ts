@@ -349,6 +349,16 @@ export type OwnerStats = {
   active_today: number; active_7d: number; active_30d: number;
   never_signed_in: number; confirmed: number; unconfirmed: number;
   signups_daily: { day: string; count: number }[];
+  /* Time on the platform, added by migration 014. Optional because an owner
+     whose database still has only 009 installed gets a reply without these
+     keys, and zeros there would read as "nobody came" rather than "not
+     measured yet". */
+  online_daily?: { day: string; seconds: number; learners: number }[];
+  online_today_seconds?: number;
+  online_today_learners?: number;
+  online_7d_seconds?: number;
+  online_30d_seconds?: number;
+  online_max_day_seconds?: number;
   by_language: Record<string, number>;
   by_role: Record<string, number>;
   rating_avg: number; rating_max: number;

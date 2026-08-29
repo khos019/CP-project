@@ -8,10 +8,10 @@ type Lang = "uz" | "en";
 
 /* Owner dashboard.
  *
- * Every figure comes from migration 009's security-definer aggregate. Nothing
- * here is estimated or extrapolated: where the platform does not yet record
- * something (source-level submissions, session duration, page views) the metric
- * is absent rather than guessed at.
+ * Every figure comes from one security-definer aggregate (migration 009, and
+ * 014 for the time figures). Nothing here is estimated or extrapolated: where
+ * the platform does not yet record something (source-level submissions, page
+ * views) the metric is absent rather than guessed at.
  *
  * Charts are single-series on purpose. The three brand limes fail a categorical
  * palette check against each other — worst adjacent pair ΔE 5.1 under protanopia
@@ -42,6 +42,23 @@ const T = {
     signups: "Ro‘yxatdan o‘tish · oxirgi 30 kun",
     signupsHint: "Kunlik yangi hisoblar. Ustunga bosing — o‘sha kuni kim qo‘shilganini ko‘rasiz.",
     noSignups: "Oxirgi 30 kunda yangi hisob yo‘q.",
+    online: "Onlayn vaqt",
+    onlineChart: "Kunlik onlayn vaqt · oxirgi 30 kun",
+    onlineHint: "Barcha o‘quvchilarning jami faol vaqti. Kunni ko‘rish uchun grafik ustida yuring.",
+    noOnline: "Oxirgi 30 kunda faol vaqt qayd etilmagan.",
+    onlineToday: "Bugun jami",
+    onlineTodayWho: "Bugun onlayn bo‘lgan",
+    onlineAvg: "O‘rtacha (bugun)",
+    online7: "7 kunda jami",
+    online30: "30 kunda jami",
+    onlineMax: "Eng uzun kun (1 kishi)",
+    onlineNote:
+      "Vaqt brauzer ochiq va varaq ko‘rinib turgan paytda, daqiqada bir marta serverga yoziladi (013-migratsiya). Fon rejimidagi varaq hisoblanmaydi.",
+    onlineMissing:
+      "Onlayn vaqt hali qo‘shilmagan. 014_owner_online_time.sql migratsiyasini SQL Editor’da ishga tushiring.",
+    hour: "soat",
+    minute: "daqiqa",
+    second: "soniya",
     learning: "O‘rganish faoliyati",
     withProgress: "Progressi bor",
     unitsDone: "Bosqich tugatilgan",
@@ -59,7 +76,7 @@ const T = {
     maxRating: "Eng yuqori",
     notTracked: "Hali kuzatilmaydi",
     notTrackedBody:
-      "Sahifa ko‘rishlari, sessiya davomiyligi va duel tarixi hozircha serverda saqlanmaydi, shuning uchun bu yerda ko‘rsatilmaydi. Duel natijalari va yechilgan masalalar hozir faqat brauzerda saqlanadi.",
+      "Sahifa ko‘rishlari va duel tarixi hozircha serverda saqlanmaydi, shuning uchun bu yerda ko‘rsatilmaydi. Duel natijalari hozir faqat brauzerda saqlanadi.",
     today: "bugun",
   },
   en: {
@@ -86,6 +103,23 @@ const T = {
     signups: "Sign-ups · last 30 days",
     signupsHint: "New accounts per day. Click a bar to see who joined that day.",
     noSignups: "No new accounts in the last 30 days.",
+    online: "Time online",
+    onlineChart: "Time online per day · last 30 days",
+    onlineHint: "Engaged time across all learners. Hover the chart to read a day.",
+    noOnline: "No engaged time recorded in the last 30 days.",
+    onlineToday: "Today, all learners",
+    onlineTodayWho: "Online today",
+    onlineAvg: "Average (today)",
+    online7: "Last 7 days",
+    online30: "Last 30 days",
+    onlineMax: "Longest single day (one learner)",
+    onlineNote:
+      "Time is banked once a minute while the tab is open and visible (migration 013). A backgrounded tab does not count.",
+    onlineMissing:
+      "Time online is not installed yet. Run 014_owner_online_time.sql in the SQL Editor.",
+    hour: "h",
+    minute: "m",
+    second: "s",
     learning: "Learning activity",
     withProgress: "Have progress",
     unitsDone: "Units completed",
@@ -103,7 +137,7 @@ const T = {
     maxRating: "Highest",
     notTracked: "Not tracked yet",
     notTrackedBody:
-      "Page views, session length and duel history are not stored on the server, so they are not shown here. Duel results and solved problems currently live only in the browser.",
+      "Page views and duel history are not stored on the server, so they are not shown here. Duel results currently live only in the browser.",
     today: "today",
   },
 };
@@ -120,6 +154,19 @@ const MONTHS_SHORT = {
 const dayLabel = (iso: string, lang: Lang) => {
   const d = new Date(`${iso}T00:00:00Z`);
   return `${d.getUTCDate()} ${MONTHS_SHORT[lang][d.getUTCMonth()]}`;
+};
+
+/* Seconds are what the server banks; hours are what an owner reads. Anything
+   under a minute stays in seconds rather than rounding to "0 daqiqa", which
+   would make a real short visit look like no visit at all. */
+const duration = (seconds: number, t: (typeof T)["uz"], lang: Lang) => {
+  const s = Math.max(0, Math.round(seconds));
+  const join = (n: number, unit: string) => (lang === "uz" ? `${n} ${unit}` : `${n}${unit}`);
+  if (s < 60) return join(s, t.second);
+  const hours = Math.floor(s / 3600);
+  const minutes = Math.round((s % 3600) / 60);
+  if (!hours) return join(minutes, t.minute);
+  return minutes ? `${join(hours, t.hour)} ${join(minutes, t.minute)}` : join(hours, t.hour);
 };
 
 export function OwnerStats({ lang, goProfile, onPickDay }: { lang: Lang; goProfile: () => void; onPickDay: (day: string) => void }) {
@@ -202,6 +249,19 @@ function StatsBody({ lang, t, stats, onPickDay }: { lang: Lang; t: (typeof T)["u
     [stats],
   );
   const roleRows = useMemo(() => Object.entries(stats.by_role || {}).sort((a, b) => b[1] - a[1]), [stats]);
+  /* Null until migration 014 is installed — the difference between "no time
+     recorded" and "time is not recorded" is the whole point of the section. */
+  const online = useMemo(() => {
+    if (!stats.online_daily) return null;
+    return {
+      series: stats.online_daily,
+      today: stats.online_today_seconds || 0,
+      todayLearners: stats.online_today_learners || 0,
+      week: stats.online_7d_seconds || 0,
+      month: stats.online_30d_seconds || 0,
+      maxDay: stats.online_max_day_seconds || 0,
+    };
+  }, [stats]);
 
   return (
     <>
@@ -221,8 +281,54 @@ function StatsBody({ lang, t, stats, onPickDay }: { lang: Lang; t: (typeof T)["u
 
       <section className="os-section">
         <div className="panel">
-          <SignupChart lang={lang} t={t} series={stats.signups_daily || []} onPickDay={onPickDay} />
+          <DayBars
+            lang={lang}
+            t={t}
+            title={t.signups}
+            hint={t.signupsHint}
+            emptyText={t.noSignups}
+            series={(stats.signups_daily || []).map((d) => ({ day: d.day, value: d.count }))}
+            format={(v) => String(v)}
+            onPick={onPickDay}
+          />
         </div>
+      </section>
+
+      <section className="os-section">
+        <h2 className="os-h2">{t.online}</h2>
+        {online ? (
+          <>
+            <div className="os-tiles">
+              <Tile label={t.onlineToday} value={duration(online.today, t, lang)} accent />
+              <Tile label={t.onlineTodayWho} value={online.todayLearners} accent />
+              <Tile
+                label={t.onlineAvg}
+                value={online.todayLearners ? duration(online.today / online.todayLearners, t, lang) : "—"}
+              />
+              <Tile label={t.online7} value={duration(online.week, t, lang)} />
+              <Tile label={t.online30} value={duration(online.month, t, lang)} />
+              <Tile label={t.onlineMax} value={duration(online.maxDay, t, lang)} />
+            </div>
+            <div className="panel" style={{ marginTop: 16 }}>
+              <DayBars
+                lang={lang}
+                t={t}
+                title={t.onlineChart}
+                hint={t.onlineHint}
+                emptyText={t.noOnline}
+                series={online.series.map((d) => ({ day: d.day, value: d.seconds }))}
+                format={(v) => duration(v, t, lang)}
+              />
+            </div>
+            <p className="muted os-empty">{t.onlineNote}</p>
+          </>
+        ) : (
+          // 009 answers without these keys, and zeros would read as "nobody
+          // came" rather than "not measured here yet".
+          <div className="panel">
+            <div className="notice notice-info">{t.onlineMissing}</div>
+          </div>
+        )}
       </section>
 
       <section className="os-section">
@@ -269,7 +375,7 @@ function StatsBody({ lang, t, stats, onPickDay }: { lang: Lang; t: (typeof T)["u
   );
 }
 
-function Tile({ label, value, accent }: { label: string; value: number; accent?: boolean }) {
+function Tile({ label, value, accent }: { label: string; value: number | string; accent?: boolean }) {
   return (
     <div className={accent ? "os-tile accent" : "os-tile"}>
       <b className="mono">{value}</b>
@@ -281,20 +387,30 @@ function Tile({ label, value, accent }: { label: string; value: number; accent?:
 /* Daily counts over a fixed 30-day window: discrete time buckets, so bars, not a
    line. Zero days are drawn as a baseline tick so "nobody joined" reads as a
    real zero rather than missing data. */
-function SignupChart({
+function DayBars({
   lang,
   t,
+  title,
+  hint,
+  emptyText,
   series,
-  onPickDay,
+  format,
+  onPick,
 }: {
   lang: Lang;
   t: (typeof T)["uz"];
-  series: { day: string; count: number }[];
-  onPickDay: (day: string) => void;
+  title: string;
+  hint: string;
+  emptyText: string;
+  series: { day: string; value: number }[];
+  /* Sign-ups are a count and online time is a duration; the bars are the same
+     shape either way, so only the readout differs. */
+  format: (value: number) => string;
+  onPick?: (day: string) => void;
 }) {
   const [focus, setFocus] = useState<number | null>(null);
-  const max = Math.max(1, ...series.map((d) => d.count));
-  const total = series.reduce((n, d) => n + d.count, 0);
+  const max = Math.max(1, ...series.map((d) => d.value));
+  const total = series.reduce((n, d) => n + d.value, 0);
   const shown = focus !== null && series[focus] ? series[focus] : null;
 
   const W = 100;
@@ -305,16 +421,16 @@ function SignupChart({
   return (
     <figure className="os-chart">
       <figcaption>
-        <h2 className="os-h2">{t.signups}</h2>
+        <h2 className="os-h2">{title}</h2>
         <p className="muted os-chart-hint">
           {shown ? (
             <>
-              <b className="mono">{shown.count}</b> · {dayLabel(shown.day, lang)}
+              <b className="mono">{format(shown.value)}</b> · {dayLabel(shown.day, lang)}
             </>
           ) : total === 0 ? (
-            t.noSignups
+            emptyText
           ) : (
-            t.signupsHint
+            hint
           )}
         </p>
       </figcaption>
@@ -326,7 +442,7 @@ function SignupChart({
         viewBox={`0 0 ${W} ${H + 6}`}
         preserveAspectRatio="none"
         role="img"
-        aria-label={`${t.signups}: ${total}`}
+        aria-label={`${title}: ${format(total)}`}
         onPointerMove={(e) => {
           const box = e.currentTarget.getBoundingClientRect();
           if (!box.width || !series.length) return;
@@ -338,16 +454,16 @@ function SignupChart({
           // Statistics stays aggregate; the names live on the Users page, which
           // is also where anything can be done about them. So a bar does not
           // expand here, it opens that page already filtered to its day.
-          if (shown && shown.count > 0) onPickDay(shown.day);
+          if (onPick && shown && shown.value > 0) onPick(shown.day);
         }}
-        style={{ cursor: shown && shown.count > 0 ? "pointer" : "default" }}
+        style={{ cursor: onPick && shown && shown.value > 0 ? "pointer" : "default" }}
       >
         <line x1="0" y1={H} x2={W} y2={H} className="os-axis" vectorEffect="non-scaling-stroke" />
         {focus !== null && (
           <rect x={focus * (barW + gap) - gap / 2} y="0" width={barW + gap} height={H} className="os-guide" />
         )}
         {series.map((d, i) => {
-          const h = d.count === 0 ? 0.9 : Math.max(1.6, (d.count / max) * (H - 3));
+          const h = d.value === 0 ? 0.9 : Math.max(1.6, (d.value / max) * (H - 3));
           const x = i * (barW + gap);
           return (
             <rect
@@ -357,9 +473,9 @@ function SignupChart({
               width={barW}
               height={h}
               rx="0.5"
-              className={`os-bar${d.count === 0 ? " zero" : ""}${focus === i ? " on" : ""}`}
+              className={`os-bar${d.value === 0 ? " zero" : ""}${focus === i ? " on" : ""}`}
             >
-              <title>{`${dayLabel(d.day, lang)}: ${d.count}`}</title>
+              <title>{`${dayLabel(d.day, lang)}: ${format(d.value)}`}</title>
             </rect>
           );
         })}
