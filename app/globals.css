@@ -728,3 +728,4 @@ body{background:radial-gradient(circle at 12% -10%,rgba(119,210,68,.13),transpar
 .code-view{margin:0;padding:18px;border-radius:14px;background:#060a08;border:1px solid #1e2d25;color:#c8f7d3;font-family:var(--font-mono);font-size:13px;line-height:1.65;white-space:pre;overflow-x:auto}
 .code-locked{display:grid;gap:10px;justify-items:center;text-align:center;padding:34px 18px;border:1px dashed #2b3d33;border-radius:16px}
 .code-locked>span{font-size:30px}
+.pp-subs{width:100%;text-align:left}

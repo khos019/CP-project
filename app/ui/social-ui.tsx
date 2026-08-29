@@ -7,9 +7,10 @@
    how the two sides end up disagreeing about who may read what. */
 
 import { useEffect, useState } from "react";
+import { fetchPersonByUsername } from "./session";
 import {
-  addFriend, fetchSubmissionCode, fetchSubmissions, removeFriend, unlockSubmissionCode,
-  type CodeResult, type SubmissionRow,
+  addFriend, fetchFriends, fetchSubmissionCode, fetchSubmissions, removeFriend, unlockSubmissionCode,
+  type CodeResult, type FriendRow, type SubmissionRow,
 } from "./social";
 
 type Lang = "uz" | "en";
@@ -42,6 +43,15 @@ const T = {
     close: "Yopish",
     whyPaid: "Masalani o‘zingiz yechsangiz, boshqalarning kodi shu masala uchun bepul ochiladi.",
     avatarOpen: "Rasmni kattalashtirish",
+    friendsTitle: "Do‘stlarim",
+    friendsSub: "Yulduzcha bosgan odamlaringiz. Ismiga bosing — profili ochiladi.",
+    friendsEmpty: "Hali hech kim qo‘shilmagan. Kimningdir profilini ochib, ismi yonidagi ☆ ni bosing.",
+    remove: "Ro‘yxatdan olib tashlash",
+    back: "Profilga qaytish",
+    backPerson: "Profilga qaytish",
+    mySubs: "Yechimlarim",
+    theirSubs: (who: string) => `${who} — yuborilgan yechimlar`,
+    openSubs: "Yechimlarini ko‘rish",
     verdicts: {
       ACCEPTED: "Qabul qilindi", WRONG_ANSWER: "Noto‘g‘ri javob", COMPILATION_ERROR: "Kompilyatsiya xatosi",
       RUNTIME_ERROR: "Bajarilish xatosi", TIME_LIMIT_EXCEEDED: "Vaqt chegarasi", MEMORY_LIMIT_EXCEEDED: "Xotira chegarasi",
@@ -75,6 +85,15 @@ const T = {
     close: "Close",
     whyPaid: "Solve the problem yourself and everyone's code for it opens for free.",
     avatarOpen: "Enlarge the picture",
+    friendsTitle: "My friends",
+    friendsSub: "The people you starred. Click a name to open their profile.",
+    friendsEmpty: "Nobody here yet. Open somebody's profile and press the ☆ beside their name.",
+    remove: "Remove from the list",
+    back: "Back to profile",
+    backPerson: "Back to profile",
+    mySubs: "My submissions",
+    theirSubs: (who: string) => `${who} — submissions`,
+    openSubs: "See their submissions",
     verdicts: {
       ACCEPTED: "Accepted", WRONG_ANSWER: "Wrong answer", COMPILATION_ERROR: "Compilation error",
       RUNTIME_ERROR: "Runtime error", TIME_LIMIT_EXCEEDED: "Time limit", MEMORY_LIMIT_EXCEEDED: "Memory limit",
@@ -205,7 +224,6 @@ export function SubmissionHistory({
 
   return (
     <section className="panel">
-      <h2 className="os-h2">{t.submissions}</h2>
       {state === "loading" && <p className="muted os-empty">{t.loading}</p>}
       {state === "error" && <p className="muted os-empty">{t.failed}</p>}
       {state === "missing" && <p className="muted os-empty">{t.missing}</p>}
@@ -329,5 +347,179 @@ function CodeViewer({
         {note && <p className="quiz-result">{note}</p>}
       </div>
     </div>
+  );
+}
+
+/* The two screens the profile used to carry inline. They were a scroll away at
+   the bottom of a page nobody scrolls, which is the same as not being there:
+   both are now a button in the profile header and a URL of their own. */
+export function FriendsScreen({
+  lang, onBack, onOpenPerson,
+}: {
+  lang: Lang;
+  onBack: () => void;
+  onOpenPerson: (handle: string) => void;
+}) {
+  const t = T[lang];
+  const [rows, setRows] = useState<FriendRow[] | null>(null);
+  const [state, setState] = useState<"loading" | "ready" | "error">("loading");
+
+  useEffect(() => {
+    let live = true;
+    fetchFriends().then((list) => {
+      if (!live) return;
+      if (!list) {
+        setState("error");
+        return;
+      }
+      setRows(list);
+      setState("ready");
+    });
+    return () => {
+      live = false;
+    };
+  }, []);
+
+  const drop = async (id: string) => {
+    setRows((prev) => (prev ? prev.filter((r) => r.id !== id) : prev));
+    await removeFriend(id);
+  };
+
+  return (
+    <>
+      <button className="crumb crumb-btn" onClick={onBack}>
+        ← {t.back}
+      </button>
+      <div className="page-head">
+        <div>
+          <p className="eyebrow">★</p>
+          <h1 className="page-title">{t.friendsTitle}</h1>
+          <p className="muted">{t.friendsSub}</p>
+        </div>
+        {rows && rows.length > 0 && <span className="tag">{rows.length}</span>}
+      </div>
+      {state === "loading" && (
+        <div className="screen-state" role="status">
+          <span className="spinner" aria-hidden />
+          <p className="muted">{t.loading}</p>
+        </div>
+      )}
+      {state === "error" && (
+        <div className="panel">
+          <div className="notice notice-error">{t.failed}</div>
+        </div>
+      )}
+      {state === "ready" && rows && !rows.length && (
+        <div className="screen-state panel">
+          <p className="muted">{t.friendsEmpty}</p>
+        </div>
+      )}
+      {state === "ready" && rows && rows.length > 0 && (
+        <ul className="friend-list">
+          {rows.map((f) => (
+            <li key={f.id}>
+              <button type="button" className="friend-open" onClick={() => onOpenPerson(f.username)}>
+                <span className="friend-face" aria-hidden>
+                  {f.avatar_url ? <img src={f.avatar_url} alt="" /> : (f.display_name || f.username).slice(0, 1).toUpperCase()}
+                </span>
+                <span className="friend-who">
+                  <b>{f.display_name?.trim() || f.username}</b>
+                  <small className="muted">@{f.username}</small>
+                </span>
+                <span className="tag">{f.solved_count} AC</span>
+                <span className="rating">{f.duel_rating}</span>
+              </button>
+              <button type="button" className="friend-drop" onClick={() => drop(f.id)} title={t.remove} aria-label={t.remove}>
+                ★
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </>
+  );
+}
+
+export function SubmissionsScreen({
+  lang, userId, who, isMe, signedIn, onBack,
+}: {
+  lang: Lang;
+  userId: string;
+  who: string;
+  isMe: boolean;
+  signedIn: boolean;
+  onBack: () => void;
+}) {
+  const t = T[lang];
+  return (
+    <>
+      <button className="crumb crumb-btn" onClick={onBack}>
+        ← {isMe ? t.back : t.backPerson}
+      </button>
+      <div className="page-head">
+        <div>
+          <p className="eyebrow">{t.submissions}</p>
+          <h1 className="page-title">{isMe ? t.mySubs : t.theirSubs(who)}</h1>
+        </div>
+      </div>
+      <SubmissionHistory lang={lang} userId={userId} isMe={isMe} signedIn={signedIn} />
+    </>
+  );
+}
+
+/* /u/<handle>/submissions is a link somebody can be sent, so it has to work
+   without having been to the profile first: the handle is resolved here rather
+   than being handed down from a screen that may never have rendered. */
+export function PersonSubmissions({
+  lang, handle, meId, signedIn, onBack,
+}: {
+  lang: Lang;
+  handle: string;
+  meId: string | null;
+  signedIn: boolean;
+  onBack: () => void;
+}) {
+  const t = T[lang];
+  const [person, setPerson] = useState<{ id: string; name: string } | null>(null);
+  const [state, setState] = useState<"loading" | "ready" | "missing">("loading");
+
+  useEffect(() => {
+    let live = true;
+    fetchPersonByUsername(handle).then((result) => {
+      if (!live) return;
+      if (!result.ok) {
+        setState("missing");
+        return;
+      }
+      setPerson({ id: result.person.id, name: result.person.display_name || result.person.username });
+      setState("ready");
+    });
+    return () => {
+      live = false;
+    };
+  }, [handle]);
+
+  if (state === "loading")
+    return (
+      <div className="screen-state" role="status">
+        <span className="spinner" aria-hidden />
+        <p className="muted">{t.loading}</p>
+      </div>
+    );
+  if (state === "missing" || !person)
+    return (
+      <div className="panel">
+        <div className="notice notice-error">{t.failed}</div>
+      </div>
+    );
+  return (
+    <SubmissionsScreen
+      lang={lang}
+      userId={person.id}
+      who={person.name}
+      isMe={!!meId && meId === person.id}
+      signedIn={signedIn}
+      onBack={onBack}
+    />
   );
 }

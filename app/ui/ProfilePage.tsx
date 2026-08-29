@@ -6,8 +6,7 @@ import { loadMastery, loadMasteryLog, loadDuelHistory, masteryLabel, MASTERY_CON
 import { emptyProgress, loadProgress, type Progress } from "./progress";
 import { uploadAvatar, avatarStorageReady } from "./avatar";
 import { hasExtendedProfile, updateProfile, type Profile, type Role } from "./session";
-import { fetchFriends, removeFriend, type FriendRow } from "./social";
-import { AvatarZoom, SubmissionHistory } from "./social-ui";
+import { AvatarZoom } from "./social-ui";
 
 type Lang = "uz" | "en";
 
@@ -24,6 +23,8 @@ const T = {
     stats: "Statistika",
     users: "Foydalanuvchilar",
     messages: "Xabarlar",
+    friends: "Do‘stlarim",
+    submissions: "Yechimlarim",
     joined: "Qo‘shildi",
     rating: "Duel reytingi",
     units: "Tugatilgan bosqichlar",
@@ -81,6 +82,8 @@ const T = {
     stats: "Statistics",
     users: "Users",
     messages: "Messages",
+    friends: "Friends",
+    submissions: "Submissions",
     joined: "Joined",
     rating: "Duel rating",
     units: "Units completed",
@@ -177,7 +180,8 @@ export function ProfilePage({
   goRoadmaps,
   openRoadmap,
   isStaff,
-  onOpenPerson,
+  goFriends,
+  goSubmissions,
 }: {
   lang: Lang;
   profile: Profile;
@@ -191,7 +195,8 @@ export function ProfilePage({
   goRoadmaps: () => void;
   openRoadmap: (slug: string) => void;
   isStaff: boolean;
-  onOpenPerson: (handle: string) => void;
+  goFriends: () => void;
+  goSubmissions: () => void;
 }) {
   const t = T[lang];
   const [editing, setEditing] = useState(false);
@@ -290,6 +295,12 @@ export function ProfilePage({
               {t.users}
             </button>
           )}
+          <button className="secondary" onClick={goSubmissions}>
+            {t.submissions}
+          </button>
+          <button className="secondary" onClick={goFriends}>
+            {t.friends}
+          </button>
           <button className="secondary" onClick={goMessages}>
             {t.messages}
           </button>
@@ -409,9 +420,6 @@ export function ProfilePage({
         </section>
       </div>
 
-      <Friends lang={lang} onOpenPerson={onOpenPerson} />
-
-      <SubmissionHistory lang={lang} userId={profile.id} isMe signedIn />
     </>
   );
 }
@@ -731,70 +739,5 @@ function Field({
         </small>
       ) : null}
     </div>
-  );
-}
-
-/* Your own list, which is the other half of the star: adding somebody has to
-   lead somewhere, or it is a button that does nothing visible. Removing is
-   here rather than on their profile too, because that is where you go when you
-   are tidying up. */
-function Friends({ lang, onOpenPerson }: { lang: Lang; onOpenPerson: (handle: string) => void }) {
-  const [rows, setRows] = useState<FriendRow[] | null>(null);
-  const [state, setState] = useState<"loading" | "ready" | "error">("loading");
-
-  useEffect(() => {
-    let live = true;
-    fetchFriends().then((list) => {
-      if (!live) return;
-      if (!list) {
-        setState("error");
-        return;
-      }
-      setRows(list);
-      setState("ready");
-    });
-    return () => {
-      live = false;
-    };
-  }, []);
-
-  const drop = async (id: string) => {
-    setRows((prev) => (prev ? prev.filter((r) => r.id !== id) : prev));
-    await removeFriend(id);
-  };
-
-  const copy = lang === "uz"
-    ? { title: "Do‘stlarim", empty: "Hali hech kim qo‘shilmagan. Kimningdir profilini ochib, ismi yonidagi ☆ ni bosing.", loading: "Yuklanmoqda…", failed: "Ro‘yxatni olib bo‘lmadi.", remove: "Ro‘yxatdan olib tashlash" }
-    : { title: "My friends", empty: "Nobody here yet. Open somebody's profile and press the ☆ beside their name.", loading: "Loading…", failed: "Could not load the list.", remove: "Remove from the list" };
-
-  return (
-    <section className="panel">
-      <h2>{copy.title}</h2>
-      {state === "loading" && <p className="muted">{copy.loading}</p>}
-      {state === "error" && <p className="muted">{copy.failed}</p>}
-      {state === "ready" && rows && !rows.length && <p className="muted">{copy.empty}</p>}
-      {state === "ready" && rows && rows.length > 0 && (
-        <ul className="friend-list">
-          {rows.map((f) => (
-            <li key={f.id}>
-              <button type="button" className="friend-open" onClick={() => onOpenPerson(f.username)}>
-                <span className="friend-face" aria-hidden>
-                  {f.avatar_url ? <img src={f.avatar_url} alt="" /> : (f.display_name || f.username).slice(0, 1).toUpperCase()}
-                </span>
-                <span className="friend-who">
-                  <b>{f.display_name?.trim() || f.username}</b>
-                  <small className="muted">@{f.username}</small>
-                </span>
-                <span className="tag">{f.solved_count} AC</span>
-                <span className="rating">{f.duel_rating}</span>
-              </button>
-              <button type="button" className="friend-drop" onClick={() => drop(f.id)} title={copy.remove} aria-label={copy.remove}>
-                ★
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
   );
 }

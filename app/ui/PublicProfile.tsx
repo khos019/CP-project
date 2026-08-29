@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { fetchPersonByUsername, type PublicPerson, type Role } from "./session";
 import { fetchFriendIds } from "./social";
-import { AvatarZoom, FriendStar, SubmissionHistory } from "./social-ui";
+import { AvatarZoom, FriendStar } from "./social-ui";
 
 type Lang = "uz" | "en";
 
@@ -31,6 +31,7 @@ const T = {
     joined: "Qo‘shildi",
     rating: "Duel reytingi",
     solved: "Yechilgan masalalar",
+    submissions: "Yuborilgan yechimlarini ko‘rish",
     self: "Bu sizning hisobingiz",
     myProfile: "Profilimni ochish",
     signInToWrite: "Xabar yozish uchun hisobingizga kiring.",
@@ -48,6 +49,7 @@ const T = {
     joined: "Joined",
     rating: "Duel rating",
     solved: "Problems solved",
+    submissions: "See their submissions",
     self: "This is your account",
     myProfile: "Open my profile",
     signInToWrite: "Sign in to send a message.",
@@ -79,6 +81,7 @@ export function PublicProfile({
   onMessage,
   onMyProfile,
   onSignIn,
+  onOpenSubmissions,
 }: {
   lang: Lang;
   username: string;
@@ -88,6 +91,7 @@ export function PublicProfile({
   onMessage: (userId: string) => void;
   onMyProfile: () => void;
   onSignIn: () => void;
+  onOpenSubmissions: (handle: string) => void;
 }) {
   const t = T[lang];
   const [person, setPerson] = useState<PublicPerson | null>(null);
@@ -231,7 +235,9 @@ export function PublicProfile({
             </div>
           </div>
 
-          <SubmissionHistory lang={lang} userId={person.id} isMe={isMe} signedIn={signedIn} />
+          <button className="secondary pp-subs" onClick={() => onOpenSubmissions(person.username)}>
+            {t.submissions} →
+          </button>
         </>
       )}
     </>
