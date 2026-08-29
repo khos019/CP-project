@@ -48,13 +48,20 @@ const T = {
   },
 };
 
-export function Shop({ lang, signed }: { lang: Lang; signed: boolean }) {
+/* `authLoading` exists for the same reason as `probed` below: a stored token
+   is still being verified on the first paint, so a signed-in learner would
+   otherwise be told they are signed out for as long as that takes. */
+export function Shop({ lang, signed, authLoading }: { lang: Lang; signed: boolean; authLoading: boolean }) {
   const t = T[lang];
   const [items, setItems] = useState<ShopItem[]>(FALLBACK_ITEMS);
   const [balance, setBalance] = useState(0);
   const [streak, setStreak] = useState(0);
   const [server, setServer] = useState(false);
   const [offline, setOffline] = useState<Exclude<CoinServer["state"], "online">>("offline");
+  // "The server is unreachable" is a claim about a request that has come back.
+  // Until the first read resolves we know nothing, and saying anything at all
+  // means flashing a failure notice at every learner for a second.
+  const [probed, setProbed] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
   const [telegram, setTelegram] = useState("");
   const [message, setMessage] = useState("");
@@ -71,13 +78,16 @@ export function Shop({ lang, signed }: { lang: Lang; signed: boolean }) {
     setStreak(remoteStreak !== null ? remoteStreak : localStreak());
     if (remoteItems?.length) setItems(remoteItems);
     if (remoteOrders) setOrders(remoteOrders);
+    setProbed(true);
   };
   useEffect(() => {
+    // Re-read once the session resolves: the first pass can run against a
+    // token still being renewed, and its answer would stick otherwise.
     // refresh awaits the four reads before it sets anything, so nothing is
     // written during this render; the rule cannot see past the async boundary.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void refresh();
-  }, []);
+  }, [signed]);
 
   const act = readActivity()[new Date().toISOString().slice(0, 10)] || { activeSeconds: 0, duels: 0 };
   const upcoming = nextMilestone(streak);
@@ -117,8 +127,8 @@ export function Shop({ lang, signed }: { lang: Lang; signed: boolean }) {
         <span className="coin-balance"><span className="coin-chip">◎</span> {balance} <small>{t.coins}</small></span>
       </div>
 
-      {!signed && <div className="notice" style={{ marginBottom: 16 }}>{t.localWarn}</div>}
-      {signed && !server && (
+      {!signed && !authLoading && <div className="notice" style={{ marginBottom: 16 }}>{t.localWarn}</div>}
+      {signed && probed && !server && (
         <div className="notice" style={{ marginBottom: 16 }}>
           {offline === "signed-out" ? t.expired : offline === "not-migrated" ? t.notMigrated : t.offline}
         </div>
