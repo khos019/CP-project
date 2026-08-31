@@ -142,7 +142,7 @@ function DPTable() {
 
 function StackDiagram() {
   return (
-    <Frame label="Stek: oxirgi kirgan birinchi chiqadi">
+    <Frame label="Stack: oxirgi kirgan birinchi chiqadi">
       {[0, 1, 2, 3].map(i => (
         <g key={i}>
           {cell(200, 108 - i * 26, 120, 22, i === 3 ? "#12261a" : "#0d1310", i === 3 ? "#3f7a44" : C.dim)}
@@ -165,7 +165,7 @@ function SortDiagram() {
   const before = [5, 2, 8, 1, 9, 3];
   const after = [...before].sort((a, b) => a - b);
   return (
-    <Frame label="Saralash: tartibsizlikdan tartibga">
+    <Frame label="Sorting: tartibsizlikdan tartibga">
       {before.map((v, i) => (
         <g key={`b${i}`}>
           {cell(40 + i * 74, 20, 64, 28, "#0d1310")}
@@ -187,7 +187,7 @@ function TreeDiagram() {
   const nodes: [number, number][] = [[260, 28], [170, 76], [350, 76], [120, 124], [220, 124], [400, 124]];
   const edges: [number, number][] = [[0, 1], [0, 2], [1, 3], [1, 4], [2, 5]];
   return (
-    <Frame label="Daraxt: sikli yo‘q bog‘langan graf">
+    <Frame label="Tree: sikli yo‘q bog‘langan graph">
       {edges.map(([a, b], i) => (
         <line key={i} x1={nodes[a][0]} y1={nodes[a][1]} x2={nodes[b][0]} y2={nodes[b][1]} stroke={C.line} strokeWidth="1.5" />
       ))}
