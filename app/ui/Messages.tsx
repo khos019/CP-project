@@ -170,6 +170,9 @@ export function Messages({
   }, []);
 
   useEffect(() => {
+    // loadThreads awaits the request before it sets anything, so no state is
+    // written during this render; the rule cannot see past the async boundary.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void loadThreads();
   }, [loadThreads]);
 
@@ -192,6 +195,10 @@ export function Messages({
   // Arriving from "write to this person" on another screen.
   useEffect(() => {
     if (!openWith) return;
+    // Opening a thread does select it synchronously, on purpose: arriving from
+    // "write to this person" should show that conversation on the next paint
+    // rather than a blank pane that fills in later.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void openThread(openWith);
     onOpened?.();
   }, [openWith, openThread, onOpened]);

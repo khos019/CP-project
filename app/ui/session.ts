@@ -34,6 +34,8 @@ export type Profile = {
 export const GUEST_SCOPE = "guest";
 const TOKEN_SESSION = "algoyol-access-token";
 const TOKEN_REMEMBER = "algoyol-remember-token";
+const REFRESH_SESSION = "algoyol-refresh-token";
+const REFRESH_REMEMBER = "algoyol-remember-refresh";
 const USER_ID = "algoyol-user-id";
 
 /* Learner keys that predate namespacing; adopted once into the active scope. */
@@ -74,14 +76,23 @@ export const readToken = () =>
   typeof window === "undefined"
     ? null
     : sessionStorage.getItem(TOKEN_SESSION) || localStorage.getItem(TOKEN_REMEMBER);
+export const readRefreshToken = () =>
+  typeof window === "undefined"
+    ? null
+    : sessionStorage.getItem(REFRESH_SESSION) || localStorage.getItem(REFRESH_REMEMBER);
 export const readStoredUserId = () =>
   typeof window === "undefined" ? null : sessionStorage.getItem(USER_ID) || localStorage.getItem(USER_ID);
 
-export function storeSession(token: string, remember: boolean, userId?: string) {
+export function storeSession(token: string, remember: boolean, userId?: string, refreshToken?: string) {
   if (typeof window === "undefined") return;
   sessionStorage.setItem(TOKEN_SESSION, token);
   if (remember) localStorage.setItem(TOKEN_REMEMBER, token);
   else localStorage.removeItem(TOKEN_REMEMBER);
+  if (refreshToken) {
+    sessionStorage.setItem(REFRESH_SESSION, refreshToken);
+    if (remember) localStorage.setItem(REFRESH_REMEMBER, refreshToken);
+    else localStorage.removeItem(REFRESH_REMEMBER);
+  }
   if (userId) {
     sessionStorage.setItem(USER_ID, userId);
     if (remember) localStorage.setItem(USER_ID, userId);
@@ -91,9 +102,63 @@ export function storeSession(token: string, remember: boolean, userId?: string) 
 export function clearSession() {
   if (typeof window === "undefined") return;
   sessionStorage.removeItem(TOKEN_SESSION);
+  sessionStorage.removeItem(REFRESH_SESSION);
   sessionStorage.removeItem(USER_ID);
   localStorage.removeItem(TOKEN_REMEMBER);
+  localStorage.removeItem(REFRESH_REMEMBER);
   localStorage.removeItem(USER_ID);
+}
+
+/* A Supabase access token lives for an hour, and nothing here used to renew
+   it: the refresh token that comes back with every sign-in was thrown away.
+   An hour into a session every authenticated read therefore started failing —
+   and the shop, whose balance is an RPC call, reported that as "migration 013
+   has not run". The token is now swapped for a fresh one before it expires. */
+const EXPIRY_MARGIN_SECONDS = 120;
+
+/** Seconds-since-epoch this JWT expires at, or null if it cannot be read. */
+function tokenExpiry(token: string): number | null {
+  try {
+    const payload = token.split(".")[1];
+    if (!payload) return null;
+    const json = JSON.parse(atob(payload.replace(/-/g, "+").replace(/_/g, "/"))) as { exp?: number };
+    return typeof json.exp === "number" ? json.exp : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Trades the stored refresh token for a new access token. Null on failure —
+    the refresh token is single-use, so a rejected one means "sign in again". */
+export async function refreshSession(): Promise<string | null> {
+  const { url, key } = supabaseConfig();
+  const refresh = readRefreshToken();
+  if (!url || !key || !refresh) return null;
+  try {
+    const response = await fetch(`${url}/auth/v1/token?grant_type=refresh_token`, {
+      method: "POST",
+      headers: { apikey: key, "content-type": "application/json" },
+      body: JSON.stringify({ refresh_token: refresh }),
+    });
+    if (!response.ok) return null;
+    const result = (await response.json()) as { access_token?: string; refresh_token?: string };
+    if (!result.access_token) return null;
+    const remember = localStorage.getItem(REFRESH_REMEMBER) !== null || localStorage.getItem(TOKEN_REMEMBER) !== null;
+    storeSession(result.access_token, remember, readStoredUserId() || undefined, result.refresh_token);
+    return result.access_token;
+  } catch {
+    return null;
+  }
+}
+
+/** A token that is still valid, renewing it first when it is close to expiry.
+    Null means there is no usable session left. */
+export async function ensureFreshToken(): Promise<string | null> {
+  const token = readToken();
+  if (!token) return null;
+  const exp = tokenExpiry(token);
+  if (exp === null || exp - EXPIRY_MARGIN_SECONDS > Date.now() / 1000) return token;
+  return refreshSession();
 }
 
 /* Sign-out must not leave the previous learner's work readable by whoever uses
@@ -284,6 +349,16 @@ export type OwnerStats = {
   active_today: number; active_7d: number; active_30d: number;
   never_signed_in: number; confirmed: number; unconfirmed: number;
   signups_daily: { day: string; count: number }[];
+  /* Time on the platform, added by migration 014. Optional because an owner
+     whose database still has only 009 installed gets a reply without these
+     keys, and zeros there would read as "nobody came" rather than "not
+     measured yet". */
+  online_daily?: { day: string; seconds: number; learners: number }[];
+  online_today_seconds?: number;
+  online_today_learners?: number;
+  online_7d_seconds?: number;
+  online_30d_seconds?: number;
+  online_max_day_seconds?: number;
   by_language: Record<string, number>;
   by_role: Record<string, number>;
   rating_avg: number; rating_max: number;
@@ -555,25 +630,42 @@ export async function setBlocked(otherId: string, blocked: boolean): Promise<boo
   }
 }
 
-/* Who you can write to. Profiles are public by design, so this needs no
+/* Finding a person by name. Profiles are public by design, so this needs no
    privileged function, and it returns only what a profile page already shows.
-   Email is not searchable here: that is the owner's tool, not everyone's. */
-export type Person = { id: string; username: string; display_name: string; avatar_url: string | null; role: Role };
+   Email is not searchable here: that is the owner's tool, not everyone's.
+
+   Two screens ask this question — "who do I write to?" and "who is this on the
+   leaderboard?" — so the row carries rating and solves too, rather than there
+   being a second search differing only in its select list. No token is
+   required: a signed-out visitor can already read any profile, and making them
+   sign in to find one would only hide what is already public. */
+export type Person = {
+  id: string;
+  username: string;
+  display_name: string;
+  avatar_url: string | null;
+  role: Role;
+  duel_rating: number;
+  solved_count: number;
+};
 
 export async function searchPeople(query: string, limit = 12): Promise<Person[] | null> {
   const { url, key } = supabaseConfig();
   const token = readToken();
   const term = query.trim();
-  if (!url || !key || !token || term.length < 2) return [];
+  if (!url || !key || !term) return [];
   // PostgREST splits `or=(...)` on commas, so a comma in the term would read
   // as another condition. Wildcards are stripped for the same reason.
+  const headers: Record<string, string> = { apikey: key };
+  if (token) headers.Authorization = `Bearer ${token}`;
   const safe = encodeURIComponent(term.replace(/[,()*\\%_]/g, ""));
   if (!safe) return [];
   try {
     const response = await fetch(
       `${url}/rest/v1/profiles?or=(username.ilike.*${safe}*,display_name.ilike.*${safe}*)` +
-        `&select=id,username,display_name,avatar_url,role&order=username.asc&limit=${limit}`,
-      { headers: { apikey: key, Authorization: `Bearer ${token}` } },
+        `&select=id,username,display_name,avatar_url,role,duel_rating,solved_count` +
+        `&order=duel_rating.desc,username.asc&limit=${limit}`,
+      { headers },
     );
     if (!response.ok) return null;
     return (await response.json()) as Person[];

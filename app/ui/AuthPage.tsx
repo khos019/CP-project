@@ -108,7 +108,7 @@ export function AuthPage({
   intent,
 }: {
   lang: Lang;
-  onAuthenticated: (token: string, remember: boolean, isNew: boolean) => void;
+  onAuthenticated: (token: string, remember: boolean, isNew: boolean, refreshToken?: string) => void;
   notice?: string;
   intent?: "login" | "signup";
 }) {
@@ -204,7 +204,7 @@ export function AuthPage({
       }
       if (mode === "signup") {
         if (result.access_token) {
-          onAuthenticated(result.access_token, remember, true);
+          onAuthenticated(result.access_token, remember, true, result.refresh_token);
           return;
         }
         setMode("confirm");
@@ -216,7 +216,7 @@ export function AuthPage({
         setNote({ kind: "error", text: t.needConfirm });
         return;
       }
-      onAuthenticated(result.access_token, remember, false);
+      onAuthenticated(result.access_token, remember, false, result.refresh_token);
     } catch {
       setNote({ kind: "error", text: t.offline });
     } finally {

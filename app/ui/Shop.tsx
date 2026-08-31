@@ -6,7 +6,7 @@ import {
   COIN_RULES, DAY_DUELS_REQUIRED, DAY_SECONDS_REQUIRED, FALLBACK_ITEMS, TOTAL_LADDER_COINS,
   claimLocal, claimServer, coinsForStreak, fetchBalance, fetchOrders, fetchShopItems, fetchStreak,
   localBalance, localStreak, nextMilestone, purchase, readActivity,
-  type Order, type ShopItem,
+  type CoinServer, type Order, type ShopItem,
 } from "./coins";
 
 type Lang = "uz" | "en";
@@ -23,7 +23,9 @@ const T = {
     need: "Yetarli tanga yo‘q", pending: "Buyurtma qabul qilindi — owner yetkazadi.",
     orders: "Buyurtmalaringiz", none: "Buyurtmalar yo‘q.",
     localWarn: "Hisobga kirmagansiz — tangalar faqat shu qurilmada saqlanmoqda va rasmiy emas.",
-    notMigrated: "Server hali ulanmagan (013-migratsiya ishga tushmagan) — bu ko‘rinish namuna.",
+    expired: "Sessiya muddati tugagan — tangalar hisobingizdan o‘qilmadi. Qaytadan kiring.",
+    offline: "Serverga ulanib bo‘lmadi — ko‘rsatilgan tangalar rasmiy emas.",
+    notMigrated: "Do‘kon serverda hali sozlanmagan (013-migratsiya ishga tushmagan) — bu ko‘rinish namuna.",
     fulfilNote: "Sovg‘a Telegram orqali qo‘lda yuboriladi.",
     statusPending: "Kutilmoqda", statusFulfilled: "Yuborildi", statusCancelled: "Bekor qilindi",
   },
@@ -38,18 +40,28 @@ const T = {
     need: "Not enough coins", pending: "Order received — the owner will deliver it.",
     orders: "Your orders", none: "No orders yet.",
     localWarn: "You are signed out — coins are stored on this device only and are not official.",
-    notMigrated: "Server not connected yet (migration 013 has not run) — this view is a preview.",
+    expired: "Your session has expired — we could not read your account balance. Please sign in again.",
+    offline: "The server could not be reached — the coins shown are not official.",
+    notMigrated: "The shop is not set up on the server yet (migration 013 has not run) — this view is a preview.",
     fulfilNote: "The gift is sent manually over Telegram.",
     statusPending: "Pending", statusFulfilled: "Sent", statusCancelled: "Cancelled",
   },
 };
 
-export function Shop({ lang, signed }: { lang: Lang; signed: boolean }) {
+/* `authLoading` exists for the same reason as `probed` below: a stored token
+   is still being verified on the first paint, so a signed-in learner would
+   otherwise be told they are signed out for as long as that takes. */
+export function Shop({ lang, signed, authLoading }: { lang: Lang; signed: boolean; authLoading: boolean }) {
   const t = T[lang];
   const [items, setItems] = useState<ShopItem[]>(FALLBACK_ITEMS);
   const [balance, setBalance] = useState(0);
   const [streak, setStreak] = useState(0);
   const [server, setServer] = useState(false);
+  const [offline, setOffline] = useState<Exclude<CoinServer["state"], "online">>("offline");
+  // "The server is unreachable" is a claim about a request that has come back.
+  // Until the first read resolves we know nothing, and saying anything at all
+  // means flashing a failure notice at every learner for a second.
+  const [probed, setProbed] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
   const [telegram, setTelegram] = useState("");
   const [message, setMessage] = useState("");
@@ -59,14 +71,23 @@ export function Shop({ lang, signed }: { lang: Lang; signed: boolean }) {
     const [remoteBalance, remoteStreak, remoteItems, remoteOrders] = await Promise.all([
       fetchBalance(), fetchStreak(), fetchShopItems(), fetchOrders(),
     ]);
-    const online = remoteBalance !== null;
+    const online = remoteBalance.state === "online";
     setServer(online);
-    setBalance(online ? remoteBalance : localBalance());
+    if (remoteBalance.state !== "online") setOffline(remoteBalance.state);
+    setBalance(remoteBalance.state === "online" ? remoteBalance.balance : localBalance());
     setStreak(remoteStreak !== null ? remoteStreak : localStreak());
     if (remoteItems?.length) setItems(remoteItems);
     if (remoteOrders) setOrders(remoteOrders);
+    setProbed(true);
   };
-  useEffect(() => { void refresh(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
+  useEffect(() => {
+    // Re-read once the session resolves: the first pass can run against a
+    // token still being renewed, and its answer would stick otherwise.
+    // refresh awaits the four reads before it sets anything, so nothing is
+    // written during this render; the rule cannot see past the async boundary.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void refresh();
+  }, [signed]);
 
   const act = readActivity()[new Date().toISOString().slice(0, 10)] || { activeSeconds: 0, duels: 0 };
   const upcoming = nextMilestone(streak);
@@ -84,7 +105,13 @@ export function Shop({ lang, signed }: { lang: Lang; signed: boolean }) {
     if (!telegram.trim()) { setMessage(t.tgLabel); return; }
     setBusy(item.slug);
     const result = await purchase(item.slug, telegram.trim());
-    setMessage(result.ok ? t.pending : result.error === "insufficient" ? t.need : result.error === "auth" ? t.localWarn : t.notMigrated);
+    setMessage(
+      result.ok ? t.pending
+      : result.error === "insufficient" ? t.need
+      : result.error === "telegram" ? t.tgLabel
+      : result.error === "auth" ? (signed ? t.expired : t.localWarn)
+      : t.offline,
+    );
     await refresh();
     setBusy("");
   };
@@ -100,8 +127,12 @@ export function Shop({ lang, signed }: { lang: Lang; signed: boolean }) {
         <span className="coin-balance"><span className="coin-chip">◎</span> {balance} <small>{t.coins}</small></span>
       </div>
 
-      {!signed && <div className="notice" style={{ marginBottom: 16 }}>{t.localWarn}</div>}
-      {signed && !server && <div className="notice" style={{ marginBottom: 16 }}>{t.notMigrated}</div>}
+      {!signed && !authLoading && <div className="notice" style={{ marginBottom: 16 }}>{t.localWarn}</div>}
+      {signed && probed && !server && (
+        <div className="notice" style={{ marginBottom: 16 }}>
+          {offline === "signed-out" ? t.expired : offline === "not-migrated" ? t.notMigrated : t.offline}
+        </div>
+      )}
 
       <div className="shop-top">
         <section className="panel">

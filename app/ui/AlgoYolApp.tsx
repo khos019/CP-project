@@ -20,13 +20,16 @@ import { PublicProfile } from "./PublicProfile";
 import { MASTERY_CONFIG, backfillMastery, loadMastery, masteryOf, recordDuelResult, recordEvidence } from "./mastery";
 import { loadProgress, readLocal as readLocalProgress, syncUp } from "./progress";
 import { can } from "./permissions";
+import { fetchFriends, recordSubmission, type FriendRow } from "./social";
+import { FriendsScreen, PersonSubmissions, SubmissionsScreen } from "./social-ui";
 import {
- GUEST_SCOPE, adoptGuestInto, adoptLegacyInto, clearSession, dropScopeData, fetchLeaderboard, fetchLearnerCount,
- fetchProfile, fetchUnreadCount, readScoped, readStoredUserId, readToken, removeScoped, saveDuelRating, setScope,
+ GUEST_SCOPE, adoptGuestInto, adoptLegacyInto, clearSession, dropScopeData, ensureFreshToken, fetchLeaderboard,
+ fetchLearnerCount,
+ fetchProfile, fetchUnreadCount, readScoped, readStoredUserId, readToken, removeScoped, saveDuelRating, searchPeople, setScope,
  storeSession, supabaseReady, writeScoped, type LeaderRow, type Profile, type Role,
 } from "./session";
 
-type Lang="uz"|"en"; type View="home"|"roadmaps"|"roadmap"|"problems"|"problem"|"duel"|"leaderboard"|"profile"|"auth"|"admin"|"placement"|"stats"|"users"|"messages"|"person"|"shop";
+type Lang="uz"|"en"; type View="home"|"roadmaps"|"roadmap"|"problems"|"problem"|"duel"|"leaderboard"|"profile"|"auth"|"admin"|"placement"|"stats"|"users"|"messages"|"person"|"shop"|"friends"|"submissions"|"person-submissions";
 const copy={uz:{home:"Bosh sahifa",roadmaps:"Yo‘l xaritalari",problems:"Masalalar",duel:"Duel",leaderboard:"Reyting",shop:"Do‘kon",login:"Kirish",hero:"Algoritmlarni o‘rganing, bellashing va o‘sing.",sub:"Tushunarli o‘zbekcha darslar, haqiqiy kod tekshiruvchi va 30 daqiqalik jonli duellar — barchasi bitta maydonda.",start:"O‘rganishni boshlash",arena:"Duel maydoni",featured:"Mashhur yo‘l xaritalari",all:"Barchasini ko‘rish",tasks:"Masalalar banki",solve:"Yechish",submit:"Yechimni yuborish"},en:{home:"Home",roadmaps:"Roadmaps",problems:"Problems",duel:"Duel",leaderboard:"Leaderboard",shop:"Shop",login:"Sign in",hero:"Learn algorithms, compete, and grow.",sub:"Clear lessons, a real code checker, and live 30-minute duels — all in one focused arena.",start:"Start learning",arena:"Enter duel arena",featured:"Featured roadmaps",all:"View all",tasks:"Problem library",solve:"Solve",submit:"Submit solution"}};
 const allRoads=roadmapCards;
 const roadmapCatalogSize=()=>({tracks:roadmapCards.length,units:roadmapCards.reduce((n,r)=>n+r.units,0)});
@@ -53,13 +56,15 @@ type Auth={status:"loading"}|{status:"guest"}|{status:"authenticated";profile:Pr
    drops the fragment. Reading it from an effect made the result depend on the
    order the effects happen to be declared in — and a reorder silently threw
    every Google sign-in away. */
-type AuthReturn={kind:"token";token:string}|{kind:"code";code:string}|{kind:"error";message:string}|null;
+type AuthReturn={kind:"token";token:string;refresh:string|null}|{kind:"code";code:string}|{kind:"error";message:string}|null;
 function readAuthReturn():AuthReturn{
  if(typeof window==="undefined")return null;
  const hash=new URLSearchParams(window.location.hash.replace(/^#/,""));
  const query=new URLSearchParams(window.location.search);
  const token=hash.get("access_token");
- if(token)return {kind:"token",token};
+ // The refresh token rides along in the same fragment; without it the session
+ // would die an hour later with no way to renew it.
+ if(token)return {kind:"token",token,refresh:hash.get("refresh_token")};
  const error=hash.get("error_description")||query.get("error_description")||hash.get("error")||query.get("error");
  if(error)return {kind:"error",message:decodeURIComponent(error.replace(/\+/g," "))};
  const code=query.get("code");
@@ -106,16 +111,23 @@ export function AlgoYolApp(){
   window.dispatchEvent(new Event("algoyol-progress"));
  };
 
+ // Seeded after mount on purpose: the server has no localStorage, so reading
+ // it during the first render would make the two disagree and break hydration.
+ // eslint-disable-next-line react-hooks/set-state-in-effect
  useEffect(()=>{const saved=localStorage.getItem("algoyol-lang") as Lang|null;if(saved)setLang(saved)},[]);
  // Boot: adopt the stored scope synchronously so the first paint reads the
- // right namespace, then verify the token.
+ // right namespace, then verify the token. The "loading" flip has to happen
+ // here for the same hydration reason as the language above.
  useEffect(()=>{
   const token=readToken(),storedId=readStoredUserId();
   if(storedId)setScope(storedId);
   if(!token||!supabaseReady()){setScope(GUEST_SCOPE);adoptLegacyInto(GUEST_SCOPE);return}
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   setAuth({status:"loading"});
   let live=true;
-  fetchProfile(token).then(next=>{
+  // Renew the token first when it is stale, so a returning learner is verified
+  // against a live one instead of being silently dropped back to guest.
+  ensureFreshToken().then(fresh=>fresh?fetchProfile(fresh):null).then(next=>{
    if(!live)return;
    if(!next){clearSession();setScope(GUEST_SCOPE);setAuth({status:"guest"});return}
    setScope(next.id);adoptLegacyInto(next.id);
@@ -124,6 +136,15 @@ export function AlgoYolApp(){
   });
   return()=>{live=false};
  },[]);
+ /* Access tokens expire after an hour. Every authenticated read in the app
+    takes the stored token as-is, so it is kept fresh here rather than in each
+    caller: without this the session quietly stopped working mid-visit and the
+    shop blamed it on an unapplied migration. */
+ useEffect(()=>{
+  if(auth.status!=="authenticated")return;
+  const id=window.setInterval(()=>{void ensureFreshToken()},5*60*1000);
+  return()=>window.clearInterval(id);
+ },[auth.status]);
  /* Inbox badge. Polled rather than pushed: a realtime subscription is a
     second connection to keep alive for a number that changes a few times a
     day, and a stale badge is corrected the moment the inbox is opened. */
@@ -142,6 +163,9 @@ export function AlgoYolApp(){
   const id=setInterval(tick,60000);
   return()=>{live=false;clearInterval(id)};
  },[auth.status]);
+ // Reacts to a verdict that arrived from the judge, so the state it sets is a
+ // consequence of a response rather than of rendering.
+ // eslint-disable-next-line react-hooks/set-state-in-effect
  useEffect(()=>{if(!verdict.startsWith("Qabul qilindi")&&!verdict.startsWith("Accepted"))return;if(activeProblem.judge){const gained=applySolve(activeProblem.id,activeProblem.rating||1200);if(gained.delta>0)setRatingGain(gained);const base=MASTERY_CONFIG.weights.problem[activeProblem.difficulty as keyof typeof MASTERY_CONFIG.weights.problem];recordEvidence(activeProblem.topic,"problem",`problem:${activeProblem.id}`,base)}const lesson=readScoped("algoyol-active-lesson");if(!lesson)return;let data={quizScores:{},solved:{}} as {quizScores:Record<string,number>;solved:Record<string,boolean>};try{data=JSON.parse(readScoped("algoyol-roadmap-progress")||JSON.stringify(data))}catch{}if(!data.solved[lesson])recordEvidence(lesson.slice(0,lesson.lastIndexOf("-")),"lesson",`lesson:${lesson}`,MASTERY_CONFIG.weights.lesson);data.solved={...data.solved,[lesson]:true};writeScoped("algoyol-roadmap-progress",JSON.stringify(data));removeScoped("algoyol-active-lesson");window.dispatchEvent(new Event("algoyol-progress"))},[verdict]);// eslint-disable-line react-hooks/exhaustive-deps
  // The address bar reflects the current screen — /roadmaps/{slug}/{unit} —
  // so two roadmaps (or two units) are never one indistinguishable URL.
@@ -154,14 +178,15 @@ export function AlgoYolApp(){
   if(s.view==="roadmaps")return "/roadmaps";
   if(s.view==="roadmap")return s.unit?`/roadmaps/${s.roadmap}/${s.unit}`:`/roadmaps/${s.roadmap}`;
   if(s.view==="person")return s.person?`/u/${s.person}`:"/";
+  if(s.view==="person-submissions")return s.person?`/u/${s.person}/submissions`:"/";
   return `/${s.view}`;
  };
  const pathToScreen=(path:string):Screen=>{
   const parts=path.split("/").filter(Boolean);
   const base={roadmap:"foundations",unit:null,person:null};
   if(parts[0]==="roadmaps"&&parts[1])return {...base,view:"roadmap",roadmap:parts[1],unit:parts[2]||null};
-  if(parts[0]==="u"&&parts[1])return {...base,view:"person",person:decodeURIComponent(parts[1])};
-  const known:View[]=["home","roadmaps","problems","problem","duel","leaderboard","profile","auth","placement","admin","stats","users","messages"];
+  if(parts[0]==="u"&&parts[1])return {...base,view:parts[2]==="submissions"?"person-submissions":"person",person:decodeURIComponent(parts[1])};
+  const known:View[]=["home","roadmaps","problems","problem","duel","leaderboard","profile","auth","placement","admin","stats","users","messages","friends","submissions"];
   const v=known.find(x=>x===parts[0]);
   return {...base,view:v||"home"};
  };
@@ -176,7 +201,7 @@ export function AlgoYolApp(){
  // Browser back/forward: each screen change pushes an entry, popstate restores it.
  useEffect(()=>{applyScreen(screenRef.current);window.history.replaceState(screenRef.current,"",screenToPath(screenRef.current));const onPop=(e:PopStateEvent)=>{const st=e.state as Screen|null;applyScreen(st&&typeof st==="object"&&"view" in st?st:pathToScreen(window.location.pathname));navDepth.current=Math.max(0,navDepth.current-1)};window.addEventListener("popstate",onPop);return()=>window.removeEventListener("popstate",onPop)},[]); const applyLang=(n:Lang)=>{setLang(n);localStorage.setItem("algoyol-lang",n)};
  const swap=()=>applyLang(lang==="uz"?"en":"uz");
- const enterSession=async(token:string,remember:boolean,isNew:boolean)=>{
+ const enterSession=async(token:string,remember:boolean,isNew:boolean,refreshToken?:string)=>{
   setAuth({status:"loading"});
   const next=await fetchProfile(token);
   if(!next){
@@ -187,7 +212,7 @@ export function AlgoYolApp(){
    setView("auth");
    return;
   }
-  storeSession(token,remember,next.id);
+  storeSession(token,remember,next.id,refreshToken);
   setScope(next.id);
   adoptLegacyInto(next.id);
   // Lessons finished before registering belong to the same person — carry them
@@ -222,7 +247,7 @@ export function AlgoYolApp(){
   authReturn.current=null;
   if(!ret)return;
   window.history.replaceState({},"",window.location.pathname);
-  if(ret.kind==="token"){void enterSession(ret.token,true,false);return}
+  if(ret.kind==="token"){void enterSession(ret.token,true,false,ret.refresh||undefined);return}
   if(ret.kind==="error"){setAuthNotice(ret.message);setView("auth");return}
   // A PKCE authorisation code needs the verifier that produced its challenge.
   // We never issued one, so say so plainly rather than failing in silence.
@@ -232,9 +257,14 @@ export function AlgoYolApp(){
   setView("auth");
  },[]);// eslint-disable-line react-hooks/exhaustive-deps
  const filtered=useMemo(()=>filter==="all"?problems:problems.filter(p=>p.difficulty===filter),[filter]);
- const judge=async()=>{if(!signed){setView("auth");return}if(!activeProblem.judge){setVerdict(lang==="uz"?"Bu masala uchun tekshiruvchi tez orada ulanadi":"The judge for this problem is coming soon");return}setVerdict(lang==="uz"?"Navbatda… testlar tekshirilmoqda":"In queue… running hidden tests");try{const response=await fetch("/api/judge",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({problemId:activeProblem.judge,language:codeLang,sourceCode:code})});const r=await response.json();const names:Record<string,[string,string]>={ACCEPTED:["Qabul qilindi","Accepted"],WRONG_ANSWER:["Noto‘g‘ri javob","Wrong answer"],COMPILATION_ERROR:["Kompilyatsiya xatosi","Compilation error"],RUNTIME_ERROR:["Bajarilish xatosi","Runtime error"],TIME_LIMIT_EXCEEDED:["Vaqt chegarasi oshdi","Time limit exceeded"],MEMORY_LIMIT_EXCEEDED:["Xotira chegarasi oshdi","Memory limit exceeded"],JUDGE_ERROR:["Tekshiruvchi xatosi","Judge error"]};const title=(names[r.verdict]||names.JUDGE_ERROR)[lang==="uz"?0:1];const test=r.test?` · ${lang==="uz"?"test":"test"} #${r.test}`:"";const stats=r.verdict==="ACCEPTED"?` · ${r.passed}/${r.total} · ${r.runtimeMs} ms · ${r.memoryKb} KB`:"";setVerdict(`${title}${test}${stats}${r.details?`\n${String(r.details).slice(0,900)}`:""}`)}catch{setVerdict(lang==="uz"?"Tekshiruvchi bilan aloqa uzildi":"Judge connection failed")}};
+ const judge=async()=>{if(!signed){setView("auth");return}if(!activeProblem.judge){setVerdict(lang==="uz"?"Bu masala uchun tekshiruvchi tez orada ulanadi":"The judge for this problem is coming soon");return}setVerdict(lang==="uz"?"Navbatda… testlar tekshirilmoqda":"In queue… running hidden tests");try{const response=await fetch("/api/judge",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({problemId:activeProblem.judge,language:codeLang,sourceCode:code})});const r=await response.json();const names:Record<string,[string,string]>={ACCEPTED:["Qabul qilindi","Accepted"],WRONG_ANSWER:["Noto‘g‘ri javob","Wrong answer"],COMPILATION_ERROR:["Kompilyatsiya xatosi","Compilation error"],RUNTIME_ERROR:["Bajarilish xatosi","Runtime error"],TIME_LIMIT_EXCEEDED:["Vaqt chegarasi oshdi","Time limit exceeded"],MEMORY_LIMIT_EXCEEDED:["Xotira chegarasi oshdi","Memory limit exceeded"],JUDGE_ERROR:["Tekshiruvchi xatosi","Judge error"]};const title=(names[r.verdict]||names.JUDGE_ERROR)[lang==="uz"?0:1];const test=r.test?` · ${lang==="uz"?"test":"test"} #${r.test}`:"";const stats=r.verdict==="ACCEPTED"?` · ${r.passed}/${r.total} · ${r.runtimeMs} ms · ${r.memoryKb} KB`:"";setVerdict(`${title}${test}${stats}${r.details?`\n${String(r.details).slice(0,900)}`:""}`);
+  // The verdict belongs to the account, not to this tab: it is what a profile
+  // shows, and what decides whether this person may read other people's code
+  // for the same problem. Written after the fact, so a failed write costs the
+  // learner nothing.
+  void recordSubmission({problemKey:activeProblem.judge,problemTitle:lang==="uz"?activeProblem.uz:activeProblem.en,language:codeLang,verdict:String(r.verdict||"JUDGE_ERROR"),runtimeMs:r.runtimeMs??null,memoryKb:r.memoryKb??null,passed:r.passed??null,total:r.total??null,source:code})}catch{setVerdict(lang==="uz"?"Tekshiruvchi bilan aloqa uzildi":"Judge connection failed")}};
  return <div className="shell"><header className="topbar"><button className="brand" onClick={()=>go("home")} style={{border:0,background:"transparent"}}><BrandMark className="brandmark" />AlgoYo‘l</button><nav className="nav">{(["home","roadmaps","problems","duel","leaderboard","shop"] as View[]).map(v=><button key={v} className={view===v?"active":""} onClick={()=>go(v)}>{t[v as keyof typeof t]}</button>)}</nav><div className="actions"><button className="lang" onClick={swap} aria-label={lang==="uz"?"Switch to English":"O‘zbekchaga o‘tish"}>{lang==="uz"?"EN":"UZ"}</button>{signed&&<button className="pill msg-pill" onClick={()=>go("messages")} aria-label={lang==="uz"?"Xabarlar":"Messages"}>✉{unread>0&&<span className="msg-badge">{unread>99?"99+":unread}</span>}</button>}{auth.status==="loading"?<span className="pill pill-loading" aria-live="polite">…</span>:<button className="pill" onClick={()=>go(signed?"profile":"auth")}>{signed?(lang==="uz"?"Profil":"Profile"):t.login}</button>}<button className="primary" onClick={()=>go("duel")}>{lang==="uz"?"Duel topish":"Find duel"}</button></div></header>
- <main className="main">{view==="home"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed&&profile?<><ContinueHero lang={lang} profile={profile} go={v=>go(v as View)} openRoadmap={openRoadmap}/><LandingStory lang={lang}/><LandingBrowse lang={lang} go={go} openRoadmap={openRoadmap}/><LandingCta lang={lang} go={go} signed/></>:<Home lang={lang} go={go} openRoadmap={openRoadmap}/>)} {view==="roadmaps"&&<RoadmapHub lang={lang} role={role} openRoadmap={openRoadmap}/>} {view==="roadmap"&&<RoadmapExperience slug={selectedRoadmap} lang={lang} role={role} unitId={selectedUnit} onOpenUnit={id=>pushScreen({unit:id})} onBack={back} onPractice={()=>pushScreen({view:"problem"})}/>} {view==="problems"&&<Problems lang={lang} filter={filter} setFilter={setFilter} items={filtered} go={go} onSelect={p=>{setActiveProblem(p);setCode(p.judge==="max-subarray"?duelProblems[1].cpp:p.judge==="coin-change"?duelProblems[2].cpp:cpp);setVerdict("");go("problem")}}/>} {view==="problem"&&<Problem lang={lang} item={activeProblem} code={code} setCode={setCode} codeLang={codeLang} setCodeLang={setCodeLang} verdict={verdict} submit={judge} onBack={back}/>} {view==="duel"&&<DuelMatchmaking lang={lang} profile={profile} signed={signed} authLoading={auth.status==="loading"} needAuth={()=>go("auth")} openRoadmap={openRoadmap}/>} {view==="leaderboard"&&<Leaderboard lang={lang} me={profile}/>} {view==="profile"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<ProfilePage lang={lang} profile={profile} onProfileChange={next=>setAuth({status:"authenticated",profile:next})} signOut={signOut} goAdmin={()=>go("admin")} goStats={()=>go("stats")} goUsers={()=>go("users")} goMessages={()=>go("messages")} isOwner={can(role,"user.manage_roles")} goRoadmaps={()=>go("roadmaps")} openRoadmap={openRoadmap} isStaff={can(role,"content.view_management")}/>:<SignInRequired lang={lang} go={go} what="profile"/>)} {view==="auth"&&<AuthPage lang={lang} notice={authNotice} onAuthenticated={(token,remember,isNew)=>{void enterSession(token,remember,isNew)}}/>} {view==="placement"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed?<Placement lang={lang} signed={signed} onFinish={()=>go("roadmaps")} onRoadmap={openRoadmap}/>:<SignInRequired lang={lang} go={go} what="placement"/>)} {view==="admin"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<Admin lang={lang} profile={profile}/>:<SignInRequired lang={lang} go={go} what="admin"/>)} {view==="person"&&(person?<PublicProfile key={person} lang={lang} username={person} meId={profile?.id||null} signedIn={signed} onBack={back} onMessage={id=>{setMessageWith(id);go("messages")}} onMyProfile={()=>go("profile")} onSignIn={()=>go("auth")}/>:<ScreenLoading lang={lang}/>)} {view==="shop"&&<Shop lang={lang} signed={signed}/>} {view==="messages"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<Messages lang={lang} me={profile} openWith={messageWith} onOpened={()=>setMessageWith(null)} onUnreadChange={()=>{void refreshUnread()}} onOpenProfile={openPerson}/>:<SignInRequired lang={lang} go={go} what="messages"/>)} {view==="users"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:!profile?<SignInRequired lang={lang} go={go} what="users"/>:can(role,"user.manage_roles")?<UsersAdmin lang={lang} meId={profile.id} goProfile={()=>go("profile")} onMessage={id=>{setMessageWith(id);go("messages")}} onOpenProfile={openPerson} initialDay={usersDay} onDayConsumed={()=>setUsersDay(null)}/>:<div className="panel"><div className="notice notice-error">{lang==="uz"?"Bu sahifa faqat ega (owner) roli uchun.":"This page is for the owner role only."}</div></div>)} {view==="stats"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:!profile?<SignInRequired lang={lang} go={go} what="stats"/>:can(role,"stats.view")?<OwnerStats lang={lang} goProfile={()=>go("profile")} onPickDay={day=>{setUsersDay(day);go("users")}}/>:<div className="panel"><div className="notice notice-error">{lang==="uz"?"Bu sahifa faqat ega (owner) roli uchun.":"This page is for the owner role only."}</div></div>)}</main>
+ <main className="main">{view==="home"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed&&profile?<><ContinueHero lang={lang} profile={profile} go={v=>go(v as View)} openRoadmap={openRoadmap}/><LandingStory lang={lang}/><LandingBrowse lang={lang} go={go} openRoadmap={openRoadmap}/><LandingCta lang={lang} go={go} signed/></>:<Home lang={lang} go={go} openRoadmap={openRoadmap}/>)} {view==="roadmaps"&&<RoadmapHub lang={lang} role={role} openRoadmap={openRoadmap}/>} {view==="roadmap"&&<RoadmapExperience slug={selectedRoadmap} lang={lang} role={role} unitId={selectedUnit} onOpenUnit={id=>pushScreen({unit:id})} onBack={back} onPractice={()=>pushScreen({view:"problem"})}/>} {view==="problems"&&<Problems lang={lang} filter={filter} setFilter={setFilter} items={filtered} go={go} onSelect={p=>{setActiveProblem(p);setCode(p.judge==="max-subarray"?duelProblems[1].cpp:p.judge==="coin-change"?duelProblems[2].cpp:cpp);setVerdict("");go("problem")}}/>} {view==="problem"&&<Problem lang={lang} item={activeProblem} code={code} setCode={setCode} codeLang={codeLang} setCodeLang={setCodeLang} verdict={verdict} submit={judge} onBack={back}/>} {view==="duel"&&<DuelMatchmaking lang={lang} profile={profile} signed={signed} authLoading={auth.status==="loading"} needAuth={()=>go("auth")} openRoadmap={openRoadmap}/>} {view==="leaderboard"&&<Leaderboard lang={lang} me={profile} signed={signed} onOpenPerson={openPerson}/>} {view==="profile"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<ProfilePage lang={lang} profile={profile} onProfileChange={next=>setAuth({status:"authenticated",profile:next})} signOut={signOut} goAdmin={()=>go("admin")} goStats={()=>go("stats")} goUsers={()=>go("users")} goMessages={()=>go("messages")} isOwner={can(role,"user.manage_roles")} goRoadmaps={()=>go("roadmaps")} openRoadmap={openRoadmap} isStaff={can(role,"content.view_management")} goFriends={()=>go("friends")} goSubmissions={()=>go("submissions")}/>:<SignInRequired lang={lang} go={go} what="profile"/>)} {view==="auth"&&<AuthPage lang={lang} notice={authNotice} onAuthenticated={(token,remember,isNew,refreshToken)=>{void enterSession(token,remember,isNew,refreshToken)}}/>} {view==="placement"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed?<Placement lang={lang} signed={signed} onFinish={()=>go("roadmaps")} onRoadmap={openRoadmap}/>:<SignInRequired lang={lang} go={go} what="placement"/>)} {view==="admin"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<Admin lang={lang} profile={profile}/>:<SignInRequired lang={lang} go={go} what="admin"/>)} {view==="person"&&(person?<PublicProfile key={person} lang={lang} username={person} meId={profile?.id||null} signedIn={signed} onBack={back} onMessage={id=>{setMessageWith(id);go("messages")}} onMyProfile={()=>go("profile")} onSignIn={()=>go("auth")} onOpenSubmissions={h=>pushScreen({view:"person-submissions",person:h})}/>:<ScreenLoading lang={lang}/>)} {view==="shop"&&<Shop lang={lang} signed={signed} authLoading={auth.status==="loading"}/>} {view==="friends"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed?<FriendsScreen lang={lang} onBack={()=>go("profile")} onOpenPerson={openPerson}/>:<SignInRequired lang={lang} go={go} what="profile"/>)} {view==="submissions"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<SubmissionsScreen lang={lang} userId={profile.id} who={profile.display_name||profile.username} isMe signedIn onBack={()=>go("profile")}/>:<SignInRequired lang={lang} go={go} what="profile"/>)} {view==="person-submissions"&&(person?<PersonSubmissions key={person} lang={lang} handle={person} meId={profile?.id||null} signedIn={signed} onBack={back}/>:<ScreenLoading lang={lang}/>)} {view==="messages"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<Messages lang={lang} me={profile} openWith={messageWith} onOpened={()=>setMessageWith(null)} onUnreadChange={()=>{void refreshUnread()}} onOpenProfile={openPerson}/>:<SignInRequired lang={lang} go={go} what="messages"/>)} {view==="users"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:!profile?<SignInRequired lang={lang} go={go} what="users"/>:can(role,"user.manage_roles")?<UsersAdmin lang={lang} meId={profile.id} goProfile={()=>go("profile")} onMessage={id=>{setMessageWith(id);go("messages")}} onOpenProfile={openPerson} initialDay={usersDay} onDayConsumed={()=>setUsersDay(null)}/>:<div className="panel"><div className="notice notice-error">{lang==="uz"?"Bu sahifa faqat ega (owner) roli uchun.":"This page is for the owner role only."}</div></div>)} {view==="stats"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:!profile?<SignInRequired lang={lang} go={go} what="stats"/>:can(role,"stats.view")?<OwnerStats lang={lang} goProfile={()=>go("profile")} onPickDay={day=>{setUsersDay(day);go("users")}}/>:<div className="panel"><div className="notice notice-error">{lang==="uz"?"Bu sahifa faqat ega (owner) roli uchun.":"This page is for the owner role only."}</div></div>)}</main>
  <nav className="mobile-nav">{(["home","roadmaps","problems","duel","leaderboard","shop"] as View[]).map(v=><button key={v} className={view===v?"active":""} onClick={()=>go(v)}>{t[v as keyof typeof t]}</button>)}</nav><footer className="footer"><span>© {new Date().getFullYear()} AlgoYo‘l · Toshkent</span><span>{lang==="uz"?"Bilimdan natijagacha.":"From learning to results."}</span></footer></div>
 }
 /* Landing copy. The old page opened straight into a roadmap grid and a problem
@@ -515,7 +545,10 @@ function Duel({lang,opponent,rating,matchId,onFinish,onRematch,onExit,openRoadma
   else finish("sweep",next,at)};
  useEffect(()=>{if(result||stage>2){plan.current=null;return}const problem=duelProblems[stage];const skill=Math.min(1.45,Math.max(.6,1-(opponent.rating-rating)/1800));const span=problem.bot[0]+Math.random()*(problem.bot[1]-problem.bot[0]);const duration=Math.max(45,Math.round(span*skill));plan.current={stage,solveAt:elapsed+duration,missAt:elapsed+Math.round(duration*.55),missed:false,fails:Math.random()<problem.fail}},[stage,result]);// eslint-disable-line react-hooks/exhaustive-deps
  useEffect(()=>{if(result)return;const id=window.setInterval(()=>setElapsed(e=>Math.min(DUEL_LENGTH,e+1)),1000);return()=>window.clearInterval(id)},[result]);
+ // Driven by the duel clock: each tick may retire the round or record the
+ // opponent's attempt, which is a timer event, not a render cascade.
  useEffect(()=>{if(result)return;
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   if(elapsed>=DUEL_LENGTH){finish("time",claims,DUEL_LENGTH);return}
   const current=plan.current;if(!current||current.stage!==stage||claims[stage])return;
   if(!current.missed&&elapsed>=current.missAt){current.missed=true;setAttempts(a=>({...a,opp:a.opp+1}));push("opp",`${opponent.name} yechim yubordi — noto‘g‘ri javob`,`${opponent.name} submitted — wrong answer`,elapsed)}
@@ -571,6 +604,7 @@ function DuelMatchmaking({lang,profile,signed,authLoading,needAuth,openRoadmap}:
  const [phase,setPhase]=useState<"idle"|"searching"|"found"|"active">("idle"),[rating,setRating]=useState(profile?.duel_rating??DEFAULT_RATING),[opponent,setOpponent]=useState<DuelOpponent>(duelOpponents[0]),[matchId,setMatchId]=useState(4821);
  // The account is the source of truth for rating; the local copy is only a
  // cache for a session that has not synced yet.
+ // eslint-disable-next-line react-hooks/set-state-in-effect
  useEffect(()=>{if(profile?.duel_rating!==undefined){setRating(profile.duel_rating);return}const saved=Number(readScoped("algoyol-duel-rating"));if(saved>0)setRating(saved)},[profile]);
  useEffect(()=>{if(phase!=="searching")return;const found=window.setTimeout(()=>{const pool=[...duelOpponents].sort((a,b)=>Math.abs(a.rating-rating)-Math.abs(b.rating-rating)).slice(0,3);setOpponent(pool[Math.floor(Math.random()*pool.length)]);setMatchId(4000+Math.floor(Math.random()*1800));setPhase("found")},1800);return()=>window.clearTimeout(found)},[phase,rating]);
  const settle=(next:number,entry:{outcome:"win"|"loss"|"draw";myScore:number;oppScore:number;delta:number})=>{
@@ -615,15 +649,49 @@ function SignInRequired({lang,go,what}:{lang:Lang;go:(v:View)=>void;what:"profil
 /* The ranking is read from the profiles table. It used to be a hard-coded list
    containing a row called "Siz" (You) with an invented rating — every visitor,
    signed in or not, appeared to hold 4th place. */
-function Leaderboard({lang,me}:{lang:Lang;me:Profile|null}){
+/* Reyting is also where you look somebody up: it is the one screen that
+   already lists people, so a search box here beats a second screen that lists
+   them again. Three views share the row: the top of the ladder, a search, and
+   your own friends. */
+function Leaderboard({lang,me,signed,onOpenPerson}:{lang:Lang;me:Profile|null;signed:boolean;onOpenPerson:(handle:string)=>void}){
  const [rows,setRows]=useState<LeaderRow[]|null>(null),[state,setState]=useState<"loading"|"ready"|"error">("loading");
+ // The result carries the term it answers, so "are we still searching?" is a
+ // comparison rather than a second piece of state to keep in step with it.
+ const [query,setQuery]=useState(""),[found,setFound]=useState<{q:string;rows:LeaderRow[]}|null>(null);
+ const [mode,setMode]=useState<"top"|"friends">("top");
+ const [friends,setFriends]=useState<FriendRow[]|null>(null);
  useEffect(()=>{let live=true;fetchLeaderboard(50).then(list=>{if(!live)return;if(!list){setState("error");return}setRows(list);setState("ready")});return()=>{live=false}},[]);
+ // Typing is not a query. The search waits for a pause, so a five-letter
+ // handle costs one request rather than five.
+ useEffect(()=>{const q=query.trim();if(!q)return;
+  const id=window.setTimeout(()=>{void searchPeople(q).then(list=>setFound({q,rows:list||[]}))},250);
+  return()=>window.clearTimeout(id)},[query]);
+ useEffect(()=>{if(mode!=="friends"||!signed)return;let live=true;void fetchFriends().then(list=>{if(live)setFriends(list||[])});return()=>{live=false}},[mode,signed]);
  const myRank=me&&rows?rows.findIndex(r=>r.id===me.id):-1;
- return <><div className="page-head"><div><p className="eyebrow">ELO · K=32</p><h1 className="page-title">{lang==="uz"?"Duel reytingi":"Duel leaderboard"}</h1><p className="muted">{lang==="uz"?"Reyting duel natijalaridan hisoblanadi.":"Ratings come from real duel results."}</p></div>{me&&myRank>=0&&<span className="tag">{lang==="uz"?"Sizning o‘rningiz":"Your rank"} #{myRank+1}</span>}</div>
- {state==="loading"&&<div className="screen-state" role="status"><span className="spinner" aria-hidden/><p className="muted">{lang==="uz"?"Yuklanmoqda…":"Loading…"}</p></div>}
- {state==="error"&&<div className="panel"><div className="notice notice-error">{lang==="uz"?"Reytingni yuklab bo‘lmadi. Keyinroq urinib ko‘ring.":"Could not load the leaderboard. Try again later."}</div></div>}
- {state==="ready"&&(rows&&rows.length?<div className="leaderboard">{rows.map((x,i)=>{const mine=me?.id===x.id;const name=x.display_name?.trim()||x.username;return <div className={`leader-row ${mine?"me":""}`} key={x.id}><span className="rank">#{i+1}</span><span className="leader-who"><b>{name}{mine&&<span className="tag tag-you">{lang==="uz"?"Siz":"You"}</span>}</b><span className="muted">@{x.username}</span></span><span className="tag">{x.solved_count} AC</span><span className="rating">{x.duel_rating}</span></div>})}</div>
- :<div className="screen-state panel"><p className="muted">{lang==="uz"?"Hali reytingda hech kim yo‘q. Birinchi bo‘ling!":"Nobody is ranked yet. Be the first."}</p></div>)}</>;
+ const searchOn=query.trim().length>0;
+ const searching=searchOn&&found?.q!==query.trim();
+ // A rank is a position in the whole ladder, so it is shown only where it is
+ // actually known: inventing "#1" for the best of three search hits would be a
+ // different number with the same shape.
+ const rankOf=(id:string)=>{const i=rows?rows.findIndex(r=>r.id===id):-1;return i>=0?i+1:null};
+ const list:LeaderRow[]|null=searchOn?(found&&found.q===query.trim()?found.rows:null)
+  :mode==="friends"?(friends?friends.map(f=>({id:f.id,username:f.username,display_name:f.display_name,duel_rating:f.duel_rating,solved_count:f.solved_count})):null)
+  :rows;
+ const empty=lang==="uz"
+  ?(searchOn?"Bunday foydalanuvchi topilmadi.":mode==="friends"?"Do‘stlar ro‘yxati bo‘sh. Kimningdir profiliga kirib, ism yonidagi ☆ ni bosing.":"Hali reytingda hech kim yo‘q. Birinchi bo‘ling!")
+  :(searchOn?"No such user.":mode==="friends"?"No friends yet. Open somebody's profile and press the ☆ beside their name.":"Nobody is ranked yet. Be the first.");
+ return <><div className="page-head"><div><p className="eyebrow">ELO · K=32</p><h1 className="page-title">{lang==="uz"?"Duel reytingi":"Duel leaderboard"}</h1><p className="muted">{lang==="uz"?"Reyting duel natijalaridan hisoblanadi. Odam qidiring yoki ismiga bosib profilini oching.":"Ratings come from real duel results. Search for a person, or open a profile by name."}</p></div>{me&&myRank>=0&&<span className="tag">{lang==="uz"?"Sizning o‘rningiz":"Your rank"} #{myRank+1}</span>}</div>
+ <div className="leader-tools">
+  <input className="leader-search" type="search" value={query} onChange={e=>setQuery(e.target.value)} placeholder={lang==="uz"?"Nickname yoki ism bo‘yicha qidirish…":"Search by handle or name…"} aria-label={lang==="uz"?"Foydalanuvchi qidirish":"Search users"}/>
+  {signed&&!searchOn&&<div className="leader-modes">
+   <button className={mode==="top"?"active":""} onClick={()=>setMode("top")}>{lang==="uz"?"Reyting":"Top"}</button>
+   <button className={mode==="friends"?"active":""} onClick={()=>setMode("friends")}>{lang==="uz"?"Do‘stlarim":"Friends"} ★</button>
+  </div>}
+ </div>
+ {(state==="loading"||(searchOn&&searching)||(!searchOn&&mode==="friends"&&friends===null))&&<div className="screen-state" role="status"><span className="spinner" aria-hidden/><p className="muted">{lang==="uz"?"Yuklanmoqda…":"Loading…"}</p></div>}
+ {state==="error"&&!searchOn&&<div className="panel"><div className="notice notice-error">{lang==="uz"?"Reytingni yuklab bo‘lmadi. Keyinroq urinib ko‘ring.":"Could not load the leaderboard. Try again later."}</div></div>}
+ {list&&!(searchOn&&searching)&&(list.length?<div className="leaderboard">{list.map(x=>{const mine=me?.id===x.id;const name=x.display_name?.trim()||x.username;const rank=rankOf(x.id);return <button type="button" className={`leader-row ${mine?"me":""}`} key={x.id} onClick={()=>onOpenPerson(x.username)} title={lang==="uz"?`${name} profilini ochish`:`Open ${name}'s profile`}><span className="rank">{rank?`#${rank}`:"—"}</span><span className="leader-who"><b>{name}{mine&&<span className="tag tag-you">{lang==="uz"?"Siz":"You"}</span>}</b><span className="muted">@{x.username}</span></span><span className="tag">{x.solved_count} AC</span><span className="rating">{x.duel_rating}</span></button>})}</div>
+ :<div className="screen-state panel"><p className="muted">{empty}</p></div>)}</>;
 }
 
 function Admin({lang,profile}:{lang:Lang,profile:Profile}){

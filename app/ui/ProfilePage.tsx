@@ -6,6 +6,7 @@ import { loadMastery, loadMasteryLog, loadDuelHistory, masteryLabel, MASTERY_CON
 import { emptyProgress, loadProgress, type Progress } from "./progress";
 import { uploadAvatar, avatarStorageReady } from "./avatar";
 import { hasExtendedProfile, updateProfile, type Profile, type Role } from "./session";
+import { AvatarZoom } from "./social-ui";
 
 type Lang = "uz" | "en";
 
@@ -22,6 +23,8 @@ const T = {
     stats: "Statistika",
     users: "Foydalanuvchilar",
     messages: "Xabarlar",
+    friends: "Do‘stlarim",
+    submissions: "Yechimlarim",
     joined: "Qo‘shildi",
     rating: "Duel reytingi",
     units: "Tugatilgan bosqichlar",
@@ -79,6 +82,8 @@ const T = {
     stats: "Statistics",
     users: "Users",
     messages: "Messages",
+    friends: "Friends",
+    submissions: "Submissions",
     joined: "Joined",
     rating: "Duel rating",
     units: "Units completed",
@@ -175,6 +180,8 @@ export function ProfilePage({
   goRoadmaps,
   openRoadmap,
   isStaff,
+  goFriends,
+  goSubmissions,
 }: {
   lang: Lang;
   profile: Profile;
@@ -188,6 +195,8 @@ export function ProfilePage({
   goRoadmaps: () => void;
   openRoadmap: (slug: string) => void;
   isStaff: boolean;
+  goFriends: () => void;
+  goSubmissions: () => void;
 }) {
   const t = T[lang];
   const [editing, setEditing] = useState(false);
@@ -286,6 +295,12 @@ export function ProfilePage({
               {t.users}
             </button>
           )}
+          <button className="secondary" onClick={goSubmissions}>
+            {t.submissions}
+          </button>
+          <button className="secondary" onClick={goFriends}>
+            {t.friends}
+          </button>
           <button className="secondary" onClick={goMessages}>
             {t.messages}
           </button>
@@ -296,7 +311,9 @@ export function ProfilePage({
       </div>
 
       <section className="pf-header panel">
-        <Avatar profile={profile} name={name} />
+        <AvatarZoom lang={lang} src={profile.avatar_url} name={name}>
+          <Avatar profile={profile} name={name} />
+        </AvatarZoom>
         <div className="pf-identity">
           <h2>{name}</h2>
           <p className="pf-handle">@{profile.username}</p>
@@ -402,6 +419,7 @@ export function ProfilePage({
           )}
         </section>
       </div>
+
     </>
   );
 }
