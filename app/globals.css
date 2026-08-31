@@ -774,3 +774,20 @@ body{background:radial-gradient(circle at 12% -10%,rgba(119,210,68,.13),transpar
 .unit-popover .req{border-top:1px solid #22302a;padding-top:8px;margin-top:3px}
 .unit-popover .req em{color:#ffd76d;text-align:right}
 @media(max-width:600px){.unit-popover{display:none}}
+/* Compiler playground + linked practice rows. */
+.play-grid{display:grid;grid-template-columns:1fr 380px;gap:18px;align-items:start}
+.play-editor textarea{min-height:420px}
+.play-actions{display:flex;gap:8px;align-items:center}
+.play-actions .ghost{border:1px solid #2a3b31;background:#0c120f;color:#84958b;padding:7px 11px;border-radius:8px;font-size:12px}
+.play-actions .ghost:hover{color:var(--lime);border-color:#46643f}
+.play-side{display:grid;gap:14px}
+.play-io h3{margin:0 0 9px;font-size:14px}
+.play-io textarea{width:100%;min-height:110px;padding:12px;border-radius:10px;background:#060a08;border:1px solid #1e2d25;
+ color:#c8f7d3;font-family:var(--font-mono);font-size:13px;resize:vertical}
+.play-io pre{margin:0;padding:12px;border-radius:10px;background:#060a08;border:1px solid #1e2d25;color:#c8f7d3;
+ font-family:var(--font-mono);font-size:13px;white-space:pre-wrap;max-height:220px;overflow:auto}
+.play-io pre.muted{color:#6f8177}
+.play-err pre{color:#ffb3b3;border-color:#4a2a2a;background:#140a0a}
+.link-cell{background:none;border:0;padding:0;color:var(--ink);font:inherit;text-align:left;cursor:pointer}
+.link-cell:hover{color:var(--lime);text-decoration:underline}
+@media(max-width:900px){.play-grid{grid-template-columns:1fr}}
