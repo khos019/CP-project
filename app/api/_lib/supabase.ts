@@ -16,11 +16,13 @@
  * Nothing here decides anything. The database decides; this carries the call.
  */
 
+import { serverEnv } from "./env";
+
 export type RpcResult<T> = { ok: true; data: T } | { ok: false; status: number; error: string };
 
 const url = () => (process.env.NEXT_PUBLIC_SUPABASE_URL || "").replace(/\/$/, "");
 const anonKey = () => process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
-const serviceKey = () => process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+const serviceKey = () => serverEnv("SUPABASE_SERVICE_ROLE_KEY");
 
 export const supabaseConfigured = () => Boolean(url() && anonKey());
 

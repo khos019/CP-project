@@ -18,6 +18,7 @@
  */
 
 import { tests } from "../judge/tests";
+import { serverEnv } from "./env";
 
 export type Language = "cpp20" | "python3";
 export const languageIds = { cpp20: 54, python3: 71 } as const;
@@ -56,16 +57,17 @@ const POLL_DELAY_MS = 450;
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-export const judgeConfigured = () => Boolean(process.env.JUDGE0_URL || true);
+export const judgeConfigured = () => Boolean(serverEnv("JUDGE0_URL"));
 
 function endpoint() {
-  const url = (process.env.JUDGE0_URL || "https://ce.judge0.com").replace(/\/$/, "");
+  const url = (serverEnv("JUDGE0_URL") || "https://ce.judge0.com").replace(/\/$/, "");
   const headers: Record<string, string> = { "content-type": "application/json" };
-  if (process.env.JUDGE0_API_KEY) {
-    if (process.env.JUDGE0_API_HOST) {
-      headers["X-RapidAPI-Key"] = process.env.JUDGE0_API_KEY;
-      headers["X-RapidAPI-Host"] = process.env.JUDGE0_API_HOST;
-    } else headers["X-Auth-Token"] = process.env.JUDGE0_API_KEY;
+  const apiKey = serverEnv("JUDGE0_API_KEY"), apiHost = serverEnv("JUDGE0_API_HOST");
+  if (apiKey) {
+    if (apiHost) {
+      headers["X-RapidAPI-Key"] = apiKey;
+      headers["X-RapidAPI-Host"] = apiHost;
+    } else headers["X-Auth-Token"] = apiKey;
   }
   return { url, headers };
 }

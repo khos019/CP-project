@@ -108,13 +108,17 @@ export async function POST(request: Request) {
       const created = Array.isArray(data.challenges) ? (data.challenges as Json[]) : [];
       if (created.length) {
         const me = await callerProfile(token);
-        await broadcast(created.map((c) => toUser(asString(c.receiver_id), "duel_challenge_received", {
+        // Reported back so a delivery failure is visible rather than silent —
+        // a challenge that is created but never announced looks, from the
+        // outside, exactly like a matchmaker that found nobody.
+        data.notified = await broadcast(created.map((c) => toUser(asString(c.receiver_id), "duel_challenge_received", {
           challenge_id: c.challenge_id,
           from: me,
           // The server's deadline, not a number computed here — the countdown
           // the learner watches has to be the one the accept is measured on.
           expires_at: c.expires_at,
         })));
+
       }
 
       // Two people were already searching and the database put them together

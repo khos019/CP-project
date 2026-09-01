@@ -14,8 +14,12 @@
  * trusted by the receiver, which is what makes a public channel safe to use.
  */
 
+import { serverEnv } from "./env";
+
+// NEXT_PUBLIC_* stays a literal process.env read: the bundler substitutes that
+// exact text at build time. The service key is a Worker binding — see ./env.
 const url = () => (process.env.NEXT_PUBLIC_SUPABASE_URL || "").replace(/\/$/, "");
-const serviceKey = () => process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+const serviceKey = () => serverEnv("SUPABASE_SERVICE_ROLE_KEY");
 
 /** Everything a duel can announce. Kept as a union so a typo in a route is a
  *  compile error rather than an event nobody ever receives. */
@@ -39,18 +43,22 @@ type Message = { topic: string; event: DuelEventName; payload: Record<string, un
  *  the client hears about a change quickly, never how it learns what is true —
  *  a dropped event costs a second of latency, because the next poll or the next
  *  duel_state() call corrects it. */
-export async function broadcast(messages: Message[]): Promise<boolean> {
-  if (!messages.length) return true;
-  if (!url() || !serviceKey()) return false;
+export async function broadcast(messages: Message[]): Promise<string> {
+  if (!messages.length) return "empty";
+  if (!url()) return "no_url";
+  if (!serviceKey()) return "no_key";
   try {
     const response = await fetch(`${url()}/realtime/v1/api/broadcast`, {
       method: "POST",
       headers: { apikey: serviceKey(), Authorization: `Bearer ${serviceKey()}`, "content-type": "application/json" },
       body: JSON.stringify({ messages }),
     });
-    return response.ok;
-  } catch {
-    return false;
+    if (response.ok) return "ok";
+    // The body names the reason when the status alone does not.
+    const detail = await response.text().catch(() => "");
+    return `http_${response.status}:${detail.slice(0, 120)}`;
+  } catch (error) {
+    return `threw:${error instanceof Error ? error.message : "unknown"}`;
   }
 }
 
