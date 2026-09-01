@@ -142,12 +142,26 @@ test("the tick challenges nearby opponents who are online",
 
 test("simultaneous accepts: exactly one duel exists afterwards",
   { skip: !ready && "no Supabase credentials" }, async () => {
+    // Issue the cards this test races on, rather than inheriting the previous
+    // test's: those expire after the configured window, and with a seven-second
+    // TTL whether they survived depended on how long the run before it took.
+    // A test that passes or fails on timing tells you nothing either way.
+    await clearDuels();
+    await rpc(B.token, "duel_heartbeat");
+    await rpc(C.token, "duel_heartbeat");
+    await rpc(A.token, "duel_start_search");
+    const issued = await rpc(A.token, "duel_tick");
+    assert.equal(issued.challenges.length, 2, "both learners hold a card");
+
     const before = await countRows("duel_matches?select=id");
+    const cardB = (await rpc(B.token, "duel_state")).challenge;
+    const cardC = (await rpc(C.token, "duel_state")).challenge;
+    assert.ok(cardB && cardC, "both cards are still live when the race starts");
 
     // The whole point. Both requests are in flight before either has returned.
     const [b, c] = await Promise.all([
-      rpc(B.token, "duel_accept_challenge", { p_challenge: (await rpc(B.token, "duel_state")).challenge.id }),
-      rpc(C.token, "duel_accept_challenge", { p_challenge: (await rpc(C.token, "duel_state")).challenge.id }),
+      rpc(B.token, "duel_accept_challenge", { p_challenge: cardB.id }),
+      rpc(C.token, "duel_accept_challenge", { p_challenge: cardC.id }),
     ]);
 
     const winners = [b, c].filter((r) => r.ok === true);
@@ -184,8 +198,17 @@ test("a player already in a duel cannot start another search",
     assert.equal((await rpc(A.token, "duel_state")).status, "idle");
   });
 
-test("an accept after the five seconds is refused by the server clock",
+test("an accept after the window closes is refused by the server clock",
   { skip: !ready && "no Supabase credentials" }, async () => {
+    // Read the window rather than hard-coding it. This test used to sleep 5.4s
+    // against a five-second window; migration 021 moved it to seven, the accept
+    // succeeded, and the failure cascaded into the two tests after it because
+    // the accounts were left sitting in a duel nobody expected.
+    const config = await fetch(
+      `${URL_BASE}/rest/v1/duel_config?key=eq.challenge_ttl_seconds&select=value`,
+      { headers: svcHeaders }).then((r) => r.json());
+    const ttl = Number(config[0]?.value ?? 7);
+
     await rpc(A.token, "duel_start_search");
     await rpc(B.token, "duel_heartbeat");
     const tick = await rpc(A.token, "duel_tick");
@@ -195,9 +218,9 @@ test("an accept after the five seconds is refused by the server clock",
     assert.ok(challenge, "B has it in hand");
 
     // Past the deadline, with the client's countdown deliberately ignored.
-    await sleep(5400);
+    await sleep(ttl * 1000 + 600);
     const late = await rpc(B.token, "duel_accept_challenge", { p_challenge: challenge.id });
-    assert.equal(late.ok, false);
+    assert.equal(late.ok, false, `an accept ${ttl}s+ after the challenge must be refused`);
     assert.equal(late.error, "expired");
 
     const stillIdle = await rpc(B.token, "duel_state");
@@ -205,8 +228,20 @@ test("an accept after the five seconds is refused by the server clock",
     await rpc(A.token, "duel_cancel_search");
   });
 
+/* Whatever the tests above left behind, the ones below start clean. A duel
+   that outlives its test turns one failure into three, which is how a single
+   stale timing assumption looked like a broken matchmaker. */
+async function clearDuels() {
+  for (const who of [A, B, C]) {
+    const state = await rpc(who.token, "duel_state");
+    if (state?.duel) await rpc(who.token, "duel_forfeit", { p_match: state.duel.id });
+    await rpc(who.token, "duel_cancel_search");
+  }
+}
+
 test("the search resumes only once every card is gone",
   { skip: !ready && "no Supabase credentials" }, async () => {
+    await clearDuels();
     await rpc(A.token, "duel_start_search");
     await rpc(B.token, "duel_heartbeat");
     await rpc(C.token, "duel_heartbeat");
@@ -236,9 +271,38 @@ test("the search resumes only once every card is gone",
     await rpc(A.token, "duel_cancel_search");
   });
 
+test("two people already searching are paired without a challenge card",
+  { skip: !ready && "no Supabase credentials" }, async () => {
+    await clearDuels();
+    // The bug 021 fixes: both of these have pressed "find opponent", so
+    // neither needs to be asked. Before, each excluded the other from its own
+    // candidate list and both would eventually have been handed a bot.
+    await rpc(B.token, "duel_heartbeat");
+    await rpc(A.token, "duel_heartbeat");
+    await rpc(B.token, "duel_start_search");
+    await rpc(A.token, "duel_start_search");
+
+    const tick = await rpc(A.token, "duel_tick");
+    assert.equal(tick.paired, true, "the tick matched the two waiting players");
+    assert.ok(tick.duel_id, "and created a duel");
+    assert.equal(tick.opponent_id, B.id, "against the other searcher");
+
+    const a = await rpc(A.token, "duel_state");
+    const b = await rpc(B.token, "duel_state");
+    assert.equal(a.status, "duel_active");
+    assert.equal(b.status, "duel_active");
+    assert.equal(a.duel.id, b.duel.id, "the same duel for both");
+    assert.equal(a.duel.mode, "human");
+    assert.equal(a.challenge, null, "nobody was sent a card they had to accept");
+
+    await clearDuels();
+  });
+
 test("the bot only appears once humans have had their window",
   { skip: !ready && "no Supabase credentials" }, async () => {
-    await rpc(A.token, "duel_start_search");
+    await clearDuels();
+    const started = await rpc(A.token, "duel_start_search");
+    assert.equal(started.ok, true, "the search actually started");
     const early = await rpc(A.token, "duel_start_bot_match");
     assert.equal(early.ok, false);
     assert.equal(early.error, "too_early", "a client cannot summon a bot ahead of schedule");
