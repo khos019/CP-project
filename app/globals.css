@@ -880,3 +880,32 @@ body{background:radial-gradient(circle at 12% -10%,rgba(119,210,68,.13),transpar
 .concept-figure svg{max-width:560px;margin:0 auto}
 .statement,.statement *{min-width:0;max-width:100%}
 .statement pre{white-space:pre-wrap;word-break:break-word}
+/* Submit editor: tab bar, gutter, status bar. */
+.ide{display:flex;flex-direction:column;min-width:0;border:1px solid #223029;border-radius:12px;
+ overflow:hidden;background:#080c0a}
+.ide-tabs{display:flex;align-items:stretch;background:#0a0f0d;border-bottom:1px solid #1c2823}
+.ide-tab{display:flex;align-items:center;gap:8px;padding:10px 16px;border:0;border-right:1px solid #1c2823;
+ background:transparent;color:#7d8f85;font-family:var(--font-mono);font-size:12.5px;cursor:pointer}
+.ide-tab:hover{color:#b7c8bf}
+.ide-tab.active{background:#0e1512;color:var(--ink);box-shadow:inset 0 2px 0 var(--lime)}
+.ide-dot{width:8px;height:8px;border-radius:50%;background:#3a4a42}
+.ide-tab.active .ide-dot{background:var(--lime)}
+.ide-tabs-fill{flex:1}
+.ide-body{display:flex;min-width:0;background:#080c0a}
+.ide-gutter{margin:0;padding:14px 10px 14px 14px;background:#0a100d;border-right:1px solid #1c2823;
+ color:#42524a;font-family:var(--font-mono);font-size:13px;line-height:1.65;text-align:right;
+ user-select:none;white-space:pre;overflow:hidden;min-width:44px}
+.ide-input{flex:1;min-width:0;min-height:340px;margin:0;padding:14px 16px;border:0;resize:vertical;
+ background:transparent;color:#d6e4dc;font-family:var(--font-mono);font-size:13px;line-height:1.65;
+ white-space:pre;overflow:auto;tab-size:4}
+.ide-input:focus{outline:0;box-shadow:inset 2px 0 0 var(--lime)}
+.ide-status{display:flex;align-items:center;gap:14px;padding:9px 12px;background:#0a0f0d;
+ border-top:1px solid #1c2823;flex-wrap:wrap}
+.ide-verdict{font-family:var(--font-mono);font-size:12.5px;flex:1;min-width:160px}
+.ide-verdict.idle{color:#63756b}
+.ide-verdict.ok{color:#9ae879}
+.ide-verdict.bad{color:#ff8f8f}
+.ide-verdict.busy{color:#ffd76d}
+.ide-meta{display:flex;gap:14px;color:#5f7268;font-family:var(--font-mono);font-size:11.5px}
+.ide-run{padding:9px 18px}
+@media(max-width:600px){.ide-meta{display:none}.ide-input{min-height:240px}}
