@@ -932,3 +932,11 @@ body{background:radial-gradient(circle at 12% -10%,rgba(119,210,68,.13),transpar
 .lesson-nav-btn em{font-style:normal;font-size:11px;color:#ffd76d}
 .lesson-nav-btn.locked{opacity:.55;cursor:not-allowed}
 @media(max-width:900px){.lesson-toc{display:none}.lesson-nav{grid-template-columns:1fr}}
+/* Stage headers: a 15-unit path reads as three chapters rather than one ribbon. */
+.cloud-slot{display:flex;flex-direction:column;align-items:stretch;min-width:0}
+.stage-head{display:flex;align-items:center;gap:14px;margin:34px 0 10px;padding:0 4px}
+.cloud-slot:first-child .stage-head{margin-top:6px}
+.stage-no{font-family:var(--font-mono);font-size:11px;letter-spacing:.14em;color:var(--muted);white-space:nowrap}
+.stage-bar{flex:1;height:3px;border-radius:2px;background:#1c2823;overflow:hidden}
+.stage-bar i{display:block;height:100%;background:var(--lime);transition:width .4s ease}
+.stage-count{font-size:11px;color:var(--muted)}
