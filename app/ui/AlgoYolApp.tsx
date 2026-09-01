@@ -5,9 +5,13 @@ import { RoadmapExperience } from "./RoadmapExperience";
 import { RoadmapHub } from "./RoadmapHub";
 import { roadmapCards } from "./roadmap-data";
 import { bankProblems, type BankProblem } from "./problem-bank";
-import { applySolve, algoRating, rankName, ratingColor } from "./rating";
+import { applySolve, ratingColor } from "./rating";
 import { Shop } from "./Shop";
 import { Playground } from "./Playground";
+import { ChallengeOverlay, DuelMatchmaking, DUEL_EVENT } from "./DuelArena";
+import { OnlineDot, onlineAmong } from "./presence";
+import { openDuelChannel, userTopic, matchTopic, type DuelChannel } from "./duel-realtime";
+import { acceptChallenge, declineChallenge, duelHeartbeat, duelState, type DuelState } from "./duel-client";
 import { addLocalActivity, pushActivity } from "./coins";
 import { Placement } from "./Placement";
 import { AuthPage } from "./AuthPage";
@@ -18,7 +22,7 @@ import { ProfilePage } from "./ProfilePage";
 import { UsersAdmin } from "./UsersAdmin";
 import { Messages } from "./Messages";
 import { PublicProfile } from "./PublicProfile";
-import { MASTERY_CONFIG, backfillMastery, loadMastery, masteryOf, recordDuelResult, recordEvidence } from "./mastery";
+import { MASTERY_CONFIG, backfillMastery, loadMastery, recordEvidence } from "./mastery";
 import { loadProgress, readLocal as readLocalProgress, syncUp } from "./progress";
 import { can } from "./permissions";
 import { fetchFriends, recordSubmission, type FriendRow } from "./social";
@@ -26,7 +30,7 @@ import { FriendsScreen, PersonSubmissions, SubmissionsScreen } from "./social-ui
 import {
  GUEST_SCOPE, adoptGuestInto, adoptLegacyInto, clearSession, dropScopeData, ensureFreshToken, fetchLeaderboard,
  fetchLearnerCount,
- fetchProfile, fetchUnreadCount, readScoped, readStoredUserId, readToken, removeScoped, saveDuelRating, searchPeople, setScope,
+ fetchProfile, fetchUnreadCount, readScoped, readStoredUserId, readToken, removeScoped, searchPeople, setScope,
  storeSession, supabaseReady, writeScoped, type LeaderRow, type Profile, type Role,
 } from "./session";
 
@@ -38,7 +42,6 @@ const roadmapCatalogSize=()=>({tracks:roadmapCards.length,units:roadmapCards.red
 // full statement and real hidden tests. The old inline entries were mostly
 // decorative — they had no judge key, so they could never be solved.
 const problems:BankProblem[]=[...bankProblems];
-const duelTopics:Record<string,string>={"sum-two":"programming-basics","max-subarray":"foundations","coin-change":"dynamic-programming"};
 const cpp=`#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    long long a, b;\n    cin >> a >> b;\n    cout << a + b << "\\n";\n    return 0;\n}`;
 
 /* Session, profile and role handling live in ./session — one module owns the
@@ -76,7 +79,7 @@ function readAuthReturn():AuthReturn{
 const roleLabel=(role:Role,lang:Lang)=>role==="owner"?(lang==="uz"?"EGA (OWNER)":"OWNER"):role==="admin"?"ADMIN":(lang==="uz"?"FOYDALANUVCHI":"USER");
 
 export function AlgoYolApp(){
- const [lang,setLang]=useState<Lang>("uz"),[view,setView]=useState<View>("home"),[filter,setFilter]=useState("all"),[code,setCode]=useState(cpp),[codeLang,setCodeLang]=useState<"cpp20"|"python3">("cpp20"),[verdict,setVerdict]=useState(""),[selectedRoadmap,setSelectedRoadmap]=useState("foundations"),[selectedUnit,setSelectedUnit]=useState<string|null>(null),[ratingGain,setRatingGain]=useState<{delta:number;before:number;after:number}|null>(null),[activeProblem,setActiveProblem]=useState<BankProblem>(problems[0]); const t=copy[lang];
+ const [lang,setLang]=useState<Lang>("uz"),[view,setView]=useState<View>("home"),[filter,setFilter]=useState("all"),[code,setCode]=useState(cpp),[codeLang,setCodeLang]=useState<"cpp20"|"python3">("cpp20"),[verdict,setVerdict]=useState(""),[selectedRoadmap,setSelectedRoadmap]=useState("foundations"),[selectedUnit,setSelectedUnit]=useState<string|null>(null),[activeProblem,setActiveProblem]=useState<BankProblem>(problems[0]); const t=copy[lang];
  // A stored token is not proof of an account: it can be expired or revoked.
  // The app stays in "loading" until Supabase confirms it, then commits to
  // exactly one of guest / authenticated. It never renders account-shaped UI
@@ -91,6 +94,15 @@ export function AlgoYolApp(){
  // Unread count for the inbox badge, and the person a message screen should
  // open on when another screen sends the learner there.
  const [unread,setUnread]=useState(0);
+ // Duel: the server's view of what this learner is doing, when it was read
+ // (so a countdown can be drawn against the server clock rather than the
+ // device's), the socket state, and a one-line explanation for the cases that
+ // need one — "another player took this opponent" being the common one.
+ const [duel,setDuel]=useState<DuelState|null>(null);
+ const [duelAt,setDuelAt]=useState(()=>Date.now());
+ const [duelOnline,setDuelOnline]=useState(false);
+ const [duelNotice,setDuelNotice]=useState("");
+ const channelRef=useRef<DuelChannel|null>(null);
  const [messageWith,setMessageWith]=useState<string|null>(null);
  // A UTC day carried from the statistics chart to the users page.
  const [usersDay,setUsersDay]=useState<string|null>(null);
@@ -164,10 +176,10 @@ export function AlgoYolApp(){
   const id=setInterval(tick,60000);
   return()=>{live=false;clearInterval(id)};
  },[auth.status]);
+
  // Reacts to a verdict that arrived from the judge, so the state it sets is a
  // consequence of a response rather than of rendering.
- // eslint-disable-next-line react-hooks/set-state-in-effect
- useEffect(()=>{if(!verdict.startsWith("Qabul qilindi")&&!verdict.startsWith("Accepted"))return;if(activeProblem.judge){const gained=applySolve(activeProblem.id,activeProblem.rating||1200);if(gained.delta>0)setRatingGain(gained);const base=MASTERY_CONFIG.weights.problem[activeProblem.difficulty as keyof typeof MASTERY_CONFIG.weights.problem];recordEvidence(activeProblem.topic,"problem",`problem:${activeProblem.id}`,base)}const lesson=readScoped("algoyol-active-lesson");if(!lesson)return;let data={quizScores:{},solved:{}} as {quizScores:Record<string,number>;solved:Record<string,boolean>};try{data=JSON.parse(readScoped("algoyol-roadmap-progress")||JSON.stringify(data))}catch{}if(!data.solved[lesson])recordEvidence(lesson.slice(0,lesson.lastIndexOf("-")),"lesson",`lesson:${lesson}`,MASTERY_CONFIG.weights.lesson);data.solved={...data.solved,[lesson]:true};writeScoped("algoyol-roadmap-progress",JSON.stringify(data));removeScoped("algoyol-active-lesson");window.dispatchEvent(new Event("algoyol-progress"))},[verdict]);// eslint-disable-line react-hooks/exhaustive-deps
+ useEffect(()=>{if(!verdict.startsWith("Qabul qilindi")&&!verdict.startsWith("Accepted"))return;if(activeProblem.judge){applySolve(activeProblem.id,activeProblem.rating||1200);const base=MASTERY_CONFIG.weights.problem[activeProblem.difficulty as keyof typeof MASTERY_CONFIG.weights.problem];recordEvidence(activeProblem.topic,"problem",`problem:${activeProblem.id}`,base)}const lesson=readScoped("algoyol-active-lesson");if(!lesson)return;let data={quizScores:{},solved:{}} as {quizScores:Record<string,number>;solved:Record<string,boolean>};try{data=JSON.parse(readScoped("algoyol-roadmap-progress")||JSON.stringify(data))}catch{}if(!data.solved[lesson])recordEvidence(lesson.slice(0,lesson.lastIndexOf("-")),"lesson",`lesson:${lesson}`,MASTERY_CONFIG.weights.lesson);data.solved={...data.solved,[lesson]:true};writeScoped("algoyol-roadmap-progress",JSON.stringify(data));removeScoped("algoyol-active-lesson");window.dispatchEvent(new Event("algoyol-progress"))},[verdict]);// eslint-disable-line react-hooks/exhaustive-deps
  // The address bar reflects the current screen — /roadmaps/{slug}/{unit} —
  // so two roadmaps (or two units) are never one indistinguishable URL.
  /* A screen is a view plus whatever that view is *about*. `person` is a handle
@@ -195,6 +207,47 @@ export function AlgoYolApp(){
  const applyScreen=(s:Screen)=>{screenRef.current=s;setView(s.view);setSelectedRoadmap(s.roadmap);setSelectedUnit(s.unit);setPerson(s.person)};
  const pushScreen=(patch:Partial<Screen>)=>{const next={...screenRef.current,...patch};applyScreen(next);window.history.pushState(next,"",screenToPath(next));navDepth.current++;window.scrollTo({top:0,behavior:"smooth"})};
  const go=(v:View)=>pushScreen({view:v,unit:null});
+ /* Duel presence and realtime.
+    Three things were missing and a challenge needs all three: the server has
+    to be told this learner is here (heartbeat), the browser has to be
+    listening (channel), and the card has to be able to appear on whatever
+    screen they happen to be on — a notification that only shows up on the
+    duel page is not a notification. This lives in the shell for that last
+    reason. */
+ useEffect(()=>{
+  if(auth.status!=="authenticated"||!profile)return;
+  let live=true;
+  const beat=()=>{void duelHeartbeat(true)};
+  beat();
+  const beatId=window.setInterval(beat,25000);
+  const pull=async()=>{const next=await duelState();if(live&&next&&"status" in next){setDuel(next);setDuelAt(Date.now())}};
+  void pull();
+  const channel=openDuelChannel(event=>{
+   if(!live)return;
+   // The payload is never the source of truth — it says something happened,
+   // and the server is asked what. Public channels make that the only safe
+   // reading, and it also means a dropped event costs a second, not a duel.
+   if(event.event==="duel_challenge_cancelled")setDuelNotice(lang==="uz"?"Raqibni boshqa o‘yinchi oldi.":"Another player took this opponent.");
+   // A message arrives on the same channel the duel already keeps open, so the
+   // badge updates now rather than on the next minute's poll. The event carries
+   // no text — only that there is something to re-read.
+   if(event.event==="message_received"){void refreshUnread();return}
+   if(event.event==="match_found"){const id=String((event.payload as {duel_id?:string}).duel_id||"");if(id)channelRef.current?.join(matchTopic(id));go("duel")}
+   void pull();
+   window.dispatchEvent(new Event(DUEL_EVENT));
+  },status=>setDuelOnline(status==="open"));
+  channelRef.current=channel;
+  channel.join(userTopic(profile.id));
+  return()=>{live=false;window.clearInterval(beatId);channel.close();channelRef.current=null};
+ },[auth.status,profile?.id]);// eslint-disable-line react-hooks/exhaustive-deps
+ /* A duel in progress gets its own topic, so submissions and the finish reach
+    both players without either of them polling for it. */
+ useEffect(()=>{
+  const id=duel?.duel?.id;
+  if(!id||!channelRef.current)return;
+  channelRef.current.join(matchTopic(id));
+  return()=>{channelRef.current?.leave(matchTopic(id))};
+ },[duel?.duel?.id]);
  const back=()=>{if(navDepth.current>0)window.history.back();else pushScreen({view:"roadmaps",unit:null})};
  // Coin streaks need real engaged time, so the clock stops on a hidden tab
  // and time is banked in 60s chunks rather than trusted as one large number.
@@ -242,6 +295,21 @@ export function AlgoYolApp(){
 
  const openRoadmap=(slug:string)=>{pushScreen({view:"roadmap",roadmap:slug,unit:null})};
  const openPerson=(handle:string)=>{pushScreen({view:"person",person:handle,unit:null})};
+ /* Answering a challenge. Every outcome here is the server's word: "ok" means
+    a duel exists, and a refusal names its reason so the card can say what
+    happened rather than just vanishing. */
+ const pullDuel=async()=>{const next=await duelState();if(next&&"status" in next){setDuel(next);setDuelAt(Date.now())}};
+ const onAcceptChallenge=async(id:string)=>{
+  setDuelNotice("");
+  const outcome=await acceptChallenge(id);
+  if(outcome&&"ok" in outcome&&outcome.ok){await pullDuel();window.dispatchEvent(new Event(DUEL_EVENT));go("duel");return}
+  const reason=outcome&&"error" in outcome?String(outcome.error):"";
+  setDuelNotice(reason==="expired"?(lang==="uz"?"Chaqiriq muddati tugadi.":"The challenge expired.")
+   :reason==="already_taken"?(lang==="uz"?"Kech qoldingiz — raqibni boshqa o‘yinchi oldi.":"Too slow — another player took this opponent.")
+   :(lang==="uz"?"Chaqiriqni qabul qilib bo‘lmadi.":"That challenge could not be accepted."));
+  await pullDuel();
+ };
+ const onDeclineChallenge=async(id:string)=>{await declineChallenge(id);await pullDuel()};
  // OAuth / email-link return, consumed from the value captured at first render.
  useEffect(()=>{
   const ret=authReturn.current;
@@ -265,8 +333,15 @@ export function AlgoYolApp(){
   // learner nothing.
   void recordSubmission({problemKey:activeProblem.judge,problemTitle:lang==="uz"?activeProblem.uz:activeProblem.en,language:codeLang,verdict:String(r.verdict||"JUDGE_ERROR"),runtimeMs:r.runtimeMs??null,memoryKb:r.memoryKb??null,passed:r.passed??null,total:r.total??null,source:code})}catch{setVerdict(lang==="uz"?"Tekshiruvchi bilan aloqa uzildi":"Judge connection failed")}};
  return <div className="shell"><header className="topbar"><button className="brand" onClick={()=>go("home")} style={{border:0,background:"transparent"}}><BrandMark className="brandmark" />AlgoYo‘l</button><nav className="nav">{(["home","roadmaps","problems","duel","leaderboard","shop","playground"] as View[]).map(v=><button key={v} className={view===v?"active":""} onClick={()=>go(v)}>{t[v as keyof typeof t]}</button>)}</nav><div className="actions"><button className="lang" onClick={swap} aria-label={lang==="uz"?"Switch to English":"O‘zbekchaga o‘tish"}>{lang==="uz"?"EN":"UZ"}</button>{signed&&<button className="pill msg-pill" onClick={()=>go("messages")} aria-label={lang==="uz"?"Xabarlar":"Messages"}>✉{unread>0&&<span className="msg-badge">{unread>99?"99+":unread}</span>}</button>}{auth.status==="loading"?<span className="pill pill-loading" aria-live="polite">…</span>:<button className="pill" onClick={()=>go(signed?"profile":"auth")}>{signed?(lang==="uz"?"Profil":"Profile"):t.login}</button>}<button className="primary" onClick={()=>go("duel")}>{lang==="uz"?"Duel topish":"Find duel"}</button></div></header>
- <main className="main">{view==="home"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed&&profile?<><ContinueHero lang={lang} profile={profile} go={v=>go(v as View)} openRoadmap={openRoadmap}/><LandingStory lang={lang}/><LandingBrowse lang={lang} go={go} openRoadmap={openRoadmap}/><LandingCta lang={lang} go={go} signed/></>:<Home lang={lang} go={go} openRoadmap={openRoadmap}/>)} {view==="roadmaps"&&<RoadmapHub lang={lang} role={role} openRoadmap={openRoadmap}/>} {view==="roadmap"&&<RoadmapExperience slug={selectedRoadmap} lang={lang} role={role} unitId={selectedUnit} onOpenUnit={id=>pushScreen({unit:id})} onBack={back} onPractice={()=>pushScreen({view:"problem"})} onOpenProblem={(id:string)=>{const p=bankProblems.find(x=>x.id===id);if(p){setActiveProblem(p);setVerdict("");pushScreen({view:"problem"})}}}/>} {view==="problems"&&<Problems lang={lang} filter={filter} setFilter={setFilter} items={filtered} go={go} onSelect={p=>{setActiveProblem(p);setCode(p.judge==="max-subarray"?duelProblems[1].cpp:p.judge==="coin-change"?duelProblems[2].cpp:cpp);setVerdict("");go("problem")}}/>} {view==="problem"&&<Problem lang={lang} item={activeProblem} code={code} setCode={setCode} codeLang={codeLang} setCodeLang={setCodeLang} verdict={verdict} submit={judge} onBack={back}/>} {view==="duel"&&<DuelMatchmaking lang={lang} profile={profile} signed={signed} authLoading={auth.status==="loading"} needAuth={()=>go("auth")} openRoadmap={openRoadmap}/>} {view==="leaderboard"&&<Leaderboard lang={lang} me={profile} signed={signed} onOpenPerson={openPerson}/>} {view==="profile"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<ProfilePage lang={lang} profile={profile} onProfileChange={next=>setAuth({status:"authenticated",profile:next})} signOut={signOut} goAdmin={()=>go("admin")} goStats={()=>go("stats")} goUsers={()=>go("users")} goMessages={()=>go("messages")} isOwner={can(role,"user.manage_roles")} goRoadmaps={()=>go("roadmaps")} openRoadmap={openRoadmap} isStaff={can(role,"content.view_management")} goFriends={()=>go("friends")} goSubmissions={()=>go("submissions")}/>:<SignInRequired lang={lang} go={go} what="profile"/>)} {view==="auth"&&<AuthPage lang={lang} notice={authNotice} onAuthenticated={(token,remember,isNew,refreshToken)=>{void enterSession(token,remember,isNew,refreshToken)}}/>} {view==="placement"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed?<Placement lang={lang} signed={signed} onFinish={()=>go("roadmaps")} onRoadmap={openRoadmap}/>:<SignInRequired lang={lang} go={go} what="placement"/>)} {view==="admin"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<Admin lang={lang} profile={profile}/>:<SignInRequired lang={lang} go={go} what="admin"/>)} {view==="person"&&(person?<PublicProfile key={person} lang={lang} username={person} meId={profile?.id||null} signedIn={signed} onBack={back} onMessage={id=>{setMessageWith(id);go("messages")}} onMyProfile={()=>go("profile")} onSignIn={()=>go("auth")} onOpenSubmissions={h=>pushScreen({view:"person-submissions",person:h})}/>:<ScreenLoading lang={lang}/>)} {view==="shop"&&<Shop lang={lang} signed={signed} authLoading={auth.status==="loading"}/>} {view==="playground"&&<Playground lang={lang}/>} {view==="friends"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed?<FriendsScreen lang={lang} onBack={()=>go("profile")} onOpenPerson={openPerson}/>:<SignInRequired lang={lang} go={go} what="profile"/>)} {view==="submissions"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<SubmissionsScreen lang={lang} userId={profile.id} who={profile.display_name||profile.username} isMe signedIn onBack={()=>go("profile")}/>:<SignInRequired lang={lang} go={go} what="profile"/>)} {view==="person-submissions"&&(person?<PersonSubmissions key={person} lang={lang} handle={person} meId={profile?.id||null} signedIn={signed} onBack={back}/>:<ScreenLoading lang={lang}/>)} {view==="messages"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<Messages lang={lang} me={profile} openWith={messageWith} onOpened={()=>setMessageWith(null)} onUnreadChange={()=>{void refreshUnread()}} onOpenProfile={openPerson}/>:<SignInRequired lang={lang} go={go} what="messages"/>)} {view==="users"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:!profile?<SignInRequired lang={lang} go={go} what="users"/>:can(role,"user.manage_roles")?<UsersAdmin lang={lang} meId={profile.id} goProfile={()=>go("profile")} onMessage={id=>{setMessageWith(id);go("messages")}} onOpenProfile={openPerson} initialDay={usersDay} onDayConsumed={()=>setUsersDay(null)}/>:<div className="panel"><div className="notice notice-error">{lang==="uz"?"Bu sahifa faqat ega (owner) roli uchun.":"This page is for the owner role only."}</div></div>)} {view==="stats"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:!profile?<SignInRequired lang={lang} go={go} what="stats"/>:can(role,"stats.view")?<OwnerStats lang={lang} goProfile={()=>go("profile")} onPickDay={day=>{setUsersDay(day);go("users")}}/>:<div className="panel"><div className="notice notice-error">{lang==="uz"?"Bu sahifa faqat ega (owner) roli uchun.":"This page is for the owner role only."}</div></div>)}</main>
- <nav className="mobile-nav">{(["home","roadmaps","problems","duel","leaderboard","shop","playground"] as View[]).map(v=><button key={v} className={view===v?"active":""} onClick={()=>go(v)}>{t[v as keyof typeof t]}</button>)}</nav><footer className="footer"><span>© {new Date().getFullYear()} AlgoYo‘l · Toshkent</span><span>{lang==="uz"?"Bilimdan natijagacha.":"From learning to results."}</span></footer></div>
+ <main className="main">{view==="home"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed&&profile?<><ContinueHero lang={lang} profile={profile} go={v=>go(v as View)} openRoadmap={openRoadmap}/><LandingStory lang={lang}/><LandingBrowse lang={lang} go={go} openRoadmap={openRoadmap}/><LandingCta lang={lang} go={go} signed/></>:<Home lang={lang} go={go} openRoadmap={openRoadmap}/>)} {view==="roadmaps"&&<RoadmapHub lang={lang} role={role} openRoadmap={openRoadmap}/>} {view==="roadmap"&&<RoadmapExperience slug={selectedRoadmap} lang={lang} role={role} unitId={selectedUnit} onOpenUnit={id=>pushScreen({unit:id})} onBack={back} onPractice={()=>pushScreen({view:"problem"})} onOpenProblem={(id:string)=>{const p=bankProblems.find(x=>x.id===id);if(p){setActiveProblem(p);setVerdict("");pushScreen({view:"problem"})}}}/>} {view==="problems"&&<Problems lang={lang} filter={filter} setFilter={setFilter} items={filtered} go={go} onSelect={p=>{setActiveProblem(p);setCode(p.judge==="max-subarray"?duelProblems[1].cpp:p.judge==="coin-change"?duelProblems[2].cpp:cpp);setVerdict("");go("problem")}}/>} {view==="problem"&&<Problem lang={lang} item={activeProblem} code={code} setCode={setCode} codeLang={codeLang} setCodeLang={setCodeLang} verdict={verdict} submit={judge} onBack={back}/>} {view==="duel"&&<DuelMatchmaking lang={lang} signed={signed} authLoading={auth.status==="loading"} needAuth={()=>go("auth")}/>} {view==="leaderboard"&&<Leaderboard lang={lang} me={profile} signed={signed} onOpenPerson={openPerson}/>} {view==="profile"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<ProfilePage lang={lang} profile={profile} onProfileChange={next=>setAuth({status:"authenticated",profile:next})} signOut={signOut} goAdmin={()=>go("admin")} goStats={()=>go("stats")} goUsers={()=>go("users")} goMessages={()=>go("messages")} isOwner={can(role,"user.manage_roles")} goRoadmaps={()=>go("roadmaps")} openRoadmap={openRoadmap} isStaff={can(role,"content.view_management")} goFriends={()=>go("friends")} goSubmissions={()=>go("submissions")}/>:<SignInRequired lang={lang} go={go} what="profile"/>)} {view==="auth"&&<AuthPage lang={lang} notice={authNotice} onAuthenticated={(token,remember,isNew,refreshToken)=>{void enterSession(token,remember,isNew,refreshToken)}}/>} {view==="placement"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed?<Placement lang={lang} signed={signed} onFinish={()=>go("roadmaps")} onRoadmap={openRoadmap}/>:<SignInRequired lang={lang} go={go} what="placement"/>)} {view==="admin"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<Admin lang={lang} profile={profile}/>:<SignInRequired lang={lang} go={go} what="admin"/>)} {view==="person"&&(person?<PublicProfile key={person} lang={lang} username={person} meId={profile?.id||null} signedIn={signed} onBack={back} onMessage={id=>{setMessageWith(id);go("messages")}} onMyProfile={()=>go("profile")} onSignIn={()=>go("auth")} onOpenSubmissions={h=>pushScreen({view:"person-submissions",person:h})}/>:<ScreenLoading lang={lang}/>)} {view==="shop"&&<Shop lang={lang} signed={signed} authLoading={auth.status==="loading"}/>} {view==="playground"&&<Playground lang={lang}/>} {view==="friends"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed?<FriendsScreen lang={lang} onBack={()=>go("profile")} onOpenPerson={openPerson}/>:<SignInRequired lang={lang} go={go} what="profile"/>)} {view==="submissions"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<SubmissionsScreen lang={lang} userId={profile.id} who={profile.display_name||profile.username} isMe signedIn onBack={()=>go("profile")}/>:<SignInRequired lang={lang} go={go} what="profile"/>)} {view==="person-submissions"&&(person?<PersonSubmissions key={person} lang={lang} handle={person} meId={profile?.id||null} signedIn={signed} onBack={back}/>:<ScreenLoading lang={lang}/>)} {view==="messages"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<Messages lang={lang} me={profile} openWith={messageWith} onOpened={()=>setMessageWith(null)} onUnreadChange={()=>{void refreshUnread()}} onOpenProfile={openPerson}/>:<SignInRequired lang={lang} go={go} what="messages"/>)} {view==="users"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:!profile?<SignInRequired lang={lang} go={go} what="users"/>:can(role,"user.manage_roles")?<UsersAdmin lang={lang} meId={profile.id} goProfile={()=>go("profile")} onMessage={id=>{setMessageWith(id);go("messages")}} onOpenProfile={openPerson} initialDay={usersDay} onDayConsumed={()=>setUsersDay(null)}/>:<div className="panel"><div className="notice notice-error">{lang==="uz"?"Bu sahifa faqat ega (owner) roli uchun.":"This page is for the owner role only."}</div></div>)} {view==="stats"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:!profile?<SignInRequired lang={lang} go={go} what="stats"/>:can(role,"stats.view")?<OwnerStats lang={lang} goProfile={()=>go("profile")} onPickDay={day=>{setUsersDay(day);go("users")}}/>:<div className="panel"><div className="notice notice-error">{lang==="uz"?"Bu sahifa faqat ega (owner) roli uchun.":"This page is for the owner role only."}</div></div>)}</main>
+ <nav className="mobile-nav">{(["home","roadmaps","problems","duel","leaderboard","shop","playground"] as View[]).map(v=><button key={v} className={view===v?"active":""} onClick={()=>go(v)}>{t[v as keyof typeof t]}</button>)}</nav><footer className="footer"><span>© {new Date().getFullYear()} AlgoYo‘l · Toshkent</span><span>{lang==="uz"?"Bilimdan natijagacha.":"From learning to results."}</span></footer>
+ {/* Above every screen: a challenge can arrive while the learner is halfway
+     through a lesson, and five seconds is not long enough to go looking. */}
+ <ChallengeOverlay lang={lang} challenge={duel?.challenge||null} serverNow={duel?.now||new Date().toISOString()}
+  drawnAt={duelAt} notice={duelNotice} onAccept={id=>{void onAcceptChallenge(id)}}
+  onDecline={id=>{void onDeclineChallenge(id)}} onExpire={()=>{void pullDuel()}}/>
+ {signed&&duel?.status==="searching"&&!duelOnline&&<div className="duel-toast" role="status">{lang==="uz"?"Aloqa uzildi — qayta ulanmoqda…":"Connection lost — reconnecting…"}</div>}
+ </div>
 }
 /* Landing copy. The old page opened straight into a roadmap grid and a problem
    list, so a first-time visitor learned what AlgoYo'l *contains* but never what
@@ -485,13 +560,7 @@ function Problem({lang,item,code,setCode,codeLang,setCodeLang,verdict,submit,onB
  return <><button className="crumb crumb-btn" onClick={onBack}>← {lang==="uz"?"Ortga":"Back"}</button><div className="page-head"><div><span className="tag">{item.id}</span> <span className="tag rating-tag" style={{color:ratingColor(item.rating||1200)}}>★ {item.rating||1200}</span> <span className="tag">{item.tag}</span> {solved&&<span className="tag tag-solved">✓ {lang==="uz"?"Yechilgan":"Solved"}</span>}<h1 className="page-title" style={{marginTop:12}}>{lang==="uz"?item.uz:item.en}</h1></div><span className="muted mono">1 s · 256 MB</span></div>
  {judgeable?<div className="workspace"><article className="panel statement"><h2>{lang==="uz"?"Shart":"Statement"}</h2>{(lang==="uz"?item.storyUz:item.storyEn)&&<p className="story">{lang==="uz"?item.storyUz:item.storyEn}</p>}<p>{lang==="uz"?judgeable.stUz:judgeable.stEn}</p><h3>{lang==="uz"?"Kirish":"Input"}</h3><p>{lang==="uz"?judgeable.inUz:judgeable.inEn}</p><h3>{lang==="uz"?"Chiqish":"Output"}</h3><p>{lang==="uz"?judgeable.outUz:judgeable.outEn}</p>{item.constraints&&<><h3>{lang==="uz"?"Cheklovlar":"Constraints"}</h3><p className="mono">{item.constraints}</p></>}<h3>{lang==="uz"?"Namunalar":"Samples"}</h3>{(item.samples||[]).map((x,si)=><div className="sample" key={si}><b>{lang==="uz"?"Kirish":"Input"}</b><pre>{x.input}</pre><b>{lang==="uz"?"Chiqish":"Output"}</b><pre>{x.output}</pre></div>)}{(lang==="uz"?item.noteUz:item.noteEn)&&<><h3>{lang==="uz"?"Izoh":"Note"}</h3><p className="muted">{lang==="uz"?item.noteUz:item.noteEn}</p></>}</article><section className="editor"><div className="editor-top"><b>{codeLang==="cpp20"?"main.cpp":"main.py"}</b><select aria-label="Language" value={codeLang} onChange={e=>{const value=e.target.value as "cpp20"|"python3";setCodeLang(value);setCode(value==="cpp20"?judgeable.cpp:judgeable.py)}}><option value="cpp20">C++20</option><option value="python3">Python 3</option></select></div><textarea aria-label="Code editor" value={code} onChange={e=>setCode(e.target.value)} spellCheck={false}/><div className="editor-actions"><span className="verdict">{verdict||"● Judge0 online"}</span><button className="primary" onClick={submit}>{copy[lang].submit} →</button></div></section></div>
  :<div className="panel" style={{maxWidth:680}}><div className="notice">{lang==="uz"?"Ushbu masala hozircha ko‘rib chiqish rejimida — tekshiruvchi tez orada ulanadi. Mavzu: ":"This problem is in preview mode — the judge will be connected soon. Topic: "}<b>{item.tag}</b></div></div>}</>}
-type DuelOpponent={name:string;handle:string;rating:number;wins:number;letter:string};
 type DuelProblem={key:string;code:string;difficulty:"easy"|"medium"|"hard";points:number;uz:string;en:string;stUz:string;stEn:string;inUz:string;inEn:string;outUz:string;outEn:string;sample:string;cpp:string;py:string;bot:[number,number];fail:number};
-type DuelClaim={by:"me"|"opp";at:number}|null;
-type DuelEvent={at:number;by:"me"|"opp"|"sys";uz:string;en:string};
-type DuelResultState=null|{reason:"time"|"sweep"|"forfeit";outcome:"win"|"loss"|"draw";delta:number;claims:DuelClaim[];at:number};
-const DUEL_LENGTH=1800,DUEL_K=32,DEFAULT_RATING=1200;
-const duelOpponents:DuelOpponent[]=[{name:"Jasur",handle:"@jasur_cpp",rating:1488,wins:18,letter:"J"},{name:"Nilufar",handle:"@nilufar_py",rating:1421,wins:18,letter:"N"},{name:"Bekzod",handle:"@bek_ds",rating:1395,wins:9,letter:"B"},{name:"Azizbek",handle:"@aziz_algo",rating:1718,wins:29,letter:"A"},{name:"Madina",handle:"@madina_dev",rating:1792,wins:37,letter:"M"},{name:"Sardor",handle:"@sardor_ioi",rating:1864,wins:42,letter:"S"}];
 const duelProblems:DuelProblem[]=[
  {key:"sum-two",code:"A01",difficulty:"easy",points:100,uz:"Ikki son yig‘indisi",en:"Sum of two numbers",
   stUz:"Sizga ikkita butun a va b sonlari beriladi. Ularning yig‘indisini toping.",stEn:"You are given two integers a and b. Print their sum.",
@@ -515,120 +584,7 @@ const duelProblems:DuelProblem[]=[
   cpp:`#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    int n, s;\n    cin >> n >> s;\n    // TODO: dinamik dasturlash bilan yeching / solve with dynamic programming\n    return 0;\n}`,
   py:`n, s = map(int, input().split())\ncoins = list(map(int, input().split()))\n# TODO: dinamik dasturlash bilan yeching / solve with dynamic programming`,bot:[650,1250],fail:.3},
 ];
-const clock=(total:number)=>`${String(Math.floor(Math.max(0,total)/60)).padStart(2,"0")}:${String(Math.max(0,total)%60).padStart(2,"0")}`;
-const duelStarter=(index:number,codeLang:"cpp20"|"python3")=>codeLang==="cpp20"?duelProblems[index].cpp:duelProblems[index].py;
-const expectedScore=(mine:number,theirs:number)=>1/(1+Math.pow(10,(theirs-mine)/400));
-const scoreOf=(list:DuelClaim[],who:"me"|"opp")=>list.reduce((n,c,i)=>c&&c.by===who?n+duelProblems[i].points:n,0);
-const topicTitle=(slug:string,lang:Lang)=>{const r=roadmapCards.find(x=>x.slug===slug);return r?(lang==="uz"?r.uz:r.en):slug};
 
-function Duel({lang,opponent,rating,matchId,onFinish,onRematch,onExit,openRoadmap}:{lang:Lang;opponent:DuelOpponent;rating:number;matchId:number;onFinish:(next:number,entry:{outcome:"win"|"loss"|"draw";myScore:number;oppScore:number;delta:number})=>void;onRematch:()=>void;onExit:()=>void;openRoadmap:(slug:string)=>void}){
- const [elapsed,setElapsed]=useState(0),[stage,setStage]=useState(0),[claims,setClaims]=useState<DuelClaim[]>([null,null,null]);
- const [gains,setGains]=useState<{topic:string;delta:number}[]>([]);
- const [feed,setFeed]=useState<DuelEvent[]>([{at:0,by:"sys",uz:"Duel boshlandi · 1-masala ochildi",en:"Duel started · problem 1 unlocked"}]);
- const [attempts,setAttempts]=useState({me:0,opp:0}),[codeLang,setCodeLang]=useState<"cpp20"|"python3">("cpp20"),[code,setCode]=useState(duelProblems[0].cpp);
- const [verdict,setVerdict]=useState(""),[bad,setBad]=useState(false),[judging,setJudging]=useState(false);
- const [result,setResult]=useState<DuelResultState>(null);
- const plan=useRef<{stage:number;solveAt:number;missAt:number;missed:boolean;fails:boolean}|null>(null);
- const remaining=Math.max(0,DUEL_LENGTH-elapsed);
- const myScore=scoreOf(claims,"me"),oppScore=scoreOf(claims,"opp");
- const push=(by:DuelEvent["by"],uz:string,en:string,at:number)=>setFeed(f=>[{at,by,uz,en},...f].slice(0,40));
- const finish=(reason:"time"|"sweep"|"forfeit",final:DuelClaim[],at:number)=>{
-  const mine=scoreOf(final,"me"),theirs=scoreOf(final,"opp");
-  const outcome=reason==="forfeit"?"loss":mine>theirs?"win":mine<theirs?"loss":"draw";
-  const delta=Math.round(DUEL_K*((outcome==="win"?1:outcome==="draw"?.5:0)-expectedScore(rating,opponent.rating)));
-  plan.current=null;setResult({reason,outcome,delta,claims:final,at:Math.min(at,DUEL_LENGTH)});onFinish(rating+delta,{outcome,myScore:mine,oppScore:theirs,delta})};
- const claimStage=(by:"me"|"opp",at:number)=>{
-  if(result||stage>2||claims[stage])return;
-  const problem=duelProblems[stage],next=[...claims];next[stage]={by,at};setClaims(next);setStage(stage+1);
-  if(by==="me"){const topic=duelTopics[problem.key]||"foundations";const base=Math.round(MASTERY_CONFIG.weights.problem[problem.difficulty]*MASTERY_CONFIG.weights.duelMultiplier);const g=recordEvidence(topic,"duel",`duel:${matchId}:${problem.key}`,base);if(g.delta>0)setGains(gs=>[...gs,{topic,delta:g.delta}])}
-  push(by,by==="me"?`Siz ${problem.code} ni yechdingiz · +${problem.points}`:`${opponent.name} ${problem.code} ni yechdi · +${problem.points}`,by==="me"?`You solved ${problem.code} · +${problem.points}`:`${opponent.name} solved ${problem.code} · +${problem.points}`,at);
-  if(stage<2){push("sys",`${stage+2}-masala ochildi`,`Problem ${stage+2} unlocked`,at);setCode(duelStarter(stage+1,codeLang));setVerdict("");setBad(false)}
-  else finish("sweep",next,at)};
- useEffect(()=>{if(result||stage>2){plan.current=null;return}const problem=duelProblems[stage];const skill=Math.min(1.45,Math.max(.6,1-(opponent.rating-rating)/1800));const span=problem.bot[0]+Math.random()*(problem.bot[1]-problem.bot[0]);const duration=Math.max(45,Math.round(span*skill));plan.current={stage,solveAt:elapsed+duration,missAt:elapsed+Math.round(duration*.55),missed:false,fails:Math.random()<problem.fail}},[stage,result]);// eslint-disable-line react-hooks/exhaustive-deps
- useEffect(()=>{if(result)return;const id=window.setInterval(()=>setElapsed(e=>Math.min(DUEL_LENGTH,e+1)),1000);return()=>window.clearInterval(id)},[result]);
- // Driven by the duel clock: each tick may retire the round or record the
- // opponent's attempt, which is a timer event, not a render cascade.
- useEffect(()=>{if(result)return;
-  // eslint-disable-next-line react-hooks/set-state-in-effect
-  if(elapsed>=DUEL_LENGTH){finish("time",claims,DUEL_LENGTH);return}
-  const current=plan.current;if(!current||current.stage!==stage||claims[stage])return;
-  if(!current.missed&&elapsed>=current.missAt){current.missed=true;setAttempts(a=>({...a,opp:a.opp+1}));push("opp",`${opponent.name} yechim yubordi — noto‘g‘ri javob`,`${opponent.name} submitted — wrong answer`,elapsed)}
-  if(!current.fails&&elapsed>=current.solveAt)claimStage("opp",elapsed)},[elapsed]);// eslint-disable-line react-hooks/exhaustive-deps
- const submit=async()=>{if(judging||result||stage>2)return;setJudging(true);setBad(false);setVerdict(lang==="uz"?"Navbatda… testlar tekshirilmoqda":"In queue… running hidden tests");
-  const at=elapsed;
-  try{const response=await fetch("/api/judge",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({problemId:duelProblems[stage].key,language:codeLang,sourceCode:code})});const r=await response.json();
-   const names:Record<string,[string,string]>={ACCEPTED:["Qabul qilindi","Accepted"],WRONG_ANSWER:["Noto‘g‘ri javob","Wrong answer"],COMPILATION_ERROR:["Kompilyatsiya xatosi","Compilation error"],RUNTIME_ERROR:["Bajarilish xatosi","Runtime error"],TIME_LIMIT_EXCEEDED:["Vaqt chegarasi oshdi","Time limit exceeded"],MEMORY_LIMIT_EXCEEDED:["Xotira chegarasi oshdi","Memory limit exceeded"],JUDGE_ERROR:["Tekshiruvchi xatosi","Judge error"]};
-   const title=(names[r.verdict]||names.JUDGE_ERROR)[lang==="uz"?0:1],test=r.test?` · test #${r.test}`:"",stats=r.verdict==="ACCEPTED"?` · ${r.passed}/${r.total} · ${r.runtimeMs} ms · ${r.memoryKb} KB`:"";
-   setVerdict(`${title}${test}${stats}${r.details?`\n${String(r.details).slice(0,500)}`:""}`);
-   if(r.verdict==="ACCEPTED"){setBad(false);claimStage("me",at)}
-   else{setBad(true);setAttempts(a=>({...a,me:a.me+1}));push("me",`Siz yechim yubordingiz — ${title.toLowerCase()}`,`You submitted — ${title.toLowerCase()}`,at)}}
-  catch{setBad(true);setVerdict(lang==="uz"?"Tekshiruvchi bilan aloqa uzildi":"Judge connection failed")}
-  finally{setJudging(false)}};
- if(result)return <DuelResult lang={lang} opponent={opponent} result={result} attempts={attempts} rating={rating} gains={gains} onRematch={onRematch} onExit={onExit} openRoadmap={openRoadmap}/>;
- const problem=duelProblems[Math.min(stage,2)],leader=myScore>oppScore?"me":oppScore>myScore?"opp":"";
- return <><div className="page-head"><div><p className="eyebrow" style={{color:"#637068"}}>RATED DUEL · #{matchId}</p><h1 className="page-title">{lang==="uz"?"Duel maydoni":"Duel arena"}</h1></div><span className="tag">{lang==="uz"?"Ulangan":"Connected"} ●</span></div>
- <div className="duel-layout"><section className="arena"><div className="duel-top"><b>{lang==="uz"?"30 daqiqalik duel":"30-minute duel"}</b><span className={`timer ${remaining<=300?"low":""}`}>{clock(remaining)}</span></div>
-  <div className="players"><div className={`player ${leader==="me"?"lead":""}`}><span className="sub">{rating} Elo</span><div className="who">{lang==="uz"?"Siz":"You"}</div><span className="score">{myScore}</span></div><span className="versus">VS</span>
-   <div className={`player ${leader==="opp"?"lead":""}`}><span className="sub">{opponent.handle} · {opponent.rating}</span><div className="who">{opponent.name}</div><span className="score">{oppScore}</span></div></div>
-  <div className="duel-steps">{duelProblems.map((p,i)=>{const claim=claims[i],state=claim?(claim.by==="me"?"mine":"theirs"):i===stage?"open":"locked";return <div key={p.key} className={`step ${state}`}><b>{String(i+1).padStart(2,"0")} · {p.difficulty.toUpperCase()}</b><span>{p.points} {lang==="uz"?"ball":"points"}</span><span className="claim">{claim?`${claim.by==="me"?(lang==="uz"?"Siz":"You"):opponent.name} · ${clock(claim.at)}`:i===stage?(lang==="uz"?"Ochiq":"Open"):(lang==="uz"?"Qulflangan":"Locked")}</span></div>})}</div>
-  <div className="duel-problem"><span className="tag">{problem.code} · {problem.difficulty.toUpperCase()} · {problem.points}</span><h2>{lang==="uz"?problem.uz:problem.en}</h2>
-   <p className="muted">{lang==="uz"?problem.stUz:problem.stEn}</p>
-   <p className="muted"><b>{lang==="uz"?"Kirish":"Input"}:</b> {lang==="uz"?problem.inUz:problem.inEn}</p>
-   <p className="muted"><b>{lang==="uz"?"Chiqish":"Output"}:</b> {lang==="uz"?problem.outUz:problem.outEn}</p>
-   <div className="sample">{problem.sample}</div>
-   <div className="duel-editor"><div className="editor-top"><b>{codeLang==="cpp20"?"main.cpp":"main.py"}</b><select aria-label="Duel language" value={codeLang} onChange={e=>{const value=e.target.value as "cpp20"|"python3";setCodeLang(value);setCode(duelStarter(Math.min(stage,2),value))}}><option value="cpp20">C++20</option><option value="python3">Python 3</option></select></div>
-    <textarea aria-label="Duel code editor" value={code} onChange={e=>setCode(e.target.value)} spellCheck={false}/>
-    <div className="editor-actions"><span className={`duel-verdict ${bad?"bad":""}`}>{verdict||(lang==="uz"?"● Birinchi Accepted barcha ballni oladi":"● First Accepted claims all the points")}</span>
-     <button className="primary" disabled={judging} onClick={submit}>{judging?(lang==="uz"?"Tekshirilmoqda…":"Judging…"):(lang==="uz"?"Yuborish":"Submit")} →</button></div></div></div></section>
-  <aside className="side-stack"><div className="duel-card"><h3>{lang==="uz"?"Jonli oqim":"Live feed"}</h3><div className="feed">{feed.map((e,i)=><div key={`${e.at}-${i}`} className={`feed-item ${e.by}`}><span className="feed-time">{clock(e.at)}</span><span>{lang==="uz"?e.uz:e.en}</span></div>)}</div></div>
-   <div className="duel-card"><h3>{lang==="uz"?"Statistika":"Statistics"}</h3><div className="duel-stats"><div><b>{attempts.me}</b><small>{lang==="uz"?"sizning xato":"your fails"}</small></div><div><b>{attempts.opp}</b><small>{lang==="uz"?"raqib xato":"rival fails"}</small></div><div><b>{claims.filter(Boolean).length}/3</b><small>{lang==="uz"?"yechildi":"claimed"}</small></div></div></div>
-   <div className="duel-card"><h3>{lang==="uz"?"Qoidalar":"Rules"}</h3><p className="muted">{lang==="uz"?"Masalalar ketma-ket ochiladi. Birinchi Accepted barcha ballni oladi. Teng ballda noto‘g‘ri urinishlar hal qiladi.":"Problems unlock in order. The first Accepted claims all the points. Failed attempts break ties at equal score."}</p>
-    <button className="ghost" onClick={()=>{push("sys",lang==="uz"?"Siz duelni tark etdingiz":"You forfeited the duel",lang==="uz"?"Siz duelni tark etdingiz":"You forfeited the duel",elapsed);finish("forfeit",claims,elapsed)}}>{lang==="uz"?"Duelni tark etish":"Forfeit duel"}</button></div></aside></div></>
-}
-
-function DuelResult({lang,opponent,result,attempts,rating,gains,onRematch,onExit,openRoadmap}:{lang:Lang;opponent:DuelOpponent;result:NonNullable<DuelResultState>;attempts:{me:number;opp:number};rating:number;gains:{topic:string;delta:number}[];onRematch:()=>void;onExit:()=>void;openRoadmap:(slug:string)=>void}){
- const {outcome,reason,delta,claims,at}=result,myScore=scoreOf(claims,"me"),oppScore=scoreOf(claims,"opp");
- const heading=outcome==="win"?(lang==="uz"?"G‘alaba!":"Victory!"):outcome==="loss"?(lang==="uz"?"Mag‘lubiyat":"Defeat"):(lang==="uz"?"Durrang":"Draw");
- const why=reason==="forfeit"?(lang==="uz"?"Siz duelni tark etdingiz.":"You forfeited the duel."):reason==="sweep"?(lang==="uz"?"Barcha masalalar yechildi.":"Every problem was claimed."):(lang==="uz"?"Vaqt tugadi.":"Time ran out.");
- return <><div className="page-head"><div><p className="eyebrow" style={{color:"#637068"}}>RATED DUEL · {lang==="uz"?"Yakun":"Result"}</p><h1 className="page-title">{lang==="uz"?"Duel yakunlandi":"Duel finished"}</h1></div><span className="tag">{clock(at)}</span></div>
- <div className="duel-result panel"><div className={`result-badge ${outcome}`}>{outcome==="win"?"★":outcome==="loss"?"✕":"="}</div><h2>{heading}</h2><p className="muted">{why}</p>
-  <div className="result-score">{myScore} : {oppScore}</div>
-  <p><span className="muted">{rating} → </span><b>{rating+delta}</b> <span className={`elo-delta ${delta>=0?"up":"down"}`}>{delta>=0?"+":""}{delta}</span> <span className="muted">Elo</span></p>
-  <div className="stage-table">{duelProblems.map((p,i)=>{const claim=claims[i];return <div className="stage-row" key={p.key}><span className="tag">{p.code}</span><span>{lang==="uz"?p.uz:p.en}</span><span className="muted">{claim?`${claim.by==="me"?(lang==="uz"?"Siz":"You"):opponent.name} · ${clock(claim.at)}`:(lang==="uz"?"yechilmadi":"unclaimed")}</span><span className="pts">{claim?(claim.by==="me"?"+":"−")+p.points:"0"}</span></div>})}</div>
-  <div className="duel-stats"><div><b>{attempts.me}</b><small>{lang==="uz"?"sizning xato urinish":"your failed attempts"}</small></div><div><b>{attempts.opp}</b><small>{lang==="uz"?"raqib xato urinish":"rival failed attempts"}</small></div><div><b>{opponent.rating}</b><small>{lang==="uz"?"raqib reytingi":"rival rating"}</small></div></div>
-  <div className="skill-growth"><h3>{lang==="uz"?"Skill o‘sishi":"Skill growth"}</h3>{gains.length?gains.map((g,i)=><div className="stage-row" key={i}><span className="tag">{lang==="uz"?"Mahorat":"Mastery"}</span><span>{topicTitle(g.topic,lang)}</span><span className="muted mono">{masteryOf(g.topic)}/1000</span><span className="pts" style={{color:"var(--lime)"}}>+{g.delta}</span></div>):<p className="muted">{lang==="uz"?"Bu duelda yangi mahorat isboti bo‘lmadi.":"No new mastery evidence in this duel."}</p>}
-   {gains.length>0&&<div className="match-actions" style={{justifyContent:"flex-start",marginTop:14}}>{[...new Set(gains.map(g=>g.topic))].map(tp=><button key={tp} className="secondary" onClick={()=>openRoadmap(tp)}>{topicTitle(tp,lang)} {lang==="uz"?"mavzusiga o‘tish":"topic"} →</button>)}</div>}</div>
-  <div className="match-actions"><button className="primary" onClick={onRematch}>{lang==="uz"?"Yangi duel":"New duel"} →</button><button className="secondary" onClick={onExit}>{lang==="uz"?"Maydondan chiqish":"Leave arena"}</button></div></div></>
-}
-
-function DuelMatchmaking({lang,profile,signed,authLoading,needAuth,openRoadmap}:{lang:Lang,profile?:Profile|null,signed:boolean,authLoading:boolean,needAuth:()=>void,openRoadmap:(slug:string)=>void}){
- const [phase,setPhase]=useState<"idle"|"searching"|"found"|"active">("idle"),[rating,setRating]=useState(profile?.duel_rating??DEFAULT_RATING),[opponent,setOpponent]=useState<DuelOpponent>(duelOpponents[0]),[matchId,setMatchId]=useState(4821);
- // The account is the source of truth for rating; the local copy is only a
- // cache for a session that has not synced yet.
- // eslint-disable-next-line react-hooks/set-state-in-effect
- useEffect(()=>{if(profile?.duel_rating!==undefined){setRating(profile.duel_rating);return}const saved=Number(readScoped("algoyol-duel-rating"));if(saved>0)setRating(saved)},[profile]);
- useEffect(()=>{if(phase!=="searching")return;const found=window.setTimeout(()=>{const pool=[...duelOpponents].sort((a,b)=>Math.abs(a.rating-rating)-Math.abs(b.rating-rating)).slice(0,3);setOpponent(pool[Math.floor(Math.random()*pool.length)]);setMatchId(4000+Math.floor(Math.random()*1800));setPhase("found")},1800);return()=>window.clearTimeout(found)},[phase,rating]);
- const settle=(next:number,entry:{outcome:"win"|"loss"|"draw";myScore:number;oppScore:number;delta:number})=>{
-  setRating(next);writeScoped("algoyol-duel-rating",String(next));
-  // Recorded so the profile can show a real duel record instead of a guess.
-  addLocalActivity(0,1);void pushActivity(0,1);
-  recordDuelResult({matchId,opponent:opponent.name,opponentRating:opponent.rating,outcome:entry.outcome,myScore:entry.myScore,oppScore:entry.oppScore,ratingBefore:rating,ratingAfter:next,delta:entry.delta});
-  if(profile?.id)void saveDuelRating(profile.id,next);
- };
- if(authLoading)return <ScreenLoading lang={lang}/>;
- if(phase==="active")return <Duel key={matchId} lang={lang} opponent={opponent} rating={rating} matchId={matchId} onFinish={settle} onRematch={()=>setPhase("searching")} onExit={()=>setPhase("idle")} openRoadmap={openRoadmap}/>;
- const gap=Math.abs(opponent.rating-rating);
- return <><div className="page-head"><div><p className="eyebrow" style={{color:"#637068"}}>RATED MATCHMAKING</p><h1 className="page-title">{lang==="uz"?"Duel uchun raqib toping":"Find a duel opponent"}</h1><p className="muted">{lang==="uz"?"Tizim sizga reytingi yaqin bo‘lgan raqibni qidiradi.":"We will match you with a player near your rating."}</p></div>{signed&&<span className="tag">ELO {rating}</span>}</div>
- <div className="matchmaking panel"><div className={`search-orb ${phase==="searching"?"pulse":""}`}>{phase==="found"?"✓":"⚡"}</div>
-  <h2>{phase==="idle"?(lang==="uz"?"Bellashishga tayyormisiz?":"Ready to compete?"):phase==="searching"?(lang==="uz"?"Raqib qidirilmoqda…":"Searching for an opponent…"):(lang==="uz"?"Raqib topildi!":"Opponent found!")}</h2>
-  {phase==="found"?<><div className="found-player"><span className="avatar">{opponent.letter}</span><span><b>{opponent.name} · {opponent.handle}</b><br/><span className="muted">{opponent.rating} Elo · {opponent.wins} {lang==="uz"?"g‘alaba":"wins"}</span></span></div>
-   <p className="muted">{lang==="uz"?`Reyting farqi: ${gap}. Duel 30 daqiqa davom etadi.`:`Rating difference: ${gap}. The duel lasts 30 minutes.`}</p>
-   <div className="match-actions"><button className="primary" onClick={()=>setPhase("active")}>{lang==="uz"?"Duelni boshlash":"Start duel"} →</button><button className="secondary" onClick={()=>setPhase("idle")}>{lang==="uz"?"Bekor qilish":"Cancel"}</button></div></>
-  :<><p className="muted">{phase==="searching"?(lang==="uz"?"Odatda 10 soniyadan kam vaqt oladi.":"This usually takes less than 10 seconds."):(lang==="uz"?"Easy, Medium va Hard masalalar ketma-ket ochiladi.":"Easy, Medium, and Hard problems unlock in order.")}</p>
-    <button className={phase==="searching"?"secondary":"primary"} onClick={()=>{if(!signed){needAuth();return}setPhase(phase==="searching"?"idle":"searching")}}>{phase==="searching"?(lang==="uz"?"Qidiruvni bekor qilish":"Cancel search"):signed?(lang==="uz"?"Raqib qidirish":"Search for competitor"):(lang==="uz"?"Kirish talab qilinadi":"Sign in required")} {phase==="idle"&&signed&&"→"}</button></>}</div></>
-}
-/* Shown while a stored session is being verified — the app commits to neither
-   guest nor account until it knows which one is true. */
 function ScreenLoading({lang}:{lang:Lang}){
  return <div className="screen-state" role="status" aria-live="polite"><span className="spinner" aria-hidden/><p className="muted">{lang==="uz"?"Sessiya tekshirilmoqda…":"Checking your session…"}</p></div>;
 }
@@ -678,6 +634,19 @@ function Leaderboard({lang,me,signed,onOpenPerson}:{lang:Lang;me:Profile|null;si
  const list:LeaderRow[]|null=searchOn?(found&&found.q===query.trim()?found.rows:null)
   :mode==="friends"?(friends?friends.map(f=>({id:f.id,username:f.username,display_name:f.display_name,duel_rating:f.duel_rating,solved_count:f.solved_count})):null)
   :rows;
+ /* Who on this page is here right now. Asked for the rows actually being
+    rendered, and re-asked on the same cadence as the heartbeat that feeds it —
+    a dot that lags a minute behind is worse than no dot. */
+ const [online,setOnline]=useState<Set<string>>(new Set());
+ const ids=(list||[]).map(x=>x.id).join(",");
+ useEffect(()=>{
+  if(!signed||!ids)return;
+  let live=true;
+  const pull=()=>{void onlineAmong(ids.split(",")).then(set=>{if(live)setOnline(set)})};
+  pull();
+  const id=window.setInterval(pull,30000);
+  return()=>{live=false;window.clearInterval(id)};
+ },[ids,signed]);
  const empty=lang==="uz"
   ?(searchOn?"Bunday foydalanuvchi topilmadi.":mode==="friends"?"Do‘stlar ro‘yxati bo‘sh. Kimningdir profiliga kirib, ism yonidagi ☆ ni bosing.":"Hali reytingda hech kim yo‘q. Birinchi bo‘ling!")
   :(searchOn?"No such user.":mode==="friends"?"No friends yet. Open somebody's profile and press the ☆ beside their name.":"Nobody is ranked yet. Be the first.");
@@ -691,7 +660,7 @@ function Leaderboard({lang,me,signed,onOpenPerson}:{lang:Lang;me:Profile|null;si
  </div>
  {(state==="loading"||(searchOn&&searching)||(!searchOn&&mode==="friends"&&friends===null))&&<div className="screen-state" role="status"><span className="spinner" aria-hidden/><p className="muted">{lang==="uz"?"Yuklanmoqda…":"Loading…"}</p></div>}
  {state==="error"&&!searchOn&&<div className="panel"><div className="notice notice-error">{lang==="uz"?"Reytingni yuklab bo‘lmadi. Keyinroq urinib ko‘ring.":"Could not load the leaderboard. Try again later."}</div></div>}
- {list&&!(searchOn&&searching)&&(list.length?<div className="leaderboard">{list.map(x=>{const mine=me?.id===x.id;const name=x.display_name?.trim()||x.username;const rank=rankOf(x.id);return <button type="button" className={`leader-row ${mine?"me":""}`} key={x.id} onClick={()=>onOpenPerson(x.username)} title={lang==="uz"?`${name} profilini ochish`:`Open ${name}'s profile`}><span className="rank">{rank?`#${rank}`:"—"}</span><span className="leader-who"><b>{name}{mine&&<span className="tag tag-you">{lang==="uz"?"Siz":"You"}</span>}</b><span className="muted">@{x.username}</span></span><span className="tag">{x.solved_count} AC</span><span className="rating">{x.duel_rating}</span></button>})}</div>
+ {list&&!(searchOn&&searching)&&(list.length?<div className="leaderboard">{list.map(x=>{const mine=me?.id===x.id;const name=x.display_name?.trim()||x.username;const rank=rankOf(x.id);return <button type="button" className={`leader-row ${mine?"me":""}`} key={x.id} onClick={()=>onOpenPerson(x.username)} title={lang==="uz"?`${name} profilini ochish`:`Open ${name}'s profile`}><span className="rank">{rank?`#${rank}`:"—"}</span><span className="leader-who"><b>{name}<OnlineDot online={signed&&online.has(x.id)} lang={lang} label={name}/>{mine&&<span className="tag tag-you">{lang==="uz"?"Siz":"You"}</span>}</b><span className="muted">@{x.username}</span></span><span className="tag">{x.solved_count} AC</span><span className="rating">{x.duel_rating}</span></button>})}</div>
  :<div className="screen-state panel"><p className="muted">{empty}</p></div>)}</>;
 }
 

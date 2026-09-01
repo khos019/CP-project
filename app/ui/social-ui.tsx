@@ -8,6 +8,7 @@
 
 import { useEffect, useState } from "react";
 import { fetchPersonByUsername } from "./session";
+import { OnlineDot, onlineAmong } from "./presence";
 import {
   addFriend, fetchFriends, fetchSubmissionCode, fetchSubmissions, removeFriend, unlockSubmissionCode,
   type CodeResult, type FriendRow, type SubmissionRow,
@@ -363,6 +364,18 @@ export function FriendsScreen({
   const t = T[lang];
   const [rows, setRows] = useState<FriendRow[] | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
+  // Which of these people are here now. Refreshed on the heartbeat's cadence
+  // so the dot means "now" rather than "at some point since you opened this".
+  const [online, setOnline] = useState<Set<string>>(new Set());
+  const ids = (rows || []).map((r) => r.id).join(",");
+  useEffect(() => {
+    if (!ids) return;
+    let live = true;
+    const pull = () => { void onlineAmong(ids.split(",")).then((set) => { if (live) setOnline(set); }); };
+    pull();
+    const id = window.setInterval(pull, 30000);
+    return () => { live = false; window.clearInterval(id); };
+  }, [ids]);
 
   useEffect(() => {
     let live = true;
@@ -423,7 +436,10 @@ export function FriendsScreen({
                   {f.avatar_url ? <img src={f.avatar_url} alt="" /> : (f.display_name || f.username).slice(0, 1).toUpperCase()}
                 </span>
                 <span className="friend-who">
-                  <b>{f.display_name?.trim() || f.username}</b>
+                  <b>
+                    {f.display_name?.trim() || f.username}
+                    <OnlineDot online={online.has(f.id)} lang={lang} label={f.display_name?.trim() || f.username} />
+                  </b>
                   <small className="muted">@{f.username}</small>
                 </span>
                 <span className="tag">{f.solved_count} AC</span>

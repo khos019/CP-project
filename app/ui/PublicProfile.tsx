@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { OnlineDot, onlineAmong } from "./presence";
 import { fetchPersonByUsername, type PublicPerson, type Role } from "./session";
 import { fetchFriendIds } from "./social";
 import { AvatarZoom, FriendStar } from "./social-ui";
@@ -95,6 +96,9 @@ export function PublicProfile({
 }) {
   const t = T[lang];
   const [person, setPerson] = useState<PublicPerson | null>(null);
+  // One person, so one id — the same call the lists use, asked for a set of one.
+  const [online, setOnline] = useState(false);
+
   const [state, setState] = useState<"loading" | "ready" | "not-found" | "error">("loading");
   const [isFriend, setIsFriend] = useState(false);
 
@@ -119,6 +123,16 @@ export function PublicProfile({
 
   /* Whether the star is lit is about the viewer, not about this page, so it is
      read separately — the profile renders without waiting for it. */
+  useEffect(() => {
+    const id = person?.id;
+    if (!id || !signedIn) return;
+    let live = true;
+    const pull = () => { void onlineAmong([id]).then((set) => { if (live) setOnline(set.has(id)); }); };
+    pull();
+    const timer = window.setInterval(pull, 30000);
+    return () => { live = false; window.clearInterval(timer); };
+  }, [person?.id, signedIn]);
+
   useEffect(() => {
     if (!signedIn) return;
     let live = true;
@@ -183,6 +197,7 @@ export function PublicProfile({
                   />
                 )}
                 {name}
+                <OnlineDot online={online} lang={lang} label={name} />
                 {t.roles[person.role] && <i className="pp-role">{t.roles[person.role]}</i>}
               </h1>
               <p className="pp-handle mono">@{person.username}</p>
