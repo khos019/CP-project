@@ -220,6 +220,13 @@ export function AlgoYolApp(){
   const beat=()=>{void duelHeartbeat(true)};
   beat();
   const beatId=window.setInterval(beat,25000);
+  /* A hidden tab has its timers throttled to about one call a minute, so the
+     interval alone lets a learner who is sitting on another tab drift out of
+     the presence window. Beating the moment the tab comes back puts them
+     online again immediately rather than up to 25 seconds later. */
+  const wake=()=>{if(document.visibilityState==="visible")beat()};
+  document.addEventListener("visibilitychange",wake);
+  window.addEventListener("focus",wake);
   const pull=async()=>{const next=await duelState();if(live&&next&&"status" in next){setDuel(next);setDuelAt(Date.now())}};
   void pull();
   const channel=openDuelChannel(event=>{
@@ -238,7 +245,9 @@ export function AlgoYolApp(){
   },status=>setDuelOnline(status==="open"));
   channelRef.current=channel;
   channel.join(userTopic(profile.id));
-  return()=>{live=false;window.clearInterval(beatId);channel.close();channelRef.current=null};
+  return()=>{live=false;window.clearInterval(beatId);
+   document.removeEventListener("visibilitychange",wake);window.removeEventListener("focus",wake);
+   channel.close();channelRef.current=null};
  },[auth.status,profile?.id]);// eslint-disable-line react-hooks/exhaustive-deps
  /* A duel in progress gets its own topic, so submissions and the finish reach
     both players without either of them polling for it. */
