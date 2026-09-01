@@ -1,3 +1,5 @@
+import { bankProblems } from "./problem-bank";
+
 export type LessonUnit={id:string;titleUz:string;titleEn:string;summaryUz:string;summaryEn:string;rating:string;minutes:number;complexity:string;cpp:string;python:string;quiz:{questionUz:string;questionEn:string;choicesUz:string[];choicesEn:string[];correct:number};problemId:string};
 export type RoadmapDifficulty="beginner"|"intermediate"|"advanced"|"expert";
 export type MasteryRoadmap={slug:string;icon:string;color:string;titleUz:string;titleEn:string;descriptionUz:string;descriptionEn:string;level:string;difficulty:RoadmapDifficulty;category:string;categoryUz:string;prereqs:string[];prerequisiteUz:string;prerequisiteEn:string;units:LessonUnit[]};
@@ -28,9 +30,12 @@ const defs:Def[]=[
 // to the nearest ancestor that does have matched problems — a Trees unit
 // links to a Graphs problem (its prereq), not to an unrelated Binary Search
 // one. Writing dedicated problems per topic is a separate, larger task.
-const problemsByTopic:Record<string,string[]>={
- "programming-basics":["A01"],foundations:["A02","A03","B04"],"binary-search":["B01"],greedy:["B02"],graphs:["B03"],
-};
+// Derived from the real bank rather than hardcoded. The old literal still
+// listed ids from the 11-problem era (B01..B04 no longer exist), so most
+// units linked to a dead id and every unit of a roadmap shared one problem.
+const problemsByTopic:Record<string,string[]>=bankProblems.reduce((acc,p)=>{
+ (acc[p.topic]||=[]).push(p.id); return acc;
+},{} as Record<string,string[]>);
 const nearestProblemSet=(slug:string,seen=new Set<string>()):string[]=>{
  if(seen.has(slug))return [];
  seen.add(slug);
