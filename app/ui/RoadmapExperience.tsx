@@ -26,7 +26,7 @@ export function RoadmapExperience({slug,lang,role,unitId,onOpenUnit,onBack,onPra
     storage in the effect below rather than during render — same reason as
     progress: a render must not depend on what localStorage happens to say. */
  const [cleared,setCleared]=useState(0);
- useEffect(()=>{let live=true;const sync=()=>{loadProgress().then(p=>{if(live)setProgress(p)});if(live)setCleared(clearedUnits(slug))};sync();window.addEventListener("algoyol-progress",sync);return()=>{live=false;window.removeEventListener("algoyol-progress",sync)}},[]);
+ useEffect(()=>{let live=true;const sync=()=>{loadProgress().then(p=>{if(!live)return;setProgress(p);setCleared(clearedUnits(slug))})};sync();window.addEventListener("algoyol-progress",sync);return()=>{live=false;window.removeEventListener("algoyol-progress",sync)}},[slug]);
  const canReviewAll=can(role,"roadmap.manage");
 
  const completed=useMemo(()=>roadmap.units.filter(u=>(progress.quizScores[u.id]||0)>=70&&progress.solved[u.id]).length,[progress,roadmap]);
@@ -43,6 +43,9 @@ function Lesson({roadmap,unit,index,lang,progress,setProgress,onBack,onPractice,
  const content=unitContent[unit.id],quiz=content.quiz,code=unitCode[unit.id]||{cpp:unit.cpp,python:unit.python};
  // Problems tagged to this roadmap, easiest first — the USACO-style practice
  // table that turns a lesson into something you can immediately act on.
+ // Clearing the quiz when the learner opens a different unit — a reset keyed
+ // to a prop change, which is what this rule exists to allow.
+ // eslint-disable-next-line react-hooks/set-state-in-effect
  useEffect(()=>{setChecked(false);setAnswer(null);setResult("")},[unit.id]);
  const unitSpec=specForUnit(unit.titleUz,roadmap.slug);
  const prevUnit=index>0?roadmap.units[index-1]:null;

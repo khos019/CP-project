@@ -21,6 +21,9 @@ export function LessonToc({ lang, unitId }: { lang: "uz" | "en"; unitId: string 
       if (!h.id) h.id = `lesson-sec-${i + 1}`;
       return { id: h.id, text: h.textContent || `${i + 1}` };
     });
+    // Reads the rendered headings: the state is a consequence of the DOM the
+    // lesson just produced, not of this component rendering.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setItems(entries);
     setActive(entries[0]?.id || "");
 
