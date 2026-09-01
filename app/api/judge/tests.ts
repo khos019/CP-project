@@ -47,10 +47,15 @@ export const tests={
   "max-subarray":[{stdin:"9\n-2 1 -3 4 -1 2 1 -5 4\n",expected_output:"6\n"},{stdin:"1\n-7\n",expected_output:"-7\n"},{stdin:"5\n1 2 3 4 5\n",expected_output:"15\n"},{stdin:"4\n-1 -2 -3 -4\n",expected_output:"-1\n"},{stdin:"6\n5 -9 6 -2 3 -1\n",expected_output:"7\n"}],
   "pair-sum-count":[{stdin:"5 6\n1 2 3 4 5\n",expected_output:"2\n"},{stdin:"4 8\n4 4 4 4\n",expected_output:"6\n"},{stdin:"3 100\n1 2 3\n",expected_output:"0\n"},{stdin:"6 0\n-3 -2 -1 1 2 3\n",expected_output:"3\n"},{stdin:"2 3\n1 2\n",expected_output:"1\n"}],
   "prime-count":[{stdin:"10\n",expected_output:"4\n"},{stdin:"1\n",expected_output:"0\n"},{stdin:"2\n",expected_output:"1\n"},{stdin:"1000000\n",expected_output:"78498\n"},{stdin:"100\n",expected_output:"25\n"}],
-  "queue-simulation":[{stdin:"4\n1 5\n1 7\n2\n2\n",expected_output:"5\n7\n"},{stdin:"2\n2\n2\n",expected_output:"-1\n-1\n"},{stdin:"3\n1 1\n2\n2\n",expected_output:"1\n-1\n"},{stdin:"5\n1 3\n1 4\n2\n1 5\n2\n",expected_output:"3\n4\n"},{stdin:"1\n1 9\n",expected_output:"\n"}],
+  "queue-simulation":[{stdin:"4\n1 5\n1 7\n2\n2\n",expected_output:"5\n7\n"},{stdin:"2\n2\n2\n",expected_output:"-1\n-1\n"},{stdin:"3\n1 1\n2\n2\n",expected_output:"1\n-1\n"},{stdin:"5\n1 3\n1 4\n2\n1 5\n2\n",expected_output:"3\n4\n"},{stdin:"2\n1 9\n2\n",expected_output:"9\n"}],
   "rotate-array":[{stdin:"5 2\n1 2 3 4 5\n",expected_output:"4 5 1 2 3\n"},{stdin:"1 0\n7\n",expected_output:"7\n"},{stdin:"4 4\n1 2 3 4\n",expected_output:"1 2 3 4\n"},{stdin:"3 1000000000\n1 2 3\n",expected_output:"3 1 2\n"},{stdin:"2 1\n9 8\n",expected_output:"8 9\n"}],
   "triangle-area":[{stdin:"0 0 4 0 0 3\n",expected_output:"12\n"},{stdin:"0 0 1 1 2 2\n",expected_output:"0\n"},{stdin:"0 0 1 0 0 1\n",expected_output:"1\n"},{stdin:"1000000000 0 0 1000000000 -1000000000 0\n",expected_output:"2000000000000000000\n"},{stdin:"-1 -1 -1 5 3 -1\n",expected_output:"24\n"}],
-  "xor-range":[{stdin:"5\n",expected_output:"5\n"},{stdin:"1\n",expected_output:"1\n"},{stdin:"4\n",expected_output:"0\n"},{stdin:"1000000000000000000\n",expected_output:"0\n"},{stdin:"7\n",expected_output:"8\n"}],
+  // Corrected: the previous key answered a different question from the one the
+  // statement asks ("1 XOR 2 XOR ... XOR n"). It expected 5 for n=5, where the
+  // XOR of 1..5 is 1 — so a learner who solved the stated problem correctly was
+  // told they were wrong. Recomputed from the standard identity:
+  // n%4 == 0 -> n, 1 -> 1, 2 -> n+1, 3 -> 0.
+  "xor-range":[{stdin:"5\n",expected_output:"1\n"},{stdin:"1\n",expected_output:"1\n"},{stdin:"4\n",expected_output:"4\n"},{stdin:"1000000000000000000\n",expected_output:"1000000000000000000\n"},{stdin:"7\n",expected_output:"0\n"}],
   "binary-search-sqrt":[{stdin:"17\n",expected_output:"4\n"},{stdin:"0\n",expected_output:"0\n"},{stdin:"1\n",expected_output:"1\n"},{stdin:"1000000000000000000\n",expected_output:"1000000000\n"},{stdin:"999999999999999999\n",expected_output:"999999999\n"}],
   "components-count":[{stdin:"5 3\n1 2\n2 3\n4 5\n",expected_output:"2\n"},{stdin:"1 0\n",expected_output:"1\n"},{stdin:"4 0\n",expected_output:"4\n"},{stdin:"6 5\n1 2\n2 3\n3 4\n4 5\n5 6\n",expected_output:"1\n"},{stdin:"3 1\n1 3\n",expected_output:"2\n"}],
   "fast-power":[{stdin:"2 10 1000\n",expected_output:"24\n"},{stdin:"3 0 7\n",expected_output:"1\n"},{stdin:"5 1000000000 1000000007\n",expected_output:"142848001\n"},{stdin:"123456789 987654321 1000000007\n",expected_output:"652541198\n"}],

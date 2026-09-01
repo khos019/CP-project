@@ -228,6 +228,10 @@ export function AlgoYolApp(){
    // and the server is asked what. Public channels make that the only safe
    // reading, and it also means a dropped event costs a second, not a duel.
    if(event.event==="duel_challenge_cancelled")setDuelNotice(lang==="uz"?"Raqibni boshqa o‘yinchi oldi.":"Another player took this opponent.");
+   // A message arrives on the same channel the duel already keeps open, so the
+   // badge updates now rather than on the next minute's poll. The event carries
+   // no text — only that there is something to re-read.
+   if(event.event==="message_received"){void refreshUnread();return}
    if(event.event==="match_found"){const id=String((event.payload as {duel_id?:string}).duel_id||"");if(id)channelRef.current?.join(matchTopic(id));go("duel")}
    void pull();
    window.dispatchEvent(new Event(DUEL_EVENT));

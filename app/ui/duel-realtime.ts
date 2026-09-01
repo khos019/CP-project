@@ -32,7 +32,10 @@ export type DuelEventName =
   | "duel_started"
   | "submission_received"
   | "submission_result"
-  | "duel_finished";
+  | "duel_finished"
+  // Not a duel event, but it rides the same per-user channel: the socket is
+  // already open, so an inbox badge need not wait for its next poll.
+  | "message_received";
 
 export type DuelEvent = { event: DuelEventName; payload: Record<string, unknown> };
 export type ChannelStatus = "connecting" | "open" | "closed";

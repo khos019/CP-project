@@ -112,8 +112,17 @@ test("no human, so a bot duel appears after the human window",
 
     const bot = state.duel.players.find((p) => p.seat !== state.duel.my_seat);
     assert.equal(bot.is_bot, true, "the opponent is labelled as a bot, not disguised as a person");
-    assert.ok(Math.abs(bot.rating - RATING) <= 60,
-      `bot rating ${bot.rating} should sit near the player's ${RATING}`);
+
+    // Since 021 the bot is matched to the strength estimate rather than to
+    // duel_rating alone — for a fresh account with no solves and no roadmap
+    // progress that is the 1200 prior, not whatever the column happens to say.
+    // Comparing against duel_rating here would be testing the old behaviour.
+    const strength = await fetch(`${SUPABASE}/rest/v1/rpc/duel_player_strength`, {
+      method: "POST", headers: svc, body: JSON.stringify({ p_user: learner.id }),
+    }).then((r) => r.json()).catch(() => null);
+    const target = strength?.strength ?? RATING;
+    assert.ok(Math.abs(bot.rating - target) <= 60,
+      `bot rating ${bot.rating} should sit near the player's estimated strength ${target}`);
   });
 
 test("the bot submits through the real judge and the verdict is recorded",

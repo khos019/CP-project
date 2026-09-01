@@ -117,6 +117,20 @@ export async function POST(request: Request) {
         })));
       }
 
+      // Two people were already searching and the database put them together
+      // without a card — there was nothing to accept, both had said yes.
+      if (data.paired === true) {
+        const duelId = asString(data.duel_id);
+        const me = asString(await callerId(token));
+        const opponent = asString(data.opponent_id);
+        await broadcast([
+          toUser(me, "match_found", { duel_id: duelId, opponent_id: opponent, is_bot: false }),
+          ...(opponent ? [toUser(opponent, "match_found", { duel_id: duelId, opponent_id: me, is_bot: false })] : []),
+          toMatch(duelId, "duel_started", { duel_id: duelId }),
+        ]);
+        return NextResponse.json(data);
+      }
+
       // The database decided the human window has closed. It re-checks the
       // elapsed time itself, so asking early achieves nothing.
       if (data.bot_fallback_due === true) {
