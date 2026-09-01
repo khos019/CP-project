@@ -857,3 +857,26 @@ body{background:radial-gradient(circle at 12% -10%,rgba(119,210,68,.13),transpar
 .c-pre{color:#c58aff}
 .c-op{color:#9fb3a8}
 .c-id{color:#d6e4dc}
+/* Width containment.
+   Grid and flex items default to min-width:auto, so any child with a large
+   intrinsic width — a `white-space: pre` code block, or a table — pushes the
+   track wider than its container and the whole page scrolls sideways. Letting
+   these shrink is what makes the inner overflow-x:auto actually work. */
+.lesson-grid{min-width:0}
+.lesson-grid>*{min-width:0}
+.lesson-content{min-width:0;max-width:100%}
+.lesson-content>*{max-width:100%}
+.codeblock{max-width:100%;min-width:0}
+.mastery-layout{min-width:0}
+.mastery-layout>*{min-width:0}
+.workspace{min-width:0}
+.workspace>*{min-width:0}
+.play-grid{min-width:0}
+.play-grid>*{min-width:0}
+/* A table cannot shrink below its content, so give it its own scroller. */
+.practice-table{display:block;overflow-x:auto;max-width:100%}
+/* Diagrams are drawn at 520x152; stretching one across a wide column blew the
+   nodes up to three times their intended size. */
+.concept-figure svg{max-width:560px;margin:0 auto}
+.statement,.statement *{min-width:0;max-width:100%}
+.statement pre{white-space:pre-wrap;word-break:break-word}
