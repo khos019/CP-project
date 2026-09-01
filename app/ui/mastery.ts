@@ -15,6 +15,7 @@ const LOG="algoyol-mastery-log";
 const CONFIG_KEY="algoyol-mastery-config";
 const DUEL_HISTORY="algoyol-duel-history";
 const BACKFILLED="algoyol-mastery-backfilled";
+const PLACEMENT="algoyol-placement";
 const empty:MasteryStore={scores:{},evidence:{},unlocks:{},validated:{}};
 
 /* Default thresholds (0–1000 scale). Owner can override every value; overrides live in
@@ -155,4 +156,46 @@ export function recordDuelResult(entry:Omit<DuelHistoryEntry,"at">){
  list.push({...entry,at:Date.now()});
  writeScoped(DUEL_HISTORY,JSON.stringify(list.slice(-120)));
  window.dispatchEvent(new Event("algoyol-progress"));
+}
+
+
+/* ---- Placement result -------------------------------------------------- */
+/* Kept apart from mastery scores on purpose. Mastery is a running total of
+   evidence; this is one dated snapshot saying "on this day, a test placed you
+   here". The roadmap reads `cleared` to decide which units a learner may skip,
+   and keeping that separate means a placement can be retaken, or ignored,
+   without rewriting the evidence they have actually earned since. */
+export type PlacementRecord={
+ level:number;
+ /* slug -> how many leading units placement considers covered */
+ cleared:Record<string,number>;
+ scores:Record<string,number>;
+ answered:number;
+ at:number;
+};
+
+export function loadPlacement():PlacementRecord|null{
+ if(typeof window==="undefined")return null;
+ try{
+  const raw=readScoped(PLACEMENT);
+  if(!raw)return null;
+  const p=JSON.parse(raw) as PlacementRecord;
+  return p&&typeof p.level==="number"?{...p,cleared:p.cleared||{},scores:p.scores||{}}:null;
+ }catch{return null}
+}
+
+export function savePlacement(record:PlacementRecord){
+ if(typeof window==="undefined")return;
+ writeScoped(PLACEMENT,JSON.stringify(record));
+ /* Placement raises mastery the same way any other evidence does — never
+    lowers it, because a bad day on a quiz should not erase completed work. */
+ seedPlacement(record.scores);
+ window.dispatchEvent(new Event("algoyol-progress"));
+}
+
+/** How many leading units of a track placement cleared. Zero when the learner
+ *  has not taken it, which is the honest default: nothing skipped. */
+export function clearedUnits(slug:string):number{
+ const p=loadPlacement();
+ return p?Math.max(0,p.cleared[slug]||0):0;
 }

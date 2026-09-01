@@ -1,88 +1,269 @@
 "use client";
 
+/* The level check.
+ *
+ * What it replaces: ten fixed questions scored equally, then two coding tasks,
+ * then a screen of bars. It could tell a beginner from somebody who had seen a
+ * loop, and past that it said the same thing to everyone. Worse, the roadmap
+ * ignored the result — units unlock strictly in order, so a learner who
+ * already knew binary search still had to walk every unit before it.
+ *
+ * What this does instead:
+ *
+ *   - Asks adaptively. Fourteen questions, each chosen for what is still
+ *     unknown: right answers make the next one harder, wrong ones back off,
+ *     and a track already probed gets deprioritised so breadth wins over
+ *     repetition.
+ *   - Places the learner on the same rating scale as the problems and the
+ *     duel, then reads each track's advertised band to decide how much of it
+ *     they are past.
+ *   - Actually unlocks the roadmap. The cleared units are marked "Bilasiz"
+ *     rather than "Tugatildi" — the site does not pretend they did the work,
+ *     it just stops standing in their way.
+ *
+ * Every answer is explained on the spot. A placement test the learner walks
+ * away from having learned nothing is a wasted fifteen minutes.
+ */
+
 import { useMemo, useState } from "react";
-import { roadmapCatalog } from "./roadmap-data";
-import { writeScoped } from "./session";
 import { BrandMark } from "./BrandMark";
-import { loadMastery, masteryLabel, seedPlacement } from "./mastery";
+import { roadmapCatalog } from "./roadmap-data";
+import { savePlacement } from "./mastery";
+import { placementBank, pickQuestion, type PlacementQuestion } from "./placement-bank";
+import { estimateRating, levelLabel, nextTarget, placeTracks, START_RATING, type Answer } from "./placement-model";
 
-type Lang="uz"|"en";
-type Step="intro"|"background"|"quiz"|"coding"|"result";
+type Lang = "uz" | "en";
+type Step = "intro" | "quiz" | "result";
 
-const questions:{topic:string;uz:string;en:string;choices:string[];correct:number}[]=[
- {topic:"programming-basics",uz:"C++ da `int x = 5; cout << x % 2;` nima chiqaradi?",en:"In C++, what does `int x = 5; cout << x % 2;` print?",choices:["0","1","2","5"],correct:1},
- {topic:"foundations",uz:"n elementli massivni bir marta kezishning vaqt murakkabligi?",en:"Time complexity of one pass over an array of n elements?",choices:["O(1)","O(log n)","O(n)","O(n log n)"],correct:2},
- {topic:"sorting",uz:"Qaysi algoritm o‘rtacha O(n log n) da ishlaydi?",en:"Which algorithm runs in O(n log n) on average?",choices:["Bubble sort","Merge sort","Selection sort","Insertion sort"],correct:1},
- {topic:"binary-search",uz:"Binary search qo‘llash uchun asosiy shart?",en:"Main requirement for applying binary search?",choices:["Massiv tartiblangan bo‘lishi","Massiv kichik bo‘lishi","Elementlar musbat bo‘lishi","Elementlar unikal bo‘lishi"],correct:0},
- {topic:"two-pointers",uz:"Sliding window texnikasining odatiy murakkabligi?",en:"Typical complexity of the sliding window technique?",choices:["O(n²)","O(n log n)","O(n)","O(log n)"],correct:2},
- {topic:"math",uz:"gcd(12, 18) nechaga teng?",en:"What is gcd(12, 18)?",choices:["2","3","6","9"],correct:2},
- {topic:"data-structures",uz:"LIFO printsipida ishlaydigan tuzilma?",en:"Which structure follows LIFO?",choices:["Queue","Stack","Heap","Set"],correct:1},
- {topic:"graphs",uz:"BFS qaysi ma’lumot tuzilmasidan foydalanadi?",en:"Which data structure does BFS use?",choices:["Stack","Priority queue","Queue","Trie"],correct:2},
- {topic:"dynamic-programming",uz:"Memoization nima uchun ishlatiladi?",en:"What is memoization used for?",choices:["Xotirani tejash","Takroriy hisoblashlarni yo‘qotish","Kodni qisqartirish","Rekursiyani sekinlashtirish"],correct:1},
- {topic:"greedy",uz:"Greedy yondashuvning asosiy g‘oyasi?",en:"Core idea of the greedy approach?",choices:["Barcha variantni tekshirish","Har qadamda mahalliy optimal tanlov","Random tanlov","Rekursiv bo‘lish"],correct:1},
-];
+const TOTAL = 14;
 
-const codingTasks=[
- {id:"sum-two",topic:"programming-basics",points:200,uz:"Ikki son yig‘indisi (a + b)",en:"Sum of two numbers (a + b)",cpp:"#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    long long a, b;\n    cin >> a >> b;\n    // TODO\n    return 0;\n}",py:"a, b = map(int, input().split())\n# TODO"},
- {id:"max-subarray",topic:"foundations",points:250,uz:"Eng katta qism-yig‘indi",en:"Maximum subarray sum",cpp:"#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    int n;\n    cin >> n;\n    // TODO\n    return 0;\n}",py:"n = int(input())\na = list(map(int, input().split()))\n# TODO"},
-];
+const T = {
+  uz: {
+    eyebrow: "DARAJANI ANIQLASH",
+    welcome: "Qayerdan boshlashingizni aniqlaymiz",
+    lead: "Savollar javobingizga qarab qiyinlashadi yoki osonlashadi. 14 ta savol — taxminan 6 daqiqa.",
+    b1: "Bilganingizni qaytadan o‘qimaysiz", b1d: "Darajangizdan pastdagi bosqichlar ochib beriladi.",
+    b2: "Har savol tushuntiriladi", b2d: "Javobdan keyin nega shundayligini o‘qiysiz.",
+    b3: "Xohlagan payt qayta topshirasiz", b3d: "Natija hech qachon progressingizni kamaytirmaydi.",
+    start: "Boshlash", skip: "Keyinroq", fresh: "Noldan boshlayman",
+    of: "dan", check: "Javobni tekshirish", next: "Keyingi savol", finish: "Natijani ko‘rish",
+    correct: "To‘g‘ri", wrong: "Noto‘g‘ri",
+    resultTitle: "Sizning darajangiz",
+    estimate: "Taxminiy reyting", answered: "To‘g‘ri javoblar",
+    opened: "Ochilgan bosqichlar", opensNothing: "Hozircha hech narsa ochilmadi — noldan boshlaymiz.",
+    tracks: "Yo‘nalishlar bo‘yicha",
+    known: "bilasiz", toLearn: "o‘rganasiz",
+    startHere: "Shu yerdan boshlang", go: "Yo‘l xaritasiga o‘tish", retake: "Qayta topshirish",
+    note: "Bu bosqichlar «Bilasiz» deb belgilandi — qulflanmagan, lekin xohlasangiz o‘qishingiz mumkin.",
+  },
+  en: {
+    eyebrow: "LEVEL CHECK",
+    welcome: "Let us find where you should start",
+    lead: "Questions get harder or easier as you answer. Fourteen of them — about six minutes.",
+    b1: "Skip what you already know", b1d: "Units below your level are opened for you.",
+    b2: "Every question is explained", b2d: "You read why, right after answering.",
+    b3: "Retake it whenever", b3d: "A result never lowers progress you already have.",
+    start: "Start", skip: "Later", fresh: "Start from zero",
+    of: "of", check: "Check answer", next: "Next question", finish: "See result",
+    correct: "Correct", wrong: "Not quite",
+    resultTitle: "Your level",
+    estimate: "Estimated rating", answered: "Correct answers",
+    opened: "Units opened", opensNothing: "Nothing opened yet — we start from the beginning.",
+    tracks: "By track",
+    known: "known", toLearn: "to learn",
+    startHere: "Start here", go: "Go to the roadmap", retake: "Retake",
+    note: "These units are marked “Known” — unlocked, but still there if you want them.",
+  },
+};
 
-const L={uz:{
- welcome:"AlgoYo‘lga xush kelibsiz!",loop:"O‘rganing · Mashq qiling · Duelda bellashing · O‘sing",
- question:"Darajangizni aniqlaymizmi?",assess:"Darajamni aniqlash",fresh:"Boshlang‘ichdan boshlash",later:"Keyinroq",
- bgTitle:"Siz haqingizda",lang:"Afzal til",exp:"Tajriba",goal:"Maqsad",next:"Davom etish",
- quizTitle:"Bilim tekshiruvi",codingTitle:"Kod kalibratsiyasi",skip:"O‘tkazib yuborish",run:"Tekshirish",
- result:"Sizning skill profilingiz",overall:"Umumiy daraja",unlocked:"Ochilgan yo‘llar",rec:"Tavsiya etilgan boshlanish",
- goRoadmap:"Roadmapga o‘tish",beginner:"Beginner",intermediate:"Intermediate",advanced:"Advanced",
- levels:["0–1 yil","1–2 yil","2+ yil"],goals:["Olimpiada","Codeforces reytingi","Ish intervyusi","Umumiy bilim"],
-},en:{
- welcome:"Welcome to AlgoYo‘l!",loop:"Learn · Practice · Duel · Grow",
- question:"Shall we find your level?",assess:"Assess my level",fresh:"Start from the basics",later:"Later",
- bgTitle:"About you",lang:"Preferred language",exp:"Experience",goal:"Goal",next:"Continue",
- quizTitle:"Knowledge calibration",codingTitle:"Coding calibration",skip:"Skip",run:"Run tests",
- result:"Your skill profile",overall:"Overall level",unlocked:"Unlocked tracks",rec:"Recommended start",
- goRoadmap:"Go to roadmap",beginner:"Beginner",intermediate:"Intermediate",advanced:"Advanced",
- levels:["0–1 years","1–2 years","2+ years"],goals:["Olympiads","Codeforces rating","Job interviews","General knowledge"],
-}};
+export function Placement({
+  lang, onFinish, onRoadmap,
+}: { lang: Lang; signed?: boolean; onFinish: () => void; onRoadmap: (slug: string) => void }) {
+  const t = T[lang];
+  const [step, setStep] = useState<Step>("intro");
+  const [answers, setAnswers] = useState<Answer[]>([]);
+  const [current, setCurrent] = useState<PlacementQuestion | null>(null);
+  const [picked, setPicked] = useState<number | null>(null);
+  const [revealed, setRevealed] = useState(false);
 
-export function Placement({lang,signed,onFinish,onRoadmap}:{lang:Lang;signed:boolean;onFinish:()=>void;onRoadmap:(slug:string)=>void}){
- const t=L[lang];
- const [step,setStep]=useState<Step>("intro"),[bg,setBg]=useState({lang:"C++",exp:0,goal:0}),[qi,setQi]=useState(0),[picked,setPicked]=useState<number|null>(null),[answers,setAnswers]=useState<Record<string,number>>({});
- const [ci,setCi]=useState(0),[code,setCode]=useState(codingTasks[0].cpp),[codeLang,setCodeLang]=useState<"cpp20"|"python3">("cpp20"),[verdict,setVerdict]=useState(""),[codingScores,setCodingScores]=useState<Record<string,number>>({}),[judging,setJudging]=useState(false);
- const scores=useMemo(()=>{const s:Record<string,number>={};Object.entries(answers).forEach(([k,ok])=>{if(!ok)return;const topic=questions[Number(k)].topic;s[topic]=Math.min(1000,(s[topic]||0)+110)});Object.entries(codingScores).forEach(([id,ok])=>{if(!ok)return;const task=codingTasks.find(x=>x.id===id);if(task)s[task.topic]=Math.min(1000,(s[task.topic]||0)+task.points)});return s},[answers,codingScores]);
- const level=useMemo(()=>{const vals=Object.values(scores);const avg=vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:0;return avg>=550?t.advanced:avg>=250?t.intermediate:t.beginner},[scores,t]);
- const answer=()=>{if(picked===null)return;setAnswers(a=>({...a,[qi]:picked===questions[qi].correct?1:0}));setPicked(null);if(qi<questions.length-1)setQi(qi+1);else setStep("coding")};
- const submitCode=async()=>{if(judging)return;setJudging(true);setVerdict(lang==="uz"?"Tekshirilmoqda…":"Judging…");try{const r=await (await fetch("/api/judge",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({problemId:codingTasks[ci].id,language:codeLang,sourceCode:code})})).json();const ok=r.verdict==="ACCEPTED";setVerdict(ok?(lang==="uz"?"Qabul qilindi":"Accepted"):(lang==="uz"?"Noto‘g‘ri":"Wrong answer"));if(ok)setCodingScores(s=>({...s,[codingTasks[ci].id]:1}))}catch{setVerdict("Judge error")}finally{setJudging(false)}};
- const nextTask=()=>{if(ci<codingTasks.length-1){const n=ci+1;setCi(n);setCode(codeLang==="cpp20"?codingTasks[n].cpp:codingTasks[n].py);setVerdict("")}else finish()};
- const finish=()=>{seedPlacement(scores);writeScoped("algoyol-onboarded","1");setStep("result")};
- if(step==="result"){
-  const mastery=loadMastery(),unlocked=roadmapCatalog.filter(r=>mastery.unlocks[r.slug]||r.prereqs.length===0),rec=unlocked[unlocked.length-1];
-  return <div className="pl-page"><div className="page-head"><div><p className="eyebrow" style={{color:"#637068"}}>PLACEMENT</p><h1 className="page-title">{t.result}</h1></div><span className="tag">{t.overall}: {level}</span></div>
-   <div className="pl-bars panel">{roadmapCatalog.filter(r=>scores[r.slug]).map(r=><div key={r.slug} className="pl-bar"><span className="pl-bar-name">{lang==="uz"?r.titleUz:r.titleEn}</span><div className="progress"><span style={{width:`${(scores[r.slug]||0)/10}%`}}/></div><b className="mono">{scores[r.slug]||0}</b><small className="muted">{masteryLabel(scores[r.slug]||0,lang)}</small></div>)}</div>
-   <div className="panel" style={{marginTop:16}}><p className="eyebrow" style={{color:"#637068"}}>{t.unlocked}</p><div className="rm-recs">{unlocked.slice(0,5).map(r=><button key={r.slug} className="rm-rec" onClick={()=>onRoadmap(r.slug)}><span className="rm-dot available"/><span><b>{lang==="uz"?r.titleUz:r.titleEn}</b><small className="muted">{r.level}</small></span><span>→</span></button>)}</div>
-    <p className="muted" style={{marginTop:18}}>{t.rec}: <b>{rec?(lang==="uz"?rec.titleUz:rec.titleEn):"—"}</b></p>
-    <button className="primary" onClick={onFinish}>{t.goRoadmap} →</button></div></div>;
- }
- return <div className="pl-page"><div className="auth pl-card">
-  {step==="intro"&&<><div className="brand"><BrandMark className="brandmark" />AlgoYo‘l</div><h1>{t.welcome}</h1><p className="muted">{t.loop}</p><h2 style={{margin:"26px 0 6px"}}>{t.question}</h2>
-   <button className="primary" style={{width:"100%",marginTop:16}} onClick={()=>signed?setStep("background"):setStep("background")}>{t.assess} →</button>
-   <button className="secondary" style={{width:"100%",marginTop:10}} onClick={()=>{writeScoped("algoyol-onboarded","1");onFinish()}}>{t.fresh}</button>
-   <button className="lang" style={{width:"100%",marginTop:10}} onClick={onFinish}>{t.later}</button></>}
-  {step==="background"&&<><h1>{t.bgTitle}</h1>
-   <div className="field"><label>{t.lang}</label><select value={bg.lang} onChange={e=>setBg({...bg,lang:e.target.value})}><option>C++</option><option>Python</option></select></div>
-   <div className="field"><label>{t.exp}</label><select value={bg.exp} onChange={e=>setBg({...bg,exp:Number(e.target.value)})}>{t.levels.map((x,i)=><option key={x} value={i}>{x}</option>)}</select></div>
-   <div className="field"><label>{t.goal}</label><select value={bg.goal} onChange={e=>setBg({...bg,goal:Number(e.target.value)})}>{t.goals.map((x,i)=><option key={x} value={i}>{x}</option>)}</select></div>
-   <button className="primary" style={{width:"100%"}} onClick={()=>setStep("quiz")}>{t.next} →</button></>}
-  {step==="quiz"&&<><p className="eyebrow">{t.quizTitle} · {qi+1}/{questions.length}</p><div className="progress" style={{margin:"8px 0 18px"}}><span style={{width:`${qi/questions.length*100}%`}}/></div>
-   <h2 style={{fontSize:19,lineHeight:1.5}}>{lang==="uz"?questions[qi].uz:questions[qi].en}</h2>
-   <div className="quiz-options">{questions[qi].choices.map((c,i)=><button key={i} className={picked===i?"selected":""} onClick={()=>setPicked(i)}>{String.fromCharCode(65+i)}. {c}</button>)}</div>
-   <button className="primary" style={{width:"100%"}} disabled={picked===null} onClick={answer}>{qi<questions.length-1?t.next:t.codingTitle} →</button></>}
-  {step==="coding"&&<><p className="eyebrow">{t.codingTitle} · {ci+1}/{codingTasks.length}</p>
-   <h2 style={{fontSize:19}}>{lang==="uz"?codingTasks[ci].uz:codingTasks[ci].en}</h2>
-   <div className="code-tabs" style={{margin:"14px 0 8px"}}><button className={codeLang==="cpp20"?"active":""} onClick={()=>{setCodeLang("cpp20");setCode(codingTasks[ci].cpp)}}>C++20</button><button className={codeLang==="python3"?"active":""} onClick={()=>{setCodeLang("python3");setCode(codingTasks[ci].py)}}>Python 3</button></div>
-   <textarea className="pl-code" value={code} onChange={e=>setCode(e.target.value)} spellCheck={false} aria-label="Placement code"/>
-   <p className="verdict" style={{margin:"10px 0"}}>{verdict}</p>
-   <div style={{display:"flex",gap:10}}><button className="primary" style={{flex:1}} disabled={judging} onClick={submitCode}>{judging?"…":t.run}</button><button className="secondary" onClick={nextTask}>{ci<codingTasks.length-1?t.next:t.result} →</button></div>
-   <button className="lang" style={{width:"100%",marginTop:10}} onClick={finish}>{t.skip}</button></>}
- </div></div>;
+  const rating = useMemo(() => estimateRating(answers), [answers]);
+  const asked = useMemo(() => new Set(answers.map((a) => a.question.id)), [answers]);
+  const tracks = useMemo(() => new Set(answers.map((a) => a.question.track)), [answers]);
+
+  const begin = () => {
+    const first = pickQuestion(START_RATING, new Set(), new Set());
+    setCurrent(first);
+    setPicked(null);
+    setRevealed(false);
+    setStep("quiz");
+  };
+
+  const check = () => {
+    if (picked === null || !current || revealed) return;
+    setRevealed(true);
+    setAnswers((list) => [...list, { question: current, correct: picked === current.correct }]);
+  };
+
+  const advance = () => {
+    const done = answers.length;
+    if (done >= TOTAL || done >= placementBank.length) {
+      finish(answers);
+      return;
+    }
+    const target = nextTarget(estimateRating(answers), done);
+    const next = pickQuestion(target, asked, tracks);
+    if (!next) { finish(answers); return; }
+    setCurrent(next);
+    setPicked(null);
+    setRevealed(false);
+  };
+
+  const finish = (list: Answer[]) => {
+    const level = estimateRating(list);
+    const placed = placeTracks(level, list);
+    savePlacement({
+      level,
+      cleared: Object.fromEntries(placed.map((p) => [p.slug, p.cleared])),
+      scores: Object.fromEntries(placed.map((p) => [p.slug, p.mastery])),
+      answered: list.filter((a) => a.correct).length,
+      at: Date.now(),
+    });
+    setStep("result");
+  };
+
+  /* ------------------------------------------------------------- result */
+  if (step === "result") {
+    const placed = placeTracks(rating, answers);
+    const byTrack = new Map(placed.map((p) => [p.slug, p]));
+    const openedUnits = placed.reduce((n, p) => n + p.cleared, 0);
+    const correct = answers.filter((a) => a.correct).length;
+    // Where to begin: the first track that still has something left in it.
+    const startAt = roadmapCatalog.find((r) => (byTrack.get(r.slug)?.cleared ?? 0) < r.units.length);
+
+    return (
+      <div className="pl-page">
+        <div className="page-head">
+          <div>
+            <p className="eyebrow" style={{ color: "#637068" }}>{t.eyebrow}</p>
+            <h1 className="page-title">{t.resultTitle}</h1>
+          </div>
+          <span className="tag">{levelLabel(rating, lang)}</span>
+        </div>
+
+        <div className="pl-summary">
+          <div className="pl-stat"><b>{rating}</b><small>{t.estimate}</small></div>
+          <div className="pl-stat"><b>{correct}/{answers.length}</b><small>{t.answered}</small></div>
+          <div className="pl-stat pl-stat-key"><b>{openedUnits}</b><small>{t.opened}</small></div>
+        </div>
+
+        {openedUnits === 0 && <p className="muted">{t.opensNothing}</p>}
+        {openedUnits > 0 && <p className="muted">{t.note}</p>}
+
+        <p className="eyebrow" style={{ color: "#637068", marginTop: 26 }}>{t.tracks}</p>
+        <div className="pl-tracks">
+          {roadmapCatalog.map((r) => {
+            const p = byTrack.get(r.slug);
+            const share = p ? p.cleared / Math.max(1, p.units) : 0;
+            return (
+              <button key={r.slug} className="pl-track" onClick={() => onRoadmap(r.slug)}>
+                <span className="pl-track-ic" style={{ background: r.color }}>{r.icon}</span>
+                <span className="pl-track-body">
+                  <b>{lang === "uz" ? r.titleUz : r.titleEn}</b>
+                  <span className="pl-track-bar"><i style={{ width: `${Math.round(share * 100)}%`, background: r.color }} /></span>
+                  <small className="muted">
+                    {p?.cleared ?? 0}/{r.units.length} {t.known}
+                    {p?.probed && <em className="pl-probed"> · {lang === "uz" ? "tekshirildi" : "probed"}</em>}
+                  </small>
+                </span>
+                <span className="pl-track-pct mono">{Math.round(share * 100)}%</span>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className="match-actions" style={{ marginTop: 24 }}>
+          <button className="primary" onClick={() => (startAt ? onRoadmap(startAt.slug) : onFinish())}>
+            {startAt ? `${t.startHere}: ${lang === "uz" ? startAt.titleUz : startAt.titleEn}` : t.go} →
+          </button>
+          <button className="secondary" onClick={onFinish}>{t.go}</button>
+          <button className="lang" onClick={() => { setAnswers([]); setStep("intro"); }}>{t.retake}</button>
+        </div>
+      </div>
+    );
+  }
+
+  /* --------------------------------------------------------------- quiz */
+  if (step === "quiz" && current) {
+    const index = answers.length + (revealed ? 0 : 1);
+    const choices = lang === "uz" ? current.choicesUz : current.choicesEn;
+    const track = roadmapCatalog.find((r) => r.slug === current.track);
+    const wasRight = revealed && picked === current.correct;
+
+    return (
+      <div className="pl-page">
+        <div className="pl-quiz panel">
+          <div className="pl-quiz-top">
+            <span className="eyebrow" style={{ color: "#637068" }}>
+              {Math.min(index, TOTAL)} {t.of} {TOTAL}
+            </span>
+            <span className="pl-chip" style={{ borderColor: track?.color }}>
+              {track ? (lang === "uz" ? track.titleUz : track.titleEn) : current.track}
+              <i className="mono"> · {current.rating}</i>
+            </span>
+          </div>
+          <div className="progress pl-progress"><span style={{ width: `${(answers.length / TOTAL) * 100}%` }} /></div>
+
+          <h2 className="pl-question">{lang === "uz" ? current.uz : current.en}</h2>
+
+          <div className="quiz-options pl-options">
+            {choices.map((c, i) => {
+              const state = !revealed ? (picked === i ? "selected" : "")
+                : i === current.correct ? "right"
+                : picked === i ? "wrong" : "";
+              return (
+                <button key={i} className={state} disabled={revealed} onClick={() => setPicked(i)}>
+                  <span>{String.fromCharCode(65 + i)}</span>{c}
+                </button>
+              );
+            })}
+          </div>
+
+          {revealed && (
+            <div className={`pl-why ${wasRight ? "ok" : "bad"}`}>
+              <b>{wasRight ? t.correct : t.wrong}</b>
+              <p>{lang === "uz" ? current.whyUz : current.whyEn}</p>
+            </div>
+          )}
+
+          {!revealed
+            ? <button className="primary pl-cta" disabled={picked === null} onClick={check}>{t.check}</button>
+            : <button className="primary pl-cta" onClick={advance}>
+                {answers.length >= TOTAL ? t.finish : t.next} →
+              </button>}
+        </div>
+      </div>
+    );
+  }
+
+  /* -------------------------------------------------------------- intro */
+  return (
+    <div className="pl-page">
+      <div className="pl-intro panel">
+        <div className="brand" style={{ justifyContent: "center" }}><BrandMark className="brandmark" />AlgoYo‘l</div>
+        <p className="eyebrow" style={{ color: "#637068", marginTop: 22 }}>{t.eyebrow}</p>
+        <h1 className="pl-title">{t.welcome}</h1>
+        <p className="muted pl-lead">{t.lead}</p>
+
+        <div className="pl-benefits">
+          <div><b>{t.b1}</b><small>{t.b1d}</small></div>
+          <div><b>{t.b2}</b><small>{t.b2d}</small></div>
+          <div><b>{t.b3}</b><small>{t.b3d}</small></div>
+        </div>
+
+        <button className="primary pl-cta" onClick={begin}>{t.start} →</button>
+        <button className="secondary pl-cta" onClick={onFinish}>{t.fresh}</button>
+        <button className="lang pl-cta" onClick={onFinish}>{t.skip}</button>
+      </div>
+    </div>
+  );
 }

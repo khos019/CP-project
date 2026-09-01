@@ -959,3 +959,89 @@ body{background:radial-gradient(circle at 12% -10%,rgba(119,210,68,.13),transpar
 .quiz-options button:disabled{cursor:default;opacity:1}
 .quiz-options button.right::after{content:"✓";margin-left:auto;color:#9ae879;font-weight:800}
 .quiz-options button.wrong::after{content:"✕";margin-left:auto;color:#ff9c9c;font-weight:800}
+
+/* ---- Level check ----------------------------------------------------------
+   One column, one decision per screen. The test is the product here, so the
+   page gets out of its way: no sidebar, no nav competing for the eye, and the
+   question set at reading size rather than at UI size. */
+.pl-page{max-width:760px;margin:0 auto}
+.pl-intro,.pl-quiz{padding:34px 32px}
+.pl-title{font-size:clamp(26px,4vw,36px);letter-spacing:-.04em;line-height:1.12;margin:10px 0 12px;text-wrap:balance}
+.pl-lead{font-size:16px;line-height:1.65;max-width:52ch}
+.pl-benefits{display:grid;gap:12px;margin:26px 0 28px}
+.pl-benefits div{background:#0e1712;border:1px solid #22302a;border-radius:14px;padding:14px 16px;display:grid;gap:3px}
+.pl-benefits b{font-size:14.5px}
+.pl-benefits small{color:var(--muted);font-size:13px;line-height:1.5}
+.pl-cta{width:100%;margin-top:10px}
+
+.pl-quiz-top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.pl-chip{border:1px solid #2b3d33;border-radius:999px;padding:6px 12px;font-size:12px;font-weight:750;color:#c3d1c8}
+.pl-chip i{font-style:normal;color:var(--muted)}
+.pl-progress{margin:14px 0 22px}
+/* Read at prose size, not at label size — this is the sentence the learner is
+   actually thinking about. */
+.pl-question{font-size:20px;line-height:1.55;letter-spacing:-.015em;margin:0 0 20px;text-wrap:pretty}
+.pl-options button{align-items:flex-start;line-height:1.5;padding:13px 14px}
+.pl-options button span{flex-shrink:0}
+.pl-options button:disabled{opacity:1;cursor:default}
+.pl-options button.right{border-color:#4f8c3a;background:#132612;color:#dff5d4}
+.pl-options button.right span{background:var(--lime);color:#071008}
+.pl-options button.wrong{border-color:#7a3b2c;background:#251310;color:#ffcbb9}
+.pl-options button.wrong span{background:#ff875c;color:#2b1108}
+
+/* The explanation is the reason to answer honestly rather than guess. */
+.pl-why{margin-top:16px;padding:15px 17px;border-radius:14px;border:1px solid #2b3d33;background:#0b120e}
+.pl-why.ok{border-color:#3d5c2c;background:#101a0c}
+.pl-why.bad{border-color:#5c3a24;background:#170f0a}
+.pl-why b{display:block;font-size:13px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px}
+.pl-why.ok b{color:var(--lime)}
+.pl-why.bad b{color:var(--orange)}
+.pl-why p{margin:0;color:#c3d1c8;font-size:14.5px;line-height:1.6}
+
+.pl-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:6px 0 18px}
+.pl-stat{background:#0e1712;border:1px solid #22302a;border-radius:16px;padding:18px;text-align:center}
+.pl-stat b{display:block;font-size:30px;font-family:var(--font-mono);letter-spacing:-.03em}
+.pl-stat small{color:var(--muted);font-size:12px}
+.pl-stat-key{border-color:#3d5c2c;background:#101a0c}
+.pl-stat-key b{color:var(--lime)}
+
+.pl-tracks{display:grid;gap:8px;margin-top:12px}
+.pl-track{display:grid;grid-template-columns:38px 1fr auto;align-items:center;gap:14px;text-align:left;
+ background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 15px;font:inherit;color:var(--ink)}
+.pl-track:hover{border-color:#3d5c2c}
+.pl-track-ic{width:38px;height:38px;border-radius:11px;display:grid;place-items:center;color:#071008;font-weight:900;font-size:13px}
+.pl-track-body{display:grid;gap:6px;min-width:0}
+.pl-track-body b{font-size:14.5px}
+.pl-track-bar{height:6px;border-radius:99px;background:#1b2620;overflow:hidden}
+.pl-track-bar i{display:block;height:100%;border-radius:99px}
+.pl-track-body small{font-size:12px}
+.pl-probed{font-style:normal;color:var(--lime)}
+.pl-track-pct{font-weight:800;color:var(--muted);font-size:13px}
+
+/* A unit the placement cleared: open, but visibly not the same as earned. */
+.cloud-step.placed .cloud-unit{background:#16211b;opacity:.92}
+.cloud-step.placed .cloud-node{background:#243a2a;color:#9ccf8a}
+.unit-status.placed{color:#9ccf8a}
+
+@media(max-width:640px){
+ .pl-summary{grid-template-columns:1fr;gap:8px}
+ .pl-intro,.pl-quiz{padding:24px 20px}
+ .pl-question{font-size:18px}
+}
+
+/* The level-check offer. A strip, not a modal: it is an invitation, and a
+   learner who came to read a lesson should be able to ignore it. */
+.placement-offer{max-width:1240px;margin:20px auto -8px;padding:14px 18px;display:flex;align-items:center;gap:16px;
+ background:linear-gradient(120deg,#141f18,#0d1410);border:1px solid #3d5c2c;border-radius:16px}
+.po-ic{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;flex-shrink:0;
+ background:#16240f;color:var(--lime);font-size:17px}
+.po-copy{display:grid;gap:2px;min-width:0;flex:1}
+.po-copy b{font-size:14.5px}
+.po-copy small{color:var(--muted);font-size:12.5px;line-height:1.45}
+.placement-offer .primary{flex-shrink:0}
+.po-close{border:0;background:transparent;color:var(--muted);font-size:15px;padding:6px 4px;flex-shrink:0}
+.po-close:hover{color:var(--ink)}
+@media(max-width:720px){
+ .placement-offer{margin:14px 18px -4px;flex-wrap:wrap}
+ .placement-offer .primary{width:100%;order:3}
+}

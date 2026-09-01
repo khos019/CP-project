@@ -11,6 +11,7 @@ import { Playground } from "./Playground";
 import { CodeEditor } from "./CodeEditor";
 import { ChallengeOverlay, DuelMatchmaking, DUEL_EVENT } from "./DuelArena";
 import { OnlineDot, onlineAmong } from "./presence";
+import { loadPlacement } from "./mastery";
 import { openDuelChannel, userTopic, matchTopic, type DuelChannel } from "./duel-realtime";
 import { acceptChallenge, declineChallenge, duelHeartbeat, duelState, type DuelState } from "./duel-client";
 import { addLocalActivity, pushActivity } from "./coins";
@@ -104,6 +105,10 @@ export function AlgoYolApp(){
  const [duelOnline,setDuelOnline]=useState(false);
  const [duelNotice,setDuelNotice]=useState("");
  const channelRef=useRef<DuelChannel|null>(null);
+ /* Offer the level check to anybody signed in who has not taken it. Read in an
+    effect rather than during render: it comes from storage, and a render must
+    not depend on what storage happens to say. */
+ const [offerPlacement,setOfferPlacement]=useState(false);
  const [messageWith,setMessageWith]=useState<string|null>(null);
  // A UTC day carried from the statistics chart to the users page.
  const [usersDay,setUsersDay]=useState<string|null>(null);
@@ -162,6 +167,16 @@ export function AlgoYolApp(){
  /* Inbox badge. Polled rather than pushed: a realtime subscription is a
     second connection to keep alive for a number that changes a few times a
     day, and a stale badge is corrected the moment the inbox is opened. */
+ // Reads storage on mount and whenever progress changes; the state it sets is
+ // a consequence of what it read, not of rendering.
+ // eslint-disable-next-line react-hooks/set-state-in-effect
+ useEffect(()=>{
+  if(auth.status!=="authenticated")return;
+  const seen=()=>{setOfferPlacement(!loadPlacement()&&readScoped("algoyol-placement-dismissed")!=="1")};
+  seen();
+  window.addEventListener("algoyol-progress",seen);
+  return()=>window.removeEventListener("algoyol-progress",seen);
+ },[auth.status]);
  const refreshUnread=async()=>{
   if(auth.status!=="authenticated"){setUnread(0);return}
   const result=await fetchUnreadCount();
@@ -343,6 +358,14 @@ export function AlgoYolApp(){
   // learner nothing.
   void recordSubmission({problemKey:activeProblem.judge,problemTitle:lang==="uz"?activeProblem.uz:activeProblem.en,language:codeLang,verdict:String(r.verdict||"JUDGE_ERROR"),runtimeMs:r.runtimeMs??null,memoryKb:r.memoryKb??null,passed:r.passed??null,total:r.total??null,source:code})}catch{setVerdict(lang==="uz"?"Tekshiruvchi bilan aloqa uzildi":"Judge connection failed")}};
  return <div className="shell"><header className="topbar"><button className="brand" onClick={()=>go("home")} style={{border:0,background:"transparent"}}><BrandMark className="brandmark" />AlgoYo‘l</button><nav className="nav">{(["home","roadmaps","problems","duel","leaderboard","shop","playground"] as View[]).map(v=><button key={v} className={view===v?"active":""} onClick={()=>go(v)}>{t[v as keyof typeof t]}</button>)}</nav><div className="actions"><button className="lang" onClick={swap} aria-label={lang==="uz"?"Switch to English":"O‘zbekchaga o‘tish"}>{lang==="uz"?"EN":"UZ"}</button>{signed&&<button className="pill msg-pill" onClick={()=>go("messages")} aria-label={lang==="uz"?"Xabarlar":"Messages"}>✉{unread>0&&<span className="msg-badge">{unread>99?"99+":unread}</span>}</button>}{auth.status==="loading"?<span className="pill pill-loading" aria-live="polite">…</span>:<button className="pill" onClick={()=>go(signed?"profile":"auth")}>{signed?(lang==="uz"?"Profil":"Profile"):t.login}</button>}<button className="primary" onClick={()=>go("duel")}>{lang==="uz"?"Duel topish":"Find duel"}</button></div></header>
+ {signed&&offerPlacement&&view!=="placement"&&<div className="placement-offer">
+  <span className="po-ic" aria-hidden>◎</span>
+  <span className="po-copy"><b>{lang==="uz"?"Darajangizni aniqlaymizmi?":"Shall we find your level?"}</b>
+   <small>{lang==="uz"?"14 ta savol · 6 daqiqa. Bilgan bosqichlaringiz ochib beriladi.":"Fourteen questions, six minutes. Units you already know get opened for you."}</small></span>
+  <button className="primary" onClick={()=>go("placement")}>{lang==="uz"?"Boshlash":"Start"} →</button>
+  <button className="po-close" aria-label={lang==="uz"?"Yopish":"Dismiss"}
+   onClick={()=>{writeScoped("algoyol-placement-dismissed","1");setOfferPlacement(false)}}>✕</button>
+ </div>}
  <main className="main">{view==="home"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed&&profile?<><ContinueHero lang={lang} profile={profile} go={v=>go(v as View)} openRoadmap={openRoadmap}/><LandingStory lang={lang}/><LandingBrowse lang={lang} go={go} openRoadmap={openRoadmap}/><LandingCta lang={lang} go={go} signed/></>:<Home lang={lang} go={go} openRoadmap={openRoadmap}/>)} {view==="roadmaps"&&<RoadmapHub lang={lang} role={role} openRoadmap={openRoadmap}/>} {view==="roadmap"&&<RoadmapExperience slug={selectedRoadmap} lang={lang} role={role} unitId={selectedUnit} onOpenUnit={id=>pushScreen({unit:id})} onBack={back} onPractice={()=>pushScreen({view:"problem"})} onOpenProblem={(id:string)=>{const p=bankProblems.find(x=>x.id===id);if(p){setActiveProblem(p);setVerdict("");pushScreen({view:"problem"})}}}/>} {view==="problems"&&<Problems lang={lang} filter={filter} setFilter={setFilter} items={filtered} go={go} onSelect={p=>{setActiveProblem(p);setCode(p.judge==="max-subarray"?duelProblems[1].cpp:p.judge==="coin-change"?duelProblems[2].cpp:cpp);setVerdict("");go("problem")}}/>} {view==="problem"&&<Problem lang={lang} item={activeProblem} code={code} setCode={setCode} codeLang={codeLang} setCodeLang={setCodeLang} verdict={verdict} submit={judge} onBack={back}/>} {view==="duel"&&<DuelMatchmaking lang={lang} signed={signed} authLoading={auth.status==="loading"} needAuth={()=>go("auth")}/>} {view==="leaderboard"&&<Leaderboard lang={lang} me={profile} signed={signed} onOpenPerson={openPerson}/>} {view==="profile"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<ProfilePage lang={lang} profile={profile} onProfileChange={next=>setAuth({status:"authenticated",profile:next})} signOut={signOut} goAdmin={()=>go("admin")} goStats={()=>go("stats")} goUsers={()=>go("users")} goMessages={()=>go("messages")} isOwner={can(role,"user.manage_roles")} goRoadmaps={()=>go("roadmaps")} openRoadmap={openRoadmap} isStaff={can(role,"content.view_management")} goFriends={()=>go("friends")} goSubmissions={()=>go("submissions")}/>:<SignInRequired lang={lang} go={go} what="profile"/>)} {view==="auth"&&<AuthPage lang={lang} notice={authNotice} onAuthenticated={(token,remember,isNew,refreshToken)=>{void enterSession(token,remember,isNew,refreshToken)}}/>} {view==="placement"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed?<Placement lang={lang} signed={signed} onFinish={()=>go("roadmaps")} onRoadmap={openRoadmap}/>:<SignInRequired lang={lang} go={go} what="placement"/>)} {view==="admin"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<Admin lang={lang} profile={profile}/>:<SignInRequired lang={lang} go={go} what="admin"/>)} {view==="person"&&(person?<PublicProfile key={person} lang={lang} username={person} meId={profile?.id||null} signedIn={signed} onBack={back} onMessage={id=>{setMessageWith(id);go("messages")}} onMyProfile={()=>go("profile")} onSignIn={()=>go("auth")} onOpenSubmissions={h=>pushScreen({view:"person-submissions",person:h})}/>:<ScreenLoading lang={lang}/>)} {view==="shop"&&<Shop lang={lang} signed={signed} authLoading={auth.status==="loading"}/>} {view==="playground"&&<Playground lang={lang}/>} {view==="friends"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed?<FriendsScreen lang={lang} onBack={()=>go("profile")} onOpenPerson={openPerson}/>:<SignInRequired lang={lang} go={go} what="profile"/>)} {view==="submissions"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<SubmissionsScreen lang={lang} userId={profile.id} who={profile.display_name||profile.username} isMe signedIn onBack={()=>go("profile")}/>:<SignInRequired lang={lang} go={go} what="profile"/>)} {view==="person-submissions"&&(person?<PersonSubmissions key={person} lang={lang} handle={person} meId={profile?.id||null} signedIn={signed} onBack={back}/>:<ScreenLoading lang={lang}/>)} {view==="messages"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<Messages lang={lang} me={profile} openWith={messageWith} onOpened={()=>setMessageWith(null)} onUnreadChange={()=>{void refreshUnread()}} onOpenProfile={openPerson}/>:<SignInRequired lang={lang} go={go} what="messages"/>)} {view==="users"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:!profile?<SignInRequired lang={lang} go={go} what="users"/>:can(role,"user.manage_roles")?<UsersAdmin lang={lang} meId={profile.id} goProfile={()=>go("profile")} onMessage={id=>{setMessageWith(id);go("messages")}} onOpenProfile={openPerson} initialDay={usersDay} onDayConsumed={()=>setUsersDay(null)}/>:<div className="panel"><div className="notice notice-error">{lang==="uz"?"Bu sahifa faqat ega (owner) roli uchun.":"This page is for the owner role only."}</div></div>)} {view==="stats"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:!profile?<SignInRequired lang={lang} go={go} what="stats"/>:can(role,"stats.view")?<OwnerStats lang={lang} goProfile={()=>go("profile")} onPickDay={day=>{setUsersDay(day);go("users")}}/>:<div className="panel"><div className="notice notice-error">{lang==="uz"?"Bu sahifa faqat ega (owner) roli uchun.":"This page is for the owner role only."}</div></div>)}</main>
  <nav className="mobile-nav">{(["home","roadmaps","problems","duel","leaderboard","shop","playground"] as View[]).map(v=><button key={v} className={view===v?"active":""} onClick={()=>go(v)}>{t[v as keyof typeof t]}</button>)}</nav><footer className="footer"><span>© {new Date().getFullYear()} AlgoYo‘l · Toshkent</span><span>{lang==="uz"?"Bilimdan natijagacha.":"From learning to results."}</span></footer>
  {/* Above every screen: a challenge can arrive while the learner is halfway
