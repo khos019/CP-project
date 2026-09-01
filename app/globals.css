@@ -940,3 +940,6 @@ body{background:radial-gradient(circle at 12% -10%,rgba(119,210,68,.13),transpar
 .stage-bar{flex:1;height:3px;border-radius:2px;background:#1c2823;overflow:hidden}
 .stage-bar i{display:block;height:100%;background:var(--lime);transition:width .4s ease}
 .stage-count{font-size:11px;color:var(--muted)}
+.continue-btn{align-self:end;justify-self:start;margin-bottom:10px;white-space:nowrap;max-width:100%;
+ overflow:hidden;text-overflow:ellipsis}
+@media(max-width:900px){.continue-btn{width:100%}}
