@@ -951,3 +951,11 @@ body{background:radial-gradient(circle at 12% -10%,rgba(119,210,68,.13),transpar
 .mobile-nav::-webkit-scrollbar{display:none}
 .mobile-nav button{flex:0 0 auto;white-space:nowrap;padding:9px 11px;scroll-snap-align:center;
  min-height:38px}
+/* Quiz feedback: show which option was correct, not just pass/fail. */
+.quiz-options button.right{border-color:#3f7a44;background:#12261a;color:#d6f5dd}
+.quiz-options button.right span{background:#2f6b36;color:#eafff0}
+.quiz-options button.wrong{border-color:#6b3030;background:#231111;color:#ffd0d0}
+.quiz-options button.wrong span{background:#7a3030;color:#ffe7e7}
+.quiz-options button:disabled{cursor:default;opacity:1}
+.quiz-options button.right::after{content:"✓";margin-left:auto;color:#9ae879;font-weight:800}
+.quiz-options button.wrong::after{content:"✕";margin-left:auto;color:#ff9c9c;font-weight:800}
