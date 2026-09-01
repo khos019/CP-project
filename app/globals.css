@@ -909,3 +909,26 @@ body{background:radial-gradient(circle at 12% -10%,rgba(119,210,68,.13),transpar
 .ide-meta{display:flex;gap:14px;color:#5f7268;font-family:var(--font-mono);font-size:11.5px}
 .ide-run{padding:9px 18px}
 @media(max-width:600px){.ide-meta{display:none}.ide-input{min-height:240px}}
+/* Lesson table of contents and unit navigation. */
+.lesson-toc{padding:16px 18px}
+.lesson-toc h3{margin:0 0 12px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.lesson-toc ol{list-style:none;margin:0;padding:0;display:grid;gap:2px;max-height:52vh;overflow-y:auto}
+.lesson-toc button{display:grid;grid-template-columns:24px 1fr;gap:9px;width:100%;text-align:left;
+ padding:7px 9px;border:0;border-radius:8px;background:transparent;color:#8d9d93;font:inherit;
+ font-size:13px;cursor:pointer;border-left:2px solid transparent}
+.lesson-toc button:hover{background:#101815;color:var(--ink)}
+.lesson-toc button.active{background:#121c17;color:var(--lime);border-left-color:var(--lime)}
+.toc-num{font-family:var(--font-mono);font-size:11px;color:#5f7268}
+.lesson-toc button.active .toc-num{color:var(--lime)}
+.toc-text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lesson-nav{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:38px;padding-top:26px;
+ border-top:1px solid #1e2b24}
+.lesson-nav-btn{display:grid;gap:4px;text-align:left;padding:15px 18px;border:1px solid #27372e;
+ border-radius:12px;background:#0c1310;color:var(--ink);cursor:pointer}
+.lesson-nav-btn:hover:not(:disabled){border-color:#46643f;transform:translateY(-2px)}
+.lesson-nav-btn.next{text-align:right}
+.lesson-nav-btn small{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.lesson-nav-btn b{font-size:15px}
+.lesson-nav-btn em{font-style:normal;font-size:11px;color:#ffd76d}
+.lesson-nav-btn.locked{opacity:.55;cursor:not-allowed}
+@media(max-width:900px){.lesson-toc{display:none}.lesson-nav{grid-template-columns:1fr}}
