@@ -15,6 +15,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { tr } from "./i18n";
 import { bankProblems } from "./problem-bank";
 import { CodeEditor } from "./CodeEditor";
 import { useTabGuard } from "./duel-guard";
@@ -50,7 +51,7 @@ const clock = (total: number) =>
 const problemFor = (key: string) => bankProblems.find((p) => p.judge === key);
 const seatOf = (duel: ActiveDuel, seat: number) => duel.players.find((p) => p.seat === seat);
 const nameOf = (player: { is_bot: boolean; display_name: string; username: string | null } | undefined, lang: Lang) =>
-  !player ? "—" : player.is_bot ? (lang === "uz" ? "AI raqib" : "AI opponent") : player.display_name || player.username || "—";
+  !player ? "—" : player.is_bot ? (tr(lang,"duelArena.ai_raqib")) : player.display_name || player.username || "—";
 
 const T = {
   uz: {
@@ -439,7 +440,7 @@ function Arena({
           <p className="eyebrow" style={{ color: "#637068" }}>
             {duel.mode === "bot" ? "AI duel" : "Reytingli duel"} · #{duel.id.slice(0, 8)}
           </p>
-          <h1 className="page-title">{lang === "uz" ? "Duel maydoni" : "Duel arena"}</h1>
+          <h1 className="page-title">{tr(lang,"duelArena.duel_maydoni")}</h1>
         </div>
         <span className={`timer ${remaining <= 300 ? "low" : ""}`}>{clock(remaining)}</span>
       </div>
@@ -522,8 +523,8 @@ function Arena({
               <span className="tag">{problem.id} · {problem.difficulty.toUpperCase()} · {problem.rating}</span>
               <h2>{lang === "uz" ? problem.uz : problem.en}</h2>
               <p>{lang === "uz" ? problem.statementUz : problem.statementEn}</p>
-              <p><b>{lang === "uz" ? "Kirish" : "Input"}:</b> {lang === "uz" ? problem.inputUz : problem.inputEn}</p>
-              <p><b>{lang === "uz" ? "Chiqish" : "Output"}:</b> {lang === "uz" ? problem.outputUz : problem.outputEn}</p>
+              <p><b>{tr(lang,"algoYolApp.kirish")}:</b> {lang === "uz" ? problem.inputUz : problem.inputEn}</p>
+              <p><b>{tr(lang,"algoYolApp.chiqish")}:</b> {lang === "uz" ? problem.outputUz : problem.outputEn}</p>
               {problem.constraints && <p className="muted">{problem.constraints}</p>}
               {problem.samples?.[0] && (
                 <pre className="sample">{problem.samples[0].input}{"\n"}{problem.samples[0].output}</pre>
@@ -548,7 +549,7 @@ function Arena({
 
         <aside className="side-stack">
           <div className="duel-card">
-            <h3>{lang === "uz" ? "Jonli tasma" : "Live feed"}</h3>
+            <h3>{tr(lang,"duelArena.jonli_tasma")}</h3>
             {[...duel.opponent_activity.map((a) => ({ ...a, mine: false })),
               ...duel.my_submissions.map((a) => ({ ...a, mine: true }))]
               .sort((a, b) => (a.created_at < b.created_at ? 1 : -1))

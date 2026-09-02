@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { tr, catalogue } from "./i18n";
 import { roadmapCatalog } from "./roadmap-data";
 import { loadMastery, loadMasteryLog, loadDuelHistory, masteryLabel, MASTERY_CONFIG } from "./mastery";
 import { emptyProgress, loadProgress, type Progress } from "./progress";
@@ -10,130 +11,10 @@ import { AvatarZoom } from "./social-ui";
 
 type Lang = "uz" | "en";
 
-const T = {
-  uz: {
-    title: "Profil",
-    edit: "Profilni tahrirlash",
-    cancel: "Bekor qilish",
-    save: "Saqlash",
-    saving: "Saqlanmoqda…",
-    saved: "Profil yangilandi.",
-    signOut: "Chiqish",
-    admin: "Boshqaruv",
-    stats: "Statistika",
-    users: "Foydalanuvchilar",
-    messages: "Xabarlar",
-    friends: "Do‘stlarim",
-    submissions: "Yechimlarim",
-    joined: "Qo‘shildi",
-    rating: "Duel reytingi",
-    units: "Tugatilgan bosqichlar",
-    topics: "Boshlangan mavzular",
-    mastered: "O‘zlashtirilgan mavzular",
-    solved: "Yechilgan masalalar",
-    duels: "Duellar",
-    streak: "Ketma-ket kunlar",
-    overview: "Mavzu mahorati",
-    activity: "So‘nggi faoliyat",
-    noActivity: "Hali faoliyat yo‘q. Birinchi darsni boshlang — bu yerda ko‘rinadi.",
-    noTopics: "Hali birorta mavzu boshlanmagan.",
-    startLearning: "O‘rganishni boshlash",
-    showAll: "Barchasini ko‘rsatish",
-    showLess: "Kamroq ko‘rsatish",
-    personal: "Shaxsiy ma’lumot",
-    account: "Hisob",
-    displayName: "Ko‘rinadigan ism",
-    username: "Foydalanuvchi nomi",
-    bio: "Qisqacha ma’lumot",
-    country: "Shahar yoki davlat",
-    language: "Afzal til",
-    email: "Email",
-    emailNote: "Email faqat sizga ko‘rinadi va bu yerda o‘zgartirilmaydi.",
-    publicNote: "Ko‘rinadigan ism, foydalanuvchi nomi, avatar, bio va joylashuv ommaviy — ularni reyting va profilingizda hamma ko‘radi.",
-    privateNote: "Email, rolingiz va o‘rganish progressingiz shaxsiy.",
-    avatar: "Avatar",
-    upload: "Rasm yuklash",
-    uploading: "Yuklanmoqda…",
-    remove: "Rasmni olib tashlash",
-    avatarRules: "JPG, PNG, WebP yoki GIF · 2 MB gacha",
-    errName: "Ko‘rinadigan ism 2–40 belgidan iborat bo‘lsin.",
-    errUser: "Faqat lotin harflari, raqamlar va _ · 3–24 belgi.",
-    errBio: "Bio 280 belgidan oshmasin.",
-    errTaken: "Bu foydalanuvchi nomi band.",
-    errSave: "Saqlab bo‘lmadi. Internetni tekshirib, qayta urining.",
-    errType: "Faqat JPG, PNG, WebP yoki GIF rasm.",
-    errSize: "Rasm 2 MB dan katta bo‘lmasin.",
-    errBucket: "Avatar saqlagichi hali sozlanmagan (007-migratsiyani qo‘llang).",
-    extendedOff: "Bio va joylashuv maydonlari 007-migratsiya qo‘llangandan keyin ochiladi.",
-    win: "g‘alaba",
-    loss: "mag‘lubiyat",
-    draw: "durrang",
-    of: "dan",
-  },
-  en: {
-    title: "Profile",
-    edit: "Edit profile",
-    cancel: "Cancel",
-    save: "Save changes",
-    saving: "Saving…",
-    saved: "Profile updated.",
-    signOut: "Sign out",
-    admin: "Admin studio",
-    stats: "Statistics",
-    users: "Users",
-    messages: "Messages",
-    friends: "Friends",
-    submissions: "Submissions",
-    joined: "Joined",
-    rating: "Duel rating",
-    units: "Units completed",
-    topics: "Topics started",
-    mastered: "Topics mastered",
-    solved: "Problems solved",
-    duels: "Duels",
-    streak: "Day streak",
-    overview: "Topic mastery",
-    activity: "Recent activity",
-    noActivity: "No activity yet. Start your first lesson and it will show up here.",
-    noTopics: "No topic started yet.",
-    startLearning: "Start learning",
-    showAll: "Show all topics",
-    showLess: "Show fewer",
-    personal: "Personal information",
-    account: "Account",
-    displayName: "Display name",
-    username: "Username",
-    bio: "Short bio",
-    country: "City or country",
-    language: "Preferred language",
-    email: "Email",
-    emailNote: "Your email is private and cannot be changed here.",
-    publicNote:
-      "Display name, username, avatar, bio and location are public — everyone sees them on your profile and the leaderboard.",
-    privateNote: "Your email, your role and your learning progress stay private.",
-    avatar: "Avatar",
-    upload: "Upload image",
-    uploading: "Uploading…",
-    remove: "Remove image",
-    avatarRules: "JPG, PNG, WebP or GIF · up to 2 MB",
-    errName: "Display name must be 2–40 characters.",
-    errUser: "Letters, digits and _ only · 3–24 characters.",
-    errBio: "Bio must be 280 characters or fewer.",
-    errTaken: "That username is already taken.",
-    errSave: "Could not save. Check your connection and try again.",
-    errType: "Only JPG, PNG, WebP or GIF images.",
-    errSize: "The image must be under 2 MB.",
-    errBucket: "Avatar storage is not provisioned yet (apply migration 007).",
-    extendedOff: "Bio and location unlock once migration 007 is applied.",
-    win: "win",
-    loss: "loss",
-    draw: "draw",
-    of: "of",
-  },
-};
+const T = catalogue("profilePage");
 
 const roleLabel = (role: Role, lang: Lang) =>
-  role === "owner" ? (lang === "uz" ? "EGA" : "OWNER") : role === "admin" ? "ADMIN" : lang === "uz" ? "O‘quvchi" : "Learner";
+  role === "owner" ? (tr(lang,"profilePage.ega")) : role === "admin" ? "ADMIN" : tr(lang,"profilePage.oquvchi");
 
 const initialsOf = (name: string) =>
   name
@@ -349,7 +230,7 @@ export function ProfilePage({
         <Stat
           label={t.duels}
           value={String(totalDuels)}
-          sub={totalDuels ? `${stats.record.win}${lang === "uz" ? "G" : "W"} · ${stats.record.loss}${lang === "uz" ? "M" : "L"} · ${stats.record.draw}D` : undefined}
+          sub={totalDuels ? `${stats.record.win}${tr(lang,"profilePage.g")} · ${stats.record.loss}${tr(lang,"profilePage.m")} · ${stats.record.draw}D` : undefined}
         />
         <Stat label={t.streak} value={String(stats.streak)} />
       </div>

@@ -1,5 +1,7 @@
 "use client";
 
+import { tr } from "./i18n";
+
 /* The small shared pieces every list and panel needs, in one place so that a
    second empty list cannot invent a second way of being empty. */
 
@@ -20,7 +22,7 @@ export function EmptyState({
       <h3>{title}</h3>
       <p className="muted">{body}</p>
       {action && <button className="primary" onClick={action.onClick}>{action.label}</button>}
-      {!action && <span className="sr-only">{lang === "uz" ? "Bo‘sh" : "Empty"}</span>}
+      {!action && <span className="sr-only">{tr(lang,"kit.bosh")}</span>}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { tr, catalogue } from "./i18n";
 import { roadmapCatalog } from "./roadmap-data";
 import { roadmapStatus, unitDone } from "./RoadmapHub";
 import { loadMastery, masteryLabel } from "./mastery";
@@ -21,40 +22,7 @@ type Lang = "uz" | "en";
  *
  * Topic mastery and the activity feed are not duplicated here — the profile
  * already presents both properly, and this hero links to it. */
-const T = {
-  uz: {
-    continueEyebrow: "Davom ettirish",
-    startEyebrow: "Boshlang",
-    startTitle: "Birinchi bosqichdan boshlang",
-    startBody: "Yo‘l xaritangiz tayyor. Birinchi mavzuni oching va o‘rganishni boshlang.",
-    next: "Keyingi bosqich",
-    open: "Davom ettirish",
-    startCta: "Yo‘l xaritasini ochish",
-    allRoadmaps: "Barcha yo‘nalishlar",
-    doneOf: "bosqich tugatildi",
-    rating: "Duel reytingi",
-    findRival: "Raqib topish",
-    mastery: "Mavzu mahorati",
-    viewProfile: "Profilni ko‘rish",
-    allDone: "Barcha bosqichlar tugatildi. Duelda sinab ko‘ring!",
-  },
-  en: {
-    continueEyebrow: "Continue learning",
-    startEyebrow: "Get started",
-    startTitle: "Start with the first unit",
-    startBody: "Your roadmap is ready. Open the first topic and begin.",
-    next: "Next unit",
-    open: "Continue",
-    startCta: "Open the roadmap",
-    allRoadmaps: "All tracks",
-    doneOf: "units completed",
-    rating: "Duel rating",
-    findRival: "Find an opponent",
-    mastery: "Topic mastery",
-    viewProfile: "View profile",
-    allDone: "Every unit is done. Put it to the test in the arena.",
-  },
-};
+const T = catalogue("continueHero");
 
 export function ContinueHero({
   lang,
@@ -171,9 +139,7 @@ export function ContinueHero({
           <span className="muted ch-stat-note">
             {topRoadmap && topScore > 0
               ? `${lang === "uz" ? topRoadmap.titleUz : topRoadmap.titleEn} · ${masteryLabel(topScore, lang)}`
-              : lang === "uz"
-                ? "Hali mahorat isboti yo‘q"
-                : "No mastery evidence yet"}
+              : tr(lang,"continueHero.hali_mahorat_isboti_yoq")}
           </span>
           <button className="secondary ch-stat-btn" onClick={() => go("profile")}>
             {t.viewProfile}

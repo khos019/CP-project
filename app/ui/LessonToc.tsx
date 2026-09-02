@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 
+import { tr } from "./i18n";
 // Sticky table of contents for a lesson.
 //
 // Lessons now run ten sections plus diagrams, code, resources and a practice
@@ -51,8 +52,8 @@ export function LessonToc({ lang, unitId }: { lang: "uz" | "en"; unitId: string 
   };
 
   return (
-    <nav className="lesson-toc panel" aria-label={lang === "uz" ? "Bo‘limlar" : "Sections"}>
-      <h3>{lang === "uz" ? "Bo‘limlar" : "On this page"}</h3>
+    <nav className="lesson-toc panel" aria-label={tr(lang,"lessonToc.bolimlar")}>
+      <h3>{tr(lang,"lessonToc.bolimlar_2")}</h3>
       <ol>
         {items.map((it, i) => (
           <li key={it.id}>
@@ -78,10 +79,10 @@ export function LessonNav({
 }) {
   if (!prev && !next) return null;
   return (
-    <nav className="lesson-nav" aria-label={lang === "uz" ? "Bosqichlar" : "Units"}>
+    <nav className="lesson-nav" aria-label={tr(lang,"lessonToc.bosqichlar")}>
       {prev ? (
         <button className="lesson-nav-btn" onClick={() => onOpen(prev.id)}>
-          <small>← {lang === "uz" ? "Oldingi" : "Previous"}</small>
+          <small>← {tr(lang,"lessonToc.oldingi")}</small>
           <b>{prev.title}</b>
         </button>
       ) : <span />}
@@ -90,11 +91,11 @@ export function LessonNav({
           className={`lesson-nav-btn next ${next.locked ? "locked" : ""}`}
           onClick={() => !next.locked && onOpen(next.id)}
           disabled={next.locked}
-          title={next.locked ? (lang === "uz" ? "Avval quizdan o‘ting va masalani yeching" : "Pass the quiz and solve the problem first") : undefined}
+          title={next.locked ? (tr(lang,"lessonToc.avval_quizdan_oting_va_masalani_yeching")) : undefined}
         >
-          <small>{lang === "uz" ? "Keyingi" : "Next"} →</small>
+          <small>{tr(lang,"lessonToc.keyingi")} →</small>
           <b>{next.title}</b>
-          {next.locked && <em>{lang === "uz" ? "qulflangan" : "locked"}</em>}
+          {next.locked && <em>{tr(lang,"lessonToc.qulflangan")}</em>}
         </button>
       )}
     </nav>

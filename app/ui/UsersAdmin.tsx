@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { tr } from "./i18n";
 import {
   ownerSearchUsers,
   ownerSetRole,
@@ -226,7 +227,7 @@ export function UsersAdmin({
   return (
     <>
       <button className="crumb crumb-btn" onClick={goProfile}>
-        ← {lang === "uz" ? "Profilga qaytish" : "Back to profile"}
+        ← {tr(lang,"ownerStats.profilga_qaytish")}
       </button>
 
       <div className="page-head">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { tr, catalogue } from "./i18n";
 import { roadmapCatalog } from "./roadmap-data";
 import { fetchOwnerStats, type OwnerStats as Stats } from "./session";
 
@@ -17,130 +18,7 @@ type Lang = "uz" | "en";
  * palette check against each other — worst adjacent pair ΔE 5.1 under protanopia
  * and 7.7 with normal vision — so identity is carried by labels, and colour only
  * ever encodes magnitude. */
-const T = {
-  uz: {
-    eyebrow: "Faqat ega uchun",
-    title: "Platforma statistikasi",
-    refresh: "Yangilash",
-    loading: "Yuklanmoqda…",
-    updated: "Yangilandi",
-    notMigrated:
-      "Statistika funksiyasi hali qo‘shilmagan. 009_owner_platform_stats.sql migratsiyasini SQL Editor’da ishga tushiring.",
-    forbidden: "Bu sahifa faqat ega (owner) roli uchun.",
-    networkErr: "Ma’lumotni olib bo‘lmadi. Internetni tekshirib, qayta urining.",
-    accounts: "Hisoblar",
-    total: "Jami o‘quvchi",
-    activeToday: "Bugun faol",
-    active7: "7 kunda faol",
-    active30: "30 kunda faol",
-    newToday: "Bugun qo‘shildi",
-    new7: "7 kunda yangi",
-    new30: "30 kunda yangi",
-    neverIn: "Hech kirmagan",
-    confirmed: "Email tasdiqlangan",
-    unconfirmed: "Tasdiqlanmagan",
-    signups: "Ro‘yxatdan o‘tish · oxirgi 30 kun",
-    signupsHint: "Kunlik yangi hisoblar. Ustunga bosing — o‘sha kuni kim qo‘shilganini ko‘rasiz.",
-    noSignups: "Oxirgi 30 kunda yangi hisob yo‘q.",
-    online: "Onlayn vaqt",
-    onlineChart: "Kunlik onlayn vaqt · oxirgi 30 kun",
-    onlineHint: "Barcha o‘quvchilarning jami faol vaqti. Kunni ko‘rish uchun grafik ustida yuring.",
-    noOnline: "Oxirgi 30 kunda faol vaqt qayd etilmagan.",
-    onlineToday: "Bugun jami",
-    onlineTodayWho: "Bugun onlayn bo‘lgan",
-    onlineAvg: "O‘rtacha (bugun)",
-    online7: "7 kunda jami",
-    online30: "30 kunda jami",
-    onlineMax: "Eng uzun kun (1 kishi)",
-    onlineNote:
-      "Vaqt brauzer ochiq va varaq ko‘rinib turgan paytda, daqiqada bir marta serverga yoziladi (013-migratsiya). Fon rejimidagi varaq hisoblanmaydi.",
-    onlineMissing:
-      "Onlayn vaqt hali qo‘shilmagan. 014_owner_online_time.sql migratsiyasini SQL Editor’da ishga tushiring.",
-    hour: "soat",
-    minute: "daqiqa",
-    second: "soniya",
-    learning: "O‘rganish faoliyati",
-    withProgress: "Progressi bor",
-    unitsDone: "Bosqich tugatilgan",
-    quizzes: "Testdan o‘tilgan",
-    solved: "Masala yechilgan",
-    topics: "Eng ko‘p o‘rganilayotgan mavzular",
-    noTopics: "Hali hech kim bosqich boshlamagan.",
-    learners: "o‘quvchi",
-    units: "bosqich",
-    composition: "Tarkib",
-    language: "Til",
-    roles: "Rollar",
-    rating: "Reyting",
-    avgRating: "O‘rtacha",
-    maxRating: "Eng yuqori",
-    notTracked: "Hali kuzatilmaydi",
-    notTrackedBody:
-      "Sahifa ko‘rishlari va duel tarixi hozircha serverda saqlanmaydi, shuning uchun bu yerda ko‘rsatilmaydi. Duel natijalari hozir faqat brauzerda saqlanadi.",
-    today: "bugun",
-  },
-  en: {
-    eyebrow: "Owner only",
-    title: "Platform statistics",
-    refresh: "Refresh",
-    loading: "Loading…",
-    updated: "Updated",
-    notMigrated:
-      "The statistics function is not installed yet. Run 009_owner_platform_stats.sql in the SQL Editor.",
-    forbidden: "This page is for the owner role only.",
-    networkErr: "Could not load the data. Check your connection and try again.",
-    accounts: "Accounts",
-    total: "Total learners",
-    activeToday: "Active today",
-    active7: "Active in 7 days",
-    active30: "Active in 30 days",
-    newToday: "Joined today",
-    new7: "New in 7 days",
-    new30: "New in 30 days",
-    neverIn: "Never signed in",
-    confirmed: "Email confirmed",
-    unconfirmed: "Unconfirmed",
-    signups: "Sign-ups · last 30 days",
-    signupsHint: "New accounts per day. Click a bar to see who joined that day.",
-    noSignups: "No new accounts in the last 30 days.",
-    online: "Time online",
-    onlineChart: "Time online per day · last 30 days",
-    onlineHint: "Engaged time across all learners. Hover the chart to read a day.",
-    noOnline: "No engaged time recorded in the last 30 days.",
-    onlineToday: "Today, all learners",
-    onlineTodayWho: "Online today",
-    onlineAvg: "Average (today)",
-    online7: "Last 7 days",
-    online30: "Last 30 days",
-    onlineMax: "Longest single day (one learner)",
-    onlineNote:
-      "Time is banked once a minute while the tab is open and visible (migration 013). A backgrounded tab does not count.",
-    onlineMissing:
-      "Time online is not installed yet. Run 014_owner_online_time.sql in the SQL Editor.",
-    hour: "h",
-    minute: "m",
-    second: "s",
-    learning: "Learning activity",
-    withProgress: "Have progress",
-    unitsDone: "Units completed",
-    quizzes: "Quizzes passed",
-    solved: "Problems solved",
-    topics: "Most studied tracks",
-    noTopics: "Nobody has started a unit yet.",
-    learners: "learners",
-    units: "units",
-    composition: "Composition",
-    language: "Language",
-    roles: "Roles",
-    rating: "Rating",
-    avgRating: "Average",
-    maxRating: "Highest",
-    notTracked: "Not tracked yet",
-    notTrackedBody:
-      "Page views and duel history are not stored on the server, so they are not shown here. Duel results currently live only in the browser.",
-    today: "today",
-  },
-};
+const T = catalogue("ownerStats");
 
 const trackName = (slug: string, lang: Lang) => {
   const r = roadmapCatalog.find((x) => x.slug === slug);
@@ -197,7 +75,7 @@ export function OwnerStats({ lang, goProfile, onPickDay }: { lang: Lang; goProfi
   return (
     <>
       <button className="crumb crumb-btn" onClick={goProfile}>
-        ← {lang === "uz" ? "Profilga qaytish" : "Back to profile"}
+        ← {tr(lang,"ownerStats.profilga_qaytish")}
       </button>
       <div className="page-head">
         <div>

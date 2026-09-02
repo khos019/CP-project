@@ -7,6 +7,7 @@
    here so the address is honest to the browser, not so Next handles it. */
 
 import { useEffect, useRef, useState } from "react";
+import { tr } from "./i18n";
 import { BrandMark } from "./BrandMark";
 import { fetchBalance, fetchStreak, localBalance, localStreak } from "./coins";
 
@@ -119,7 +120,7 @@ export function SiteHeader({
         <BrandMark className="brandmark" />AlgoYo‘l
       </a>
 
-      <nav className="nav" aria-label={uz ? "Asosiy bo‘limlar" : "Main sections"}>
+      <nav className="nav" aria-label={tr(lang,"chrome.asosiy_bolimlar")}>
         {PRIMARY.map(link => (
           <a
             key={link.view}
@@ -133,7 +134,7 @@ export function SiteHeader({
 
       <div className="actions">
         <button className="lang" onClick={swapLang}
-          aria-label={uz ? "Switch to English" : "O‘zbekchaga o‘tish"}>{uz ? "EN" : "UZ"}</button>
+          aria-label={tr(lang,"chrome.switch_to_english")}>{tr(lang,"chrome.en")}</button>
 
         {signed && streak !== null && streak > 0 && (
           <span className="streak" title={uz ? `${streak} kunlik seriya` : `${streak}-day streak`}>
@@ -143,7 +144,7 @@ export function SiteHeader({
 
         {signed && (
           <a className="icon-link" href="/messages" onClick={linkTo(() => go("messages"))}
-            aria-label={uz ? "Xabarlar" : "Messages"}>
+            aria-label={tr(lang,"chrome.xabarlar")}>
             ✉{unread > 0 && <span className="msg-badge">{unread > 99 ? "99+" : unread}</span>}
           </a>
         )}
@@ -154,7 +155,7 @@ export function SiteHeader({
           <div className="menu-wrap" ref={menuRef}>
             <button className="avatar-btn" aria-haspopup="menu" aria-expanded={menu}
               onClick={() => setMenu(v => !v)}
-              aria-label={uz ? "Hisob menyusi" : "Account menu"}>
+              aria-label={tr(lang,"chrome.hisob_menyusi")}>
               {(name || "?").trim().charAt(0).toUpperCase()}
             </button>
             {menu && (
@@ -163,27 +164,27 @@ export function SiteHeader({
                     see what they buy, so the number itself is the link. */}
                 <a className="menu-balance" role="menuitem" href="/shop"
                   onClick={linkTo(() => { setMenu(false); go("shop"); })}>
-                  <span><span aria-hidden>◆</span> {coins ?? 0} {uz ? "tanga" : "coins"}</span>
-                  <span className="menu-balance-go">{uz ? "Do‘kon" : "Shop"}</span>
+                  <span><span aria-hidden>◆</span> {coins ?? 0} {tr(lang,"chrome.tanga")}</span>
+                  <span className="menu-balance-go">{tr(lang,"chrome.dokon")}</span>
                 </a>
                 <div className="menu-sep" />
-                {item("/profile", uz ? "Profil" : "Profile")}
-                {item("/submissions", uz ? "Yechimlarim" : "My submissions")}
-                {item("/friends", uz ? "Do‘stlar" : "Friends")}
-                {item("/messages", uz ? "Xabarlar" : "Messages")}
+                {item("/profile", tr(lang,"chrome.profil"))}
+                {item("/submissions", tr(lang,"chrome.yechimlarim"))}
+                {item("/friends", tr(lang,"chrome.dostlar"))}
+                {item("/messages", tr(lang,"chrome.xabarlar"))}
                 <div className="menu-sep" />
-                {item("/playground", uz ? "Kompilyator" : "Compiler")}
+                {item("/playground", tr(lang,"chrome.kompilyator"))}
               </div>
             )}
           </div>
         ) : (
           <>
             <a className="nav-link" href="/auth" onClick={linkTo(() => go("auth"))}>
-              {uz ? "Kirish" : "Sign in"}
+              {tr(lang,"chrome.kirish")}
             </a>
             {/* The single solid button on a signed-out page. */}
             <a className="primary" href="/auth" onClick={linkTo(() => go("auth"))}>
-              {uz ? "Ro‘yxatdan o‘tish" : "Create account"}
+              {tr(lang,"chrome.royxatdan_otish")}
             </a>
           </>
         )}
@@ -195,7 +196,7 @@ export function SiteHeader({
 export function MobileTabBar({ lang, view, go }: { lang: Lang; view: string; go: Nav }) {
   const uz = lang === "uz";
   return (
-    <nav className="mobile-nav" aria-label={uz ? "Asosiy bo‘limlar" : "Main sections"}>
+    <nav className="mobile-nav" aria-label={tr(lang,"chrome.asosiy_bolimlar")}>
       {TABS.map(tab => (
         <a key={tab.view} className={view === tab.view ? "active" : ""} href={tab.href}
           aria-current={view === tab.view ? "page" : undefined}
@@ -222,27 +223,25 @@ export function SiteFooter({ lang, go }: { lang: Lang; go: Nav }) {
       <div className="footer-cols">
         <div className="footer-about">
           <span className="footer-brand"><BrandMark className="footer-mark" />AlgoYo‘l</span>
-          <p>{uz
-            ? "O‘zbek tilidagi algoritmlar maktabi: tartibli yo‘l xaritasi, haqiqiy kod tekshiruvchi va jonli duellar."
-            : "An algorithms school in Uzbek: an ordered roadmap, a real judge, and live duels."}</p>
-          <span className="footer-tag">{uz ? "Bilimdan natijagacha." : "From learning to results."}</span>
+          <p>{tr(lang,"chrome.ozbek_tilidagi_algoritmlar_maktabi_tartibl")}</p>
+          <span className="footer-tag">{tr(lang,"chrome.bilimdan_natijagacha")}</span>
         </div>
-        <nav className="footer-col" aria-label={uz ? "O‘rganish" : "Learn"}>
-          <h3>{uz ? "O‘rganish" : "Learn"}</h3>
-          {link("/roadmaps", "roadmaps", uz ? "Yo‘l xaritalari" : "Roadmaps")}
-          {link("/problems", "problems", uz ? "Masalalar" : "Problems")}
-          {link("/playground", "playground", uz ? "Kompilyator" : "Compiler")}
-          {link("/placement", "placement", uz ? "Darajani aniqlash" : "Placement")}
+        <nav className="footer-col" aria-label={tr(lang,"chrome.organish")}>
+          <h3>{tr(lang,"chrome.organish")}</h3>
+          {link("/roadmaps", "roadmaps", tr(lang,"chrome.yol_xaritalari"))}
+          {link("/problems", "problems", tr(lang,"algoYolApp.masalalar"))}
+          {link("/playground", "playground", tr(lang,"chrome.kompilyator"))}
+          {link("/placement", "placement", tr(lang,"chrome.darajani_aniqlash"))}
         </nav>
-        <nav className="footer-col" aria-label={uz ? "Hamjamiyat" : "Community"}>
-          <h3>{uz ? "Hamjamiyat" : "Community"}</h3>
+        <nav className="footer-col" aria-label={tr(lang,"chrome.hamjamiyat")}>
+          <h3>{tr(lang,"chrome.hamjamiyat")}</h3>
           {link("/duel", "duel", uz ? "Duel" : "Duel")}
-          {link("/leaderboard", "leaderboard", uz ? "Reyting" : "Rating")}
-          {link("/shop", "shop", uz ? "Do‘kon" : "Shop")}
+          {link("/leaderboard", "leaderboard", tr(lang,"algoYolApp.reyting_2"))}
+          {link("/shop", "shop", tr(lang,"chrome.dokon"))}
         </nav>
       </div>
       <div className="footer-base">
-        <span>© {new Date().getFullYear()} AlgoYo‘l · {uz ? "Toshkent" : "Tashkent"}</span>
+        <span>© {new Date().getFullYear()} AlgoYo‘l · {tr(lang,"chrome.toshkent")}</span>
       </div>
     </footer>
   );

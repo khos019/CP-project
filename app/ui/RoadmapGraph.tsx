@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { tr } from "./i18n";
 import { roadmapCatalog } from "./roadmap-data";
 import { readLocal } from "./progress";
 import { roadmapStatus, unitDone } from "./RoadmapHub";
@@ -108,7 +109,7 @@ export function RoadmapGraph({
   return (
     <div className={compact ? "rg rg-compact" : "rg"} ref={wrap} data-drawn={drawn || undefined}>
       <svg viewBox={compact ? VIEWBOX.compact : VIEWBOX.full} className="rg-svg"
-        role="img" aria-label={uz ? "O‘quv yo‘li: tugallangan, joriy va qulflangan bosqichlar" : "Learning path: completed, current and locked stages"}>
+        role="img" aria-label={tr(lang,"roadmapGraph.oquv_yoli_tugallangan_joriy_va_qulflangan")}>
         <defs>
           <linearGradient id="rg-line" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0%" stopColor="var(--green)" />
@@ -130,7 +131,7 @@ export function RoadmapGraph({
             <g key={node.slug} className={`rg-node rg-${node.state}`}
               style={{ transitionDelay: `${340 + i * 60}ms` }}
               tabIndex={0} role="link"
-              aria-label={`${node.label} — ${stateWord(node.state, uz)}`}
+              aria-label={`${node.label} — ${stateWord(node.state, lang)}`}
               onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(h => (h === i ? null : h))}
               onFocus={() => setHover(i)} onBlur={() => setHover(h => (h === i ? null : h))}
               onClick={() => onOpen(node.slug)}
@@ -153,8 +154,8 @@ export function RoadmapGraph({
           <b>{tip.label}</b>
           <span>
             {tip.state === "locked"
-              ? (uz ? "Avval oldingi yo‘nalishni tugating" : "Finish the previous track first")
-              : `${tip.done}/${tip.units} ${uz ? "bosqich" : "stages"} · ${stateWord(tip.state, uz)}`}
+              ? (tr(lang,"roadmapGraph.avval_oldingi_yonalishni_tugating"))
+              : `${tip.done}/${tip.units} ${tr(lang,"algoYolApp.bosqich")} · ${stateWord(tip.state, lang)}`}
           </span>
         </div>
       )}
@@ -162,9 +163,9 @@ export function RoadmapGraph({
   );
 }
 
-function stateWord(state: NodeState, uz: boolean) {
-  if (state === "completed") return uz ? "tugallandi" : "completed";
-  if (state === "current") return uz ? "siz shu yerdasiz" : "you are here";
-  if (state === "locked") return uz ? "qulflangan" : "locked";
-  return uz ? "ochiq" : "open";
+function stateWord(state: NodeState, lang: Lang) {
+  if (state === "completed") return tr(lang,"roadmapGraph.tugallandi");
+  if (state === "current") return tr(lang,"roadmapGraph.siz_shu_yerdasiz");
+  if (state === "locked") return tr(lang,"lessonToc.qulflangan");
+  return tr(lang,"roadmapGraph.ochiq");
 }

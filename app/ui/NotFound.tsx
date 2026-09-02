@@ -3,6 +3,7 @@
 
 import { EmptyState } from "./kit";
 
+import { tr } from "./i18n";
 type Lang = "uz" | "en";
 
 /* A wrong address is not an error the reader caused, so the page does not
@@ -14,11 +15,9 @@ export function NotFound({ lang, go }: { lang: Lang; go: (v: string) => void }) 
     <EmptyState
       lang={lang}
       icon="⌘"
-      title={uz ? "Bunday sahifa yo‘q" : "That page does not exist"}
-      body={uz
-        ? "Havola eskirgan bo‘lishi mumkin. Yo‘l xaritalaridan davom eting yoki masalalar bankiga o‘ting."
-        : "The link may be out of date. Continue from the roadmaps, or head to the problem bank."}
-      action={{ label: uz ? "Yo‘l xaritalari" : "Roadmaps", onClick: () => go("roadmaps") }}
+      title={tr(lang,"notFound.bunday_sahifa_yoq")}
+      body={tr(lang,"notFound.havola_eskirgan_bolishi_mumkin_yol_xarital")}
+      action={{ label: tr(lang,"chrome.yol_xaritalari"), onClick: () => go("roadmaps") }}
     />
   );
 }

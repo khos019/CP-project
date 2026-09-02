@@ -26,6 +26,7 @@
  */
 
 import { useMemo, useState } from "react";
+import { tr, catalogue } from "./i18n";
 import { BrandMark } from "./BrandMark";
 import { roadmapCatalog } from "./roadmap-data";
 import { savePlacement } from "./mastery";
@@ -37,44 +38,7 @@ type Step = "intro" | "quiz" | "result";
 
 const TOTAL = 14;
 
-const T = {
-  uz: {
-    eyebrow: "Darajani aniqlash",
-    welcome: "Qayerdan boshlashingizni aniqlaymiz",
-    lead: "Savollar javobingizga qarab qiyinlashadi yoki osonlashadi. 14 ta savol — taxminan 6 daqiqa.",
-    b1: "Bilganingizni qaytadan o‘qimaysiz", b1d: "Darajangizdan pastdagi bosqichlar ochib beriladi.",
-    b2: "Har savol tushuntiriladi", b2d: "Javobdan keyin nega shundayligini o‘qiysiz.",
-    b3: "Xohlagan payt qayta topshirasiz", b3d: "Natija hech qachon progressingizni kamaytirmaydi.",
-    start: "Boshlash", skip: "Keyinroq", fresh: "Noldan boshlayman",
-    of: "dan", check: "Javobni tekshirish", next: "Keyingi savol", finish: "Natijani ko‘rish",
-    correct: "To‘g‘ri", wrong: "Noto‘g‘ri",
-    resultTitle: "Sizning darajangiz",
-    estimate: "Taxminiy reyting", answered: "To‘g‘ri javoblar",
-    opened: "Ochilgan bosqichlar", opensNothing: "Hozircha hech narsa ochilmadi — noldan boshlaymiz.",
-    tracks: "Yo‘nalishlar bo‘yicha",
-    known: "bilasiz", toLearn: "o‘rganasiz",
-    startHere: "Shu yerdan boshlang", go: "Yo‘l xaritasiga o‘tish", retake: "Qayta topshirish",
-    note: "Bu bosqichlar «Bilasiz» deb belgilandi — qulflanmagan, lekin xohlasangiz o‘qishingiz mumkin.",
-  },
-  en: {
-    eyebrow: "Level check",
-    welcome: "Let us find where you should start",
-    lead: "Questions get harder or easier as you answer. Fourteen of them — about six minutes.",
-    b1: "Skip what you already know", b1d: "Units below your level are opened for you.",
-    b2: "Every question is explained", b2d: "You read why, right after answering.",
-    b3: "Retake it whenever", b3d: "A result never lowers progress you already have.",
-    start: "Start", skip: "Later", fresh: "Start from zero",
-    of: "of", check: "Check answer", next: "Next question", finish: "See result",
-    correct: "Correct", wrong: "Not quite",
-    resultTitle: "Your level",
-    estimate: "Estimated rating", answered: "Correct answers",
-    opened: "Units opened", opensNothing: "Nothing opened yet — we start from the beginning.",
-    tracks: "By track",
-    known: "known", toLearn: "to learn",
-    startHere: "Start here", go: "Go to the roadmap", retake: "Retake",
-    note: "These units are marked “Known” — unlocked, but still there if you want them.",
-  },
-};
+const T = catalogue("placement");
 
 export function Placement({
   lang, onFinish, onRoadmap,
@@ -172,7 +136,7 @@ export function Placement({
                   <span className="pl-track-bar"><i style={{ width: `${Math.round(share * 100)}%`, background: r.color }} /></span>
                   <small className="muted">
                     {p?.cleared ?? 0}/{r.units.length} {t.known}
-                    {p?.probed && <em className="pl-probed"> · {lang === "uz" ? "tekshirildi" : "probed"}</em>}
+                    {p?.probed && <em className="pl-probed"> · {tr(lang,"placement.tekshirildi")}</em>}
                   </small>
                 </span>
                 <span className="pl-track-pct mono">{Math.round(share * 100)}%</span>

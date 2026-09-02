@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { tr, catalogue } from "./i18n";
 import { roadmapCatalog, type LessonUnit, type MasteryRoadmap } from "./roadmap-data";
 import { masteryOf, MASTERY_CONFIG } from "./mastery";
 import { readLocal } from "./progress";
@@ -22,25 +23,9 @@ export const roadmapStatus=(r:MasteryRoadmap,p:Progress,canReviewAll=false):Stat
  return r.units.some(u=>unitDone(p,u)||(p.quizScores[u.id]||0)>0)?"in-progress":"available";
 };
 
-const L={uz:{
- title:"O‘rganish yo‘l xaritasi",sub:"Birinchi mavzuni tugating — keyingisi ochiladi. Beginnerdan ICPC darajasigacha bitta yo‘l.",
- overall:"Umumiy progress",units:"Bosqichlar tugatildi",rating:"Taxminiy reyting",xp:"Tajriba ballari",
- continue:"O‘rganishni davom ettirish",start:"O‘rganishni boshlash",recommended:"Sizga tavsiya etiladi",
- search:"Mavzu qidirish…",path:"O‘rganish yo‘li",map:"Skill xaritasi",all:"Barchasi",
- completed:"Tugatildi",inProgress:"Jarayonda",available:"Ochiq",locked:"Qulflangan",
- requires:"Talab qiladi",begin:"Boshlanish",expert:"ICPC darajasi",unitsShort:"bosqich",open:"Ochish",
- empty:"Hech narsa topilmadi — qidiruv yoki filtrni o‘zgartiring."
-},en:{
- title:"Learning roadmap",sub:"Finish the current topic to unlock the next. One guided path from beginner to ICPC.",
- overall:"Overall progress",units:"Units completed",rating:"Estimated rating",xp:"Experience points",
- continue:"Continue learning",start:"Start learning",recommended:"Recommended for you",
- search:"Search topics…",path:"Learning path",map:"Skill map",all:"All",
- completed:"Completed",inProgress:"In progress",available:"Available",locked:"Locked",
- requires:"Requires",begin:"Start",expert:"ICPC level",unitsShort:"units",open:"Open",
- empty:"Nothing found — adjust the search or filters."
-}};
+const L = catalogue("roadmapHub");
 export const statusLabel=(s:Status,lang:Lang)=>s==="completed"?L[lang].completed:s==="in-progress"?L[lang].inProgress:s==="available"?L[lang].available:L[lang].locked;
-const rankOf=(rating:number,lang:Lang)=>rating<1200?(lang==="uz"?"Yangi boshlovchi":"Newbie"):rating<1400?"Pupil":rating<1600?"Specialist":rating<1900?"Expert":rating<2100?"Candidate Master":"Master";
+const rankOf=(rating:number,lang:Lang)=>rating<1200?(tr(lang,"roadmapHub.yangi_boshlovchi")):rating<1400?"Pupil":rating<1600?"Specialist":rating<1900?"Expert":rating<2100?"Candidate Master":"Master";
 
 export function RoadmapHub({lang,role,openRoadmap}:{lang:Lang;role:Role;openRoadmap:(slug:string)=>void}){
  const t=L[lang];
@@ -72,7 +57,7 @@ export function RoadmapHub({lang,role,openRoadmap}:{lang:Lang;role:Role;openRoad
  const doneIn=(r:MasteryRoadmap)=>r.units.filter(u=>unitDone(progress,u)).length;
  const categories=useMemo(()=>{const map=new Map<string,MasteryRoadmap[]>();roadmapCatalog.forEach(r=>map.set(r.category,[...(map.get(r.category)||[]),r]));return[...map.entries()]},[]);
  return <>
-  <div className="page-head"><div><p className="eyebrow">{t.begin} → {t.expert}</p><h1 className="page-title">{t.title}</h1><p className="muted">{t.sub}</p></div><span className="tag">{roadmapCatalog.length} {lang==="uz"?"yo‘nalish":"tracks"}</span></div>
+  <div className="page-head"><div><p className="eyebrow">{t.begin} → {t.expert}</p><h1 className="page-title">{t.title}</h1><p className="muted">{t.sub}</p></div><span className="tag">{roadmapCatalog.length} {tr(lang,"algoYolApp.yonalish")}</span></div>
   <div className="rm-stats">
    <div className="rm-stat"><small>{t.overall}</small><b>{stats.pct}%</b><div className="progress"><span style={{width:`${stats.pct}%`}}/></div></div>
    <div className="rm-stat"><small>{t.units}</small><b>{stats.done}<span className="rm-dim">/{stats.total}</span></b></div>
@@ -96,7 +81,7 @@ export function RoadmapHub({lang,role,openRoadmap}:{lang:Lang;role:Role;openRoad
      return <button key={r.slug} className={`rm-node ${s}`} disabled={s==="locked"} onClick={()=>openRoadmap(r.slug)}>
       <span className={`rm-badge ${s}`}>{s==="completed"?"✓":s==="locked"?"✕":s==="in-progress"?"◔":"▶"} {statusLabel(s,lang)}</span>
       <span className="rm-node-top"><span className="rm-node-ic" style={{background:r.color}}>{r.icon}</span><span><b>{lang==="uz"?r.titleUz:r.titleEn}</b><small>{r.level}</small></span></span>
-      <span className="rm-node-meta"><span>{done}/{r.units.length} {t.unitsShort}</span><span className="mono">{lang==="uz"?"Mahorat":"Mastery"} {masteryOf(r.slug)}</span><span>{pct}%</span></span>
+      <span className="rm-node-meta"><span>{done}/{r.units.length} {t.unitsShort}</span><span className="mono">{tr(lang,"roadmapExperience.mahorat")} {masteryOf(r.slug)}</span><span>{pct}%</span></span>
       <span className="progress"><span style={{width:`${pct}%`}}/></span>
       {s==="locked"&&lockedBy.length>0&&<span className="rm-req">{t.requires}: {lockedBy.map(p=>lang==="uz"?p.titleUz:p.titleEn).join(" + ")}{lang==="uz"?` \u00b7 yoki ${MASTERY_CONFIG.unlock} mahorat`:` \u00b7 or ${MASTERY_CONFIG.unlock} mastery`}</span>}
      </button>})}</div>)}

@@ -13,6 +13,7 @@
 
 import { readToken, supabaseConfig } from "./session";
 
+import { tr } from "./i18n";
 /** Ids from `ids` that are online right now. Empty set when signed out — a
  *  guest sees the ranking, not who is at their desk. */
 export async function onlineAmong(ids: string[]): Promise<Set<string>> {
@@ -59,8 +60,8 @@ export async function onlineNow(): Promise<number | null> {
    once rather than three times slightly differently. */
 export function OnlineDot({ online, lang, label }: { online: boolean; lang: "uz" | "en"; label?: string }) {
   const text = online
-    ? (lang === "uz" ? "onlayn" : "online")
-    : (lang === "uz" ? "oflayn" : "offline");
+    ? (tr(lang,"presence.onlayn"))
+    : (tr(lang,"presence.oflayn"));
   return (
     <span className={`presence-dot ${online ? "on" : "off"}`} title={label ? `${label} · ${text}` : text}>
       <i aria-hidden />
