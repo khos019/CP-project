@@ -2,14 +2,16 @@
    a request. The header pairs it with live HTML text, so the wordmark always
    matches the running typography rather than a baked-in outline.
 
-   The glyph is a staircase climbing left to right, with a node on the step it
-   is heading for. It keeps the rising motion of the arrow it replaces — but an
-   arrow only says "up", while steps say what the climbing is made of, which is
-   the whole premise of a roadmap you unlock one stage at a time.
+   The shape is the owner's: two uprights with an arrow climbing between them,
+   from the foot of the left one to the head of the right. Only the colours are
+   the site's. The arrow keeps its two-tone gradient, but it now runs from the
+   platform blue at the tail to the platform lime at the head — so the brightest
+   point of the logo is the brand colour, and it is the same blue-and-green pair
+   the roadmap graph already draws its connector with.
 
-   The tile stays bright. On a near-black header the mark has to be the lit
-   object, and a dark tile with a bright glyph — which reads well on white —
-   would dissolve into the bar it sits in. */
+   The tile is a raised dark surface rather than a bright block: on a near-black
+   header it reads as a quiet square holding the arrow, which is what the
+   original does on white. */
 export function BrandMark({ size = 36, className }: { size?: number; className?: string }) {
   return (
     <svg
@@ -21,21 +23,29 @@ export function BrandMark({ size = 36, className }: { size?: number; className?:
       focusable="false"
     >
       <defs>
-        <linearGradient id="brandmark-tile" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#c8ff76" />
-          <stop offset="1" stopColor="#67ce44" />
+        {/* userSpaceOnUse so the gradient runs along the arrow itself rather
+            than across the tile's bounding box — the head stays lime at every
+            rendered size. */}
+        <linearGradient id="brandmark-arrow" gradientUnits="userSpaceOnUse"
+          x1="20" y1="47" x2="49" y2="17">
+          <stop offset="0" stopColor="#7296ff" />
+          <stop offset="1" stopColor="#9aef4f" />
         </linearGradient>
       </defs>
-      <rect width="64" height="64" rx="17" fill="url(#brandmark-tile)" />
-      <g stroke="#071008" strokeLinecap="round" strokeLinejoin="round" fill="none">
-        {/* A staircase, not an arrow and not a ring. The site's two most-used
-            words are "yo‘l" and "bosqich" — path and stage — and two risers say
-            both at once. The ring this replaces read as a key at large sizes
-            and vanished at sixteen pixels; orthogonal steps survive both. */}
-        <path d="M14 48 H28 V34 H42 V20 H51" strokeWidth="6.4" />
+
+      <rect width="64" height="64" rx="15" fill="#121b17" />
+
+      {/* The uprights sit behind the arrow and stay subordinate to it. */}
+      <g stroke="#3b5145" strokeWidth="4.8" strokeLinecap="round">
+        <path d="M19 17 V47" />
+        <path d="M50 17 V47" />
       </g>
-      {/* The stage you are climbing toward. */}
-      <circle cx="51" cy="20" r="5.4" fill="#071008" />
+
+      <g stroke="url(#brandmark-arrow)" strokeWidth="5.2"
+        strokeLinecap="round" strokeLinejoin="round" fill="none">
+        <path d="M20.5 47 L48.4 17" />
+        <path d="M37 17 H48.4 V28.6" />
+      </g>
     </svg>
   );
 }

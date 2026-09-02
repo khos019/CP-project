@@ -1,11 +1,16 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="AlgoYo‘l">
   <title>AlgoYo‘l</title>
   <!--
-    Single-colour cut: glyph only, no tile, currentColor so it takes the colour
-    of whatever it sits in.
+    Single-colour cut: no tile, currentColor so it takes the colour of whatever
+    it sits in. The uprights drop to 45% opacity to keep the arrow dominant now
+    that the gradient is gone.
   -->
-  <g stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" fill="none">
-    <path d="M12 50 H28 V33 H44 V17 H53" stroke-width="7"/>
+  <g stroke="currentColor" stroke-width="4.8" stroke-linecap="round" opacity=".45">
+    <path d="M15 14 V50"/>
+    <path d="M52 14 V50"/>
   </g>
-  <circle cx="53" cy="17" r="6" fill="currentColor"/>
+  <g stroke="currentColor" stroke-width="5.4" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M16.5 50 L50.5 14"/>
+    <path d="M37 14 H50.5 V27"/>
+  </g>
 </svg>

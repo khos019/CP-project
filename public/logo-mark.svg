@@ -1,19 +1,24 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="AlgoYo‘l">
   <title>AlgoYo‘l</title>
   <!--
-    Three nodes climbing left to right along a path, the last one ringed — the
-    same figure the roadmap graph draws on the front page, so the favicon and
-    the product are one picture. Colours are the app's own: lime tile, ink glyph.
+    Two uprights with an arrow climbing between them — the owner's shape, kept
+    exactly. Only the colours are the platform's: a raised dark tile instead of
+    navy, and the arrow running from the site blue at its tail to the site lime
+    at its head, so the logo's brightest point is the brand colour.
   -->
   <defs>
-    <linearGradient id="ay-tile" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#c8ff76"/>
-      <stop offset="1" stop-color="#67ce44"/>
+    <linearGradient id="ay-arrow" gradientUnits="userSpaceOnUse" x1="20" y1="47" x2="49" y2="17">
+      <stop offset="0" stop-color="#7296ff"/>
+      <stop offset="1" stop-color="#9aef4f"/>
     </linearGradient>
   </defs>
-  <rect width="64" height="64" rx="17" fill="url(#ay-tile)"/>
-  <g stroke="#071008" stroke-linecap="round" stroke-linejoin="round" fill="none">
-    <path d="M14 48 H28 V34 H42 V20 H51" stroke-width="6.4"/>
+  <rect width="64" height="64" rx="15" fill="#121b17"/>
+  <g stroke="#3b5145" stroke-width="4.8" stroke-linecap="round">
+    <path d="M19 17 V47"/>
+    <path d="M50 17 V47"/>
   </g>
-  <circle cx="51" cy="20" r="5.4" fill="#071008"/>
+  <g stroke="url(#ay-arrow)" stroke-width="5.2" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M20.5 47 L48.4 17"/>
+    <path d="M37 17 H48.4 V28.6"/>
+  </g>
 </svg>

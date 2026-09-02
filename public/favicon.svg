@@ -1,17 +1,23 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="AlgoYo‘l">
   <title>AlgoYo‘l</title>
   <!--
-    Favicon cut: the same staircase, pushed to the tile edges and thickened.
-    At 16px the strokes are what survive, so the node is dropped and the steps
-    carry the shape on their own.
+    Favicon cut: the same two uprights and climbing arrow, with the strokes
+    thickened and the shape spread a little wider, because at 16px the gap
+    between an upright and the arrow is the first thing to close up.
   -->
   <defs>
-    <linearGradient id="ay-fav" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#c8ff76"/>
-      <stop offset="1" stop-color="#67ce44"/>
+    <linearGradient id="ay-fav" gradientUnits="userSpaceOnUse" x1="17" y1="49" x2="51" y2="15">
+      <stop offset="0" stop-color="#7296ff"/>
+      <stop offset="1" stop-color="#9aef4f"/>
     </linearGradient>
   </defs>
-  <rect width="64" height="64" rx="15" fill="url(#ay-fav)"/>
-  <path d="M12 50 H28 V33 H44 V16 H53" stroke="#071008" stroke-width="8.5"
-        stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <rect width="64" height="64" rx="14" fill="#121b17"/>
+  <g stroke="#445c4e" stroke-width="5.6" stroke-linecap="round">
+    <path d="M16 15 V49"/>
+    <path d="M52 15 V49"/>
+  </g>
+  <g stroke="url(#ay-fav)" stroke-width="6.4" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M17.5 49 L50 15"/>
+    <path d="M37 15 H50 V28"/>
+  </g>
 </svg>
