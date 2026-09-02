@@ -1068,3 +1068,21 @@ body{background:radial-gradient(circle at 12% -10%,rgba(119,210,68,.13),transpar
  .placement-offer{margin:14px 18px -4px;flex-wrap:wrap}
  .placement-offer .primary{width:100%;order:3}
 }
+/* Live-highlighted editor.
+   The overlay and the textarea must agree on every metric that affects glyph
+   position — font, size, line-height, padding, tab-size, wrapping, border —
+   or the colours drift away from the characters. Both inherit .ide-layer. */
+.ide-stack{position:relative;flex:1;min-width:0;min-height:340px;display:grid}
+.ide-layer{grid-area:1/1;margin:0;padding:14px 16px;border:0;
+ font-family:var(--font-mono);font-size:13px;line-height:1.65;letter-spacing:normal;
+ white-space:pre;tab-size:4;overflow:auto}
+.ide-highlight{pointer-events:none;color:#d6e4dc;background:transparent;z-index:0}
+.ide-highlight code{font:inherit}
+.ide-input{position:relative;z-index:1;resize:none;background:transparent;
+ color:transparent;caret-color:var(--lime);-webkit-text-fill-color:transparent}
+.ide-input::selection{background:#2b4b33;-webkit-text-fill-color:transparent}
+.ide-input:focus{outline:0}
+.ide-stack:focus-within{box-shadow:inset 2px 0 0 var(--lime)}
+.ide-reset{margin:6px 10px 6px 0;border:1px solid #2a3b31;background:#0c120f;color:#84958b;
+ padding:6px 11px;border-radius:8px;font-size:11.5px;font-family:var(--font-mono);cursor:pointer;align-self:center}
+.ide-reset:hover{color:var(--lime);border-color:#46643f}

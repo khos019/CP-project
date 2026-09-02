@@ -1,24 +1,23 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { tokenize } from "./highlight";
 
-// Editor-shaped code input for submitting solutions.
+// Editor-shaped code input with live syntax highlighting.
 //
-// A bare textarea gives no sense of where you are in the file. This adds the
-// parts that actually help while solving: a tab bar per language, a line-number
-// gutter that scrolls with the text, Tab inserting an indent instead of leaving
-// the field, and a status bar showing the cursor position and the last verdict.
-//
-// The text itself stays a real <textarea>: it keeps native caret handling,
-// selection, undo, IME and screen-reader support, which a contenteditable
-// re-implementation would quietly break.
+// The colour comes from a highlighted <pre> sitting exactly behind a textarea
+// whose own text is transparent — the caret, selection, undo, IME and screen
+// reader all stay native, which a contenteditable rewrite would break. The two
+// layers must share font, size, line-height, padding, tab-size and wrapping
+// exactly, or the glyphs drift apart; that is what the shared .ide-layer rule
+// enforces, and why both scroll together on every input.
 
 export type EditorLang = "cpp20" | "python3";
 
 const NAME: Record<EditorLang, string> = { cpp20: "main.cpp", python3: "main.py" };
 const LABEL: Record<EditorLang, string> = { cpp20: "C++20", python3: "Python 3" };
+const TOKEN_LANG: Record<EditorLang, "cpp" | "python"> = { cpp20: "cpp", python3: "python" };
 
-/** Colour the verdict line by outcome rather than printing it all the same. */
 function verdictTone(v: string): string {
   const s = v.toLowerCase();
   if (!v) return "idle";
@@ -28,7 +27,7 @@ function verdictTone(v: string): string {
 }
 
 export function CodeEditor({
-  code, setCode, lang, setLang, onSubmit, submitLabel, verdict, busy, extraAction,
+  code, setCode, lang, setLang, onSubmit, submitLabel, verdict, busy, extraAction, minHeight,
 }: {
   code: string;
   setCode: (v: string) => void;
@@ -39,37 +38,46 @@ export function CodeEditor({
   verdict: string;
   busy?: boolean;
   extraAction?: React.ReactNode;
+  minHeight?: number;
 }) {
   const ta = useRef<HTMLTextAreaElement>(null);
   const gutter = useRef<HTMLPreElement>(null);
+  const overlay = useRef<HTMLPreElement>(null);
   const [pos, setPos] = useState({ line: 1, col: 1 });
 
   const lines = code.split("\n");
+  const tokens = tokenize(code, TOKEN_LANG[lang]);
   const tone = verdictTone(verdict);
 
-  const syncScroll = () => {
-    if (gutter.current && ta.current) gutter.current.scrollTop = ta.current.scrollTop;
+  // The gutter follows vertically; the overlay must follow both axes or the
+  // colour slides out from under the text as soon as a line runs long.
+  const sync = () => {
+    const el = ta.current;
+    if (!el) return;
+    if (gutter.current) gutter.current.scrollTop = el.scrollTop;
+    if (overlay.current) {
+      overlay.current.scrollTop = el.scrollTop;
+      overlay.current.scrollLeft = el.scrollLeft;
+    }
   };
 
   const updatePos = () => {
     const el = ta.current;
     if (!el) return;
-    const upto = el.value.slice(0, el.selectionStart);
-    const nl = upto.split("\n");
-    setPos({ line: nl.length, col: nl[nl.length - 1].length + 1 });
+    const upto = el.value.slice(0, el.selectionStart).split("\n");
+    setPos({ line: upto.length, col: upto[upto.length - 1].length + 1 });
   };
 
-  // Tab should indent, not jump to the next control — but Escape then Tab still
-  // lets a keyboard user leave the field.
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key !== "Tab" || e.shiftKey) return;
     const el = e.currentTarget;
     e.preventDefault();
     const s = el.selectionStart, t = el.selectionEnd;
-    const next = code.slice(0, s) + "    " + code.slice(t);
-    setCode(next);
+    setCode(code.slice(0, s) + "    " + code.slice(t));
     requestAnimationFrame(() => { el.selectionStart = el.selectionEnd = s + 4; });
   };
+
+  const style = minHeight ? { minHeight } : undefined;
 
   return (
     <section className="ide">
@@ -87,18 +95,30 @@ export function CodeEditor({
         <pre className="ide-gutter" ref={gutter} aria-hidden="true">
           {lines.map((_, i) => `${i + 1}\n`).join("")}
         </pre>
-        <textarea
-          ref={ta}
-          className="ide-input"
-          aria-label="Code editor"
-          value={code}
-          spellCheck={false}
-          onChange={e => { setCode(e.target.value); updatePos(); }}
-          onScroll={syncScroll}
-          onKeyDown={onKeyDown}
-          onKeyUp={updatePos}
-          onClick={updatePos}
-        />
+        <div className="ide-stack" style={style}>
+          <pre className="ide-layer ide-highlight" ref={overlay} aria-hidden="true">
+            <code>
+              {tokens.map((toks, n) => (
+                <span key={n}>
+                  {toks.map((tk, j) => <span className={tk.c} key={j}>{tk.t}</span>)}
+                  {"\n"}
+                </span>
+              ))}
+            </code>
+          </pre>
+          <textarea
+            ref={ta}
+            className="ide-layer ide-input"
+            aria-label="Code editor"
+            value={code}
+            spellCheck={false}
+            onChange={e => { setCode(e.target.value); updatePos(); sync(); }}
+            onScroll={sync}
+            onKeyDown={onKeyDown}
+            onKeyUp={updatePos}
+            onClick={updatePos}
+          />
+        </div>
       </div>
 
       <div className="ide-status">

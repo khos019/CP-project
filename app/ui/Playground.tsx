@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { CodeEditor } from "./CodeEditor";
 
 // A plain compiler: write code, give it your own input, see what it prints.
 //
@@ -98,25 +99,14 @@ export function Playground({ lang }: { lang: Lang }) {
       </div>
 
       <div className="play-grid">
-        <section className="editor play-editor">
-          <div className="editor-top">
-            <b>{codeLang === "cpp20" ? "main.cpp" : "main.py"}</b>
-            <div className="play-actions">
-              <button className="ghost" onClick={() => setCode(STARTERS[codeLang])}>{t.reset}</button>
-              <select aria-label="Language" value={codeLang} onChange={e => switchLang(e.target.value as "cpp20" | "python3")}>
-                <option value="cpp20">C++20</option>
-                <option value="python3">Python 3</option>
-              </select>
-            </div>
-          </div>
-          <textarea aria-label="Code editor" value={code} onChange={e => setCode(e.target.value)} spellCheck={false} />
-          <div className="editor-actions">
-            <span className="verdict">
-              {out ? `${out.status} · ${out.runtimeMs} ms · ${out.memoryKb} KB` : t.empty}
-            </span>
-            <button className="primary" onClick={run} disabled={busy}>{busy ? t.running : `${t.run} ▶`}</button>
-          </div>
-        </section>
+        <CodeEditor
+          code={code} setCode={setCode}
+          lang={codeLang} setLang={switchLang}
+          onSubmit={run} submitLabel={`${t.run} ▶`} busy={busy}
+          verdict={out ? `${out.status} · ${out.runtimeMs} ms · ${out.memoryKb} KB` : ""}
+          extraAction={<button className="ghost ide-reset" onClick={() => setCode(STARTERS[codeLang])}>{t.reset}</button>}
+          minHeight={420}
+        />
 
         <aside className="play-side">
           <div className="panel play-io">
