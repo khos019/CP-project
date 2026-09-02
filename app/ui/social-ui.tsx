@@ -119,13 +119,17 @@ const LANG_LABEL: Record<string, string> = { cpp20: "C++20", python3: "Python 3"
    label, so it is worth borrowing outright. The label stays for screen readers
    and as a tooltip, which the original does not do. */
 export function FriendStar({
-  lang, isFriend, signedIn, userId, onChange,
+  lang, isFriend, signedIn, userId, onChange, withLabel = false,
 }: {
   lang: Lang;
   isFriend: boolean;
   signedIn: boolean;
   userId: string;
   onChange: (next: boolean) => void;
+  /* Bare star for dense rows; star plus wording where it stands on its own.
+     A lone glyph next to somebody's name is a guessing game — it needs the
+     label wherever there is room for one. */
+  withLabel?: boolean;
 }) {
   const t = T[lang];
   const [busy, setBusy] = useState(false);
@@ -145,14 +149,15 @@ export function FriendStar({
   return (
     <button
       type="button"
-      className={`friend-star${isFriend ? " on" : ""}`}
+      className={`friend-star${withLabel ? " friend-star-wide" : ""}${isFriend ? " on" : ""}`}
       onClick={toggle}
       disabled={!signedIn || busy}
       aria-pressed={isFriend}
       title={label}
       aria-label={label}
     >
-      {isFriend ? "★" : "☆"}
+      <span aria-hidden>{isFriend ? "★" : "☆"}</span>
+      {withLabel && <span className="friend-star-text">{label}</span>}
     </button>
   );
 }

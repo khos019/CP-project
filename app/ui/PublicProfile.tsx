@@ -186,16 +186,12 @@ export function PublicProfile({
             </AvatarZoom>
             <div className="pp-identity">
               <p className="eyebrow">{t.eyebrow}</p>
+              {/* The star used to sit here, inside the heading and ahead of the
+                  name — which pushed the name out of line with the eyebrow
+                  above it and left a bare glyph for the reader to interpret.
+                  It is an action on this person, so it lives with the other
+                  actions now. */}
               <h1>
-                {!isMe && (
-                  <FriendStar
-                    lang={lang}
-                    isFriend={isFriend}
-                    signedIn={signedIn}
-                    userId={person.id}
-                    onChange={setIsFriend}
-                  />
-                )}
                 {name}
                 <OnlineDot online={online} lang={lang} label={name} />
                 {t.roles[person.role] && <i className="pp-role">{t.roles[person.role]}</i>}
@@ -225,9 +221,15 @@ export function PublicProfile({
                   </button>
                 </>
               ) : signedIn ? (
-                <button className="primary" onClick={() => onMessage(person.id)}>
-                  {t.message} →
-                </button>
+                <>
+                  <button className="primary" onClick={() => onMessage(person.id)}>
+                    {t.message} →
+                  </button>
+                  <FriendStar
+                    lang={lang} isFriend={isFriend} signedIn={signedIn}
+                    userId={person.id} onChange={setIsFriend} withLabel
+                  />
+                </>
               ) : (
                 <>
                   <p className="muted pp-self">{t.signInToWrite}</p>

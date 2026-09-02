@@ -709,6 +709,14 @@ body{background:radial-gradient(circle at 12% -10%,rgba(119,210,68,.13),transpar
 /* Codeforces' star, which is understood without a label. Grey outline until it
    is yours, then filled and lit. */
 .friend-star{border:0;background:transparent;color:#6b7d73;font-size:.9em;line-height:1;padding:0 8px 0 0;vertical-align:baseline}
+/* Standing on its own next to the other actions, the star gets a target worth
+   clicking and says what it does. */
+.friend-star-wide{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;font-size:13.5px;font-weight:750;
+ border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--muted);white-space:nowrap}
+.friend-star-wide:hover:not(:disabled){border-color:#3d5c2c;color:var(--ink)}
+.friend-star-wide.on{border-color:#3d5c2c;background:#101a0c;color:var(--lime)}
+.friend-star-wide:disabled{opacity:.55}
+.friend-star-text{font-weight:inherit}
 .friend-star:hover:not(:disabled){color:#c9dc8a}
 .friend-star.on{color:var(--lime);text-shadow:0 0 14px rgba(200,255,118,.45)}
 .friend-star:disabled{cursor:default;opacity:.55}
