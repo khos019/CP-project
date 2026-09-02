@@ -333,6 +333,9 @@ async function givePlan(matchId: string, botRating: number): Promise<void> {
         problemKey: key,
         problemRating: Number(r.problem_rating) || 1200,
         difficulty: (bankFor(key)?.difficulty || "medium") as "easy" | "medium" | "hard",
+        // The planner may not schedule more failed attempts than there are
+        // distinct wrong programs to send.
+        wrongVariants: hasSolution(key) ? solutions[key].wrong.length : 0,
       };
     }),
     1800, config,
@@ -392,7 +395,16 @@ async function runBotStep(token: string, matchId: string): Promise<Json> {
     // stays open for the human rather than ending the duel.
     if (!entry) return { ok: true, moved: false, reason: "no_solution" };
 
-    const source = attempt.correct ? entry.solution : (entry.wrong[0] || entry.solution);
+    // The plan named which wrong program this attempt sends, so two failed
+    // attempts on one problem are two different failures rather than the same
+    // file submitted twice. An attempt the plan meant to FAIL must never fall
+    // back to the correct solution — that would hand the bot a round it was
+    // scheduled to lose, which is the opposite of the mistake being modelled.
+    const variant = Number(attempt.variant) || 0;
+    const source = attempt.correct
+      ? entry.solution
+      : entry.wrong[variant % entry.wrong.length];
+    if (!source) return { ok: true, moved: false, reason: "no_wrong_variant" };
     await broadcast([toMatch(matchId, "submission_received", { seat, round: roundPlan.round })]);
 
     const outcome = await judgeSource(key, "cpp20", source);

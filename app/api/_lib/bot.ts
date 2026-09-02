@@ -40,7 +40,13 @@ export const DEFAULT_BOT_CONFIG: BotConfig = {
   maxDelaySeconds: 900,
 };
 
-export type Attempt = { at: number; correct: boolean };
+export type Attempt = {
+  at: number;
+  correct: boolean;
+  /** Which of the problem's wrong programs this attempt submits. Chosen here
+   *  rather than at submit time so the plan says exactly what will be sent. */
+  variant?: number;
+};
 export type RoundPlan = {
   round: number;
   problemKey: string;
@@ -59,7 +65,15 @@ export type BotPlan = { rating: number; rounds: RoundPlan[] };
 
 /* Deterministic PRNG. A duel's plan has to survive being recomputed by a
    different isolate, so "random" here means "a fixed function of the match id
-   and the round" rather than Math.random(). */
+   and the round" rather than Math.random().
+
+   Every question gets its OWN stream, named after what it decides. That is not
+   tidiness. The first version drew `shouldSolve` and the timing jitter from the
+   same seed, which means they were the same draw: a bot that solved the problem
+   was, without fail, also a fast bot, and a bot that failed was always a slow
+   one. Nobody wrote that rule and it is not true of people. Naming the stream
+   keeps the two questions independent, and keeps them independent when a third
+   one is added later. */
 function seeded(seed: string): () => number {
   let h = 2166136261;
   for (let i = 0; i < seed.length; i++) {
@@ -111,11 +125,15 @@ export function getBotSubmissionBehavior(
   botRating: number, problemRating: number, difficulty: "easy" | "medium" | "hard",
   seed: string, config = DEFAULT_BOT_CONFIG,
 ): { shouldSolve: boolean; expectedDelay: number; mistakeProbability: number } {
-  const random = seeded(seed);
+  const random = seeded(`${seed}:outcome`);
   const p = solveProbability(botRating, problemRating, config);
   // Mistakes track the same gap: a bot comfortably above a problem rarely
-  // fumbles it, one reaching above itself often does.
-  const mistakeProbability = Math.min(0.85, (1 - p) * config.mistakeRate);
+  // fumbles it, one reaching above itself often does. The floor is the part
+  // that is not derived from the gap, and it is deliberate: a player who is
+  // far stronger than the problem still mistypes a bound now and then, and a
+  // bot that has literally never submitted a wrong answer is the one thing a
+  // human opponent never looks like.
+  const mistakeProbability = Math.min(0.85, Math.max(0.07, (1 - p) * config.mistakeRate));
   return {
     shouldSolve: random() < p,
     expectedDelay: expectedThinkingSeconds(botRating, problemRating, difficulty, config),
@@ -130,7 +148,15 @@ export function getBotSubmissionBehavior(
  *  point and produce the same answer. */
 export function planDuel(
   matchId: string, botRating: number,
-  rounds: { round: number; problemKey: string; problemRating: number; difficulty: "easy" | "medium" | "hard" }[],
+  rounds: {
+    round: number; problemKey: string; problemRating: number;
+    difficulty: "easy" | "medium" | "hard";
+    /** How many DISTINCT wrong programs this problem has. The bot may not make
+     *  more failed attempts than that, because the alternative is submitting a
+     *  byte-identical program twice and collecting the same verdict twice —
+     *  which is the one thing no person has ever done. */
+    wrongVariants?: number;
+  }[],
   duelSeconds: number, config = DEFAULT_BOT_CONFIG,
 ): BotPlan {
   const plan: RoundPlan[] = [];
@@ -141,29 +167,31 @@ export function planDuel(
 
   for (const round of rounds) {
     const seed = `${matchId}:${round.round}`;
-    const random = seeded(seed);
+    const timing = seeded(`${seed}:timing`);
+    const mistakes = seeded(`${seed}:mistakes`);
     const behaviour = getBotSubmissionBehavior(botRating, round.problemRating, round.difficulty, seed, config);
 
     // Lognormal-ish jitter so two duels at the same rating do not look identical.
-    const jitter = Math.exp((random() - 0.5) * 0.7);
+    const jitter = Math.exp((timing() - 0.5) * 0.7);
     const think = Math.max(config.minDelaySeconds, behaviour.expectedDelay * jitter);
 
     const attempts: Attempt[] = [];
     // Wrong submissions come first and cost time — a rejected attempt is a
     // person re-reading the statement, not a free reroll.
+    const maxWrong = Math.max(0, Math.min(2, round.wrongVariants ?? 1));
     let wrongCount = 0;
-    while (wrongCount < 2 && random() < behaviour.mistakeProbability) wrongCount++;
+    while (wrongCount < maxWrong && mistakes() < behaviour.mistakeProbability) wrongCount++;
     // A round the bot cannot solve still has to be *played*. Without this the
     // plan for such a round can come out completely empty, and the opponent
     // watches a scoreboard that never moves — no WRONG_ANSWER, no time limit,
     // nothing — which reads as a bot that is switched off rather than one that
     // is losing. Somebody who fails a problem fails it visibly.
-    if (!behaviour.shouldSolve && wrongCount === 0) wrongCount = 1;
+    if (!behaviour.shouldSolve && wrongCount === 0) wrongCount = Math.min(1, maxWrong);
 
     let at = think;
     for (let i = 0; i < wrongCount; i++) {
-      attempts.push({ at: Math.round(at), correct: false });
-      at += Math.max(20, think * 0.35 * (0.7 + random() * 0.6));
+      attempts.push({ at: Math.round(at), correct: false, variant: i });
+      at += Math.max(20, think * 0.35 * (0.7 + timing() * 0.6));
     }
     if (behaviour.shouldSolve) attempts.push({ at: Math.round(at), correct: true });
 
