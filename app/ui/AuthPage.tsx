@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { BrandMark } from "./BrandMark";
+import { RoadmapGraph, buildSpine } from "./RoadmapGraph";
 import { fetchAuthProviders, supabaseConfig, type AuthProviders } from "./session";
 
 type Lang = "uz" | "en";
@@ -292,8 +293,11 @@ export function AuthPage({
     setErrors({});
   };
 
+  const spine = useMemo(() => buildSpine(lang), [lang]);
+
   return (
     <div className="auth">
+      <div className="auth-form">
       <div className="brand">
         <BrandMark className="brandmark" />
         AlgoYo‘l
@@ -495,6 +499,12 @@ export function AuthPage({
           </button>
         </>
       )}
+      </div>
+
+      <aside className="auth-brand" aria-hidden>
+        <RoadmapGraph lang={lang} nodes={spine} onOpen={() => {}} animate={false} />
+        <p>{t.tagline}</p>
+      </aside>
     </div>
   );
 }

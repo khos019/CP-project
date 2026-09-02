@@ -128,6 +128,7 @@
   "continueHero.startEyebrow": "Get started",
   "continueHero.startTitle": "Start with the first unit",
   "continueHero.viewProfile": "View profile",
+  "drawer.stage_of": "Stage {n} of {total}",
   "duelArena.ai_raqib": "AI opponent",
   "duelArena.duel_maydoni": "Duel arena",
   "duelArena.jonli_tasma": "Live feed",
@@ -164,8 +165,8 @@
   "ownerStats.newToday": "Joined today",
   "ownerStats.noOnline": "No engaged time recorded in the last 30 days.",
   "ownerStats.noSignups": "No new accounts in the last 30 days.",
-  "ownerStats.notMigrated": "The statistics function is not installed yet. Run 009_owner_platform_stats.sql in the SQL Editor.",
   "ownerStats.noTopics": "Nobody has started a unit yet.",
+  "ownerStats.notMigrated": "The statistics function is not installed yet. Run 009_owner_platform_stats.sql in the SQL Editor.",
   "ownerStats.notTracked": "Not tracked yet",
   "ownerStats.notTrackedBody": "Page views and duel history are not stored on the server, so they are not shown here. Duel results currently live only in the browser.",
   "ownerStats.online": "Time online",
@@ -374,5 +375,6 @@
   "roadmapHub.unitsShort": "units",
   "roadmapHub.xp": "Experience points",
   "roadmapHub.yangi_boshlovchi": "Newbie",
+  "shop.short_by": "{n} more coins needed",
   "socialui.uz_uz": "en-GB"
 }

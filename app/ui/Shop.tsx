@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { tr } from "./i18n";
 import { GiftArtwork, ART_CREDIT, ART_CREDIT_EN } from "./gift-art";
 import {
   COIN_RULES, DAY_DUELS_REQUIRED, DAY_SECONDS_REQUIRED, FALLBACK_ITEMS, TOTAL_LADDER_COINS,
@@ -194,8 +195,14 @@ export function Shop({ lang, signed, authLoading }: { lang: Lang; signed: boolea
                 <span className="mono">{t.cost} <b>{item.costCoins}</b> {t.coins}</span>
                 {item.telegramStars && <span className="tag">★ {item.telegramStars} {t.stars}</span>}
               </div>
-              <button className="primary" disabled={!affordable || busy === item.slug} onClick={() => buy(item)}>
-                {affordable ? t.buy : t.need}
+              {/* A disabled button is a dead end: it refuses and explains
+                  nothing. This one stays live and answers the only question
+                  the reader has — how much further. */}
+              <button className={affordable ? "primary" : "secondary"} disabled={busy === item.slug}
+                onClick={() => affordable
+                  ? buy(item)
+                  : setMessage(tr(lang, "shop.short_by", { n: item.costCoins - balance }))}>
+                {affordable ? t.buy : tr(lang, "shop.short_by", { n: item.costCoins - balance })}
               </button>
             </article>
           );

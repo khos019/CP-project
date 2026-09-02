@@ -2294,3 +2294,93 @@ body{font-size:var(--t-body);line-height:1.6}
 .unit-status.available{color:var(--muted);background:none}
 .unit-status.locked{color:var(--dim);background:none}
 .unit-status b{font-size:var(--t-xs);font-weight:500}
+
+/* ─── Drawer: bosqich paneli ─────────────────────────────────────────────
+   Yo'l xaritasi — xarita, va o'qish uchun tark etish kerak bo'lgan xarita
+   yomon xarita. Tugun bosilganda sahifa almashmaydi, o'ng tomondan panel
+   ochiladi. */
+.drawer-backdrop{
+ position:fixed;inset:0;z-index:60;
+ background:rgba(3,5,4,.62);backdrop-filter:blur(2px);
+ animation:fade var(--dur-base) var(--ease);
+}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.drawer{
+ position:fixed;top:0;right:0;bottom:0;z-index:61;
+ width:min(420px,92vw);overflow-y:auto;
+ background:var(--surface);border-left:1px solid var(--line);
+ padding:var(--s6);display:grid;gap:var(--s4);align-content:start;
+ animation:slide var(--dur-slow) var(--ease);
+}
+@keyframes slide{from{transform:translateX(100%)}to{transform:translateX(0)}}
+.drawer:focus{outline:none}
+.drawer-top{display:flex;align-items:center;justify-content:space-between}
+.drawer-step{font-size:var(--t-xs);color:var(--dim)}
+.drawer-close{
+ background:none;border:0;color:var(--muted);font-size:16px;
+ width:32px;height:32px;border-radius:var(--r-sm);display:grid;place-items:center;
+}
+.drawer-close:hover{background:var(--surface-2);color:var(--ink)}
+.drawer h2{margin:0;font-size:var(--t-h2)}
+.drawer>p{margin:0;font-size:var(--t-sm);line-height:1.6}
+.drawer-facts{display:grid;gap:var(--s2);margin:0}
+.drawer-facts div{display:flex;justify-content:space-between;gap:var(--s3);
+ padding:8px 0;border-bottom:1px solid var(--line-faint)}
+.drawer-facts dt{margin:0;font-size:var(--t-xs);color:var(--muted)}
+.drawer-facts dd{margin:0;font-size:var(--t-sm);color:var(--ink)}
+.drawer-checks{display:grid;gap:var(--s2)}
+.drawer-checks span{
+ display:flex;align-items:center;gap:var(--s2);
+ font-size:var(--t-sm);color:var(--muted);
+}
+.drawer-checks .ok{color:var(--green)}
+.drawer-go{width:100%;margin-top:var(--s2)}
+.drawer-locked{
+ display:grid;gap:5px;padding:var(--s4);
+ border:1px dashed var(--line-strong);border-radius:var(--r-md);
+}
+.drawer-locked b{font-size:var(--t-sm)}
+.drawer-locked span{font-size:var(--t-xs);color:var(--muted);line-height:1.55}
+/* Qulflangan tugun ham bosiladi — u nima uchun yopiqligini aytadi. */
+.cloud-unit:disabled{opacity:.5;cursor:pointer}
+@media(max-width:640px){
+ .drawer{width:100%;border-left:0;border-top:1px solid var(--line);
+  top:auto;height:min(78vh,640px);border-radius:var(--r-xl) var(--r-xl) 0 0}
+ @keyframes slide{from{transform:translateY(100%)}to{transform:translateY(0)}}
+}
+
+/* .main ga z-index:1 olib tashlangan dekorativ grid overlay uchun berilgan
+   edi. U qolgani uchun main o'z stacking konteksti bo'lib turardi va ichidagi
+   drawer, qanday z-index bersa ham, sticky header ostida qolardi. */
+.main{position:static;z-index:auto}
+
+/* ─── Kirish sahifasi: forma + brend paneli ──────────────────────────── */
+.auth-form{max-width:400px;width:100%}
+.auth-form .brand{margin-bottom:var(--s5)}
+.auth-form h1{margin:0 0 var(--s2);font-size:var(--t-h1)}
+.auth-form>p{margin:0 0 var(--s6);font-size:var(--t-sm);line-height:1.6}
+.auth-brand{
+ display:grid;gap:var(--s5);justify-items:center;
+ padding:var(--s6);
+ border:1px solid var(--line);border-radius:var(--r-xl);background:var(--surface);
+}
+.auth-brand p{
+ margin:0;max-width:34ch;text-align:center;
+ font-size:var(--t-sm);color:var(--muted);line-height:1.6;
+}
+.auth-brand .rg-halo{animation:none}
+.auth-submit{width:100%}
+.auth-switch{width:100%;margin-top:var(--s3);color:var(--muted)}
+@media(max-width:900px){
+ /* Telefonda faqat forma — brend paneli o'z vazifasini bajarmaydi. */
+ .auth-brand{display:none}
+ .auth{padding:var(--s5) 0}
+}
+
+/* Eski .auth qoidalari uni 460px lik markazlashgan kartochkaga qamab
+   qo'ygan edi — ikki ustunli maketga joy qolmagan. */
+.auth{
+ max-width:var(--container);margin:0 auto;
+ background:none;border:0;border-radius:0;box-shadow:none;
+ padding:var(--s8) var(--s5);overflow:visible;position:relative;
+}

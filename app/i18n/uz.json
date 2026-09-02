@@ -128,6 +128,7 @@
   "continueHero.startEyebrow": "Boshlang",
   "continueHero.startTitle": "Birinchi bosqichdan boshlang",
   "continueHero.viewProfile": "Profilni ko‘rish",
+  "drawer.stage_of": "Bosqich {n}/{total}",
   "duelArena.ai_raqib": "AI raqib",
   "duelArena.duel_maydoni": "Duel maydoni",
   "duelArena.jonli_tasma": "Jonli tasma",
@@ -164,8 +165,8 @@
   "ownerStats.newToday": "Bugun qo‘shildi",
   "ownerStats.noOnline": "Oxirgi 30 kunda faol vaqt qayd etilmagan.",
   "ownerStats.noSignups": "Oxirgi 30 kunda yangi hisob yo‘q.",
-  "ownerStats.notMigrated": "Statistika funksiyasi hali qo‘shilmagan. 009_owner_platform_stats.sql migratsiyasini SQL Editor’da ishga tushiring.",
   "ownerStats.noTopics": "Hali hech kim bosqich boshlamagan.",
+  "ownerStats.notMigrated": "Statistika funksiyasi hali qo‘shilmagan. 009_owner_platform_stats.sql migratsiyasini SQL Editor’da ishga tushiring.",
   "ownerStats.notTracked": "Hali kuzatilmaydi",
   "ownerStats.notTrackedBody": "Sahifa ko‘rishlari va duel tarixi hozircha serverda saqlanmaydi, shuning uchun bu yerda ko‘rsatilmaydi. Duel natijalari hozir faqat brauzerda saqlanadi.",
   "ownerStats.online": "Onlayn vaqt",
@@ -374,5 +375,6 @@
   "roadmapHub.unitsShort": "bosqich",
   "roadmapHub.xp": "Tajriba ballari",
   "roadmapHub.yangi_boshlovchi": "Yangi boshlovchi",
+  "shop.short_by": "Yana {n} tanga kerak",
   "socialui.uz_uz": "uz-UZ"
 }

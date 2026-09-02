@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { tr } from "./i18n";
 import { roadmapCatalog, type MasteryRoadmap } from "./roadmap-data";
 import { unitContent } from "./roadmap-content";
@@ -27,6 +27,11 @@ export function RoadmapExperience({slug,lang,role,unitId,onOpenUnit,onBack,onPra
     storage in the effect below rather than during render — same reason as
     progress: a render must not depend on what localStorage happens to say. */
  const [cleared,setCleared]=useState(0);
+ /* Which unit the learner has tapped open. A node on the path is a question
+    before it is a destination — "what is in this one, and why can I not open
+    it yet" — and answering that in a panel beside the path keeps them on the
+    map instead of bouncing into a lesson to find out. */
+ const [peek,setPeek]=useState<string|null>(null);
  useEffect(()=>{let live=true;const sync=()=>{loadProgress().then(p=>{if(!live)return;setProgress(p);setCleared(clearedUnits(slug))})};sync();window.addEventListener("algoyol-progress",sync);return()=>{live=false;window.removeEventListener("algoyol-progress",sync)}},[slug]);
  const canReviewAll=can(role,"roadmap.manage");
 
@@ -36,7 +41,82 @@ export function RoadmapExperience({slug,lang,role,unitId,onOpenUnit,onBack,onPra
  const unit=roadmap.units.find(u=>u.id===unitId),unitIndex=unit?roadmap.units.indexOf(unit):-1;
  // A locked id — a stale history entry, say — just falls through to the path.
  if(unit&&isOpen(unitIndex))return <Lesson roadmap={roadmap} unit={unit} index={unitIndex} lang={lang} progress={progress} setProgress={setProgress} onBack={onBack} onPractice={onPractice} onOpenProblem={onOpenProblem} onOpenUnit={onOpenUnit} isOpen={isOpen}/>;
- return <div className="mastery-page"><button className="crumb" onClick={onBack}>← {tr(lang,"chrome.yol_xaritalari")}</button><section className="mastery-hero"><div><span className="road-icon" style={{background:roadmap.color}}>{roadmap.icon}</span><p className="eyebrow">{roadmap.level} · {roadmap.units.reduce((n,u)=>n+u.minutes,0)} min</p><h1>{lang==="uz"?roadmap.titleUz:roadmap.titleEn}</h1><p>{lang==="uz"?roadmap.descriptionUz:roadmap.descriptionEn}</p></div>{canReviewAll&&<div className="notice">{tr(lang,"roadmapExperience.owner_rejimi_barcha_bosqichlar_tekshirish")}</div>}{firstOpen>=0&&<button className="primary continue-btn" onClick={()=>onOpenUnit(roadmap.units[firstOpen].id)}>{lang==="uz"?(completed?"Davom ettirish":"Boshlash"):(completed?"Continue":"Start")} · {lang==="uz"?roadmap.units[firstOpen].titleUz:roadmap.units[firstOpen].titleEn}</button>}<div className="mastery-score"><b>{Math.round(completed/roadmap.units.length*100)}%</b><span>{tr(lang,"roadmapExperience.ozlashtirildi")}</span><div className="progress"><span style={{width:`${completed/roadmap.units.length*100}%`}}/></div><small>{completed}/{roadmap.units.length} {tr(lang,"roadmapExperience.bosqich")}</small><small className="mono mastery-line">{tr(lang,"roadmapExperience.mahorat")} {masteryOf(roadmap.slug)}/1000 · {masteryLabel(masteryOf(roadmap.slug),lang)}</small></div></section><div className="mastery-layout"><aside className="mastery-info panel"><h3>{tr(lang,"roadmapExperience.yol_haqida")}</h3><p className="muted">{tr(lang,"roadmapExperience.talab")}</p><b>{lang==="uz"?roadmap.prerequisiteUz:roadmap.prerequisiteEn}</b><p className="muted">{tr(lang,"roadmapExperience.tugatish_sharti")}</p><b>Quiz ≥ 70% + Accepted</b><p className="muted">{tr(lang,"roadmapExperience.qolgan_vaqt")}</p><b>{roadmap.units.slice(completed).reduce((n,u)=>n+u.minutes,0)} min</b></aside><section className="cloud-path">{roadmap.units.map((u,index)=>{const stageSize=5,stageNo=Math.floor(index/stageSize)+1,startsStage=index%stageSize===0;const stageUnits=roadmap.units.slice((stageNo-1)*stageSize,stageNo*stageSize);const stageDone=stageUnits.filter(x=>(progress.quizScores[x.id]||0)>=70&&progress.solved[x.id]).length;const open=isOpen(index),quiz=progress.quizScores[u.id]||0,solved=!!progress.solved[u.id],done=quiz>=70&&solved,placed=!done&&index<cleared,started=quiz>0||solved,side=index%2?"right":"left";const state=done?"done":placed?"placed":!open?"locked":started?"learning":index===firstOpen?"current":"available";const icon=done?"✓":state==="placed"?"⤻":state==="locked"?"✕":state==="learning"?"◔":state==="current"?"▶":"○";const label=lang==="uz"?(done?"Tugatildi":state==="placed"?"Bilasiz":state==="locked"?"Qulflangan":state==="learning"?"Jarayonda":state==="current"?"Hozirgi":"Ochiq"):(done?"Completed":state==="placed"?"Known":state==="locked"?"Locked":state==="learning"?"In progress":state==="current"?"Current":"Available");const frac=(quiz>=70?0.5:0)+(solved?0.5:0),R=19,CIRC=2*Math.PI*R;const prereq=index>0?(lang==="uz"?roadmap.units[index-1].titleUz:roadmap.units[index-1].titleEn):null;return <div key={u.id} className="cloud-slot">{startsStage&&<div className="stage-head"><span className="stage-no">{tr(lang,"roadmapExperience.bosqich_2")} {stageNo}</span><span className="stage-bar"><i style={{width:`${stageDone/stageUnits.length*100}%`}}/></span><span className="stage-count mono">{stageDone}/{stageUnits.length}</span></div>}<div className={`cloud-step ${side} ${state}`}>{index>0&&<svg className="cloud-link" viewBox="0 0 300 92" preserveAspectRatio="none" aria-hidden="true"><path d={side==="right"?"M0,0 C0,58 300,34 300,92":"M300,0 C300,58 0,34 0,92"}/></svg>}<div className="cloud-wrap"><button className="cloud-unit" onClick={()=>open&&onOpenUnit(u.id)} disabled={!open} aria-label={`${lang==="uz"?u.titleUz:u.titleEn} — ${label}`}><span className="cloud-node"><svg className="node-ring" viewBox="0 0 44 44" aria-hidden="true"><circle className="ring-bg" cx="22" cy="22" r={R}/><circle className="ring-fg" cx="22" cy="22" r={R} strokeDasharray={CIRC} strokeDashoffset={CIRC*(1-frac)}/></svg><i>{done?"✓":open?String(index+1).padStart(2,"0"):"●"}</i></span><span className="path-copy"><small>{u.rating} · {u.minutes} min</small><b>{lang==="uz"?u.titleUz:u.titleEn}</b><em>{lang==="uz"?u.summaryUz:u.summaryEn}</em><span className="unit-checks"><i className={quiz>=70?"ok":""}>Quiz {quiz||0}%</i><i className={solved?"ok":""}>Problem {solved?"AC":"—"}</i></span></span><span className={`unit-status ${state}`}><b aria-hidden="true">{icon}</b> {label}</span></button><div className="unit-popover" role="tooltip"><b>{lang==="uz"?u.titleUz:u.titleEn}</b><span><i>{tr(lang,"roadmapExperience.mahorat")}</i><em className="mono">{masteryOf(roadmap.slug)}/1000</em></span><span><i>Quiz</i><em className="mono">{quiz}% / 70%</em></span><span><i>{tr(lang,"algoYolApp.masala")}</i><em className="mono">{solved?"AC":"—"}</em></span><span><i>{tr(lang,"roadmapExperience.vaqt")}</i><em className="mono">{u.minutes} min</em></span>{!open&&prereq&&<span className="req"><i>{tr(lang,"roadmapExperience.ochilishi_uchun")}</i><em>{prereq}</em></span>}</div></div></div></div>})}</section></div></div>
+ return <div className="mastery-page"><button className="crumb" onClick={onBack}>← {tr(lang,"chrome.yol_xaritalari")}</button><section className="mastery-hero"><div><span className="road-icon" style={{background:roadmap.color}}>{roadmap.icon}</span><p className="eyebrow">{roadmap.level} · {roadmap.units.reduce((n,u)=>n+u.minutes,0)} min</p><h1>{lang==="uz"?roadmap.titleUz:roadmap.titleEn}</h1><p>{lang==="uz"?roadmap.descriptionUz:roadmap.descriptionEn}</p></div>{canReviewAll&&<div className="notice">{tr(lang,"roadmapExperience.owner_rejimi_barcha_bosqichlar_tekshirish")}</div>}{firstOpen>=0&&<button className="primary continue-btn" onClick={()=>onOpenUnit(roadmap.units[firstOpen].id)}>{lang==="uz"?(completed?"Davom ettirish":"Boshlash"):(completed?"Continue":"Start")} · {lang==="uz"?roadmap.units[firstOpen].titleUz:roadmap.units[firstOpen].titleEn}</button>}<div className="mastery-score"><b>{Math.round(completed/roadmap.units.length*100)}%</b><span>{tr(lang,"roadmapExperience.ozlashtirildi")}</span><div className="progress"><span style={{width:`${completed/roadmap.units.length*100}%`}}/></div><small>{completed}/{roadmap.units.length} {tr(lang,"roadmapExperience.bosqich")}</small><small className="mono mastery-line">{tr(lang,"roadmapExperience.mahorat")} {masteryOf(roadmap.slug)}/1000 · {masteryLabel(masteryOf(roadmap.slug),lang)}</small></div></section><div className="mastery-layout"><aside className="mastery-info panel"><h3>{tr(lang,"roadmapExperience.yol_haqida")}</h3><p className="muted">{tr(lang,"roadmapExperience.talab")}</p><b>{lang==="uz"?roadmap.prerequisiteUz:roadmap.prerequisiteEn}</b><p className="muted">{tr(lang,"roadmapExperience.tugatish_sharti")}</p><b>Quiz ≥ 70% + Accepted</b><p className="muted">{tr(lang,"roadmapExperience.qolgan_vaqt")}</p><b>{roadmap.units.slice(completed).reduce((n,u)=>n+u.minutes,0)} min</b></aside><section className="cloud-path">{roadmap.units.map((u,index)=>{const stageSize=5,stageNo=Math.floor(index/stageSize)+1,startsStage=index%stageSize===0;const stageUnits=roadmap.units.slice((stageNo-1)*stageSize,stageNo*stageSize);const stageDone=stageUnits.filter(x=>(progress.quizScores[x.id]||0)>=70&&progress.solved[x.id]).length;const open=isOpen(index),quiz=progress.quizScores[u.id]||0,solved=!!progress.solved[u.id],done=quiz>=70&&solved,placed=!done&&index<cleared,started=quiz>0||solved,side=index%2?"right":"left";const state=done?"done":placed?"placed":!open?"locked":started?"learning":index===firstOpen?"current":"available";const icon=done?"✓":state==="placed"?"⤻":state==="locked"?"✕":state==="learning"?"◔":state==="current"?"▶":"○";const label=lang==="uz"?(done?"Tugatildi":state==="placed"?"Bilasiz":state==="locked"?"Qulflangan":state==="learning"?"Jarayonda":state==="current"?"Hozirgi":"Ochiq"):(done?"Completed":state==="placed"?"Known":state==="locked"?"Locked":state==="learning"?"In progress":state==="current"?"Current":"Available");const frac=(quiz>=70?0.5:0)+(solved?0.5:0),R=19,CIRC=2*Math.PI*R;const prereq=index>0?(lang==="uz"?roadmap.units[index-1].titleUz:roadmap.units[index-1].titleEn):null;return <div key={u.id} className="cloud-slot">{startsStage&&<div className="stage-head"><span className="stage-no">{tr(lang,"roadmapExperience.bosqich_2")} {stageNo}</span><span className="stage-bar"><i style={{width:`${stageDone/stageUnits.length*100}%`}}/></span><span className="stage-count mono">{stageDone}/{stageUnits.length}</span></div>}<div className={`cloud-step ${side} ${state}`}>{index>0&&<svg className="cloud-link" viewBox="0 0 300 92" preserveAspectRatio="none" aria-hidden="true"><path d={side==="right"?"M0,0 C0,58 300,34 300,92":"M300,0 C300,58 0,34 0,92"}/></svg>}<div className="cloud-wrap"><button className="cloud-unit" onClick={()=>setPeek(u.id)} aria-expanded={peek===u.id} aria-label={`${lang==="uz"?u.titleUz:u.titleEn} — ${label}`}><span className="cloud-node"><svg className="node-ring" viewBox="0 0 44 44" aria-hidden="true"><circle className="ring-bg" cx="22" cy="22" r={R}/><circle className="ring-fg" cx="22" cy="22" r={R} strokeDasharray={CIRC} strokeDashoffset={CIRC*(1-frac)}/></svg><i>{done?"✓":open?String(index+1).padStart(2,"0"):"●"}</i></span><span className="path-copy"><small>{u.rating} · {u.minutes} min</small><b>{lang==="uz"?u.titleUz:u.titleEn}</b><em>{lang==="uz"?u.summaryUz:u.summaryEn}</em><span className="unit-checks"><i className={quiz>=70?"ok":""}>Quiz {quiz||0}%</i><i className={solved?"ok":""}>Problem {solved?"AC":"—"}</i></span></span><span className={`unit-status ${state}`}><b aria-hidden="true">{icon}</b> {label}</span></button></div></div></div>})}</section></div>{peek&&<UnitPanel roadmap={roadmap} unitId={peek} lang={lang} progress={progress} isOpen={isOpen} onClose={()=>setPeek(null)} onOpenUnit={onOpenUnit}/>}</div>
+}
+
+
+/* The panel a path node opens.
+ *
+ * The path is a map, and a map you have to leave in order to read is a bad map.
+ * Tapping a node answers the two questions worth asking from the map — what is
+ * in this unit, and what still stands between me and it — without changing the
+ * page, so a learner can look at three units in a row and keep their place.
+ * Only the button inside it navigates.
+ */
+function UnitPanel({roadmap,unitId,lang,progress,isOpen,onClose,onOpenUnit}:{
+ roadmap:MasteryRoadmap;unitId:string;lang:Lang;progress:Progress;
+ isOpen:(i:number)=>boolean;onClose:()=>void;onOpenUnit:(id:string)=>void;
+}){
+ const index=roadmap.units.findIndex(u=>u.id===unitId);
+ const unit=roadmap.units[index];
+ const panelRef=useRef<HTMLDivElement|null>(null);
+ useEffect(()=>{
+  const esc=(e:KeyboardEvent)=>{if(e.key==="Escape")onClose()};
+  document.addEventListener("keydown",esc);
+  /* Focus moves into the panel so the keyboard follows the eye, and so Escape
+     is being pressed at something rather than into the page behind it. */
+  panelRef.current?.focus();
+  return()=>document.removeEventListener("keydown",esc);
+ },[onClose]);
+ if(!unit)return null;
+
+ const open=isOpen(index),quiz=progress.quizScores[unit.id]||0,solved=!!progress.solved[unit.id];
+ const done=quiz>=70&&solved;
+ const blocker=index>0?roadmap.units[index-1]:null;
+ const uz=lang==="uz";
+
+ return <>
+  <div className="drawer-backdrop" onClick={onClose} aria-hidden/>
+  <aside className="drawer" role="dialog" aria-modal="true" tabIndex={-1} ref={panelRef}
+   aria-label={uz?unit.titleUz:unit.titleEn}>
+   <div className="drawer-top">
+    <span className="drawer-step">{tr(lang,"drawer.stage_of",{n:index+1,total:roadmap.units.length})}</span>
+    <button className="drawer-close" onClick={onClose} aria-label={uz?"Yopish":"Close"}>✕</button>
+   </div>
+
+   <h2>{uz?unit.titleUz:unit.titleEn}</h2>
+   <p className="muted">{uz?unit.summaryUz:unit.summaryEn}</p>
+
+   <dl className="drawer-facts">
+    <div><dt>{uz?"Reyting":"Rating"}</dt><dd className="mono">{unit.rating}</dd></div>
+    <div><dt>{uz?"Vaqt":"Time"}</dt><dd className="mono">{unit.minutes} min</dd></div>
+    <div><dt>{uz?"Murakkablik":"Complexity"}</dt><dd className="mono">{unit.complexity}</dd></div>
+   </dl>
+
+   <div className="drawer-checks">
+    <span className={quiz>=70?"ok":""}>
+     <i aria-hidden>{quiz>=70?"✓":"○"}</i> Quiz {quiz}% / 70%
+    </span>
+    <span className={solved?"ok":""}>
+     <i aria-hidden>{solved?"✓":"○"}</i> {uz?"Masala":"Problem"} {solved?"AC":"—"}
+    </span>
+   </div>
+
+   {open
+    ? <button className="primary drawer-go" onClick={()=>{onClose();onOpenUnit(unit.id)}}>
+       {done?(uz?"Qayta ko‘rish":"Review"):quiz>0||solved?(uz?"Davom ettirish":"Continue"):(uz?"Bosqichni boshlash":"Start this stage")}
+      </button>
+    /* A locked node names the exact thing standing in the way, because
+       "locked" on its own is the least useful thing a lock can say. */
+    : <div className="drawer-locked">
+       <b>{uz?"Bu bosqich hali yopiq":"This stage is still locked"}</b>
+       <span>{blocker
+        ? (uz?`Avval «${blocker.titleUz}» bosqichini tugating: testda 70% va masalada Accepted.`
+             :`Finish “${blocker.titleEn}” first: 70% on the quiz and an Accepted verdict.`)
+        : (uz?"Oldingi yo‘nalishni tugating.":"Finish the previous track first.")}</span>
+      </div>}
+  </aside>
+ </>;
 }
 
 function Lesson({roadmap,unit,index,lang,progress,setProgress,onBack,onPractice,onOpenProblem,onOpenUnit,isOpen}:{roadmap:MasteryRoadmap;unit:MasteryRoadmap["units"][number];index:number;lang:Lang;progress:Progress;setProgress:(p:Progress)=>void;onBack:()=>void;onPractice:(id:string)=>void;onOpenProblem?:(id:string)=>void;onOpenUnit?:(id:string)=>void;isOpen?:(i:number)=>boolean}){
