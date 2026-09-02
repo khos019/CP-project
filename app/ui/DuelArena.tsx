@@ -435,14 +435,32 @@ function Arena({
 
   return (
     <>
-      <div className="page-head">
-        <div>
-          <p className="eyebrow" style={{ color: "#637068" }}>
-            {duel.mode === "bot" ? "AI duel" : "Reytingli duel"} · #{duel.id.slice(0, 8)}
-          </p>
-          <h1 className="page-title">{tr(lang,"duelArena.duel_maydoni")}</h1>
+      {/* The scoreboard. During a duel there are exactly three things worth
+          knowing at a glance — how long is left, what the score is, and who is
+          ahead — so they share one strip at the top instead of being spread
+          between a page heading and a panel further down. The clock sits in
+          the middle because it belongs to both players. */}
+      <div className="duel-bar">
+        <div className="duel-side me">
+          <span className="duel-who">{t.you}</span>
+          <span className="duel-score">{me?.score ?? 0}</span>
+          <span className="duel-elo">{me?.rating ?? "—"} Elo</span>
         </div>
-        <span className={`timer ${remaining <= 60 ? "end" : remaining <= 300 ? "warned" : ""}`}>{clock(remaining)}</span>
+
+        <div className="duel-clock">
+          <span className={`timer ${remaining <= 60 ? "end" : remaining <= 300 ? "warned" : ""}`}>
+            {clock(remaining)}
+          </span>
+          <span className="duel-mode">
+            {duel.mode === "bot" ? "AI duel" : "Reytingli duel"} · #{duel.id.slice(0, 8)}
+          </span>
+        </div>
+
+        <div className="duel-side them">
+          <span className="duel-who">{them?.is_bot ? `🤖 ${t.bot}` : nameOf(them, lang)}</span>
+          <span className="duel-score">{them?.score ?? 0}</span>
+          <span className="duel-elo">{them?.rating ?? "—"} Elo</span>
+        </div>
       </div>
 
       {/* Said before it can be broken, and said again for as long as the duel
@@ -457,8 +475,8 @@ function Arena({
       {guard.lastStray !== null && !guard.away && (
         <div className="challenge-backdrop" role="alertdialog" aria-modal="true">
           <div className="challenge-card">
-            <p className="eyebrow" style={{ color: "#ff875c" }}>⚠ {t.strayTitle}</p>
-            <p style={{ margin: "14px 0 20px" }}>
+            <p className="eyebrow stray-title">⚠ {t.strayTitle}</p>
+            <p className="stray-body">
               {t.strayBody(guard.lastStray, guard.strays, Math.round(AWAY_GRACE_MS / 1000))}
             </p>
             <div className="match-actions">
@@ -470,20 +488,6 @@ function Arena({
 
       <div className="duel-layout">
         <section className="arena">
-          <div className="players">
-            <div className="player">
-              <b>{t.you}</b>
-              <div className="score">{me?.score ?? 0}</div>
-              <span className="muted">{me?.rating ?? "—"} Elo</span>
-            </div>
-            <span className="versus">{t.vs}</span>
-            <div className="player">
-              <b>{them?.is_bot ? `🤖 ${t.bot}` : nameOf(them, lang)}</b>
-              <div className="score">{them?.score ?? 0}</div>
-              <span className="muted">{them?.rating ?? "—"} Elo</span>
-            </div>
-          </div>
-
           <div className="duel-steps">
             {duel.rounds_detail.map((r) => {
               const mine = r.claimed_by_seat === duel.my_seat;
@@ -505,6 +509,17 @@ function Arena({
                       that has not been handed out yet. */}
                   <b>{String(r.round + 1).padStart(2, "0")}{open ? ` · ${(p?.difficulty || "").toUpperCase()}` : ""}</b>
                   <span>{r.points} {t.points}</span>
+                  {/* Both players on every round, not just whoever got there
+                      first. Knowing the opponent has already taken round two
+                      is what decides whether you keep pushing on it or move. */}
+                  <span className="step-who">
+                    <i className={mine ? "won" : "pending"} title={t.you}>
+                      {mine ? "✓" : "●"} {t.you}
+                    </i>
+                    <i className={theirs ? "won" : "pending"} title={them?.is_bot ? t.bot : nameOf(them, lang)}>
+                      {theirs ? "✓" : "●"} {them?.is_bot ? t.bot : nameOf(them, lang)}
+                    </i>
+                  </span>
                   <span className="claim">
                     {mine ? t.youSolved : theirs ? t.opponentSolved : open ? t.open : t.locked}
                   </span>

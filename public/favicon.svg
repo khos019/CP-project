@@ -1,10 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="AlgoYo‘l">
   <title>AlgoYo‘l</title>
   <!--
-    Favicon cut of the mark: same geometry as logo-mark.svg, but the glyph is
-    scaled up and the strokes thickened so it still reads at 16px in a browser
-    tab. The previous favicon was the unmodified blue starter-template icon,
-    which matched nothing about this product.
+    Favicon cut: the same staircase, pushed to the tile edges and thickened.
+    At 16px the strokes are what survive, so the node is dropped and the steps
+    carry the shape on their own.
   -->
   <defs>
     <linearGradient id="ay-fav" x1="0" y1="0" x2="1" y2="1">
@@ -12,14 +11,7 @@
       <stop offset="1" stop-color="#67ce44"/>
     </linearGradient>
   </defs>
-
-  <rect width="64" height="64" rx="14" fill="url(#ay-fav)"/>
-
-  <g stroke="#071008" stroke-width="7.6" stroke-linecap="round" stroke-linejoin="round" fill="#071008">
-    <path d="M15 49.5 L32 13.5 L49 49.5" fill="none"/>
-    <path d="M20.6 37.5 L43.4 37.5" fill="none"/>
-    <circle cx="32" cy="13.5" r="6"/>
-    <circle cx="15" cy="49.5" r="5.2"/>
-    <circle cx="49" cy="49.5" r="5.2"/>
-  </g>
+  <rect width="64" height="64" rx="15" fill="url(#ay-fav)"/>
+  <path d="M12 50 H28 V33 H44 V16 H53" stroke="#071008" stroke-width="8.5"
+        stroke-linecap="round" stroke-linejoin="round" fill="none"/>
 </svg>

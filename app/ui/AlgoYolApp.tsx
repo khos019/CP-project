@@ -390,7 +390,7 @@ export function AlgoYolApp(){
    actually does — the counts come from the catalogue, and the unlock rule and
    duel format are the real mechanics. */
 const LAND={uz:{
- what:"AlgoYo‘l — o‘zbek tilidagi to‘liq algoritmlar maktabi. Tartibli yo‘l xaritasi, har bosqichda tekshiruv, haqiqiy kod tekshiruvchi va jonli duellar. Noldan ICPC darajasigacha.",
+ what:"AlgoYo‘l — o‘zbek tilidagi to‘liq algoritmlar maktabi. Tartibli yo‘l xaritasi, har bosqichda tekshiruv, haqiqiy kod tekshiruvchi va jonli duellar. Noldan olimpiada darajasigacha.",
  whyEyebrow:"Nega AlgoYo‘l",
  whyTitle:"Algoritmlarni ona tilingizda o‘rganing.",
  whyLede:"Algoritmlar bo‘yicha material ko‘p, lekin deyarli barchasi chet tilida va tarqoq. AlgoYo‘l shu ikkala muammoni yechadi: bilim o‘zbek tilida va bitta tartibli yo‘lga tizilgan.",
@@ -426,7 +426,7 @@ const LAND={uz:{
  ctaInPrimary:"O‘rganishni davom ettirish",
  ctaInSecondary:"Duel maydoni",
 },en:{
- what:"AlgoYo‘l is a complete algorithms school in Uzbek. A structured roadmap, a check at every step, a real code judge, and live duels — from zero to ICPC level.",
+ what:"AlgoYo‘l is a complete algorithms school in Uzbek. A structured roadmap, a check at every step, a real code judge, and live duels — from zero to olympiad level.",
  whyEyebrow:"Why AlgoYo‘l",
  whyTitle:"Learn algorithms in your own language.",
  whyLede:"There is no shortage of algorithms material — but almost all of it is in another language and scattered across dozens of sources. AlgoYo‘l fixes both: the knowledge is in Uzbek, and it is arranged into one ordered path.",

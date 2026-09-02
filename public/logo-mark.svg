@@ -1,12 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="AlgoYo‘l">
   <title>AlgoYo‘l</title>
   <!--
-    The mark is an "A" drawn as a three-node graph: two edges meeting at an
-    apex, a crossbar between them, and a node at each vertex. At tab size the
-    nodes just weight the corners and it reads as a plain, solid A; up close it
-    reads as what the product actually is — a traversal from one node to the
-    next along a path ("yo'l"). Colours are the app's own: the lime tile from
-    the header brandmark, ink glyph.
+    Three nodes climbing left to right along a path, the last one ringed — the
+    same figure the roadmap graph draws on the front page, so the favicon and
+    the product are one picture. Colours are the app's own: lime tile, ink glyph.
   -->
   <defs>
     <linearGradient id="ay-tile" x1="0" y1="0" x2="1" y2="1">
@@ -14,17 +11,9 @@
       <stop offset="1" stop-color="#67ce44"/>
     </linearGradient>
   </defs>
-
   <rect width="64" height="64" rx="17" fill="url(#ay-tile)"/>
-
-  <g stroke="#071008" stroke-width="6.2" stroke-linecap="round" stroke-linejoin="round" fill="#071008">
-    <!-- edges: left foot -> apex -> right foot -->
-    <path d="M17.5 47 L32 17 L46.5 47" fill="none"/>
-    <!-- crossbar, meeting each edge on its own line -->
-    <path d="M22.4 37 L41.6 37" fill="none"/>
-    <!-- nodes -->
-    <circle cx="32" cy="17" r="5.4"/>
-    <circle cx="17.5" cy="47" r="4.7"/>
-    <circle cx="46.5" cy="47" r="4.7"/>
+  <g stroke="#071008" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M14 48 H28 V34 H42 V20 H51" stroke-width="6.4"/>
   </g>
+  <circle cx="51" cy="20" r="5.4" fill="#071008"/>
 </svg>

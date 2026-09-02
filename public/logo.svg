@@ -13,15 +13,12 @@
   </defs>
 
   <rect width="64" height="64" rx="17" fill="url(#ay-lock)"/>
-  <g stroke="#071008" stroke-width="6.2" stroke-linecap="round" stroke-linejoin="round" fill="#071008">
-    <path d="M17.5 47 L32 17 L46.5 47" fill="none"/>
-    <path d="M22.4 37 L41.6 37" fill="none"/>
-    <circle cx="32" cy="17" r="5.4"/>
-    <circle cx="17.5" cy="47" r="4.7"/>
-    <circle cx="46.5" cy="47" r="4.7"/>
+  <g stroke="#071008" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M14 48 H28 V34 H42 V20 H51" stroke-width="6.4"/>
   </g>
+  <circle cx="51" cy="20" r="5.4" fill="#071008"/>
 
   <text x="82" y="42.5"
-        font-family="Inter, 'Segoe UI Variable Text', 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif"
-        font-size="30" font-weight="800" letter-spacing="-1.1" fill="#f6fff8">Algo<tspan fill="#c8ff76">Yo‘l</tspan></text>
+        font-family="'Space Grotesk', Inter, 'Segoe UI', system-ui, -apple-system, Arial, sans-serif"
+        font-size="30" font-weight="700" letter-spacing="-1.1" fill="#f6fff8">Algo<tspan fill="#c8ff76">Yo‘l</tspan></text>
 </svg>

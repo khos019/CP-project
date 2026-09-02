@@ -2,14 +2,10 @@
   <title>AlgoYo‘l</title>
   <!--
     Single-colour cut: glyph only, no tile, currentColor so it takes the colour
-    of whatever it sits in. For print, stamps, embroidery, favicons in forced
-    monochrome, and anywhere the lime tile would fight the surface.
+    of whatever it sits in.
   -->
-  <g stroke="currentColor" stroke-width="6.2" stroke-linecap="round" stroke-linejoin="round" fill="currentColor">
-    <path d="M17.5 47 L32 17 L46.5 47" fill="none"/>
-    <path d="M22.4 37 L41.6 37" fill="none"/>
-    <circle cx="32" cy="17" r="5.4"/>
-    <circle cx="17.5" cy="47" r="4.7"/>
-    <circle cx="46.5" cy="47" r="4.7"/>
+  <g stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path d="M12 50 H28 V33 H44 V17 H53" stroke-width="7"/>
   </g>
+  <circle cx="53" cy="17" r="6" fill="currentColor"/>
 </svg>

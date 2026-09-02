@@ -21,7 +21,7 @@ export type GraphNode = {
 };
 
 /* Nine roadmaps chosen by following the prerequisite chain from the first
-   thing a beginner opens to the last thing an ICPC finalist needs, so the
+   thing a beginner opens to the last thing an olympiad finalist needs, so
    drawing is the real curriculum rather than nine names that fit. */
 const SPINE = [
   "programming-basics", "foundations", "sorting", "binary-search", "data-structures",
