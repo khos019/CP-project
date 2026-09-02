@@ -44,7 +44,7 @@
   /* Matn */
   --ink:#f2f7f3;
   --muted:#8c9c93;
-  --dim:#66766d;
+  --dim:#798a80;   /* eng qorong'i fonda ham 4.6:1 — kichik yorliqlar uchun WCAG AA */
 
   /* Brend — yashil birlamchi amal, lime urgu */
   --green:#9aef4f;
@@ -2267,3 +2267,30 @@ body{font-size:var(--t-body);line-height:1.6}
  .main{padding:var(--s5) var(--s4) calc(var(--s9) + 56px)}
  .leader-row{grid-template-columns:34px 1fr auto}
 }
+
+/* Bu blok wash'larni olib tashlash uchun kech qo'shilgan edi va o'zidan
+   oldingi breakpoint'ni bekor qilib qo'ydi: mobilda hero yana ikki ustunga
+   qaytib, "Boshlash" tugmasi ekrandan chiqib ketardi. */
+@media(max-width:1024px){
+ .mastery-hero{grid-template-columns:1fr;align-items:start;gap:var(--s5)}
+ .mastery-score{min-width:0;width:100%}
+}
+.continue-btn{
+ max-width:100%;white-space:normal;text-align:left;
+ justify-content:flex-start;line-height:1.35;
+}
+
+/* Holat yorlig'i: "Hozirgi" — belgi emas, so'z. Katta harf ham, eski qattiq
+   yashil fon ham kerak emas: rang holatning o'zidan keladi. */
+.unit-status{
+ text-transform:none;letter-spacing:0;
+ background:none;padding:0;border-radius:0;
+ font-size:var(--t-xs);font-weight:500;
+}
+.unit-status.learning{color:var(--warn);background:none}
+.unit-status.current{color:var(--orange);background:none}
+.unit-status.done{color:var(--green);background:none}
+.unit-status.placed{color:var(--blue);background:none}
+.unit-status.available{color:var(--muted);background:none}
+.unit-status.locked{color:var(--dim);background:none}
+.unit-status b{font-size:var(--t-xs);font-weight:500}
