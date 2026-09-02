@@ -442,7 +442,7 @@ function Arena({
           </p>
           <h1 className="page-title">{tr(lang,"duelArena.duel_maydoni")}</h1>
         </div>
-        <span className={`timer ${remaining <= 300 ? "low" : ""}`}>{clock(remaining)}</span>
+        <span className={`timer ${remaining <= 60 ? "end" : remaining <= 300 ? "warned" : ""}`}>{clock(remaining)}</span>
       </div>
 
       {/* Said before it can be broken, and said again for as long as the duel
