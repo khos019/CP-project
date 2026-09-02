@@ -56,7 +56,7 @@ const T = {
     rating: "Reyting",
     solved: "Yechgan",
     unconfirmed: "Email tasdiqlanmagan",
-    suspended: "BLOKLANGAN",
+    suspended: "Bloklangan",
     role: "Rol",
     makeAdmin: "Admin qilish",
     removeAdmin: "Adminlikdan olish",

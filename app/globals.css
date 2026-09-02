@@ -2013,3 +2013,257 @@ body{font-size:var(--t-body);line-height:1.6}
 .matchmaking{background:var(--surface);border:1px solid var(--line)}
 .auth:before{display:none}
 .lp-cta{background:var(--surface)}
+
+/* ─── Masalalar banki ────────────────────────────────────────────────── */
+.pb-layout{display:grid;grid-template-columns:236px minmax(0,1fr);gap:var(--s6);align-items:start}
+.pb-filters{
+ position:sticky;top:calc(var(--header-h) + var(--s4));
+ display:grid;gap:var(--s5);
+}
+.pb-filters .rm-search{width:100%;min-width:0}
+.pb-group{display:grid;gap:var(--s3)}
+.pb-group h3{margin:0;font-size:var(--t-xs);font-weight:500;color:var(--dim);font-family:var(--font-sans);letter-spacing:0}
+.pb-topics{display:grid;gap:1px}
+.pb-topics button{
+ text-align:left;background:none;border:0;border-radius:var(--r-sm);
+ padding:6px 9px;margin:0 -9px;
+ font-size:var(--t-sm);color:var(--muted);
+ transition:background var(--dur-fast) var(--ease),color var(--dur-fast) var(--ease);
+}
+.pb-topics button:hover{background:var(--surface-2);color:var(--ink)}
+.pb-topics button.active{color:var(--green);background:var(--green-wash)}
+.pb-clear{justify-self:start}
+
+/* Jadval: kartochka grid emas — ro'yxat skan qilinadi, o'qilmaydi. */
+.pb-table{
+ width:100%;border-collapse:collapse;
+ background:var(--surface);border:1px solid var(--line);
+ border-radius:var(--r-lg);overflow:hidden;
+}
+.pb-table th{
+ text-align:left;padding:11px var(--s4);
+ font-size:var(--t-xs);font-weight:500;color:var(--dim);
+ border-bottom:1px solid var(--line);background:var(--surface-2);
+}
+.pb-th-status{width:44px}
+.pb-th-rating{width:88px}
+.pb-th-topic{width:130px}
+.pb-table td{padding:11px var(--s4);border-bottom:1px solid var(--line-faint);vertical-align:middle}
+.pb-table tr:last-child td{border-bottom:0}
+.pb-table tbody tr{cursor:pointer;transition:background var(--dur-fast) var(--ease)}
+.pb-table tbody tr:hover{background:var(--surface-2)}
+.pb-table tbody tr:focus-visible{outline:2px solid var(--green);outline-offset:-2px}
+.pb-id{margin-right:var(--s3);font-size:var(--t-xs);color:var(--dim)}
+.pb-name{font-size:var(--t-sm);color:var(--ink);margin-right:var(--s3)}
+.pb-rating{font-size:var(--t-sm);font-weight:600;font-variant-numeric:tabular-nums}
+.pb-table tr.solved .pb-name{color:var(--muted)}
+
+@media(max-width:1024px){
+ .pb-layout{grid-template-columns:1fr}
+ .pb-filters{position:static;grid-template-columns:1fr;gap:var(--s4)}
+ .pb-topics{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));display:grid}
+}
+@media(max-width:640px){
+ /* Jadval kartochkaga aylanadi — gorizontal scroll hech qayerda bo'lmasin. */
+ .pb-table,.pb-table tbody,.pb-table tr,.pb-table td{display:block;width:100%}
+ .pb-table thead{display:none}
+ .pb-table{border:0;background:none}
+ .pb-table tbody tr{
+  position:relative;background:var(--surface);border:1px solid var(--line);
+  border-radius:var(--r-md);margin-bottom:var(--s2);padding:var(--s3) var(--s4);
+ }
+ .pb-table td{border:0;padding:2px 0}
+ .pb-table td:first-child{position:absolute;right:var(--s4);top:var(--s3);width:auto}
+ .pb-name{display:block;margin:0 0 4px}
+ .pb-rating{display:inline-block;margin-right:var(--s3)}
+ .pb-topic{display:inline-block}
+}
+
+/* ─── Tugmalar ───────────────────────────────────────────────────────────
+   To'rt variant, bitta o'lcham tizimi. Solid — sahifadagi yagona birlamchi
+   amal. Ghost va secondary ikkilamchi. Danger qaytarib bo'lmaydigan amal. */
+.primary,.secondary,.ghost,.danger,.pill{
+ display:inline-flex;align-items:center;justify-content:center;gap:var(--s2);
+ min-height:38px;padding:9px var(--s4);
+ border-radius:var(--r-md);border:1px solid transparent;
+ font-size:var(--t-sm);font-weight:600;line-height:1.2;
+ transition:background var(--dur-fast) var(--ease),border-color var(--dur-fast) var(--ease),
+            color var(--dur-fast) var(--ease),opacity var(--dur-fast) var(--ease);
+}
+.primary{background:var(--green);border-color:var(--green);color:#0a130d;box-shadow:none}
+.primary:hover:not(:disabled){background:var(--lime);border-color:var(--lime);transform:none}
+.secondary,.pill{background:var(--surface-2);border-color:var(--line);color:var(--ink)}
+.secondary:hover:not(:disabled),.pill:hover:not(:disabled){background:var(--surface-3);border-color:var(--line-strong)}
+.ghost{
+ width:auto;margin-top:0;
+ background:transparent;border-color:var(--line);color:var(--muted);
+ padding:9px var(--s4);border-radius:var(--r-md);font-size:var(--t-sm);
+}
+.ghost:hover:not(:disabled){color:var(--ink);border-color:var(--line-strong);background:var(--surface-2)}
+.danger{background:transparent;border-color:rgba(255,107,107,.4);color:var(--bad)}
+.danger:hover:not(:disabled){background:rgba(255,107,107,.1);border-color:var(--bad)}
+.primary:disabled,.secondary:disabled,.ghost:disabled,.danger:disabled{opacity:.45;cursor:not-allowed}
+.sr-only{
+ position:absolute;width:1px;height:1px;padding:0;margin:-1px;
+ overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;
+}
+
+/* ─── Masala sahifasi ────────────────────────────────────────────────── */
+.workspace{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.1fr);gap:var(--s5);align-items:start}
+.statement{padding:var(--s6);line-height:1.7}
+.statement h2{margin:0 0 var(--s4);font-size:var(--t-h2)}
+.statement h3{margin:var(--s5) 0 var(--s2);font-size:var(--t-h3)}
+.statement p{max-width:68ch;margin:0 0 var(--s3);color:var(--muted)}
+.statement .story{
+ color:var(--ink);border-left:3px solid var(--line-strong);
+ padding-left:var(--s4);font-size:var(--t-sm);
+}
+.sample{
+ background:var(--inset);border:1px solid var(--line);
+ border-radius:var(--r-md);padding:var(--s4);margin-bottom:var(--s3);
+}
+.sample b{display:block;font-size:var(--t-xs);color:var(--dim);margin-bottom:5px;font-weight:500}
+.sample pre{margin:0;font-family:var(--font-mono);font-size:var(--t-sm);color:var(--ink);white-space:pre-wrap}
+.rating-tag{font-family:var(--font-mono);font-weight:600}
+.tag-solved{background:var(--green-wash);color:var(--green)}
+.editor-escape{margin-right:auto;font-size:var(--t-xs)}
+
+/* Judge natijasi modal emas — editor ostidagi panelda, o'z joyida. */
+.verdict{
+ font-family:var(--font-mono);font-size:var(--t-sm);
+ padding:var(--s3) var(--s4);border-radius:var(--r-md);
+ background:var(--inset);border:1px solid var(--line);color:var(--muted);
+}
+.verdict.ok{border-color:var(--green);color:var(--green);background:var(--green-wash)}
+.verdict.bad{border-color:var(--bad);color:var(--bad);background:rgba(255,107,107,.08)}
+.verdict.warned{border-color:var(--warn);color:var(--warn);background:rgba(255,196,87,.08)}
+
+/* ─── Duel zonasi: zich va issiq ─────────────────────────────────────── */
+[data-zone="compete"] .page-title{color:var(--ink)}
+.matchmaking{
+ max-width:640px;margin:var(--s8) auto;padding:var(--s8) var(--s6);
+ text-align:center;border-radius:var(--r-xl);
+}
+.search-orb{
+ width:76px;height:76px;margin:0 auto var(--s5);border-radius:var(--r-xl);
+ background:var(--orange-wash);color:var(--orange);
+ display:grid;place-items:center;font-size:30px;
+}
+.search-orb.pulse{animation:orb 1.4s var(--ease) infinite}
+@keyframes orb{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.06);opacity:.7}}
+.timer{
+ font-family:var(--font-mono);font-variant-numeric:tabular-nums;
+ font-size:var(--t-h1);font-weight:600;letter-spacing:-.02em;color:var(--ink);
+}
+.timer.warned{color:var(--orange)}
+.timer.end{color:var(--bad);animation:orb 1s var(--ease) infinite}
+.elo-delta{font-family:var(--font-display);font-weight:600;font-size:var(--t-h2)}
+.elo-delta.up,.win{color:var(--green)}
+.elo-delta.down,.loss{color:var(--bad)}
+.duel-stats,.duel-top{display:flex;align-items:center;gap:var(--s5);flex-wrap:wrap}
+.match-actions{display:flex;gap:var(--s3);justify-content:center;flex-wrap:wrap;margin-top:var(--s5)}
+
+/* ─── Reyting ────────────────────────────────────────────────────────── */
+.leader-row{
+ display:grid;grid-template-columns:44px 1fr auto auto;gap:var(--s4);align-items:center;
+ padding:11px var(--s5);border-bottom:1px solid var(--line-faint);
+ background:none;text-align:left;width:100%;border-left:0;border-right:0;border-top:0;
+ transition:background var(--dur-fast) var(--ease);
+}
+.leader-row:hover{background:var(--surface-2)}
+.leader-row .rank{font-family:var(--font-mono);color:var(--dim);font-size:var(--t-sm)}
+/* Siz — amber chegara bilan ajratilasiz, shunda o'zingizni darhol topasiz. */
+.leader-row.me{
+ background:var(--orange-wash);border-left:2px solid var(--orange);
+ position:sticky;top:calc(var(--header-h));z-index:2;
+}
+.leaderboard{border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;background:var(--surface)}
+.leader-tools{display:flex;gap:var(--s3);flex-wrap:wrap;margin-bottom:var(--s4)}
+.leader-modes{display:flex;gap:var(--s2)}
+
+/* ─── Profil ─────────────────────────────────────────────────────────── */
+.pf-header,.profile-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg)}
+.pf-bar-track{height:6px;border-radius:var(--r-full);background:var(--inset);overflow:hidden}
+.pf-bar-track>*{background:var(--green)}
+.pf-stat b{font-family:var(--font-display);font-weight:600;color:var(--ink)}
+
+/* ─── Do'kon ─────────────────────────────────────────────────────────── */
+.gift-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:var(--s4)}
+.gift-card{
+ background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);
+ padding:var(--s5);display:grid;gap:var(--s3);
+}
+.gift-card:hover{border-color:var(--line-strong)}
+.coin-balance,.coin-chip{
+ display:inline-flex;align-items:center;gap:6px;
+ background:var(--orange-wash);color:var(--orange);
+ padding:5px 11px;border-radius:var(--r-full);
+ font-size:var(--t-sm);font-weight:600;
+}
+
+/* ─── Kompilyator ────────────────────────────────────────────────────── */
+.play-grid{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:var(--s4);align-items:start}
+.play-io{
+ background:var(--inset);border:1px solid var(--line);border-radius:var(--r-md);
+ padding:var(--s4);font-family:var(--font-mono);font-size:var(--t-sm);
+}
+
+/* ─── Kirish / ro'yxatdan o'tish ─────────────────────────────────────── */
+.auth{
+ display:grid;grid-template-columns:minmax(0,400px) minmax(0,1fr);
+ gap:var(--s8);align-items:center;padding:var(--s8) 0;
+}
+.field{display:grid;gap:6px;margin-bottom:var(--s4)}
+.field label{font-size:var(--t-xs);color:var(--muted)}
+.field input,.pwd-wrap input{
+ background:var(--inset);border:1px solid var(--line);border-radius:var(--r-md);
+ padding:11px var(--s4);color:var(--ink);font-size:var(--t-sm);width:100%;
+}
+.field-error{font-size:var(--t-xs);color:var(--bad)}
+.auth-divider{display:flex;align-items:center;gap:var(--s3);color:var(--dim);font-size:var(--t-xs);margin:var(--s4) 0}
+.auth-divider:before,.auth-divider:after{content:"";flex:1;height:1px;background:var(--line)}
+
+/* ─── Xabarlar ───────────────────────────────────────────────────────── */
+.msg-layout{display:grid;grid-template-columns:280px minmax(0,1fr);gap:var(--s4);align-items:start}
+.msg-bubble{border-radius:var(--r-md);padding:9px var(--s4);font-size:var(--t-sm);line-height:1.5}
+.msg-bubble.mine{background:var(--green-wash);color:var(--ink)}
+.msg-bubble.theirs{background:var(--surface-2);color:var(--ink)}
+.msg-badge{
+ position:absolute;top:-3px;right:-3px;min-width:16px;height:16px;padding:0 4px;
+ border-radius:var(--r-full);background:var(--orange);color:#0a130d;
+ font-size:10px;font-weight:700;display:grid;place-items:center;
+}
+
+/* ─── Umumiy panel ───────────────────────────────────────────────────── */
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:none}
+.notice{
+ border-radius:var(--r-md);padding:var(--s3) var(--s4);font-size:var(--t-sm);
+ background:var(--surface-2);border:1px solid var(--line);color:var(--muted);
+}
+.notice-error{border-color:rgba(255,107,107,.4);color:var(--bad);background:rgba(255,107,107,.08)}
+.notice-info{border-color:var(--line-strong)}
+.tag{
+ font-size:var(--t-xs);color:var(--muted);
+ background:var(--surface-3);padding:4px 10px;border-radius:var(--r-full);
+}
+.screen-state{
+ display:grid;justify-items:center;gap:var(--s3);text-align:center;
+ padding:var(--s9) var(--s5);max-width:560px;margin:0 auto;
+}
+.screen-state-ic{font-size:28px}
+.spinner{
+ width:22px;height:22px;border-radius:50%;
+ border:2px solid var(--line);border-top-color:var(--green);
+ animation:spin .7s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.main{max-width:var(--container);margin:0 auto;padding:var(--s6) var(--s5) var(--s9)}
+
+@media(max-width:1024px){
+ .workspace,.play-grid,.auth,.msg-layout{grid-template-columns:1fr}
+}
+@media(max-width:640px){
+ .statement{padding:var(--s5)}
+ .main{padding:var(--s5) var(--s4) calc(var(--s9) + 56px)}
+ .leader-row{grid-template-columns:34px 1fr auto}
+}

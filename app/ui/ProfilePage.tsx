@@ -133,7 +133,7 @@ const T = {
 };
 
 const roleLabel = (role: Role, lang: Lang) =>
-  role === "owner" ? (lang === "uz" ? "EGA" : "OWNER") : role === "admin" ? "ADMIN" : lang === "uz" ? "O‘QUVCHI" : "LEARNER";
+  role === "owner" ? (lang === "uz" ? "EGA" : "OWNER") : role === "admin" ? "ADMIN" : lang === "uz" ? "O‘quvchi" : "Learner";
 
 const initialsOf = (name: string) =>
   name

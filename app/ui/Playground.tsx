@@ -36,7 +36,7 @@ print(a + b)
 const T = {
   uz: {
     title: "Kompilyator", sub: "Kodni yozing, o‘z kirishingizni bering va natijani ko‘ring.",
-    eyebrow: "PLAYGROUND", run: "Ishga tushirish", running: "Ishlamoqda…",
+    eyebrow: "Kompilyator", run: "Ishga tushirish", running: "Ishlamoqda…",
     input: "Kirish (stdin)", output: "Chiqish (stdout)", errors: "Xatolar",
     empty: "Hali ishga tushirilmadi.", reset: "Boshlang‘ich kod",
     time: "vaqt", mem: "xotira", note: "Bu tekshiruvchi emas — verdikt qo‘yilmaydi, faqat dastur chiqishi ko‘rsatiladi.",
@@ -44,7 +44,7 @@ const T = {
   },
   en: {
     title: "Compiler", sub: "Write code, feed it your own input, see what it prints.",
-    eyebrow: "PLAYGROUND", run: "Run", running: "Running…",
+    eyebrow: "Kompilyator", run: "Run", running: "Running…",
     input: "Input (stdin)", output: "Output (stdout)", errors: "Errors",
     empty: "Nothing run yet.", reset: "Reset code",
     time: "time", mem: "memory", note: "This is not the judge — no verdict is given, only what your program printed.",

@@ -54,13 +54,13 @@ const nameOf = (player: { is_bot: boolean; display_name: string; username: strin
 
 const T = {
   uz: {
-    eyebrow: "REYTINGLI MATCHMAKING", title: "Duel uchun raqib toping",
+    eyebrow: "Reytingli matchmaking", title: "Duel uchun raqib toping",
     sub: "Tizim sizga reytingi yaqin bo‘lgan raqibni qidiradi.",
     ready: "Bellashishga tayyormisiz?", searching: "Raqib qidirilmoqda…",
     find: "Raqib qidirish", cancel: "Qidiruvni bekor qilish", needAuth: "Kirish talab qilinadi",
     range: "Reyting oralig‘i", online: "Mavjud raqiblar", elapsed: "Vaqt",
     expanding: "Raqib topilmasa, oraliq kengayadi.", botSoon: "Odam topilmadi — AI raqib tayyorlanmoqda…",
-    challenge: "DUEL CHAQIRIG‘I", accept: "Qabul qilish", decline: "Rad etish",
+    challenge: "Duel chaqirig‘i", accept: "Qabul qilish", decline: "Rad etish",
     tooLate: "Kech qoldingiz — raqibni boshqa o‘yinchi oldi.", expired: "Chaqiriq muddati tugadi.",
     vs: "qarshi", you: "Siz", bot: "AI raqib", points: "ball", locked: "Qulflangan", open: "Ochiq",
     submit: "Yuborish", judging: "Tekshirilmoqda…", forfeit: "Taslim bo‘lish",
@@ -85,13 +85,13 @@ const T = {
     lostByLeaving: "Duel tabini tashlab ketganingiz uchun mag‘lub bo‘ldingiz.",
   },
   en: {
-    eyebrow: "RATED MATCHMAKING", title: "Find a duel opponent",
+    eyebrow: "Rated matchmaking", title: "Find a duel opponent",
     sub: "We will match you with a player near your rating.",
     ready: "Ready to compete?", searching: "Searching for an opponent…",
     find: "Search for competitor", cancel: "Cancel search", needAuth: "Sign in required",
     range: "Rating range", online: "Available opponents", elapsed: "Elapsed",
     expanding: "The range widens if nobody suitable is found.", botSoon: "No human found — preparing an AI opponent…",
-    challenge: "DUEL CHALLENGE", accept: "Accept", decline: "Decline",
+    challenge: "Duel challenge", accept: "Accept", decline: "Decline",
     tooLate: "Too slow — another player took this opponent.", expired: "The challenge expired.",
     vs: "vs", you: "You", bot: "AI opponent", points: "points", locked: "Locked", open: "Open",
     submit: "Submit", judging: "Judging…", forfeit: "Forfeit",
@@ -437,7 +437,7 @@ function Arena({
       <div className="page-head">
         <div>
           <p className="eyebrow" style={{ color: "#637068" }}>
-            {duel.mode === "bot" ? "AI DUEL" : "RATED DUEL"} · #{duel.id.slice(0, 8)}
+            {duel.mode === "bot" ? "AI duel" : "Reytingli duel"} · #{duel.id.slice(0, 8)}
           </p>
           <h1 className="page-title">{lang === "uz" ? "Duel maydoni" : "Duel arena"}</h1>
         </div>
@@ -752,7 +752,7 @@ function ResultScreen({
 
   return (
     <div className="duel-result panel">
-      <p className="eyebrow" style={{ color: "#637068" }}>{result.mode === "bot" ? "AI DUEL" : "RATED DUEL"}</p>
+      <p className="eyebrow" style={{ color: "#637068" }}>{result.mode === "bot" ? "AI duel" : "Reytingli duel"}</p>
       <h2>{result.outcome === "win" ? t.won : result.outcome === "loss" ? t.lost : t.draw}</h2>
       <div className="result-score">{me?.score ?? 0} : {them?.score ?? 0}</div>
       {note && <p className="notice notice-error result-why">{note}</p>}

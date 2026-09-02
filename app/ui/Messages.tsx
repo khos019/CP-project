@@ -79,7 +79,7 @@ const T = {
     asSite: "Send as the site (AlgoYo‘l)",
     asSiteHint: "This message carries the AlgoYo‘l mark instead of your name.",
     site: "AlgoYo‘l",
-    official: "OFFICIAL",
+    official: "Rasmiy",
     openProfile: "Open account",
     block: "Block",
     unblock: "Unblock",

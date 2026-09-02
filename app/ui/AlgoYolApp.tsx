@@ -83,7 +83,7 @@ function readAuthReturn():AuthReturn{
  return null;
 }
 
-const roleLabel=(role:Role,lang:Lang)=>role==="owner"?(lang==="uz"?"EGA (OWNER)":"OWNER"):role==="admin"?"ADMIN":(lang==="uz"?"FOYDALANUVCHI":"USER");
+const roleLabel=(role:Role,lang:Lang)=>role==="owner"?(lang==="uz"?"EGA (OWNER)":"OWNER"):role==="admin"?"ADMIN":(lang==="uz"?"Foydalanuvchi":"USER");
 
 export function AlgoYolApp(){
  const [lang,setLang]=useState<Lang>("uz"),[view,setView]=useState<View>("home"),[filter,setFilter]=useState("all"),[code,setCode]=useState(cpp),[codeLang,setCodeLang]=useState<"cpp20"|"python3">("cpp20"),[verdict,setVerdict]=useState(""),[selectedRoadmap,setSelectedRoadmap]=useState("foundations"),[selectedUnit,setSelectedUnit]=useState<string|null>(null),[activeProblem,setActiveProblem]=useState<BankProblem>(problems[0]); const t=copy[lang];
@@ -372,7 +372,7 @@ export function AlgoYolApp(){
   <button className="po-close" aria-label={lang==="uz"?"Yopish":"Dismiss"}
    onClick={()=>{writeScoped("algoyol-placement-dismissed","1");setOfferPlacement(false)}}>✕</button>
  </div>}
- <main className="main">{view==="home"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed&&profile?<><Dashboard lang={lang} profile={profile} go={go} openRoadmap={openRoadmap} onSelectProblem={p=>{setActiveProblem(p);setVerdict("");go("problem")}}/></>:<Home lang={lang} go={go} openRoadmap={openRoadmap}/>)} {view==="roadmaps"&&<RoadmapHub lang={lang} role={role} openRoadmap={openRoadmap}/>} {view==="roadmap"&&<RoadmapExperience slug={selectedRoadmap} lang={lang} role={role} unitId={selectedUnit} onOpenUnit={id=>pushScreen({unit:id})} onBack={back} onPractice={()=>pushScreen({view:"problem"})} onOpenProblem={(id:string)=>{const p=bankProblems.find(x=>x.id===id);if(p){setActiveProblem(p);setVerdict("");pushScreen({view:"problem"})}}}/>} {view==="problems"&&<Problems lang={lang} filter={filter} setFilter={setFilter} items={filtered} go={go} onSelect={p=>{setActiveProblem(p);setCode(p.judge==="max-subarray"?duelProblems[1].cpp:p.judge==="coin-change"?duelProblems[2].cpp:cpp);setVerdict("");go("problem")}}/>} {view==="problem"&&<Problem lang={lang} item={activeProblem} code={code} setCode={setCode} codeLang={codeLang} setCodeLang={setCodeLang} verdict={verdict} submit={judge} onBack={back}/>} {view==="duel"&&<DuelMatchmaking lang={lang} signed={signed} authLoading={auth.status==="loading"} needAuth={()=>go("auth")}/>} {view==="leaderboard"&&<Leaderboard lang={lang} me={profile} signed={signed} onOpenPerson={openPerson}/>} {view==="profile"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<ProfilePage lang={lang} profile={profile} onProfileChange={next=>setAuth({status:"authenticated",profile:next})} signOut={signOut} goAdmin={()=>go("admin")} goStats={()=>go("stats")} goUsers={()=>go("users")} goMessages={()=>go("messages")} isOwner={can(role,"user.manage_roles")} goRoadmaps={()=>go("roadmaps")} openRoadmap={openRoadmap} isStaff={can(role,"content.view_management")} goFriends={()=>go("friends")} goSubmissions={()=>go("submissions")}/>:<SignInRequired lang={lang} go={go} what="profile"/>)} {view==="auth"&&<AuthPage lang={lang} notice={authNotice} onAuthenticated={(token,remember,isNew,refreshToken)=>{void enterSession(token,remember,isNew,refreshToken)}}/>} {view==="placement"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed?<Placement lang={lang} signed={signed} onFinish={()=>go("roadmaps")} onRoadmap={openRoadmap}/>:<SignInRequired lang={lang} go={go} what="placement"/>)} {view==="admin"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<Admin lang={lang} profile={profile}/>:<SignInRequired lang={lang} go={go} what="admin"/>)} {view==="person"&&(person?<PublicProfile key={person} lang={lang} username={person} meId={profile?.id||null} signedIn={signed} onBack={back} onMessage={id=>{setMessageWith(id);go("messages")}} onMyProfile={()=>go("profile")} onSignIn={()=>go("auth")} onOpenSubmissions={h=>pushScreen({view:"person-submissions",person:h})}/>:<ScreenLoading lang={lang}/>)} {view==="shop"&&<Shop lang={lang} signed={signed} authLoading={auth.status==="loading"}/>} {view==="playground"&&<Playground lang={lang}/>} {view==="friends"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed?<FriendsScreen lang={lang} onBack={()=>go("profile")} onOpenPerson={openPerson}/>:<SignInRequired lang={lang} go={go} what="profile"/>)} {view==="submissions"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<SubmissionsScreen lang={lang} userId={profile.id} who={profile.display_name||profile.username} isMe signedIn onBack={()=>go("profile")}/>:<SignInRequired lang={lang} go={go} what="profile"/>)} {view==="person-submissions"&&(person?<PersonSubmissions key={person} lang={lang} handle={person} meId={profile?.id||null} signedIn={signed} onBack={back}/>:<ScreenLoading lang={lang}/>)} {view==="messages"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<Messages lang={lang} me={profile} openWith={messageWith} onOpened={()=>setMessageWith(null)} onUnreadChange={()=>{void refreshUnread()}} onOpenProfile={openPerson}/>:<SignInRequired lang={lang} go={go} what="messages"/>)} {view==="users"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:!profile?<SignInRequired lang={lang} go={go} what="users"/>:can(role,"user.manage_roles")?<UsersAdmin lang={lang} meId={profile.id} goProfile={()=>go("profile")} onMessage={id=>{setMessageWith(id);go("messages")}} onOpenProfile={openPerson} initialDay={usersDay} onDayConsumed={()=>setUsersDay(null)}/>:<div className="panel"><div className="notice notice-error">{lang==="uz"?"Bu sahifa faqat ega (owner) roli uchun.":"This page is for the owner role only."}</div></div>)} {view==="stats"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:!profile?<SignInRequired lang={lang} go={go} what="stats"/>:can(role,"stats.view")?<OwnerStats lang={lang} goProfile={()=>go("profile")} onPickDay={day=>{setUsersDay(day);go("users")}}/>:<div className="panel"><div className="notice notice-error">{lang==="uz"?"Bu sahifa faqat ega (owner) roli uchun.":"This page is for the owner role only."}</div></div>)}</main>
+ <main className="main">{view==="home"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed&&profile?<><Dashboard lang={lang} profile={profile} go={go} openRoadmap={openRoadmap} onSelectProblem={p=>{setActiveProblem(p);setVerdict("");go("problem")}}/></>:<Home lang={lang} go={go} openRoadmap={openRoadmap}/>)} {view==="roadmaps"&&<RoadmapHub lang={lang} role={role} openRoadmap={openRoadmap}/>} {view==="roadmap"&&<RoadmapExperience slug={selectedRoadmap} lang={lang} role={role} unitId={selectedUnit} onOpenUnit={id=>pushScreen({unit:id})} onBack={back} onPractice={()=>pushScreen({view:"problem"})} onOpenProblem={(id:string)=>{const p=bankProblems.find(x=>x.id===id);if(p){setActiveProblem(p);setVerdict("");pushScreen({view:"problem"})}}}/>} {view==="problems"&&<Problems lang={lang} filter={filter} setFilter={setFilter} items={filtered} go={go} onSelect={p=>{setActiveProblem(p);setCode(p.judge==="max-subarray"?duelProblems[1].cpp:p.judge==="coin-change"?duelProblems[2].cpp:cpp);setVerdict("");go("problem")}}/>} {view==="problem"&&<Problem lang={lang} item={activeProblem} code={code} setCode={setCode} codeLang={codeLang} setCodeLang={setCodeLang} verdict={verdict} submit={judge} onBack={back} go={go}/>} {view==="duel"&&<DuelMatchmaking lang={lang} signed={signed} authLoading={auth.status==="loading"} needAuth={()=>go("auth")}/>} {view==="leaderboard"&&<Leaderboard lang={lang} me={profile} signed={signed} onOpenPerson={openPerson}/>} {view==="profile"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<ProfilePage lang={lang} profile={profile} onProfileChange={next=>setAuth({status:"authenticated",profile:next})} signOut={signOut} goAdmin={()=>go("admin")} goStats={()=>go("stats")} goUsers={()=>go("users")} goMessages={()=>go("messages")} isOwner={can(role,"user.manage_roles")} goRoadmaps={()=>go("roadmaps")} openRoadmap={openRoadmap} isStaff={can(role,"content.view_management")} goFriends={()=>go("friends")} goSubmissions={()=>go("submissions")}/>:<SignInRequired lang={lang} go={go} what="profile"/>)} {view==="auth"&&<AuthPage lang={lang} notice={authNotice} onAuthenticated={(token,remember,isNew,refreshToken)=>{void enterSession(token,remember,isNew,refreshToken)}}/>} {view==="placement"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed?<Placement lang={lang} signed={signed} onFinish={()=>go("roadmaps")} onRoadmap={openRoadmap}/>:<SignInRequired lang={lang} go={go} what="placement"/>)} {view==="admin"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<Admin lang={lang} profile={profile}/>:<SignInRequired lang={lang} go={go} what="admin"/>)} {view==="person"&&(person?<PublicProfile key={person} lang={lang} username={person} meId={profile?.id||null} signedIn={signed} onBack={back} onMessage={id=>{setMessageWith(id);go("messages")}} onMyProfile={()=>go("profile")} onSignIn={()=>go("auth")} onOpenSubmissions={h=>pushScreen({view:"person-submissions",person:h})}/>:<ScreenLoading lang={lang}/>)} {view==="shop"&&<Shop lang={lang} signed={signed} authLoading={auth.status==="loading"}/>} {view==="playground"&&<Playground lang={lang}/>} {view==="friends"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed?<FriendsScreen lang={lang} onBack={()=>go("profile")} onOpenPerson={openPerson}/>:<SignInRequired lang={lang} go={go} what="profile"/>)} {view==="submissions"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<SubmissionsScreen lang={lang} userId={profile.id} who={profile.display_name||profile.username} isMe signedIn onBack={()=>go("profile")}/>:<SignInRequired lang={lang} go={go} what="profile"/>)} {view==="person-submissions"&&(person?<PersonSubmissions key={person} lang={lang} handle={person} meId={profile?.id||null} signedIn={signed} onBack={back}/>:<ScreenLoading lang={lang}/>)} {view==="messages"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<Messages lang={lang} me={profile} openWith={messageWith} onOpened={()=>setMessageWith(null)} onUnreadChange={()=>{void refreshUnread()}} onOpenProfile={openPerson}/>:<SignInRequired lang={lang} go={go} what="messages"/>)} {view==="users"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:!profile?<SignInRequired lang={lang} go={go} what="users"/>:can(role,"user.manage_roles")?<UsersAdmin lang={lang} meId={profile.id} goProfile={()=>go("profile")} onMessage={id=>{setMessageWith(id);go("messages")}} onOpenProfile={openPerson} initialDay={usersDay} onDayConsumed={()=>setUsersDay(null)}/>:<div className="panel"><div className="notice notice-error">{lang==="uz"?"Bu sahifa faqat ega (owner) roli uchun.":"This page is for the owner role only."}</div></div>)} {view==="stats"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:!profile?<SignInRequired lang={lang} go={go} what="stats"/>:can(role,"stats.view")?<OwnerStats lang={lang} goProfile={()=>go("profile")} onPickDay={day=>{setUsersDay(day);go("users")}}/>:<div className="panel"><div className="notice notice-error">{lang==="uz"?"Bu sahifa faqat ega (owner) roli uchun.":"This page is for the owner role only."}</div></div>)}</main>
  <MobileTabBar lang={lang} view={view} go={v=>go(v as View)} /><SiteFooter lang={lang} go={v=>go(v as View)} />
  {/* Above every screen: a challenge can arrive while the learner is halfway
      through a lesson, and five seconds is not long enough to go looking. */}
@@ -670,20 +670,139 @@ function ProblemList({lang,items,go,onSelect}:{lang:Lang;items:BankProblem[];go:
  })}</div>;
 }
 
+/* The problem bank. Two hundred rows are scanned, not read, so this is a table
+   with a filter rail beside it rather than a grid of cards — cards spend most
+   of their area on padding, which is the one thing a scanner does not need.
+   The filters live in the address bar, so a filtered view is a link somebody
+   can send to a friend. */
 function Problems({lang,filter,setFilter,items,go,onSelect}:{lang:Lang,filter:string,setFilter:(x:string)=>void,items:BankProblem[],go:(v:View)=>void,onSelect:(p:BankProblem)=>void}){
- const [topic,setTopic]=useState("all");
+ const uz=lang==="uz";
+ const [topic,setTopic]=useState("all"),[query,setQuery]=useState(""),[solvedOnly,setSolvedOnly]=useState<"all"|"solved"|"unsolved">("all");
+ const [mastery,setMastery]=useState(()=>({evidence:{} as Record<string,number>}));
+ useEffect(()=>{
+  const read=()=>setMastery(loadMastery());
+  read();window.addEventListener("algoyol-progress",read);
+  return()=>window.removeEventListener("algoyol-progress",read);
+ },[]);
+
+ /* Read the filters out of the URL once, then write every change back. The
+    query string is the state: reloading a filtered list must not silently
+    reset it, and neither should sharing it. */
+ useEffect(()=>{
+  /* Deferred to a microtask rather than run in the effect body: this is the
+     one place the URL is allowed to overwrite state, and doing it inline makes
+     the very first render a discarded one. */
+  void Promise.resolve().then(()=>{
+   const q=new URLSearchParams(window.location.search);
+   const t=q.get("topic"),d=q.get("difficulty"),st=q.get("status"),k=q.get("q");
+   if(t)setTopic(t); if(d)setFilter(d); if(k)setQuery(k);
+   if(st==="solved"||st==="unsolved")setSolvedOnly(st);
+  });
+ },[]);// eslint-disable-line react-hooks/exhaustive-deps
+ useEffect(()=>{
+  const q=new URLSearchParams();
+  if(topic!=="all")q.set("topic",topic);
+  if(filter!=="all")q.set("difficulty",filter);
+  if(solvedOnly!=="all")q.set("status",solvedOnly);
+  if(query.trim())q.set("q",query.trim());
+  const search=q.toString();
+  window.history.replaceState(window.history.state,"",`/problems${search?`?${search}`:""}`);
+ },[topic,filter,solvedOnly,query]);
+
  const topics=useMemo(()=>[...new Set(problems.map(p=>p.topic))],[]);
- const shown=topic==="all"?items:items.filter(p=>p.topic===topic);
- const topicName=(slug:string)=>{const r=roadmapCards.find(x=>x.slug===slug);return r?(lang==="uz"?r.uz:r.en):slug};
- return <><div className="page-head"><div><p className="eyebrow" style={{color:"#637068"}}>{lang==="uz"?"Mashq maydoni":"Practice arena"}</p><h1 className="page-title">{lang==="uz"?"Masalalar banki":"Problem library"}</h1><p className="muted">{lang==="uz"?"Har bir yechim mavzu mahoratiga o‘tadi.":"Every solve feeds your topic mastery."}</p></div><span className="tag">{problems.length} {lang==="uz"?"masala":"problems"}</span></div><div className="filters">{["all","easy","medium","hard"].map(f=><button className={filter===f?"active":""} onClick={()=>setFilter(f)} key={f}>{f==="all"?(lang==="uz"?"Barchasi":"All"):f}</button>)}</div><div className="filters" style={{marginTop:8}}><button className={topic==="all"?"active":""} onClick={()=>setTopic("all")}>{lang==="uz"?"Barcha mavzu":"All topics"}</button>{topics.map(tp=><button key={tp} className={topic===tp?"active":""} onClick={()=>setTopic(tp)}>{topicName(tp)}</button>)}</div><ProblemList lang={lang} items={shown} go={go} onSelect={onSelect}/></>}
-function Problem({lang,item,code,setCode,codeLang,setCodeLang,verdict,submit,onBack}:{lang:Lang;item:BankProblem;code:string;setCode:(x:string)=>void;codeLang:"cpp20"|"python3";setCodeLang:(x:"cpp20"|"python3")=>void;verdict:string;submit:()=>void;onBack:()=>void}){
+ const topicName=(slug:string)=>{const r=roadmapCards.find(x=>x.slug===slug);return r?(uz?r.uz:r.en):slug};
+ const isSolved=(p:BankProblem)=>mastery.evidence[`problem:${p.id}`]!==undefined;
+ const shown=useMemo(()=>{
+  const k=query.trim().toLowerCase();
+  return items.filter(p=>
+   (topic==="all"||p.topic===topic)&&
+   (solvedOnly==="all"||(solvedOnly==="solved")===isSolved(p))&&
+   (!k||`${p.id} ${p.uz} ${p.en} ${p.tag}`.toLowerCase().includes(k)));
+ },[items,topic,solvedOnly,query,mastery]);// eslint-disable-line react-hooks/exhaustive-deps
+
+ const clear=()=>{setTopic("all");setFilter("all");setSolvedOnly("all");setQuery("")};
+ const dirty=topic!=="all"||filter!=="all"||solvedOnly!=="all"||!!query.trim();
+
+ return <>
+  <div className="page-head">
+   <div>
+    <h1 className="page-title">{uz?"Masalalar":"Problems"}</h1>
+    <p className="muted">{uz?"Har bir yechim mavzu mahoratiga o‘tadi.":"Every solve feeds your topic mastery."}</p>
+   </div>
+   <span className="tag">{shown.length} / {problems.length}</span>
+  </div>
+
+  <div className="pb-layout">
+   <aside className="pb-filters">
+    <input className="rm-search" value={query} onChange={e=>setQuery(e.target.value)}
+     placeholder={uz?"Masala qidirish…":"Search problems…"} aria-label={uz?"Masala qidirish":"Search problems"}/>
+
+    <div className="pb-group">
+     <h3>{uz?"Holat":"Status"}</h3>
+     <div className="filters">{(["all","solved","unsolved"] as const).map(f=>
+      <button key={f} className={solvedOnly===f?"active":""} onClick={()=>setSolvedOnly(f)}>
+       {f==="all"?(uz?"Barchasi":"All"):f==="solved"?(uz?"Yechilgan":"Solved"):(uz?"Yechilmagan":"Unsolved")}
+      </button>)}</div>
+    </div>
+
+    <div className="pb-group">
+     <h3>{uz?"Qiyinlik":"Difficulty"}</h3>
+     <div className="filters">{["all","easy","medium","hard"].map(f=>
+      <button key={f} className={filter===f?"active":""} onClick={()=>setFilter(f)}>
+       {f==="all"?(uz?"Barchasi":"All"):f}
+      </button>)}</div>
+    </div>
+
+    <div className="pb-group">
+     <h3>{uz?"Mavzu":"Topic"}</h3>
+     <div className="pb-topics">
+      <button className={topic==="all"?"active":""} onClick={()=>setTopic("all")}>{uz?"Barcha mavzu":"All topics"}</button>
+      {topics.map(tp=><button key={tp} className={topic===tp?"active":""} onClick={()=>setTopic(tp)}>{topicName(tp)}</button>)}
+     </div>
+    </div>
+
+    {dirty&&<button className="ghost pb-clear" onClick={clear}>{uz?"Filtrlarni tozalash":"Clear filters"}</button>}
+   </aside>
+
+   <div className="pb-results">
+    {shown.length
+     ? <table className="pb-table">
+        <thead><tr>
+         <th className="pb-th-status"><span className="sr-only">{uz?"Holat":"Status"}</span></th>
+         <th>{uz?"Masala":"Problem"}</th>
+         <th className="pb-th-rating">{uz?"Reyting":"Rating"}</th>
+         <th className="pb-th-topic">{uz?"Mavzu":"Topic"}</th>
+        </tr></thead>
+        <tbody>{shown.map(p=>{
+         const solved=isSolved(p);
+         return <tr key={p.id} className={solved?"solved":""} onClick={()=>onSelect(p)} tabIndex={0}
+          onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();onSelect(p)}}}>
+          <td><span className={`pb-status ${solved?"solved":""}`} aria-label={solved?(uz?"Yechilgan":"Solved"):(uz?"Yechilmagan":"Unsolved")}>{solved?"✓":"○"}</span></td>
+          <td><span className="pb-id mono">{p.id}</span><span className="pb-name">{uz?p.uz:p.en}</span>
+           <span className={`difficulty ${p.difficulty}`}>{p.difficulty.toUpperCase()}</span></td>
+          <td className="mono pb-rating" style={{color:ratingColor(p.rating||1200)}}>{p.rating||1200}</td>
+          <td className="pb-topic"><span className="tag">{p.tag}</span></td>
+         </tr>;
+        })}</tbody>
+       </table>
+     : <EmptyState lang={lang} icon="⌕"
+        title={uz?"Bu filtrlarga mos masala yo‘q":"No problems match these filters"}
+        body={uz?"Qidiruvni qisqartiring yoki mavzu filtrini kengaytiring.":"Shorten the search or widen the topic filter."}
+        action={{label:uz?"Filtrlarni tozalash":"Clear filters",onClick:clear}}/>}
+   </div>
+  </div>
+ </>;
+}
+
+function Problem({lang,item,code,setCode,codeLang,setCodeLang,verdict,submit,onBack,go}:{lang:Lang;item:BankProblem;code:string;setCode:(x:string)=>void;codeLang:"cpp20"|"python3";setCodeLang:(x:"cpp20"|"python3")=>void;verdict:string;submit:()=>void;onBack:()=>void;go:(v:View)=>void}){
  const starter={cpp:"#include <bits/stdc++.h>\nusing namespace std;\n\nint main(){\n  ios::sync_with_stdio(false);\n  cin.tie(nullptr);\n  // yechimingizni shu yerga yozing\n  return 0;\n}\n",py:"import sys\ninput = sys.stdin.readline\n\n# yechimingizni shu yerga yozing\n"};
  // Bank problems carry their own statement; the three duel problems keep theirs.
  const duel=duelProblems.find(d=>d.key===item.judge);
  const judgeable=item.statementUz?{stUz:item.statementUz,stEn:item.statementEn||"",inUz:item.inputUz||"",inEn:item.inputEn||"",outUz:item.outputUz||"",outEn:item.outputEn||"",sample:(item.samples||[]).map(x=>`${x.input}${x.output}`).join("\n"),cpp:starter.cpp,py:starter.py}:duel;
  const solved=loadMastery().evidence[`problem:${item.id}`]!==undefined;
  return <><button className="crumb crumb-btn" onClick={onBack}>← {lang==="uz"?"Ortga":"Back"}</button><div className="page-head"><div><span className="tag">{item.id}</span> <span className="tag rating-tag" style={{color:ratingColor(item.rating||1200)}}>★ {item.rating||1200}</span> <span className="tag">{item.tag}</span> {solved&&<span className="tag tag-solved">✓ {lang==="uz"?"Yechilgan":"Solved"}</span>}<h1 className="page-title" style={{marginTop:12}}>{lang==="uz"?item.uz:item.en}</h1></div><span className="muted mono">1 s · 256 MB</span></div>
- {judgeable?<div className="workspace"><article className="panel statement"><h2>{lang==="uz"?"Shart":"Statement"}</h2>{(lang==="uz"?item.storyUz:item.storyEn)&&<p className="story">{lang==="uz"?item.storyUz:item.storyEn}</p>}<p>{lang==="uz"?judgeable.stUz:judgeable.stEn}</p><h3>{lang==="uz"?"Kirish":"Input"}</h3><p>{lang==="uz"?judgeable.inUz:judgeable.inEn}</p><h3>{lang==="uz"?"Chiqish":"Output"}</h3><p>{lang==="uz"?judgeable.outUz:judgeable.outEn}</p>{item.constraints&&<><h3>{lang==="uz"?"Cheklovlar":"Constraints"}</h3><p className="mono">{item.constraints}</p></>}<h3>{lang==="uz"?"Namunalar":"Samples"}</h3>{(item.samples||[]).map((x,si)=><div className="sample" key={si}><b>{lang==="uz"?"Kirish":"Input"}</b><pre>{x.input}</pre><b>{lang==="uz"?"Chiqish":"Output"}</b><pre>{x.output}</pre></div>)}{(lang==="uz"?item.noteUz:item.noteEn)&&<><h3>{lang==="uz"?"Izoh":"Note"}</h3><p className="muted">{lang==="uz"?item.noteUz:item.noteEn}</p></>}</article><CodeEditor code={code} setCode={setCode} lang={codeLang} setLang={v=>{setCodeLang(v);setCode(v==="cpp20"?judgeable.cpp:judgeable.py)}} onSubmit={submit} submitLabel={copy[lang].submit} verdict={verdict}/></div>
+ {judgeable?<div className="workspace"><article className="panel statement"><h2>{lang==="uz"?"Shart":"Statement"}</h2>{(lang==="uz"?item.storyUz:item.storyEn)&&<p className="story">{lang==="uz"?item.storyUz:item.storyEn}</p>}<p>{lang==="uz"?judgeable.stUz:judgeable.stEn}</p><h3>{lang==="uz"?"Kirish":"Input"}</h3><p>{lang==="uz"?judgeable.inUz:judgeable.inEn}</p><h3>{lang==="uz"?"Chiqish":"Output"}</h3><p>{lang==="uz"?judgeable.outUz:judgeable.outEn}</p>{item.constraints&&<><h3>{lang==="uz"?"Cheklovlar":"Constraints"}</h3><p className="mono">{item.constraints}</p></>}<h3>{lang==="uz"?"Namunalar":"Samples"}</h3>{(item.samples||[]).map((x,si)=><div className="sample" key={si}><b>{lang==="uz"?"Kirish":"Input"}</b><pre>{x.input}</pre><b>{lang==="uz"?"Chiqish":"Output"}</b><pre>{x.output}</pre></div>)}{(lang==="uz"?item.noteUz:item.noteEn)&&<><h3>{lang==="uz"?"Izoh":"Note"}</h3><p className="muted">{lang==="uz"?item.noteUz:item.noteEn}</p></>}</article><CodeEditor code={code} setCode={setCode} lang={codeLang} setLang={v=>{setCodeLang(v);setCode(v==="cpp20"?judgeable.cpp:judgeable.py)}} onSubmit={submit} submitLabel={copy[lang].submit} verdict={verdict}
+   extraAction={<a className="text-link editor-escape" href="/playground" onClick={linkTo(()=>go("playground"))}>{lang==="uz"?"Bo‘sh muhitda ochish":"Open a blank editor"}</a>}/></div>
  :<div className="panel" style={{maxWidth:680}}><div className="notice">{lang==="uz"?"Ushbu masala hozircha ko‘rib chiqish rejimida — tekshiruvchi tez orada ulanadi. Mavzu: ":"This problem is in preview mode — the judge will be connected soon. Topic: "}<b>{item.tag}</b></div></div>}</>}
 type DuelProblem={key:string;code:string;difficulty:"easy"|"medium"|"hard";points:number;uz:string;en:string;stUz:string;stEn:string;inUz:string;inEn:string;outUz:string;outEn:string;sample:string;cpp:string;py:string;bot:[number,number];fail:number};
 const duelProblems:DuelProblem[]=[

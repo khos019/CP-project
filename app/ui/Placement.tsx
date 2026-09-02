@@ -39,7 +39,7 @@ const TOTAL = 14;
 
 const T = {
   uz: {
-    eyebrow: "DARAJANI ANIQLASH",
+    eyebrow: "Darajani aniqlash",
     welcome: "Qayerdan boshlashingizni aniqlaymiz",
     lead: "Savollar javobingizga qarab qiyinlashadi yoki osonlashadi. 14 ta savol — taxminan 6 daqiqa.",
     b1: "Bilganingizni qaytadan o‘qimaysiz", b1d: "Darajangizdan pastdagi bosqichlar ochib beriladi.",
@@ -57,7 +57,7 @@ const T = {
     note: "Bu bosqichlar «Bilasiz» deb belgilandi — qulflanmagan, lekin xohlasangiz o‘qishingiz mumkin.",
   },
   en: {
-    eyebrow: "LEVEL CHECK",
+    eyebrow: "Level check",
     welcome: "Let us find where you should start",
     lead: "Questions get harder or easier as you answer. Fourteen of them — about six minutes.",
     b1: "Skip what you already know", b1d: "Units below your level are opened for you.",
