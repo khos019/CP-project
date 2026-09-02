@@ -451,7 +451,7 @@ export function Messages({
                     }}
                   />
                   <button className="primary" type="submit" disabled={busy || !draft.trim()}>
-                    {busy ? t.sending : t.send} →
+                    {busy ? t.sending : t.send}
                   </button>
                 </div>
               </form>

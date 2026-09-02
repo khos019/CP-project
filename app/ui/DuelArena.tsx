@@ -350,7 +350,7 @@ export function DuelMatchmaking({
           <>
             <p className="muted">{t.sub}</p>
             <button className="primary" onClick={begin} disabled={busy}>
-              {signed ? t.find : t.needAuth} {signed && "→"}
+              {signed ? t.find : t.needAuth}
             </button>
           </>
         )}
@@ -773,7 +773,7 @@ function ResultScreen({
       {!rated && <p className="muted">{t.unrated}</p>}
 
       <div className="match-actions">
-        <button className="primary" onClick={onRematch}>{t.rematch} →</button>
+        <button className="primary" onClick={onRematch}>{t.rematch}</button>
         <button className="secondary" onClick={onExit}>{t.leave}</button>
       </div>
     </div>

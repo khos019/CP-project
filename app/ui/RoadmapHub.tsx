@@ -28,7 +28,7 @@ const L={uz:{
  continue:"O‘rganishni davom ettirish",start:"O‘rganishni boshlash",recommended:"Sizga tavsiya etiladi",
  search:"Mavzu qidirish…",path:"O‘rganish yo‘li",map:"Skill xaritasi",all:"Barchasi",
  completed:"Tugatildi",inProgress:"Jarayonda",available:"Ochiq",locked:"Qulflangan",
- requires:"Talab qiladi",begin:"START",expert:"EXPERT · ICPC",unitsShort:"bosqich",open:"Ochish",
+ requires:"Talab qiladi",begin:"Boshlanish",expert:"ICPC darajasi",unitsShort:"bosqich",open:"Ochish",
  empty:"Hech narsa topilmadi — qidiruv yoki filtrni o‘zgartiring."
 },en:{
  title:"Learning roadmap",sub:"Finish the current topic to unlock the next. One guided path from beginner to ICPC.",
@@ -36,7 +36,7 @@ const L={uz:{
  continue:"Continue learning",start:"Start learning",recommended:"Recommended for you",
  search:"Search topics…",path:"Learning path",map:"Skill map",all:"All",
  completed:"Completed",inProgress:"In progress",available:"Available",locked:"Locked",
- requires:"Requires",begin:"START",expert:"EXPERT · ICPC",unitsShort:"units",open:"Open",
+ requires:"Requires",begin:"Start",expert:"ICPC level",unitsShort:"units",open:"Open",
  empty:"Nothing found — adjust the search or filters."
 }};
 export const statusLabel=(s:Status,lang:Lang)=>s==="completed"?L[lang].completed:s==="in-progress"?L[lang].inProgress:s==="available"?L[lang].available:L[lang].locked;
@@ -72,7 +72,7 @@ export function RoadmapHub({lang,role,openRoadmap}:{lang:Lang;role:Role;openRoad
  const doneIn=(r:MasteryRoadmap)=>r.units.filter(u=>unitDone(progress,u)).length;
  const categories=useMemo(()=>{const map=new Map<string,MasteryRoadmap[]>();roadmapCatalog.forEach(r=>map.set(r.category,[...(map.get(r.category)||[]),r]));return[...map.entries()]},[]);
  return <>
-  <div className="page-head"><div><p className="eyebrow" style={{color:"#637068"}}>{t.begin} → {t.expert}</p><h1 className="page-title">{t.title}</h1><p className="muted">{t.sub}</p></div><span className="tag">{roadmapCatalog.length} {lang==="uz"?"yo‘nalish":"tracks"}</span></div>
+  <div className="page-head"><div><p className="eyebrow">{t.begin} → {t.expert}</p><h1 className="page-title">{t.title}</h1><p className="muted">{t.sub}</p></div><span className="tag">{roadmapCatalog.length} {lang==="uz"?"yo‘nalish":"tracks"}</span></div>
   <div className="rm-stats">
    <div className="rm-stat"><small>{t.overall}</small><b>{stats.pct}%</b><div className="progress"><span style={{width:`${stats.pct}%`}}/></div></div>
    <div className="rm-stat"><small>{t.units}</small><b>{stats.done}<span className="rm-dim">/{stats.total}</span></b></div>
@@ -80,8 +80,8 @@ export function RoadmapHub({lang,role,openRoadmap}:{lang:Lang;role:Role;openRoad
    <div className="rm-stat"><small>{t.xp}</small><b>{stats.xp}<span className="rm-dim"> XP</span></b></div>
   </div>
   <div className="rm-next">
-   <div className="rm-panel">{active?<><p className="eyebrow" style={{color:"#637068"}}>{stats.done>0?t.continue:t.start}</p><div className="rm-active"><span className="rm-node-ic" style={{background:active.color}}>{active.icon}</span><div><b>{lang==="uz"?active.titleUz:active.titleEn}</b><span className="muted">{doneIn(active)}/{active.units.length} {t.unitsShort} · {active.level}</span><div className="progress"><span style={{width:`${doneIn(active)/active.units.length*100}%`}}/></div></div><button className="primary" onClick={()=>openRoadmap(active.slug)}>{t.open} →</button></div></>:<p className="muted">{t.empty}</p>}</div>
-   <div className="rm-panel"><p className="eyebrow" style={{color:"#637068"}}>{t.recommended}</p><div className="rm-recs">{recommended.length?recommended.map(r=><button key={r.slug} className="rm-rec" onClick={()=>openRoadmap(r.slug)}><span className="rm-dot available"/><span><b>{lang==="uz"?r.titleUz:r.titleEn}</b><small className="muted">{r.level} · {r.units.length} {t.unitsShort}</small></span><span>→</span></button>):<span className="muted">—</span>}</div></div>
+   <div className="rm-panel">{active?<><p className="eyebrow">{stats.done>0?t.continue:t.start}</p><div className="rm-active"><span className="rm-node-ic" style={{background:active.color}}>{active.icon}</span><div><b>{lang==="uz"?active.titleUz:active.titleEn}</b><span className="muted">{doneIn(active)}/{active.units.length} {t.unitsShort} · {active.level}</span><div className="progress"><span style={{width:`${doneIn(active)/active.units.length*100}%`}}/></div></div><button className="primary" onClick={()=>openRoadmap(active.slug)}>{t.open}</button></div></>:<p className="muted">{t.empty}</p>}</div>
+   <div className="rm-panel"><p className="eyebrow">{t.recommended}</p><div className="rm-recs">{recommended.length?recommended.map(r=><button key={r.slug} className="rm-rec" onClick={()=>openRoadmap(r.slug)}><span className="rm-dot available"/><span><b>{lang==="uz"?r.titleUz:r.titleEn}</b><small className="muted">{r.level} · {r.units.length} {t.unitsShort}</small></span></button>):<span className="muted">—</span>}</div></div>
   </div>
   <div className="rm-toolbar">
    <input className="rm-search" value={query} onChange={e=>setQuery(e.target.value)} placeholder={t.search} aria-label={t.search}/>
@@ -96,7 +96,7 @@ export function RoadmapHub({lang,role,openRoadmap}:{lang:Lang;role:Role;openRoad
      return <button key={r.slug} className={`rm-node ${s}`} disabled={s==="locked"} onClick={()=>openRoadmap(r.slug)}>
       <span className={`rm-badge ${s}`}>{s==="completed"?"✓":s==="locked"?"✕":s==="in-progress"?"◔":"▶"} {statusLabel(s,lang)}</span>
       <span className="rm-node-top"><span className="rm-node-ic" style={{background:r.color}}>{r.icon}</span><span><b>{lang==="uz"?r.titleUz:r.titleEn}</b><small>{r.level}</small></span></span>
-      <span className="rm-node-meta"><span>{done}/{r.units.length} {t.unitsShort}</span><span className="mono" style={{color:"var(--lime)"}}>{lang==="uz"?"Mahorat":"Mastery"} {masteryOf(r.slug)}</span><span>{pct}%</span></span>
+      <span className="rm-node-meta"><span>{done}/{r.units.length} {t.unitsShort}</span><span className="mono">{lang==="uz"?"Mahorat":"Mastery"} {masteryOf(r.slug)}</span><span>{pct}%</span></span>
       <span className="progress"><span style={{width:`${pct}%`}}/></span>
       {s==="locked"&&lockedBy.length>0&&<span className="rm-req">{t.requires}: {lockedBy.map(p=>lang==="uz"?p.titleUz:p.titleEn).join(" + ")}{lang==="uz"?` \u00b7 yoki ${MASTERY_CONFIG.unlock} mahorat`:` \u00b7 or ${MASTERY_CONFIG.unlock} mastery`}</span>}
      </button>})}</div>)}

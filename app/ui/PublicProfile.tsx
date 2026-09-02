@@ -223,7 +223,7 @@ export function PublicProfile({
               ) : signedIn ? (
                 <>
                   <button className="primary" onClick={() => onMessage(person.id)}>
-                    {t.message} →
+                    {t.message}
                   </button>
                   <FriendStar
                     lang={lang} isFriend={isFriend} signedIn={signedIn}

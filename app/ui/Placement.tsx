@@ -183,7 +183,7 @@ export function Placement({
 
         <div className="match-actions" style={{ marginTop: 24 }}>
           <button className="primary" onClick={() => (startAt ? onRoadmap(startAt.slug) : onFinish())}>
-            {startAt ? `${t.startHere}: ${lang === "uz" ? startAt.titleUz : startAt.titleEn}` : t.go} →
+            {startAt ? `${t.startHere}: ${lang === "uz" ? startAt.titleUz : startAt.titleEn}` : t.go}
           </button>
           <button className="secondary" onClick={onFinish}>{t.go}</button>
           <button className="lang" onClick={() => { setAnswers([]); setStep("intro"); }}>{t.retake}</button>
@@ -238,7 +238,7 @@ export function Placement({
           {!revealed
             ? <button className="primary pl-cta" disabled={picked === null} onClick={check}>{t.check}</button>
             : <button className="primary pl-cta" onClick={advance}>
-                {answers.length >= TOTAL ? t.finish : t.next} →
+                {answers.length >= TOTAL ? t.finish : t.next}
               </button>}
         </div>
       </div>
@@ -260,7 +260,7 @@ export function Placement({
           <div><b>{t.b3}</b><small>{t.b3d}</small></div>
         </div>
 
-        <button className="primary pl-cta" onClick={begin}>{t.start} →</button>
+        <button className="primary pl-cta" onClick={begin}>{t.start}</button>
         <button className="secondary pl-cta" onClick={onFinish}>{t.fresh}</button>
         <button className="lang pl-cta" onClick={onFinish}>{t.skip}</button>
       </div>

@@ -145,7 +145,7 @@ export function ContinueHero({
         </div>
         <div className="hero-cta">
           <button className="primary" onClick={() => openRoadmap(active.slug)}>
-            {started ? t.open : t.startCta} →
+            {started ? t.open : t.startCta}
           </button>
           <button className="secondary" onClick={() => go("roadmaps")}>
             {t.allRoadmaps}
@@ -159,7 +159,7 @@ export function ContinueHero({
           <span className="eyebrow">{t.rating}</span>
           <span className="big mono">{profile.duel_rating}</span>
           <button className="secondary ch-stat-btn" onClick={() => go("duel")}>
-            {t.findRival} →
+            {t.findRival}
           </button>
         </div>
         <div className="stat-card ch-stat">
@@ -176,7 +176,7 @@ export function ContinueHero({
                 : "No mastery evidence yet"}
           </span>
           <button className="secondary ch-stat-btn" onClick={() => go("profile")}>
-            {t.viewProfile} →
+            {t.viewProfile}
           </button>
         </div>
       </div>

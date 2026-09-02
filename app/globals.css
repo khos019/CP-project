@@ -1404,8 +1404,7 @@ body{font-size:var(--t-body);line-height:1.6}
  background:none;border:0;border-radius:0;box-shadow:none;padding:0;
  display:flex;flex-direction:column;align-items:flex-start;gap:var(--s5);
 }
-.hero-copy .eyebrow{display:none}
-.hero h1{margin:0;max-width:15ch;text-wrap:balance}
+.hero-copy .hero h1{margin:0;max-width:15ch;text-wrap:balance}
 .hero p{margin:0;max-width:52ch;font-size:1.05rem;line-height:1.65;color:var(--muted)}
 .hero-cta{display:flex;align-items:center;gap:var(--s5);flex-wrap:wrap}
 .hero-facts{
@@ -1505,7 +1504,6 @@ body{font-size:var(--t-body);line-height:1.6}
  border-top:0;padding-top:0;margin-bottom:var(--s5);
 }
 .section-head h2{margin:0}
-.eyebrow{display:none}
 .lp-block{margin-top:var(--s9);display:block}
 
 /* ─── CTA ────────────────────────────────────────────────────────────── */
@@ -1628,3 +1626,390 @@ body{font-size:var(--t-body);line-height:1.6}
  *,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;
   transition-duration:.01ms!important;scroll-behavior:auto!important}
 }
+
+/* ─── O'quv zonasi ───────────────────────────────────────────────────────
+   Sokin harorat: urg'u faqat --green, amber esa yagona "siz shu yerdasiz"
+   nuqtasida. Zichlik havodor, animatsiya faqat javob sifatida. */
+[data-zone="learn"]{--accent:var(--green)}
+[data-zone="compete"]{--accent:var(--orange)}
+
+/* Eyebrow endi qichqirmaydi: ALL CAPS emas, oddiy kichik yorliq. */
+.eyebrow{
+ display:block;margin:0 0 var(--s2);
+ text-transform:none;letter-spacing:0;
+ font-size:var(--t-xs);font-weight:500;color:var(--dim)!important;
+}
+
+/* ─── Sahifa sarlavhasi ──────────────────────────────────────────────── */
+.page-head{
+ display:flex;align-items:flex-start;justify-content:space-between;
+ gap:var(--s5);padding:var(--s6) 0 var(--s5);
+ border-bottom:1px solid var(--line-faint);margin-bottom:var(--s6);
+}
+.page-head h1,.page-head .page-title{margin:0 0 var(--s2)}
+.page-head p{margin:0;max-width:64ch;font-size:var(--t-sm);line-height:1.6}
+
+/* ─── Statistika plitkalari — gradientsiz ────────────────────────────── */
+.rm-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s3);margin-bottom:var(--s6)}
+.rm-stat{
+ background:var(--surface);border:1px solid var(--line);
+ border-radius:var(--r-lg);padding:var(--s4) var(--s5);
+ display:grid;gap:5px;align-content:start;
+}
+.rm-stat small{font-size:var(--t-xs);color:var(--muted)}
+.rm-stat b{
+ font-family:var(--font-display);font-weight:600;font-size:1.6rem;
+ color:var(--ink);font-variant-numeric:tabular-nums;line-height:1.1;
+}
+.rm-dim{color:var(--dim);font-size:1rem;font-weight:500}
+.rm-rank{font-size:var(--t-xs);color:var(--muted)}
+
+.progress{height:5px;border-radius:var(--r-full);background:var(--inset);overflow:hidden;margin:var(--s2) 0 0}
+.progress span{display:block;height:100%;background:var(--green);border-radius:var(--r-full);
+ transition:width var(--dur-slow) var(--ease)}
+
+/* ─── Davom ettirish / tavsiya panellari ─────────────────────────────── */
+.rm-next{display:grid;grid-template-columns:1.6fr 1fr;gap:var(--s4);margin-bottom:var(--s6)}
+.rm-panel{
+ background:var(--surface);border:1px solid var(--line);
+ border-radius:var(--r-lg);padding:var(--s5);
+}
+.rm-active{display:grid;grid-template-columns:auto 1fr auto;gap:var(--s4);align-items:center}
+.rm-active b{display:block;font-size:1.05rem}
+.rm-active .muted{font-size:var(--t-sm)}
+.rm-node-ic{
+ width:42px;height:42px;border-radius:var(--r-md);
+ display:grid;place-items:center;color:#0a130d;
+ font-family:var(--font-display);font-weight:700;font-size:14px;
+}
+.rm-recs{display:grid;gap:2px}
+.rm-rec{
+ display:grid;grid-template-columns:auto 1fr;gap:var(--s3);align-items:center;
+ padding:9px 10px;margin:0 -10px;border-radius:var(--r-sm);
+ background:none;border:0;text-align:left;
+ transition:background var(--dur-fast) var(--ease);
+}
+.rm-rec:hover{background:var(--surface-2)}
+.rm-rec b{display:block;font-size:var(--t-sm);font-weight:500;color:var(--ink)}
+.rm-rec small{font-size:var(--t-xs)}
+.rm-dot{width:7px;height:7px;border-radius:var(--r-full);background:var(--line-strong)}
+.rm-dot.available,.rm-dot.in-progress{background:var(--green)}
+.rm-dot.completed{background:var(--green)}
+.rm-dot.locked{background:var(--line-strong)}
+
+/* ─── Filtrlar: chip, tugma emas ─────────────────────────────────────── */
+.rm-toolbar{
+ display:flex;align-items:center;gap:var(--s4);flex-wrap:wrap;
+ margin-bottom:var(--s5);
+}
+.rm-search,.leader-search,.ua-searchbox input,.shop-field input{
+ flex:1;min-width:200px;
+ background:var(--inset);border:1px solid var(--line);
+ border-radius:var(--r-md);padding:10px var(--s4);
+ color:var(--ink);font-size:var(--t-sm);
+}
+.rm-search::placeholder{color:var(--dim)}
+.rm-search:focus-visible,.leader-search:focus-visible{
+ outline:2px solid var(--green);outline-offset:2px;border-color:transparent;
+}
+.filters{display:flex;gap:var(--s2);margin:0;flex-wrap:wrap}
+.filters button,.rm-toggle button{
+ border:1px solid var(--line);background:var(--surface);
+ border-radius:var(--r-full);padding:7px 13px;
+ font-weight:500;font-size:var(--t-sm);color:var(--muted);
+ transition:color var(--dur-fast) var(--ease),border-color var(--dur-fast) var(--ease);
+}
+.filters button:hover,.rm-toggle button:hover{color:var(--ink);border-color:var(--line-strong)}
+.filters button.active,.rm-toggle button.active{
+ background:var(--green-wash);border-color:var(--green);color:var(--green);
+}
+.rm-toggle{display:flex;gap:var(--s2)}
+
+/* ─── Yo'nalishlar daraxti ───────────────────────────────────────────── */
+.rm-tree{display:grid;gap:var(--s5)}
+.rm-cap{
+ justify-self:start;font-size:var(--t-xs);color:var(--dim);
+ padding:5px 11px;border:1px solid var(--line);border-radius:var(--r-full);
+}
+.rm-cap.end{justify-self:end}
+.rm-tier{display:grid;grid-template-columns:repeat(auto-fit,minmax(268px,1fr));gap:var(--s4);position:relative}
+.rm-tier.linked:before{
+ content:"";position:absolute;left:50%;top:calc(var(--s5) * -1);
+ width:1px;height:var(--s5);background:var(--line);
+}
+.rm-node{
+ display:grid;gap:var(--s3);align-content:start;text-align:left;
+ background:var(--surface);border:1px solid var(--line);
+ border-radius:var(--r-lg);padding:var(--s5);
+ transition:border-color var(--dur-fast) var(--ease),background var(--dur-fast) var(--ease);
+}
+.rm-node:hover:not(:disabled){border-color:var(--line-strong);background:var(--surface-2)}
+.rm-node:disabled{opacity:.5;cursor:not-allowed}
+.rm-node.in-progress{border-color:var(--green)}
+.rm-node-top{display:grid;grid-template-columns:auto 1fr;gap:var(--s3);align-items:center}
+.rm-node-top b{display:block;font-family:var(--font-display);font-weight:600;font-size:1.02rem}
+.rm-node-top small{font-size:var(--t-xs);color:var(--dim);font-family:var(--font-mono)}
+.rm-node-meta{
+ display:flex;justify-content:space-between;gap:var(--s3);
+ font-size:var(--t-xs);color:var(--muted);font-variant-numeric:tabular-nums;
+}
+.rm-badge{
+ justify-self:start;font-size:10px;font-weight:600;letter-spacing:.03em;
+ padding:3px 9px;border-radius:var(--r-full);
+ background:var(--surface-3);color:var(--muted);
+}
+.rm-badge.completed{background:var(--green-wash);color:var(--green)}
+.rm-badge.in-progress{background:var(--orange-wash);color:var(--orange)}
+.rm-badge.locked{background:var(--surface-3);color:var(--dim)}
+.rm-req{font-size:var(--t-xs);color:var(--dim);line-height:1.45}
+
+/* ─── Skill xaritasi ─────────────────────────────────────────────────── */
+.rm-map{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:var(--s5)}
+.rm-col h3{margin:0 0 var(--s3);font-size:var(--t-xs);color:var(--dim);font-weight:600;font-family:var(--font-sans);letter-spacing:.04em}
+.rm-item{
+ display:grid;grid-template-columns:auto 1fr auto;gap:var(--s3);align-items:center;
+ width:100%;padding:9px 10px;margin:0 -10px;border:0;border-radius:var(--r-sm);
+ background:none;text-align:left;
+}
+.rm-item:hover:not(:disabled){background:var(--surface-2)}
+.rm-item:disabled{opacity:.45}
+.rm-item b{display:block;font-size:var(--t-sm);font-weight:500}
+.rm-item small{font-size:var(--t-xs)}
+.rm-item-state{color:var(--green)}
+
+/* ─── Fokus: hech qachon ko'rinmas emas ──────────────────────────────── */
+:focus-visible{outline:2px solid var(--green);outline-offset:2px;border-radius:3px}
+
+@media(max-width:900px){
+ .rm-stats{grid-template-columns:repeat(2,1fr)}
+ .rm-next{grid-template-columns:1fr}
+ .page-head{flex-direction:column}
+}
+@media(max-width:600px){
+ .rm-stats{grid-template-columns:1fr 1fr}
+ .rm-active{grid-template-columns:auto 1fr;row-gap:var(--s3)}
+ .rm-active .primary{grid-column:1/-1}
+}
+
+/* ─── ALL CAPS dan voz kechish ───────────────────────────────────────────
+   Katta harf faqat 3–4 harfli belgilarda ma'noli (AC, WA, TLE, EASY). Qolgan
+   joyda u yorliqni baqiryapti va o'zbek diakritikasini o'qishni qiyinlashtiradi
+   — o'lcham va rang iyerarxiyani allaqachon beradi. */
+.rm-stat small,.rm-col h3,.rm-rank,.lesson-toc h3,.lesson-nav-btn small,
+.dc-head h4,.pf-fieldset legend,.pl-why b,.mastery-info p,.os-break-key,
+.shop-field span,.statement .sample b,.practice-table th,.sub-table th,
+.ua-role,.ua-selftag,.focus-badge{
+ text-transform:none;letter-spacing:0;
+}
+.rm-stat small,.rm-col h3,.lesson-toc h3,.pf-fieldset legend,.practice-table th,
+.sub-table th,.shop-field span{
+ font-weight:500;font-size:var(--t-xs);color:var(--muted);
+}
+.rm-stat small{margin-bottom:0}
+/* Belgi (badge) — bu yerda katta harf ma'no tashiydi, saqlanadi. */
+.rm-badge,.difficulty,.verdict-tag,.tier-badge{text-transform:uppercase;letter-spacing:.04em}
+
+/* ─── Yo'l xaritasi ichi ─────────────────────────────────────────────── */
+.mastery-page{display:grid;gap:var(--s5)}
+.crumb{
+ justify-self:start;background:none;border:0;padding:0;
+ color:var(--muted);font-size:var(--t-sm);
+}
+.crumb:hover{color:var(--ink)}
+.mastery-hero{
+ display:grid;grid-template-columns:1fr auto;gap:var(--s6);align-items:end;
+ padding-bottom:var(--s5);border-bottom:1px solid var(--line-faint);
+}
+.mastery-hero h1{margin:var(--s3) 0 var(--s2);font-size:var(--t-h1)}
+.mastery-hero p{margin:0;max-width:60ch;color:var(--muted);font-size:var(--t-sm);line-height:1.6}
+.mastery-score{
+ display:grid;gap:5px;min-width:210px;
+ background:var(--surface);border:1px solid var(--line);
+ border-radius:var(--r-lg);padding:var(--s4) var(--s5);
+}
+.mastery-score b{font-family:var(--font-display);font-size:1.9rem;font-weight:600;color:var(--ink);line-height:1}
+.mastery-score span{font-size:var(--t-xs);color:var(--muted)}
+.mastery-score small{font-size:var(--t-xs);color:var(--dim)}
+.mastery-line{color:var(--green)}
+.continue-btn{justify-self:start;margin-top:var(--s4)}
+
+.mastery-layout{display:grid;grid-template-columns:250px 1fr;gap:var(--s6);align-items:start}
+.mastery-info{
+ position:sticky;top:calc(var(--header-h) + var(--s4));
+ display:grid;gap:2px;padding:var(--s5);
+}
+.mastery-info h3{margin:0 0 var(--s3);font-size:var(--t-h3)}
+.mastery-info p{margin:var(--s3) 0 0;font-size:var(--t-xs);color:var(--muted)}
+.mastery-info b{font-size:var(--t-sm);font-weight:500;color:var(--ink)}
+
+/* Bosqichlar yo'li: SVG egri chiziq bilan bog'langan tugunlar. */
+.stage-head{
+ display:flex;align-items:center;gap:var(--s3);
+ margin:var(--s6) 0 var(--s4);
+}
+.stage-no{font-size:var(--t-xs);color:var(--dim);white-space:nowrap}
+.stage-bar{flex:1;height:3px;border-radius:var(--r-full);background:var(--inset);overflow:hidden}
+.stage-bar i{display:block;height:100%;background:var(--green);border-radius:var(--r-full)}
+.stage-count{font-size:var(--t-xs);color:var(--muted)}
+
+.cloud-unit{
+ display:grid;grid-template-columns:auto 1fr auto;gap:var(--s4);align-items:center;
+ width:100%;text-align:left;
+ background:var(--surface);border:1px solid var(--line);
+ border-radius:var(--r-lg);padding:var(--s4) var(--s5);
+ transition:border-color var(--dur-fast) var(--ease),background var(--dur-fast) var(--ease);
+}
+.cloud-unit:hover:not(:disabled){border-color:var(--line-strong);background:var(--surface-2)}
+.cloud-unit:disabled{opacity:.5;cursor:not-allowed}
+.cloud-step.current .cloud-unit{border-color:var(--orange)}
+.cloud-step.done .cloud-unit{border-color:var(--line)}
+.cloud-node{position:relative;display:grid;place-items:center;width:44px;height:44px}
+.node-ring{position:absolute;inset:0;transform:rotate(-90deg)}
+.ring-bg{fill:none;stroke:var(--inset);stroke-width:3}
+.ring-fg{fill:none;stroke:var(--green);stroke-width:3;stroke-linecap:round;
+ transition:stroke-dashoffset var(--dur-slow) var(--ease)}
+.cloud-node i{
+ font-style:normal;font-family:var(--font-display);font-weight:600;font-size:13px;
+ color:var(--muted);
+}
+.cloud-step.done .cloud-node i{color:var(--green)}
+.cloud-step.current .cloud-node i{color:var(--orange)}
+.cloud-step.current .ring-fg{stroke:var(--orange)}
+.path-copy{display:grid;gap:3px;min-width:0}
+.path-copy small{font-size:var(--t-xs);color:var(--dim);font-family:var(--font-mono)}
+.path-copy b{font-size:1rem;font-weight:600;font-family:var(--font-display)}
+.path-copy em{font-style:normal;font-size:var(--t-sm);color:var(--muted);line-height:1.5}
+.unit-checks{display:flex;gap:var(--s3);margin-top:3px}
+.unit-checks i{font-style:normal;font-size:var(--t-xs);color:var(--dim)}
+.unit-checks i.ok{color:var(--green)}
+.unit-status{
+ font-size:var(--t-xs);color:var(--muted);white-space:nowrap;
+ display:flex;align-items:center;gap:5px;
+}
+.unit-status.done{color:var(--green)}
+.unit-status.current{color:var(--orange)}
+.unit-status.locked{color:var(--dim)}
+.cloud-link path{fill:none;stroke:var(--line);stroke-width:2;stroke-dasharray:4 5}
+.cloud-step.done .cloud-link path,.cloud-step.current .cloud-link path{stroke:var(--green);stroke-dasharray:none}
+
+/* ─── Dars sahifasi ──────────────────────────────────────────────────── */
+.lesson-page{display:grid;gap:var(--s5)}
+.lesson-head{
+ display:flex;align-items:flex-end;justify-content:space-between;gap:var(--s5);
+ padding-bottom:var(--s5);border-bottom:1px solid var(--line-faint);
+}
+.lesson-head h1{margin:var(--s2) 0;font-size:var(--t-h1)}
+.lesson-head p{margin:0;max-width:64ch;font-size:var(--t-sm)}
+.lesson-state{display:flex;gap:var(--s2);flex-shrink:0}
+.lesson-state span{
+ font-size:var(--t-xs);color:var(--muted);
+ background:var(--surface-3);padding:5px 11px;border-radius:var(--r-full);
+}
+.lesson-state .passed{background:var(--green-wash);color:var(--green)}
+
+.lesson-grid{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:var(--s6);align-items:start}
+/* O'qish uzunligi: 68 belgidan uzun qator texnik matnda charchatadi. */
+.lesson-content{padding:var(--s7);line-height:1.72}
+.lesson-content h2{
+ margin:var(--s7) 0 var(--s3);font-size:var(--t-h2);
+ padding-top:var(--s5);border-top:1px solid var(--line-faint);
+}
+.lesson-content h2:first-of-type{margin-top:0;padding-top:0;border-top:0}
+.lesson-content p{max-width:68ch;margin:0 0 var(--s4);color:var(--muted)}
+.lesson-list{max-width:68ch;padding-left:1.15em;color:var(--muted)}
+.lesson-list li{margin-bottom:var(--s2)}
+.concept-box{
+ display:flex;align-items:center;gap:var(--s3);flex-wrap:wrap;
+ background:var(--inset);border-left:3px solid var(--green);
+ border-radius:var(--r-sm);padding:var(--s3) var(--s4);margin:0 0 var(--s5);
+}
+.concept-box b{font-size:var(--t-sm)}
+.concept-box code{font-family:var(--font-mono);font-size:var(--t-sm);color:var(--green)}
+.code-tabs{display:flex;gap:var(--s2);margin-bottom:var(--s2)}
+.code-tabs button{
+ background:none;border:0;border-radius:var(--r-sm);
+ padding:6px 11px;font-size:var(--t-sm);color:var(--muted);
+}
+.code-tabs button.active{background:var(--surface-3);color:var(--ink)}
+.resource-list{list-style:none;padding:0;display:grid;gap:var(--s2)}
+.resource-list li{display:flex;gap:var(--s3);align-items:baseline;font-size:var(--t-sm)}
+.resource-list a{color:var(--blue)}
+.resource-list a:hover{text-decoration:underline}
+.resource-list span{color:var(--muted);font-size:var(--t-xs)}
+
+.lesson-actions{
+ display:grid;gap:var(--s4);
+ position:sticky;top:calc(var(--header-h) + var(--s4));
+}
+.quiz-card,.practice-card{padding:var(--s5);display:grid;gap:var(--s3)}
+.quiz-card h3,.practice-card h3{margin:0;font-size:var(--t-h3)}
+.quiz-card p{margin:0;font-size:var(--t-sm);line-height:1.55}
+.quiz-options{display:grid;gap:var(--s2)}
+.quiz-options button{
+ display:grid;grid-template-columns:auto 1fr;gap:var(--s3);align-items:start;
+ text-align:left;background:var(--inset);border:1px solid var(--line);
+ border-radius:var(--r-md);padding:11px var(--s4);
+ font-size:var(--t-sm);color:var(--muted);
+ transition:border-color var(--dur-fast) var(--ease);
+}
+.quiz-options button:hover:not(:disabled){border-color:var(--line-strong)}
+.quiz-options button span{
+ width:20px;height:20px;border-radius:var(--r-sm);
+ display:grid;place-items:center;background:var(--surface-3);
+ font-size:11px;font-weight:600;
+}
+.quiz-options .selected{border-color:var(--green);color:var(--ink)}
+.quiz-options .right{border-color:var(--green);background:var(--green-wash);color:var(--green)}
+.quiz-options .wrong{border-color:var(--bad);background:rgba(255,107,107,.1);color:var(--bad)}
+.quiz-result{font-size:var(--t-sm);color:var(--muted);line-height:1.5}
+.unlock-card{
+ border:1px dashed var(--line-strong);border-radius:var(--r-lg);
+ padding:var(--s4);display:grid;gap:3px;
+}
+.unlock-card b{font-size:var(--t-sm)}
+.unlock-card small{font-size:var(--t-xs);color:var(--muted)}
+.unlock-card.ready{border-style:solid;border-color:var(--green);background:var(--green-wash)}
+.unlock-card.ready b{color:var(--green)}
+
+.lesson-toc{display:grid;gap:var(--s2);padding:var(--s5)}
+.lesson-toc h3{margin:0}
+.deep-item{
+ border:1px solid var(--line);border-radius:var(--r-md);
+ padding:var(--s3) var(--s4);margin-bottom:var(--s2);
+}
+.deep-item summary{cursor:pointer;font-size:var(--t-sm);display:flex;gap:var(--s2);align-items:center}
+.deep-min{margin-left:auto;font-size:var(--t-xs);color:var(--dim)}
+.practice-table{width:100%;border-collapse:collapse;font-size:var(--t-sm)}
+.practice-table th{text-align:left;padding:var(--s2) var(--s3);border-bottom:1px solid var(--line)}
+.practice-table td{padding:9px var(--s3);border-bottom:1px solid var(--line-faint)}
+.link-cell{background:none;border:0;padding:0;color:var(--ink);text-align:left;font-size:var(--t-sm)}
+.link-cell:hover{color:var(--green)}
+.focus-badge{
+ margin-left:var(--s2);font-size:10px;padding:2px 7px;border-radius:var(--r-full);
+ background:var(--orange-wash);color:var(--orange);
+}
+
+@media(max-width:1024px){
+ .mastery-layout,.lesson-grid{grid-template-columns:1fr}
+ .mastery-info,.lesson-actions{position:static}
+ .mastery-hero{grid-template-columns:1fr}
+}
+@media(max-width:640px){
+ .lesson-content{padding:var(--s5)}
+ .lesson-head{flex-direction:column;align-items:flex-start}
+ .cloud-unit{grid-template-columns:auto 1fr;row-gap:var(--s2)}
+ .unit-status{grid-column:1/-1}
+}
+
+/* Qolgan dekorativ gradient wash'lar — reja §11.8. Chuqurlik fon darajasi va
+   chegara bilan beriladi, "yorug'lik" bilan emas. */
+.mastery-hero{
+ background:none;border:0;border-radius:0;box-shadow:none;padding:0;
+ grid-template-columns:1fr auto;gap:var(--s6);
+}
+.mastery-hero h1{font-size:var(--t-h1);letter-spacing:-.025em;line-height:1.12}
+.mastery-hero p{color:var(--muted);font-size:var(--t-sm)}
+.mastery-hero .road-icon{margin:0}
+.matchmaking{background:var(--surface);border:1px solid var(--line)}
+.auth:before{display:none}
+.lp-cta{background:var(--surface)}

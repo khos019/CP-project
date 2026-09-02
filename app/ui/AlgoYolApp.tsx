@@ -362,12 +362,13 @@ export function AlgoYolApp(){
   // for the same problem. Written after the fact, so a failed write costs the
   // learner nothing.
   void recordSubmission({problemKey:activeProblem.judge,problemTitle:lang==="uz"?activeProblem.uz:activeProblem.en,language:codeLang,verdict:String(r.verdict||"JUDGE_ERROR"),runtimeMs:r.runtimeMs??null,memoryKb:r.memoryKb??null,passed:r.passed??null,total:r.total??null,source:code})}catch{setVerdict(lang==="uz"?"Tekshiruvchi bilan aloqa uzildi":"Judge connection failed")}};
- return <div className="shell"><SiteHeader lang={lang} view={view} go={v=>go(v as View)} signed={signed} authLoading={auth.status==="loading"} name={profile?.display_name||profile?.username||null} unread={unread} swapLang={swap} />
+ const zone=(["duel","leaderboard"] as View[]).includes(view)?"compete":"learn";
+ return <div className="shell" data-zone={zone}><SiteHeader lang={lang} view={view} go={v=>go(v as View)} signed={signed} authLoading={auth.status==="loading"} name={profile?.display_name||profile?.username||null} unread={unread} swapLang={swap} />
  {signed&&offerPlacement&&view!=="placement"&&<div className="placement-offer">
   <span className="po-ic" aria-hidden>◎</span>
   <span className="po-copy"><b>{lang==="uz"?"Darajangizni aniqlaymizmi?":"Shall we find your level?"}</b>
    <small>{lang==="uz"?"14 ta savol · 6 daqiqa. Bilgan bosqichlaringiz ochib beriladi.":"Fourteen questions, six minutes. Units you already know get opened for you."}</small></span>
-  <button className="primary" onClick={()=>go("placement")}>{lang==="uz"?"Boshlash":"Start"} →</button>
+  <button className="primary" onClick={()=>go("placement")}>{lang==="uz"?"Boshlash":"Start"}</button>
   <button className="po-close" aria-label={lang==="uz"?"Yopish":"Dismiss"}
    onClick={()=>{writeScoped("algoyol-placement-dismissed","1");setOfferPlacement(false)}}>✕</button>
  </div>}
@@ -682,7 +683,7 @@ function Problem({lang,item,code,setCode,codeLang,setCodeLang,verdict,submit,onB
  const judgeable=item.statementUz?{stUz:item.statementUz,stEn:item.statementEn||"",inUz:item.inputUz||"",inEn:item.inputEn||"",outUz:item.outputUz||"",outEn:item.outputEn||"",sample:(item.samples||[]).map(x=>`${x.input}${x.output}`).join("\n"),cpp:starter.cpp,py:starter.py}:duel;
  const solved=loadMastery().evidence[`problem:${item.id}`]!==undefined;
  return <><button className="crumb crumb-btn" onClick={onBack}>← {lang==="uz"?"Ortga":"Back"}</button><div className="page-head"><div><span className="tag">{item.id}</span> <span className="tag rating-tag" style={{color:ratingColor(item.rating||1200)}}>★ {item.rating||1200}</span> <span className="tag">{item.tag}</span> {solved&&<span className="tag tag-solved">✓ {lang==="uz"?"Yechilgan":"Solved"}</span>}<h1 className="page-title" style={{marginTop:12}}>{lang==="uz"?item.uz:item.en}</h1></div><span className="muted mono">1 s · 256 MB</span></div>
- {judgeable?<div className="workspace"><article className="panel statement"><h2>{lang==="uz"?"Shart":"Statement"}</h2>{(lang==="uz"?item.storyUz:item.storyEn)&&<p className="story">{lang==="uz"?item.storyUz:item.storyEn}</p>}<p>{lang==="uz"?judgeable.stUz:judgeable.stEn}</p><h3>{lang==="uz"?"Kirish":"Input"}</h3><p>{lang==="uz"?judgeable.inUz:judgeable.inEn}</p><h3>{lang==="uz"?"Chiqish":"Output"}</h3><p>{lang==="uz"?judgeable.outUz:judgeable.outEn}</p>{item.constraints&&<><h3>{lang==="uz"?"Cheklovlar":"Constraints"}</h3><p className="mono">{item.constraints}</p></>}<h3>{lang==="uz"?"Namunalar":"Samples"}</h3>{(item.samples||[]).map((x,si)=><div className="sample" key={si}><b>{lang==="uz"?"Kirish":"Input"}</b><pre>{x.input}</pre><b>{lang==="uz"?"Chiqish":"Output"}</b><pre>{x.output}</pre></div>)}{(lang==="uz"?item.noteUz:item.noteEn)&&<><h3>{lang==="uz"?"Izoh":"Note"}</h3><p className="muted">{lang==="uz"?item.noteUz:item.noteEn}</p></>}</article><CodeEditor code={code} setCode={setCode} lang={codeLang} setLang={v=>{setCodeLang(v);setCode(v==="cpp20"?judgeable.cpp:judgeable.py)}} onSubmit={submit} submitLabel={`${copy[lang].submit} →`} verdict={verdict}/></div>
+ {judgeable?<div className="workspace"><article className="panel statement"><h2>{lang==="uz"?"Shart":"Statement"}</h2>{(lang==="uz"?item.storyUz:item.storyEn)&&<p className="story">{lang==="uz"?item.storyUz:item.storyEn}</p>}<p>{lang==="uz"?judgeable.stUz:judgeable.stEn}</p><h3>{lang==="uz"?"Kirish":"Input"}</h3><p>{lang==="uz"?judgeable.inUz:judgeable.inEn}</p><h3>{lang==="uz"?"Chiqish":"Output"}</h3><p>{lang==="uz"?judgeable.outUz:judgeable.outEn}</p>{item.constraints&&<><h3>{lang==="uz"?"Cheklovlar":"Constraints"}</h3><p className="mono">{item.constraints}</p></>}<h3>{lang==="uz"?"Namunalar":"Samples"}</h3>{(item.samples||[]).map((x,si)=><div className="sample" key={si}><b>{lang==="uz"?"Kirish":"Input"}</b><pre>{x.input}</pre><b>{lang==="uz"?"Chiqish":"Output"}</b><pre>{x.output}</pre></div>)}{(lang==="uz"?item.noteUz:item.noteEn)&&<><h3>{lang==="uz"?"Izoh":"Note"}</h3><p className="muted">{lang==="uz"?item.noteUz:item.noteEn}</p></>}</article><CodeEditor code={code} setCode={setCode} lang={codeLang} setLang={v=>{setCodeLang(v);setCode(v==="cpp20"?judgeable.cpp:judgeable.py)}} onSubmit={submit} submitLabel={copy[lang].submit} verdict={verdict}/></div>
  :<div className="panel" style={{maxWidth:680}}><div className="notice">{lang==="uz"?"Ushbu masala hozircha ko‘rib chiqish rejimida — tekshiruvchi tez orada ulanadi. Mavzu: ":"This problem is in preview mode — the judge will be connected soon. Topic: "}<b>{item.tag}</b></div></div>}</>}
 type DuelProblem={key:string;code:string;difficulty:"easy"|"medium"|"hard";points:number;uz:string;en:string;stUz:string;stEn:string;inUz:string;inEn:string;outUz:string;outEn:string;sample:string;cpp:string;py:string;bot:[number,number];fail:number};
 const duelProblems:DuelProblem[]=[
@@ -723,7 +724,7 @@ function SignInRequired({lang,go,what}:{lang:Lang;go:(v:View)=>void;what:"profil
   <span className="screen-state-ic" aria-hidden>🔒</span>
   <h1 className="page-title">{title}</h1>
   <p className="muted">{body}</p>
-  <div className="match-actions"><button className="primary" onClick={()=>go("auth")}>{lang==="uz"?"Kirish yoki ro‘yxatdan o‘tish":"Sign in or register"} →</button><button className="secondary" onClick={()=>go("roadmaps")}>{lang==="uz"?"Yo‘l xaritalarini ko‘rish":"Browse roadmaps"}</button></div>
+  <div className="match-actions"><button className="primary" onClick={()=>go("auth")}>{lang==="uz"?"Kirish yoki ro‘yxatdan o‘tish":"Sign in or register"}</button><button className="secondary" onClick={()=>go("roadmaps")}>{lang==="uz"?"Yo‘l xaritalarini ko‘rish":"Browse roadmaps"}</button></div>
  </div>;
 }
 

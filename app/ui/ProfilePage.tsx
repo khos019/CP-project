@@ -388,7 +388,7 @@ export function ProfilePage({
             <div className="pf-empty">
               <p className="muted">{t.noTopics}</p>
               <button className="primary" onClick={goRoadmaps}>
-                {t.startLearning} →
+                {t.startLearning}
               </button>
             </div>
           )}
@@ -413,7 +413,7 @@ export function ProfilePage({
             <div className="pf-empty">
               <p className="muted">{t.noActivity}</p>
               <button className="secondary" onClick={goRoadmaps}>
-                {t.startLearning} →
+                {t.startLearning}
               </button>
             </div>
           )}
