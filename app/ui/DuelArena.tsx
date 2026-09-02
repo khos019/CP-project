@@ -299,13 +299,19 @@ function Arena({
   const openRound = duel.rounds_detail.find((r) => r.claimed_by_seat === null)
     || duel.rounds_detail[duel.rounds_detail.length - 1];
 
-  /* Which round is on screen is derived, not stored. A learner can click back
-     to an earlier one, but the moment a round is claimed it stops being a
-     place to be — so the fallback to the open round happens in the expression
+  /* One problem is open at a time, and the next one exists only after this one
+     has been claimed — by either player. That was always what the locked/open
+     labels claimed, but nothing enforced it: clicking a "locked" step still
+     showed its statement, so B and C could be read and worked on while A was
+     untouched. The gate is a rule about the duel, not a hint about it.
+
+     Which round is on screen is derived, not stored: a learner can click back
+     to a round already settled, and the fallback happens in the expression
      rather than in an effect that would have to notice and correct itself. */
+  const unlocked = (r: { round: number }) => r.round <= (openRound?.round ?? 0);
   const [picked, setPicked] = useState<number | null>(null);
   const pickedRound = picked === null ? undefined : duel.rounds_detail.find((r) => r.round === picked);
-  const round = pickedRound && pickedRound.claimed_by_seat === null ? pickedRound : openRound;
+  const round = pickedRound && unlocked(pickedRound) ? pickedRound : openRound;
   const roundId = round?.round ?? 0;
 
   const [codeLang, setCodeLang] = useState<CodeLang>("cpp20");
@@ -369,18 +375,25 @@ function Arena({
             {duel.rounds_detail.map((r) => {
               const mine = r.claimed_by_seat === duel.my_seat;
               const theirs = r.claimed_by_seat !== null && !mine;
-              const state = mine ? "mine" : theirs ? "theirs" : r.round === roundId ? "open" : "locked";
+              const open = unlocked(r);
+              const state = mine ? "mine" : theirs ? "theirs" : open ? "open" : "locked";
               const p = problemFor(r.problem_key);
               return (
                 <button
                   key={r.round}
                   className={`step ${state}`}
-                  onClick={() => setPicked(r.round)}
+                  disabled={!open}
+                  aria-disabled={!open}
+                  title={open ? undefined : t.locked}
+                  onClick={() => { if (open) setPicked(r.round); }}
                 >
-                  <b>{String(r.round + 1).padStart(2, "0")} · {(p?.difficulty || "").toUpperCase()}</b>
+                  {/* A locked step says its number and what it is worth and
+                      nothing else — the difficulty is a fact about a problem
+                      that has not been handed out yet. */}
+                  <b>{String(r.round + 1).padStart(2, "0")}{open ? ` · ${(p?.difficulty || "").toUpperCase()}` : ""}</b>
                   <span>{r.points} {t.points}</span>
                   <span className="claim">
-                    {mine ? t.youSolved : theirs ? t.opponentSolved : r.round === roundId ? t.open : t.locked}
+                    {mine ? t.youSolved : theirs ? t.opponentSolved : open ? t.open : t.locked}
                   </span>
                 </button>
               );

@@ -41,7 +41,20 @@ export const DEFAULT_BOT_CONFIG: BotConfig = {
 };
 
 export type Attempt = { at: number; correct: boolean };
-export type RoundPlan = { round: number; problemKey: string; attempts: Attempt[]; solves: boolean };
+export type RoundPlan = {
+  round: number;
+  problemKey: string;
+  /** `at` is seconds after THIS round opened, not since the duel began. Only
+   *  one problem is open at a time, and when the previous one falls is not
+   *  knowable when the plan is written — so the schedule is written relative
+   *  to a start the runner supplies. */
+  attempts: Attempt[];
+  /** When the plan expected this round to open, in seconds from the duel's
+   *  start. A fallback only: the runner prefers the moment the round really
+   *  opened. */
+  openAt: number;
+  solves: boolean;
+};
 export type BotPlan = { rating: number; rounds: RoundPlan[] };
 
 /* Deterministic PRNG. A duel's plan has to survive being recomputed by a
@@ -82,7 +95,12 @@ export function expectedThinkingSeconds(
   botRating: number, problemRating: number, difficulty: "easy" | "medium" | "hard",
   config = DEFAULT_BOT_CONFIG,
 ): number {
-  const base = { easy: 110, medium: 240, hard: 420 }[difficulty] ?? 240;
+  // Halved from the first cut. The old numbers were defensible on paper —
+  // four minutes of thinking for a medium problem is what a person spends —
+  // but a duel is watched, not read about: an opponent who does nothing at all
+  // for six minutes is indistinguishable from an opponent that is broken, and
+  // that is what the first bot duels actually looked like.
+  const base = { easy: 60, medium: 125, hard: 210 }[difficulty] ?? 125;
   const gap = botRating - problemRating;
   const stretched = base * Math.exp(-gap / 520) * config.timeScale;
   return Math.min(config.maxDelaySeconds, Math.max(config.minDelaySeconds, stretched));
@@ -116,8 +134,9 @@ export function planDuel(
   duelSeconds: number, config = DEFAULT_BOT_CONFIG,
 ): BotPlan {
   const plan: RoundPlan[] = [];
-  // The bot works one problem at a time, like a person: the clock carries over
-  // from round to round rather than every round starting at zero.
+  // The bot works one problem at a time, like a person. `clock` is only used to
+  // predict when each round will open, for the runner to fall back on; the
+  // attempts themselves are timed from the round's own start.
   let clock = 0;
 
   for (const round of rounds) {
@@ -134,23 +153,31 @@ export function planDuel(
     // person re-reading the statement, not a free reroll.
     let wrongCount = 0;
     while (wrongCount < 2 && random() < behaviour.mistakeProbability) wrongCount++;
+    // A round the bot cannot solve still has to be *played*. Without this the
+    // plan for such a round can come out completely empty, and the opponent
+    // watches a scoreboard that never moves — no WRONG_ANSWER, no time limit,
+    // nothing — which reads as a bot that is switched off rather than one that
+    // is losing. Somebody who fails a problem fails it visibly.
+    if (!behaviour.shouldSolve && wrongCount === 0) wrongCount = 1;
 
-    let at = clock + think;
+    let at = think;
     for (let i = 0; i < wrongCount; i++) {
       attempts.push({ at: Math.round(at), correct: false });
       at += Math.max(20, think * 0.35 * (0.7 + random() * 0.6));
     }
     if (behaviour.shouldSolve) attempts.push({ at: Math.round(at), correct: true });
 
+    const openAt = Math.round(clock);
     // A round the bot never solves still consumes its attention before it
     // gives up and moves on.
-    clock = behaviour.shouldSolve ? at : at + think * 0.5;
+    clock += behaviour.shouldSolve ? at : at + think * 0.35;
 
     // Anything scheduled past the final whistle simply never happens.
     plan.push({
       round: round.round,
       problemKey: round.problemKey,
       solves: behaviour.shouldSolve,
+      openAt,
       attempts: attempts.filter((a) => a.at < duelSeconds),
     });
   }

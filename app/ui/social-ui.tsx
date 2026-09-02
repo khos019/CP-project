@@ -119,17 +119,17 @@ const LANG_LABEL: Record<string, string> = { cpp20: "C++20", python3: "Python 3"
    label, so it is worth borrowing outright. The label stays for screen readers
    and as a tooltip, which the original does not do. */
 export function FriendStar({
-  lang, isFriend, signedIn, userId, onChange, withLabel = false,
+  lang, isFriend, signedIn, userId, onChange, solo = false,
 }: {
   lang: Lang;
   isFriend: boolean;
   signedIn: boolean;
   userId: string;
   onChange: (next: boolean) => void;
-  /* Bare star for dense rows; star plus wording where it stands on its own.
-     A lone glyph next to somebody's name is a guessing game — it needs the
-     label wherever there is room for one. */
-  withLabel?: boolean;
+  /* Standing on its own rather than tucked against a name: same star, bigger
+     target. The wording stays in the tooltip and the accessible name — spelling
+     it out beside the glyph only repeats what the glyph already says. */
+  solo?: boolean;
 }) {
   const t = T[lang];
   const [busy, setBusy] = useState(false);
@@ -149,7 +149,7 @@ export function FriendStar({
   return (
     <button
       type="button"
-      className={`friend-star${withLabel ? " friend-star-wide" : ""}${isFriend ? " on" : ""}`}
+      className={`friend-star${solo ? " friend-star-solo" : ""}${isFriend ? " on" : ""}`}
       onClick={toggle}
       disabled={!signedIn || busy}
       aria-pressed={isFriend}
@@ -157,7 +157,6 @@ export function FriendStar({
       aria-label={label}
     >
       <span aria-hidden>{isFriend ? "★" : "☆"}</span>
-      {withLabel && <span className="friend-star-text">{label}</span>}
     </button>
   );
 }

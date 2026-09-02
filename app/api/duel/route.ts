@@ -360,14 +360,31 @@ async function runBotStep(token: string, matchId: string): Promise<Json> {
   const rounds = Array.isArray(info.rounds) ? (info.rounds as Json[]) : [];
   const done = (info.done || {}) as Record<string, number>;
 
+  // One problem is open at a time: the next one is handed out only once this
+  // one has been claimed. The bot plays under that rule too — letting it work
+  // ahead would have it claim a round the human is not allowed to have seen
+  // yet, which is the same duel from two different rulebooks.
+  const openIndex = rounds.findIndex((r) => r.claimed_by_seat === null);
+  if (openIndex < 0) return { ok: true, moved: false, reason: "all_claimed" };
+  const live = rounds[openIndex];
+
   for (const roundPlan of plan.rounds) {
-    const live = rounds.find((r) => Number(r.round) === roundPlan.round);
-    // Somebody already claimed it — the bot moves on, exactly as a person would.
-    if (!live || live.claimed_by_seat !== null) continue;
+    if (roundPlan.round !== Number(live.round)) continue;
+
+    // The schedule is written from the moment this round opened, which is when
+    // the round before it was claimed — the plan cannot know that in advance,
+    // so it only guesses (`openAt`) and the real time wins whenever the
+    // database has one. Round 0 opens with the duel.
+    const previous = openIndex > 0 ? rounds[openIndex - 1] : null;
+    const claimedElapsed = Number(previous?.claimed_elapsed);
+    const openedAt = !previous ? 0
+      : Number.isFinite(claimedElapsed) ? claimedElapsed
+      : Number(roundPlan.openAt) || 0;
+    const sinceOpen = elapsed - openedAt;
 
     const already = Number(done[String(roundPlan.round)] || 0);
     const attempt = roundPlan.attempts[already];
-    if (!attempt || attempt.at > elapsed) continue;
+    if (!attempt || attempt.at > sinceOpen) continue;
 
     const key = asString(live.problem_key);
     const entry = hasSolution(key) ? solutions[key] : null;

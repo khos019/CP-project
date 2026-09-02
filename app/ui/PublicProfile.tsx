@@ -227,7 +227,7 @@ export function PublicProfile({
                   </button>
                   <FriendStar
                     lang={lang} isFriend={isFriend} signedIn={signedIn}
-                    userId={person.id} onChange={setIsFriend} withLabel
+                    userId={person.id} onChange={setIsFriend} solo
                   />
                 </>
               ) : (

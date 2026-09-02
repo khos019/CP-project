@@ -37,6 +37,10 @@ body{background:radial-gradient(circle at 12% -10%,rgba(119,210,68,.13),transpar
 .player .who{font-weight:800;font-size:18px;margin:3px 0}.player .sub{font-size:12px;color:#8ba295}.player .score{display:block;color:var(--lime)}
 .duel-steps .step{display:grid;gap:3px;font-size:12px;transition:.2s}.duel-steps .step b{font-size:13px;letter-spacing:.04em}.duel-steps .step .claim{font-weight:800;opacity:.85}
 .step.mine{background:linear-gradient(135deg,var(--lime),#84df52);color:#071008;border-color:var(--lime);box-shadow:0 0 28px rgba(154,239,79,.14)}
+/* A locked step is not a place you can go — it should not answer a click and
+   should not look as though it might. */
+.step.locked{opacity:.45;cursor:not-allowed}
+.step:disabled{pointer-events:none}
 .step.theirs{background:linear-gradient(135deg,#43231a,#2a1610);color:#ffb191;border-color:#6a3323}
 .step.locked::before{content:none}
 .duel-problem{margin-top:20px;background:#0b110e;border:1px solid #2a3a31;border-radius:18px;padding:22px}
@@ -709,14 +713,10 @@ body{background:radial-gradient(circle at 12% -10%,rgba(119,210,68,.13),transpar
 /* Codeforces' star, which is understood without a label. Grey outline until it
    is yours, then filled and lit. */
 .friend-star{border:0;background:transparent;color:#6b7d73;font-size:.9em;line-height:1;padding:0 8px 0 0;vertical-align:baseline}
-/* Standing on its own next to the other actions, the star gets a target worth
-   clicking and says what it does. */
-.friend-star-wide{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;font-size:13.5px;font-weight:750;
- border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--muted);white-space:nowrap}
-.friend-star-wide:hover:not(:disabled){border-color:#3d5c2c;color:var(--ink)}
-.friend-star-wide.on{border-color:#3d5c2c;background:#101a0c;color:var(--lime)}
-.friend-star-wide:disabled{opacity:.55}
-.friend-star-text{font-weight:inherit}
+/* Standing on its own beside the other actions the glyph needs a target worth
+   clicking — but still only the glyph. Wording next to a star explains what a
+   star already says. */
+.friend-star-solo{font-size:26px;padding:0 4px;line-height:1}
 .friend-star:hover:not(:disabled){color:#c9dc8a}
 .friend-star.on{color:var(--lime);text-shadow:0 0 14px rgba(200,255,118,.45)}
 .friend-star:disabled{cursor:default;opacity:.55}
@@ -1080,7 +1080,12 @@ body{background:radial-gradient(circle at 12% -10%,rgba(119,210,68,.13),transpar
 .ide-highlight code{font:inherit}
 .ide-input{position:relative;z-index:1;resize:none;background:transparent;
  color:transparent;caret-color:var(--lime);-webkit-text-fill-color:transparent}
-.ide-input::selection{background:#2b4b33;-webkit-text-fill-color:transparent}
+/* The selection is painted by the textarea, which sits ON TOP of the coloured
+   layer — so an opaque highlight blots the code out exactly where you are
+   looking. A translucent one tints the same region and lets the syntax colours
+   below read straight through it. */
+.ide-input::selection{background:rgba(154,239,79,.26);-webkit-text-fill-color:transparent}
+.ide-input::-moz-selection{background:rgba(154,239,79,.26);-webkit-text-fill-color:transparent}
 .ide-input:focus{outline:0}
 .ide-stack:focus-within{box-shadow:inset 2px 0 0 var(--lime)}
 .ide-reset{margin:6px 10px 6px 0;border:1px solid #2a3b31;background:#0c120f;color:#84958b;
