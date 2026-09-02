@@ -672,7 +672,10 @@ function RoundEditor({
         onSubmit={send} submitLabel={t.submit} busy={sending || locked}
         onRun={run} runLabel={`${t.run} ▶`} runBusy={running}
         verdict={verdict || (out ? `${out.status} · ${out.runtimeMs} ms · ${out.memoryKb} KB` : "")}
-        minHeight={330}
+        // The same height the compiler page gives it. A duel is where you most
+        // need to see the whole solution at once, so it should not be the one
+        // screen that shows the least of it.
+        minHeight={420}
       />
 
       <div className="duel-console">

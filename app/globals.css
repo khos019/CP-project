@@ -1115,9 +1115,12 @@ body{background:radial-gradient(circle at 12% -10%,rgba(119,210,68,.13),transpar
 .duel-console{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .dc-pane{background:#080d0b;border:1px solid #24322b;border-radius:13px;padding:11px 12px;min-width:0}
 .dc-pane.dc-err{grid-column:1/-1;border-color:#5a2f22}
-.dc-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:7px;min-height:22px}
-.dc-head h4{margin:0;font-size:11.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#7c8d83;
- white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+/* Wraps rather than truncates. In a narrow column the label and the match
+   badge do not both fit on one line, and a header clipped to "CHIQISH (STD…"
+   reads as a bug. */
+.dc-head{display:flex;align-items:center;justify-content:space-between;gap:6px 8px;flex-wrap:wrap;
+ margin-bottom:7px;min-height:22px}
+.dc-head h4{margin:0;font-size:11.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#7c8d83}
 .dc-pane textarea,.dc-pane pre{width:100%;margin:0;box-sizing:border-box;min-height:82px;max-height:190px;overflow:auto;
  padding:9px 10px;border-radius:9px;background:#050908;border:1px solid #1c2a23;color:#d8f0de;
  font-family:var(--font-mono);font-size:12.5px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere}
