@@ -96,7 +96,11 @@ export function ChallengeOverlay({
   notice: string;
 }) {
   const t = T[lang];
-  const [left, setLeft] = useState(5);
+  // Tagged with the challenge it belongs to. The effect below cannot run until
+  // after the first paint, so an untagged number would show the *previous*
+  // challenge's countdown for a frame — and on the very first one, whatever
+  // number was hardcoded here.
+  const [left, setLeft] = useState<{ id: string; seconds: number } | null>(null);
   const expired = useRef(false);
 
   useEffect(() => {
@@ -104,7 +108,7 @@ export function ChallengeOverlay({
     expired.current = false;
     const tick = () => {
       const remaining = secondsLeft(challenge.expires_at, serverNow, drawnAt);
-      setLeft(remaining);
+      setLeft({ id: challenge.id, seconds: remaining });
       if (remaining <= 0 && !expired.current) {
         expired.current = true;
         onExpire();
@@ -122,8 +126,15 @@ export function ChallengeOverlay({
   }
   if (!challenge) return null;
 
-  const total = 5;
-  const fraction = Math.max(0, Math.min(1, left / total));
+  /* How long the card lives is the server's decision — duel_config's
+     challenge_ttl_seconds, which has already been five and is now seven. The
+     ring was drawn against a 5 hardcoded here, so it sat full for two seconds
+     and then drained over the remaining five while the number counted down
+     from seven. Both timestamps come from the server in the same message, so
+     their difference IS the deadline, whatever it is set to next. */
+  const total = Math.max(1, (Date.parse(challenge.expires_at) - Date.parse(challenge.created_at)) / 1000) || 5;
+  const seconds = left && left.id === challenge.id ? left.seconds : total;
+  const fraction = Math.max(0, Math.min(1, seconds / total));
   const circumference = 2 * Math.PI * 26;
 
   return (
@@ -148,7 +159,7 @@ export function ChallengeOverlay({
               transform="rotate(-90 30 30)"
             />
             <text x="30" y="36" textAnchor="middle" fontSize="20" fontWeight="800" fill="#f2f7f3">
-              {Math.ceil(left)}
+              {Math.ceil(seconds)}
             </text>
           </svg>
         </div>
