@@ -65,10 +65,26 @@ export type TrackPlacement = {
   probed: boolean;
 };
 
-/* Placement alone never certifies a track outright: 820 sits above the
-   "unlock" and "complete" thresholds but below "advanced", leaving the top of
-   every track to real work. */
-const MAX_PLACEMENT_MASTERY = 820;
+/* What fourteen questions are actually worth.
+ *
+ * The first cut let a strong placement clear a whole track and pushed mastery
+ * to 820 — above the "complete" threshold, so a section counted as validated.
+ * That is not what happened: somebody answered one or two questions near that
+ * track's level. Fourteen questions are evidence of a *level*, not proof of
+ * having done fifteen units of work.
+ *
+ * So both numbers are now deliberately short of certifying anything:
+ *
+ *   mastery caps at 620 — above "unlock" (450) so the track opens, below
+ *   "complete" (700) so placement can never mark a section finished;
+ *
+ *   clearance caps at half a track, and no amount of confidence clears the
+ *   whole thing. The second half is always walked. */
+const MAX_PLACEMENT_MASTERY = 620;
+const MAX_CLEAR_SHARE = 0.5;
+/* A track nobody was asked about is placed on the estimate alone, which is
+   indirect evidence. It opens less than one the learner actually answered. */
+const UNPROBED_CLEAR_FACTOR = 0.6;
 /* One right or wrong answer inside a track is real evidence about that track,
    worth more than the band estimate but not enough to override it entirely. */
 const PROBE_CORRECT = 90;
@@ -108,14 +124,16 @@ export function placeTracks(rating: number, answers: Answer[]): TrackPlacement[]
 
     // Clearance follows the adjusted mastery rather than the raw band, so a
     // wrong answer in a track the learner should have known pulls back the
-    // units it would otherwise have skipped.
-    const share = adjusted / MAX_PLACEMENT_MASTERY;
+    // units it would otherwise have skipped. Capped at half the track, and
+    // reduced further where the estimate is all we have to go on.
+    const probed = probes.has(track.slug);
+    const share = (adjusted / MAX_PLACEMENT_MASTERY)
+      * MAX_CLEAR_SHARE
+      * (probed ? 1 : UNPROBED_CLEAR_FACTOR);
     const total = track.units.length;
-    const cleared = rating < CLEAR_FLOOR ? 0
-      : share >= 0.95 ? total
-      : Math.floor(share * total);
+    const cleared = rating < CLEAR_FLOOR ? 0 : Math.floor(share * total);
 
-    return { slug: track.slug, mastery: adjusted, cleared, units: total, probed: probes.has(track.slug) };
+    return { slug: track.slug, mastery: adjusted, cleared, units: total, probed };
   });
 }
 

@@ -251,7 +251,7 @@ export function PublicProfile({
           </div>
 
           <button className="secondary pp-subs" onClick={() => onOpenSubmissions(person.username)}>
-            {t.submissions} →
+            {t.submissions}
           </button>
         </>
       )}

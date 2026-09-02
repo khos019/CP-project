@@ -113,7 +113,7 @@ test("a high placement opens units and a low one opens none", () => {
 
   const openedHigh = high.reduce((n, t) => n + t.cleared, 0);
   const openedLow = low.reduce((n, t) => n + t.cleared, 0);
-  assert.ok(openedHigh > 40, `a 1900 placement opened only ${openedHigh} units`);
+  assert.ok(openedHigh > 10, `a strong placement opened only ${openedHigh} units`);
   assert.equal(openedLow, 0, `a beginner placement opened ${openedLow} units`);
 });
 
@@ -123,8 +123,10 @@ test("placement never clears more units than a track has, nor certifies it outri
       const track = catalog.find((c) => c.slug === t.slug);
       assert.ok(t.cleared >= 0 && t.cleared <= track.units.length,
         `${t.slug}: cleared ${t.cleared} of ${track.units.length}`);
-      assert.ok(t.mastery <= 820,
-        `${t.slug}: placement handed out ${t.mastery} mastery — the top of a track must be earned`);
+      assert.ok(t.mastery <= 620,
+        `${t.slug}: placement handed out ${t.mastery} mastery — it must stay below "complete" (700)`);
+      assert.ok(t.cleared <= Math.ceil(track.units.length / 2),
+        `${t.slug}: placement cleared ${t.cleared} of ${track.units.length} — never more than half`);
     }
   }
 });
@@ -133,4 +135,30 @@ test("a track far above the learner stays closed", () => {
   const placed = model.placeTracks(900, run((q) => q.rating <= 1000));
   const advanced = placed.find((t) => t.slug === "advanced-cp");
   assert.equal(advanced.cleared, 0, "advanced-cp should open nothing for a 900 placement");
+});
+
+test("options are shuffled, so the answer is not always the same letter", async () => {
+  // Twenty of the twenty-one questions were authored with the correct answer
+  // second. That is learnable within about four questions, at which point the
+  // test stops measuring anything — so the options are permuted per showing.
+  const bankJs = ts.transpileModule(bankSrc, {
+    compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
+  }).outputText;
+  const bank = await import(
+    `data:text/javascript;base64,${Buffer.from(bankJs, "utf8").toString("base64")}`
+  );
+
+  const q = bank.placementBank[0];
+  const seen = new Set();
+  for (let i = 0; i < 200; i++) {
+    const shown = bank.shuffleOptions(q);
+    // Still a permutation: every option present, exactly once.
+    assert.equal(new Set(shown.order).size, q.choicesUz.length);
+    // And the marked answer really is the correct one, wherever it landed.
+    assert.equal(shown.order[shown.correctAt], q.correct);
+    assert.equal(bank.shownChoices(shown, "uz")[shown.correctAt], q.choicesUz[q.correct]);
+    seen.add(shown.correctAt);
+  }
+  assert.equal(seen.size, q.choicesUz.length,
+    `the correct answer only ever appeared in ${seen.size} of ${q.choicesUz.length} positions`);
 });

@@ -275,3 +275,31 @@ export function pickQuestion(
     Math.abs(q.rating - target) + (seenTracks.has(q.track) ? 250 : 0);
   return pool.reduce((best, q) => (cost(q) < cost(best) ? q : best), pool[0]);
 }
+
+
+/* Twenty of the twenty-one questions here were written with the correct answer
+   second, which a learner spots within about four questions and then stops
+   reading the options. Rather than hand-shuffling the source — which drifts
+   again the moment a question is added — the options are permuted every time a
+   question is shown. It also means a retake is not the same test twice.
+ */
+export type ShownQuestion = {
+  question: PlacementQuestion;
+  /** Original option indices, in the order they are displayed. */
+  order: number[];
+  /** Where the correct option ended up. */
+  correctAt: number;
+};
+
+export function shuffleOptions(question: PlacementQuestion): ShownQuestion {
+  const order = question.choicesUz.map((_, i) => i);
+  for (let i = order.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [order[i], order[j]] = [order[j], order[i]];
+  }
+  return { question, order, correctAt: order.indexOf(question.correct) };
+}
+
+/** The options as displayed, in the shuffled order. */
+export const shownChoices = (shown: ShownQuestion, lang: "uz" | "en") =>
+  shown.order.map((i) => (lang === "uz" ? shown.question.choicesUz[i] : shown.question.choicesEn[i]));

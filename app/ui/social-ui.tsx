@@ -22,7 +22,8 @@ const T = {
     added: "Do‘stlaringizda",
     signInToAdd: "Do‘st qo‘shish uchun kiring",
     submissions: "Yuborilgan yechimlar",
-    none: "Hali yechim yuborilmagan.",
+    none: "Hali yechim yuborilmagan",
+    noneHint: "Masalani yechib, tekshiruvchiga yuborsangiz — barchasi shu yerda to‘planadi.",
     loading: "Yuklanmoqda…",
     failed: "Ro‘yxatni olib bo‘lmadi.",
     missing: "Yechimlar tarixi serverda hali yoqilmagan (015-migratsiya).",
@@ -64,7 +65,8 @@ const T = {
     added: "In your friends",
     signInToAdd: "Sign in to add friends",
     submissions: "Submissions",
-    none: "No submissions yet.",
+    none: "No submissions yet",
+    noneHint: "Solve a problem and send it to the judge — everything you submit collects here.",
     loading: "Loading…",
     failed: "Could not load the list.",
     missing: "The submission history is not enabled on the server yet (migration 015).",
@@ -228,7 +230,13 @@ export function SubmissionHistory({
       {state === "loading" && <p className="muted os-empty">{t.loading}</p>}
       {state === "error" && <p className="muted os-empty">{t.failed}</p>}
       {state === "missing" && <p className="muted os-empty">{t.missing}</p>}
-      {state === "ready" && rows && !rows.length && <p className="muted os-empty">{t.none}</p>}
+      {state === "ready" && rows && !rows.length && (
+        <div className="os-blank">
+          <span className="os-blank-ic" aria-hidden>⌘</span>
+          <b>{t.none}</b>
+          <p>{t.noneHint}</p>
+        </div>
+      )}
       {state === "ready" && rows && rows.length > 0 && (
         <div className="sub-table-wrap">
           <table className="sub-table">

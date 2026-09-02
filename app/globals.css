@@ -475,7 +475,16 @@ body{background:radial-gradient(circle at 12% -10%,rgba(119,210,68,.13),transpar
 .os-rating b{color:var(--lime);margin-left:4px}
 
 .os-split{display:grid;grid-template-columns:1.15fr 1fr;gap:14px;align-items:start;margin-bottom:20px}
+/* An empty list is a state, not a missing one. A single left-aligned sentence
+   floating in a large panel reads as a page that failed to load; centring it
+   under a mark says "there is nothing here yet" on purpose. */
 .os-empty{padding:18px 0 4px;font-size:14px}
+.os-blank{display:grid;justify-items:center;gap:10px;padding:44px 24px;text-align:center}
+.os-blank-ic{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;
+ background:#141f18;border:1px solid #22302a;color:#6f8177;font-size:20px}
+.os-blank b{font-size:15.5px;color:var(--ink);font-weight:700}
+.os-blank p{margin:0;color:var(--muted);font-size:13.5px;line-height:1.55;max-width:38ch}
+.os-blank .primary,.os-blank .secondary{margin-top:6px}
 .os-note{display:flex;flex-direction:column;align-items:flex-start;gap:10px}
 .os-note h3{margin:0;font-size:16px}
 .os-note p{margin:0;font-size:13.5px;line-height:1.65;max-width:70ch}
@@ -741,7 +750,13 @@ body{background:radial-gradient(circle at 12% -10%,rgba(119,210,68,.13),transpar
 .code-view{margin:0;padding:18px;border-radius:14px;background:#060a08;border:1px solid #1e2d25;color:#c8f7d3;font-family:var(--font-mono);font-size:13px;line-height:1.65;white-space:pre;overflow-x:auto}
 .code-locked{display:grid;gap:10px;justify-items:center;text-align:center;padding:34px 18px;border:1px dashed #2b3d33;border-radius:16px}
 .code-locked>span{font-size:30px}
-.pp-subs{width:100%;text-align:left}
+/* The submissions link sat flush against the stat tiles above it — two blocks
+   with no air between them read as one broken block. It is an action, so it
+   gets the spacing of an action and the arrow is pushed to the far edge where
+   the eye expects to find it. */
+.pp-subs{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;text-align:left}
+.pp-subs::after{content:"→";color:var(--muted);font-weight:800}
+.pp-subs:hover::after{color:var(--lime)}
 /* Advanced roadmap nodes: progress ring, six states, detail popover. */
 .cloud-wrap{position:relative;display:flex;flex-direction:column;align-items:inherit;width:100%}
 .cloud-unit{position:relative;z-index:1}

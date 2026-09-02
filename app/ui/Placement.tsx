@@ -29,7 +29,7 @@ import { useMemo, useState } from "react";
 import { BrandMark } from "./BrandMark";
 import { roadmapCatalog } from "./roadmap-data";
 import { savePlacement } from "./mastery";
-import { placementBank, pickQuestion, type PlacementQuestion } from "./placement-bank";
+import { placementBank, pickQuestion, shownChoices, shuffleOptions, type ShownQuestion } from "./placement-bank";
 import { estimateRating, levelLabel, nextTarget, placeTracks, START_RATING, type Answer } from "./placement-model";
 
 type Lang = "uz" | "en";
@@ -82,7 +82,7 @@ export function Placement({
   const t = T[lang];
   const [step, setStep] = useState<Step>("intro");
   const [answers, setAnswers] = useState<Answer[]>([]);
-  const [current, setCurrent] = useState<PlacementQuestion | null>(null);
+  const [current, setCurrent] = useState<ShownQuestion | null>(null);
   const [picked, setPicked] = useState<number | null>(null);
   const [revealed, setRevealed] = useState(false);
 
@@ -92,7 +92,7 @@ export function Placement({
 
   const begin = () => {
     const first = pickQuestion(START_RATING, new Set(), new Set());
-    setCurrent(first);
+    setCurrent(first ? shuffleOptions(first) : null);
     setPicked(null);
     setRevealed(false);
     setStep("quiz");
@@ -101,7 +101,7 @@ export function Placement({
   const check = () => {
     if (picked === null || !current || revealed) return;
     setRevealed(true);
-    setAnswers((list) => [...list, { question: current, correct: picked === current.correct }]);
+    setAnswers((list) => [...list, { question: current.question, correct: picked === current.correctAt }]);
   };
 
   const advance = () => {
@@ -113,7 +113,7 @@ export function Placement({
     const target = nextTarget(estimateRating(answers), done);
     const next = pickQuestion(target, asked, tracks);
     if (!next) { finish(answers); return; }
-    setCurrent(next);
+    setCurrent(shuffleOptions(next));
     setPicked(null);
     setRevealed(false);
   };
@@ -195,9 +195,9 @@ export function Placement({
   /* --------------------------------------------------------------- quiz */
   if (step === "quiz" && current) {
     const index = answers.length + (revealed ? 0 : 1);
-    const choices = lang === "uz" ? current.choicesUz : current.choicesEn;
-    const track = roadmapCatalog.find((r) => r.slug === current.track);
-    const wasRight = revealed && picked === current.correct;
+    const choices = shownChoices(current, lang);
+    const track = roadmapCatalog.find((r) => r.slug === current.question.track);
+    const wasRight = revealed && picked === current.correctAt;
 
     return (
       <div className="pl-page">
@@ -207,18 +207,18 @@ export function Placement({
               {Math.min(index, TOTAL)} {t.of} {TOTAL}
             </span>
             <span className="pl-chip" style={{ borderColor: track?.color }}>
-              {track ? (lang === "uz" ? track.titleUz : track.titleEn) : current.track}
-              <i className="mono"> · {current.rating}</i>
+              {track ? (lang === "uz" ? track.titleUz : track.titleEn) : current.question.track}
+              <i className="mono"> · {current.question.rating}</i>
             </span>
           </div>
           <div className="progress pl-progress"><span style={{ width: `${(answers.length / TOTAL) * 100}%` }} /></div>
 
-          <h2 className="pl-question">{lang === "uz" ? current.uz : current.en}</h2>
+          <h2 className="pl-question">{lang === "uz" ? current.question.uz : current.question.en}</h2>
 
           <div className="quiz-options pl-options">
             {choices.map((c, i) => {
               const state = !revealed ? (picked === i ? "selected" : "")
-                : i === current.correct ? "right"
+                : i === current.correctAt ? "right"
                 : picked === i ? "wrong" : "";
               return (
                 <button key={i} className={state} disabled={revealed} onClick={() => setPicked(i)}>
@@ -231,7 +231,7 @@ export function Placement({
           {revealed && (
             <div className={`pl-why ${wasRight ? "ok" : "bad"}`}>
               <b>{wasRight ? t.correct : t.wrong}</b>
-              <p>{lang === "uz" ? current.whyUz : current.whyEn}</p>
+              <p>{lang === "uz" ? current.question.whyUz : current.question.whyEn}</p>
             </div>
           )}
 
