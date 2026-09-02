@@ -1091,3 +1091,60 @@ body{background:radial-gradient(circle at 12% -10%,rgba(119,210,68,.13),transpar
 .ide-reset{margin:6px 10px 6px 0;border:1px solid #2a3b31;background:#0c120f;color:#84958b;
  padding:6px 11px;border-radius:8px;font-size:11.5px;font-family:var(--font-mono);cursor:pointer;align-self:center}
 .ide-reset:hover{color:var(--lime);border-color:#46643f}
+
+/* ---------------------------------------------------------------- duel work
+   The duel is the one screen that has to feel like an editor, because it is
+   now the only place a duel may be written. Everything below exists to make
+   staying here cost nothing: the statement beside the code instead of a scroll
+   away, your own input, what the program printed, and what the sample says it
+   should have printed — all visible at once. */
+.duel-work{display:grid;grid-template-columns:minmax(300px,0.9fr) minmax(430px,1.1fr);gap:16px;margin-top:20px;align-items:start}
+.duel-work>*{min-width:0}
+.duel-work .duel-problem{margin-top:0;max-height:min(70vh,640px);overflow:auto}
+@media(max-width:1080px){.duel-work{grid-template-columns:1fr}.duel-work .duel-problem{max-height:none}}
+
+/* On a wide screen the duel breaks out of the 1240px column the rest of the
+   site reads at. Prose wants a narrow measure; code does not. */
+@media(min-width:1360px){
+  .duel-layout{--duel-w:min(1620px,calc(100vw - 40px));
+   width:var(--duel-w);margin-left:calc((min(1240px,100vw) - 48px - var(--duel-w)) / 2)}
+}
+
+.duel-code{display:grid;gap:12px;min-width:0}
+.duel-code .ide{margin:0}
+.duel-console{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dc-pane{background:#080d0b;border:1px solid #24322b;border-radius:13px;padding:11px 12px;min-width:0}
+.dc-pane.dc-err{grid-column:1/-1;border-color:#5a2f22}
+.dc-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:7px;min-height:22px}
+.dc-head h4{margin:0;font-size:11.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#7c8d83;
+ white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dc-pane textarea,.dc-pane pre{width:100%;margin:0;box-sizing:border-box;min-height:82px;max-height:190px;overflow:auto;
+ padding:9px 10px;border-radius:9px;background:#050908;border:1px solid #1c2a23;color:#d8f0de;
+ font-family:var(--font-mono);font-size:12.5px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere}
+.dc-pane textarea{resize:vertical;outline:0}
+.dc-pane textarea:focus{border-color:#46643f}
+.dc-pane pre.muted{color:#6f8177}
+.dc-err pre{color:#ffb191}
+.dc-mini{border:1px solid #2a3b31;background:#0c120f;color:#84958b;padding:4px 9px;border-radius:7px;
+ font-size:11px;font-family:var(--font-mono);cursor:pointer}
+.dc-mini:hover{color:var(--lime);border-color:#46643f}
+.dc-verdict{font-size:11.5px;font-weight:800;white-space:nowrap}
+.dc-verdict.ok{color:#9aef4f}
+.dc-verdict.bad{color:#ff875c}
+.dc-note{margin:0;font-size:12px;display:flex;justify-content:space-between;gap:14px;flex-wrap:wrap}
+.dc-keys{font-family:var(--font-mono);color:#7c8d83;white-space:nowrap}
+.ide-play{padding:8px 13px;font-size:12.5px;white-space:nowrap}
+@media(max-width:700px){.duel-console{grid-template-columns:1fr}.dc-note{flex-direction:column;gap:4px}}
+
+/* The rule, where it cannot be missed. It is stated on the matchmaking screen
+   before anyone is in a duel, and again above every round — a rule you can
+   only discover by losing to it is a trap, not a rule. */
+.duel-rule{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 14px;padding:11px 15px;
+ border-radius:13px;background:#20160f;border:1px solid #5a3a22;color:#ffc9a6;font-size:13px;line-height:1.5}
+.duel-rule b{color:#ffb191}
+.duel-rule.warned{background:#2a1410;border-color:#7a3524}
+.duel-stray-count{margin-left:auto;font-style:normal;font-family:var(--font-mono);font-size:12px;
+ padding:3px 9px;border-radius:99px;background:#3a1d15;color:#ff9b73;white-space:nowrap}
+.duel-rule-lite{max-width:520px;margin:16px auto 4px;font-size:13px;line-height:1.55;color:#c9b09c}
+.duel-rule-lite b{color:#ffb191}
+.result-why{margin:14px auto 0;max-width:440px}

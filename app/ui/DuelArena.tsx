@@ -16,6 +16,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { bankProblems } from "./problem-bank";
+import { CodeEditor } from "./CodeEditor";
+import { useTabGuard } from "./duel-guard";
 import {
   // Accept and decline are the shell's job, not this screen's: the card can
   // appear anywhere in the app, so the handlers live where it is rendered.
@@ -35,6 +37,12 @@ const STARTER: Record<CodeLang, string> = {
   cpp20: "#include <bits/stdc++.h>\nusing namespace std;\n\nint main(){\n  ios::sync_with_stdio(false);\n  cin.tie(nullptr);\n  // yechimingizni shu yerga yozing\n  return 0;\n}\n",
   python3: "import sys\ninput = sys.stdin.readline\n\n# yechimingizni shu yerga yozing\n",
 };
+
+/* How long an absence is forgiven. See app/ui/duel-guard.ts for why this is
+   not zero: browsers raise blur and visibility events for notifications, the
+   address bar and OS popups, and none of those are somebody reading an
+   editorial. Ten seconds is far shorter than looking anything up. */
+const AWAY_GRACE_MS = 10_000;
 
 const clock = (total: number) =>
   `${String(Math.floor(Math.max(0, total) / 60)).padStart(2, "0")}:${String(Math.floor(Math.max(0, total)) % 60).padStart(2, "0")}`;
@@ -60,6 +68,21 @@ const T = {
     ratingChange: "Reyting o‘zgarishi", unrated: "Bu duel reytingga ta’sir qilmadi",
     opponentSolved: "raqib yechdi", youSolved: "siz yechdingiz", opponentTried: "raqib urinib ko‘rdi",
     noProblem: "Masala topilmadi.", connecting: "Ulanmoqda…", offline: "Aloqa uzildi — qayta ulanmoqda…",
+    run: "Ishga tushirish", running: "Ishlamoqda…", stdin: "Kirish (stdin)", stdout: "Chiqish (stdout)",
+    expected: "Kutilgan chiqish", stderr: "Xatolar", noRun: "Hali ishga tushirilmadi.",
+    useSample: "Namunani qo‘yish", matches: "Namuna bilan mos", differs: "Namunadan farq qiladi",
+    runNote: "Ishga tushirish tekshiruvchi emas — bu yerda verdikt qo‘yilmaydi, faqat dasturingiz nima chiqarganini ko‘rasiz.",
+    shortcuts: "Ctrl+Enter — ishga tushirish · Ctrl+Shift+Enter — yuborish",
+    ruleTitle: "Duel shu tabda o‘tadi",
+    ruleBody: "Kodni faqat shu yerda yozing. Boshqa tabga yoki boshqa dasturga o‘tsangiz, duel avtomatik yutqaziladi.",
+    ruleGrace: (s: number) => `${s} soniyadan uzoq g‘oyib bo‘lsangiz — mag‘lubiyat.`,
+    strayTitle: "Duel tabidan chiqdingiz",
+    strayBody: (s: number, n: number, g: number) =>
+      `${s} soniya g‘oyib bo‘ldingiz — bu ${n}-marta. ${g} soniyadan oshsa duel avtomatik yutqaziladi.`,
+    strayOk: "Tushunarli, davom etaman",
+    strayCount: (n: number) => `${n} marta chiqdingiz`,
+    awayNow: "Duelga qayting",
+    lostByLeaving: "Duel tabini tashlab ketganingiz uchun mag‘lub bo‘ldingiz.",
   },
   en: {
     eyebrow: "RATED MATCHMAKING", title: "Find a duel opponent",
@@ -76,6 +99,21 @@ const T = {
     ratingChange: "Rating change", unrated: "This duel did not affect your rating",
     opponentSolved: "opponent solved", youSolved: "you solved", opponentTried: "opponent attempted",
     noProblem: "Problem not found.", connecting: "Connecting…", offline: "Connection lost — reconnecting…",
+    run: "Run", running: "Running…", stdin: "Input (stdin)", stdout: "Output (stdout)",
+    expected: "Expected output", stderr: "Errors", noRun: "Nothing run yet.",
+    useSample: "Load the sample", matches: "Matches the sample", differs: "Differs from the sample",
+    runNote: "Running is not the judge — no verdict is given here, only what your program printed.",
+    shortcuts: "Ctrl+Enter to run · Ctrl+Shift+Enter to submit",
+    ruleTitle: "The duel happens in this tab",
+    ruleBody: "Write your code here and nowhere else. Switching to another tab or another application forfeits the duel.",
+    ruleGrace: (s: number) => `Away for more than ${s} seconds and you lose.`,
+    strayTitle: "You left the duel tab",
+    strayBody: (s: number, n: number, g: number) =>
+      `You were away ${s}s — that is time ${n}. Longer than ${g}s and the duel is forfeited automatically.`,
+    strayOk: "Understood, carry on",
+    strayCount: (n: number) => `left ${n} times`,
+    awayNow: "Come back to the duel",
+    lostByLeaving: "You lost because you left the duel tab.",
   },
 };
 
@@ -184,6 +222,11 @@ export function DuelMatchmaking({
   const [tick, setTick] = useState<{ elapsed: number; radius: number; available: number; botDue: boolean }>(
     { elapsed: 0, radius: 100, available: 0, botDue: false });
   const [result, setResult] = useState<DuelResult | null>(null);
+  /* Why the duel ended, when the reason is one the server does not record. The
+     forfeit reaches the database as an ordinary forfeit — it is one — so the
+     result screen would otherwise say "you lost" and leave the player to guess
+     which of the things they were warned about happened. */
+  const [lostByLeaving, setLostByLeaving] = useState(false);
   const [busy, setBusy] = useState(false);
   const hadDuel = useRef(false);
 
@@ -250,8 +293,23 @@ export function DuelMatchmaking({
 
   if (authLoading) return <div className="screen-state" role="status"><span className="spinner" aria-hidden /></div>;
 
-  if (state?.duel) return <Arena lang={lang} duel={state.duel} serverNow={state.now} drawnAt={drawnAt} refresh={refresh} />;
-  if (result) return <ResultScreen lang={lang} result={result} onRematch={begin} onExit={() => setResult(null)} />;
+  if (state?.duel) {
+    return (
+      <Arena
+        lang={lang} duel={state.duel} serverNow={state.now} drawnAt={drawnAt} refresh={refresh}
+        onLeftTab={() => setLostByLeaving(true)}
+      />
+    );
+  }
+  if (result) {
+    return (
+      <ResultScreen
+        lang={lang} result={result} onRematch={begin}
+        onExit={() => { setResult(null); setLostByLeaving(false); }}
+        note={lostByLeaving ? t.lostByLeaving : ""}
+      />
+    );
+  }
 
   const searching = status === "searching" || status === "challenge_sent";
   const rating = state?.session?.rating;
@@ -270,6 +328,10 @@ export function DuelMatchmaking({
       <div className="matchmaking panel">
         <div className={`search-orb ${searching ? "pulse" : ""}`}>{searching ? "⚡" : "⚔"}</div>
         <h2>{searching ? t.searching : t.ready}</h2>
+
+        <p className="duel-rule-lite">
+          <b>⚠ {t.ruleTitle}.</b> {t.ruleBody}
+        </p>
 
         {searching ? (
           <>
@@ -299,9 +361,10 @@ export function DuelMatchmaking({
 
 /* -------------------------------------------------------------------- arena */
 function Arena({
-  lang, duel, serverNow, drawnAt, refresh,
+  lang, duel, serverNow, drawnAt, refresh, onLeftTab,
 }: {
   lang: Lang; duel: ActiveDuel; serverNow: string; drawnAt: number; refresh: () => Promise<void>;
+  onLeftTab: () => void;
 }) {
   const t = T[lang];
   const me = seatOf(duel, duel.my_seat);
@@ -353,6 +416,21 @@ function Arena({
   }, [duel.id, duel.mode, refresh]);
 
   const problem = round ? problemFor(round.problem_key) : undefined;
+  const over = remaining <= 0;
+
+  /* The rule, enforced. A duel is the one screen where looking something up is
+     cheating, and whether this page is still the page you are looking at is the
+     only thing the browser will tell us about that — so that is what is
+     measured, and it is measured in the open: the banner says the rule before
+     the first round, and a stray is shown the moment you come back. */
+  const guard = useTabGuard({
+    active: !over,
+    graceMs: AWAY_GRACE_MS,
+    onLose: useCallback(() => {
+      onLeftTab();
+      void (async () => { await forfeitDuel(duel.id); await refresh(); })();
+    }, [duel.id, refresh, onLeftTab]),
+  });
 
   return (
     <>
@@ -365,6 +443,29 @@ function Arena({
         </div>
         <span className={`timer ${remaining <= 300 ? "low" : ""}`}>{clock(remaining)}</span>
       </div>
+
+      {/* Said before it can be broken, and said again for as long as the duel
+          lasts. A rule a player only discovers by losing to it is a trap. */}
+      <div className={`duel-rule ${guard.strays ? "warned" : ""}`} role="note">
+        <b>⚠ {t.ruleTitle}.</b> <span>{t.ruleBody} {t.ruleGrace(Math.round(AWAY_GRACE_MS / 1000))}</span>
+        {guard.strays > 0 && <em className="duel-stray-count">{t.strayCount(guard.strays)}</em>}
+      </div>
+
+      {/* Back inside the grace period. Nothing has happened yet — this is the
+          warning that says what nearly did. */}
+      {guard.lastStray !== null && !guard.away && (
+        <div className="challenge-backdrop" role="alertdialog" aria-modal="true">
+          <div className="challenge-card">
+            <p className="eyebrow" style={{ color: "#ff875c" }}>⚠ {t.strayTitle}</p>
+            <p style={{ margin: "14px 0 20px" }}>
+              {t.strayBody(guard.lastStray, guard.strays, Math.round(AWAY_GRACE_MS / 1000))}
+            </p>
+            <div className="match-actions">
+              <button className="primary" onClick={guard.clearStray}>{t.strayOk}</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="duel-layout">
         <section className="arena">
@@ -412,7 +513,12 @@ function Arena({
           </div>
 
           {problem ? (
-            <div className="duel-problem">
+            /* Statement on one side, the editor and its console on the other.
+               Stacked, the two halves of the same task were a scroll apart —
+               and reading a bound while checking your loop against it is most
+               of what solving one of these actually is. */
+            <div className="duel-work">
+              <div className="duel-problem">
               <span className="tag">{problem.id} · {problem.difficulty.toUpperCase()} · {problem.rating}</span>
               <h2>{lang === "uz" ? problem.uz : problem.en}</h2>
               <p>{lang === "uz" ? problem.statementUz : problem.statementEn}</p>
@@ -422,6 +528,7 @@ function Arena({
               {problem.samples?.[0] && (
                 <pre className="sample">{problem.samples[0].input}{"\n"}{problem.samples[0].output}</pre>
               )}
+              </div>
 
               {/* Keyed by round and language: a new problem gets a clean editor
                   because React remounts it, not because something reset it. */}
@@ -429,6 +536,8 @@ function Arena({
                 key={`${roundId}:${codeLang}`}
                 lang={lang} duelId={duel.id} round={roundId} codeLang={codeLang}
                 onCodeLang={setCodeLang} refresh={refresh}
+                sampleIn={problem.samples?.[0]?.input || ""}
+                sampleOut={problem.samples?.[0]?.output || ""}
                 locked={(round?.claimed_by_seat ?? null) !== null || remaining <= 0}
               />
             </div>
@@ -466,20 +575,67 @@ function Arena({
   );
 }
 
-/* One round's editor. Its own component so that moving to the next problem is
-   a remount — the alternative is an effect that watches the round and resets
-   the code, the verdict and the pending flag, which is three chances to leave
-   one of them stale. */
+/* One round's workspace: the editor, and a console that runs what is in it.
+ *
+ * Why a compiler lives inside a duel at all. The rule the site now enforces is
+ * that a duel is written here and nowhere else — no VS Code on the other
+ * monitor, no online compiler in the next tab. That rule is only fair if this
+ * page can do the thing people open those for: run the code against an input
+ * you typed and see what came out. Take that away and "stay in the tab" stops
+ * being an anti-cheat measure and becomes an obstacle to solving the problem.
+ *
+ * Running is deliberately NOT judging. It reaches /api/judge in `run` mode,
+ * which has no expected output and no access to the hidden tests, so no amount
+ * of running tells anyone what the tests contain. The verdict still only comes
+ * from submitting.
+ *
+ * Its own component so that moving to the next problem is a remount — the
+ * alternative is an effect that watches the round and resets the code, the
+ * verdict, the console and the pending flag, which is four chances to leave one
+ * of them stale.
+ */
 function RoundEditor({
-  lang, duelId, round, codeLang, onCodeLang, refresh, locked,
+  lang, duelId, round, codeLang, onCodeLang, refresh, locked, sampleIn, sampleOut,
 }: {
   lang: Lang; duelId: string; round: number; codeLang: CodeLang;
   onCodeLang: (next: CodeLang) => void; refresh: () => Promise<void>; locked: boolean;
+  sampleIn: string; sampleOut: string;
 }) {
   const t = T[lang];
   const [code, setCode] = useState(STARTER[codeLang]);
   const [verdict, setVerdict] = useState("");
   const [sending, setSending] = useState(false);
+
+  // The sample is already on screen above; starting the input box with it
+  // means the first run is one keystroke away instead of a copy job.
+  const [stdin, setStdin] = useState(withNewline(sampleIn));
+  const [out, setOut] = useState<RunResult | null>(null);
+  const [running, setRunning] = useState(false);
+
+  const run = async () => {
+    if (running || sending) return;
+    setRunning(true);
+    setOut(null);
+    try {
+      const response = await fetch("/api/judge", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ mode: "run", language: codeLang, sourceCode: code, stdin }),
+      });
+      const data = await response.json();
+      setOut(response.ok
+        ? {
+            stdout: String(data.stdout || ""), stderr: String(data.stderr || ""),
+            status: String(data.status || ""), runtimeMs: Number(data.runtimeMs) || 0,
+            memoryKb: Number(data.memoryKb) || 0,
+          }
+        : { stdout: "", stderr: String(data.error || "…"), status: "", runtimeMs: 0, memoryKb: 0 });
+    } catch {
+      setOut({ stdout: "", stderr: "network", status: "", runtimeMs: 0, memoryKb: 0 });
+    } finally {
+      setRunning(false);
+    }
+  };
 
   const send = async () => {
     if (sending) return;
@@ -500,30 +656,92 @@ function RoundEditor({
     await refresh();
   };
 
+  // Only meaningful when the input actually IS the sample — comparing your
+  // output against the sample's while feeding the program something else would
+  // report a mismatch that is not one.
+  const onSample = normalise(stdin) === normalise(sampleIn);
+  const agrees = out && !out.stderr && sampleOut && onSample
+    ? normalise(out.stdout) === normalise(sampleOut)
+    : null;
+
   return (
-    <div className="duel-editor">
-      <div className="editor-top">
-        <b>{codeLang === "cpp20" ? "main.cpp" : "main.py"}</b>
-        <select aria-label="Duel language" value={codeLang} onChange={(e) => onCodeLang(e.target.value as CodeLang)}>
-          <option value="cpp20">C++20</option>
-          <option value="python3">Python 3</option>
-        </select>
+    <div className="duel-code">
+      <CodeEditor
+        code={code} setCode={setCode}
+        lang={codeLang} setLang={(next) => onCodeLang(next as CodeLang)}
+        onSubmit={send} submitLabel={t.submit} busy={sending || locked}
+        onRun={run} runLabel={`${t.run} ▶`} runBusy={running}
+        verdict={verdict || (out ? `${out.status} · ${out.runtimeMs} ms · ${out.memoryKb} KB` : "")}
+        minHeight={330}
+      />
+
+      <div className="duel-console">
+        <div className="dc-pane">
+          <div className="dc-head">
+            <h4>{t.stdin}</h4>
+            {sampleIn && !onSample && (
+              <button className="dc-mini" onClick={() => setStdin(withNewline(sampleIn))}>{t.useSample}</button>
+            )}
+          </div>
+          <textarea
+            aria-label={t.stdin} value={stdin} spellCheck={false}
+            onChange={(e) => setStdin(e.target.value)}
+          />
+        </div>
+
+        <div className="dc-pane">
+          <div className="dc-head">
+            <h4>{t.stdout}</h4>
+            {agrees !== null && (
+              <span className={`dc-verdict ${agrees ? "ok" : "bad"}`}>
+                {agrees ? `✓ ${t.matches}` : `≠ ${t.differs}`}
+              </span>
+            )}
+          </div>
+          <pre className={out?.stdout ? "" : "muted"}>{running ? t.running : out?.stdout || t.noRun}</pre>
+        </div>
+
+        {sampleOut && (
+          <div className="dc-pane">
+            <div className="dc-head"><h4>{t.expected}</h4></div>
+            <pre>{sampleOut}</pre>
+          </div>
+        )}
+
+        {out?.stderr && (
+          <div className="dc-pane dc-err">
+            <div className="dc-head"><h4>{t.stderr}</h4></div>
+            <pre>{out.stderr}</pre>
+          </div>
+        )}
       </div>
-      <textarea value={code} onChange={(e) => setCode(e.target.value)} spellCheck={false} />
-      <div className="editor-actions">
-        <span className={`duel-verdict ${verdict.startsWith("❌") ? "bad" : ""}`}>{verdict}</span>
-        <button className="primary" onClick={send} disabled={sending || locked}>
-          {sending ? t.judging : t.submit}
-        </button>
-      </div>
+
+      <p className="dc-note muted">{t.runNote} <span className="dc-keys">{t.shortcuts}</span></p>
     </div>
   );
 }
 
+type RunResult = { stdout: string; stderr: string; status: string; runtimeMs: number; memoryKb: number };
+
+/* Trailing spaces and a missing final newline are not wrong answers, and the
+   judge does not treat them as such either — so the "matches the sample" hint
+   must not call them one, or it teaches a rule the judge does not have. */
+const normalise = (text: string) =>
+  text
+    .replace(/\r/g, "")
+    .split("\n")
+    .map((line) => line.replace(/[ \t]+$/, ""))
+    .join("\n")
+    .replace(/\n+$/, "");
+
+/** stdin a program can read: the sample as it is shown, plus the newline a
+ *  terminal would have added when you pressed enter. */
+const withNewline = (text: string) => (text ? `${text.replace(/\n+$/, "")}\n` : "");
+
 /* ------------------------------------------------------------------- result */
 function ResultScreen({
-  lang, result, onRematch, onExit,
-}: { lang: Lang; result: DuelResult; onRematch: () => void; onExit: () => void }) {
+  lang, result, onRematch, onExit, note,
+}: { lang: Lang; result: DuelResult; onRematch: () => void; onExit: () => void; note?: string }) {
   const t = T[lang];
   const me = result.players.find((p) => p.seat === result.my_seat);
   const them = result.players.find((p) => p.seat !== result.my_seat);
@@ -534,6 +752,7 @@ function ResultScreen({
       <p className="eyebrow" style={{ color: "#637068" }}>{result.mode === "bot" ? "AI DUEL" : "RATED DUEL"}</p>
       <h2>{result.outcome === "win" ? t.won : result.outcome === "loss" ? t.lost : t.draw}</h2>
       <div className="result-score">{me?.score ?? 0} : {them?.score ?? 0}</div>
+      {note && <p className="notice notice-error result-why">{note}</p>}
       <p className="muted">
         {t.you} {t.vs} {them?.is_bot ? `🤖 ${t.bot}` : nameOf(them, lang)} · {them?.rating ?? "—"} Elo
       </p>

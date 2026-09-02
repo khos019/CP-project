@@ -28,6 +28,7 @@ function verdictTone(v: string): string {
 
 export function CodeEditor({
   code, setCode, lang, setLang, onSubmit, submitLabel, verdict, busy, extraAction, minHeight,
+  onRun, runLabel, runBusy,
 }: {
   code: string;
   setCode: (v: string) => void;
@@ -39,6 +40,14 @@ export function CodeEditor({
   busy?: boolean;
   extraAction?: React.ReactNode;
   minHeight?: number;
+  /* A second button beside the first, for editors that can run the code
+     against your own input before committing it to a judge. Ctrl+Enter runs,
+     Ctrl+Shift+Enter submits — the shortcuts an editor is expected to have,
+     and the reason they are here rather than on the page is that both belong
+     to the keyboard that is already inside the textarea. */
+  onRun?: () => void;
+  runLabel?: string;
+  runBusy?: boolean;
 }) {
   const ta = useRef<HTMLTextAreaElement>(null);
   const gutter = useRef<HTMLPreElement>(null);
@@ -69,6 +78,13 @@ export function CodeEditor({
   };
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+      e.preventDefault();
+      if (e.shiftKey) { if (!busy) onSubmit(); }
+      else if (onRun) { if (!runBusy) onRun(); }
+      else if (!busy) onSubmit();
+      return;
+    }
     if (e.key !== "Tab" || e.shiftKey) return;
     const el = e.currentTarget;
     e.preventDefault();
@@ -128,7 +144,12 @@ export function CodeEditor({
           <span>{lines.length} qator</span>
           <span>{LABEL[lang]}</span>
         </span>
-        <button className="primary ide-run" onClick={onSubmit} disabled={busy}>
+        {onRun && (
+          <button className="secondary ide-play" onClick={onRun} disabled={runBusy || busy}>
+            {runBusy ? "…" : runLabel || "Run ▶"}
+          </button>
+        )}
+        <button className="primary ide-run" onClick={onSubmit} disabled={busy || runBusy}>
           {busy ? "…" : submitLabel}
         </button>
       </div>
