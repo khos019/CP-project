@@ -165,8 +165,8 @@
   "ownerStats.newToday": "Joined today",
   "ownerStats.noOnline": "No engaged time recorded in the last 30 days.",
   "ownerStats.noSignups": "No new accounts in the last 30 days.",
-  "ownerStats.noTopics": "Nobody has started a unit yet.",
   "ownerStats.notMigrated": "The statistics function is not installed yet. Run 009_owner_platform_stats.sql in the SQL Editor.",
+  "ownerStats.noTopics": "Nobody has started a unit yet.",
   "ownerStats.notTracked": "Not tracked yet",
   "ownerStats.notTrackedBody": "Page views and duel history are not stored on the server, so they are not shown here. Duel results currently live only in the browser.",
   "ownerStats.online": "Time online",
@@ -231,7 +231,7 @@
   "placement.wrong": "Not quite",
   "playground.empty": "Nothing run yet.",
   "playground.errors": "Errors",
-  "playground.eyebrow": "Kompilyator",
+  "playground.eyebrow": "Scratch editor",
   "playground.failed": "Could not reach the compiler.",
   "playground.input": "Input (stdin)",
   "playground.mem": "memory",
@@ -375,6 +375,7 @@
   "roadmapHub.unitsShort": "units",
   "roadmapHub.xp": "Experience points",
   "roadmapHub.yangi_boshlovchi": "Newbie",
+  "shop.eyebrow": "Coins and gifts",
   "shop.short_by": "{n} more coins needed",
   "socialui.uz_uz": "en-GB"
 }

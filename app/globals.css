@@ -2377,3 +2377,189 @@ body{font-size:var(--t-body);line-height:1.6}
  background:none;border:0;border-radius:0;box-shadow:none;
  padding:var(--s8) var(--s5);overflow:visible;position:relative;
 }
+
+/* ─── Nav: ikkinchi guruh ────────────────────────────────────────────────
+   Kompilyator va Do'kon ham header'da, lekin ajratuvchi chiziqdan keyin —
+   qaysi to'rttasi asosiy yo'nalish ekani ko'rinib tursin. */
+.nav-divider{
+ width:1px;height:16px;background:var(--line);
+ margin:0 var(--s1);flex-shrink:0;
+}
+.nav-aside{color:var(--dim)}
+.nav-aside:hover{color:var(--ink)}
+.nav-aside.active{color:var(--ink)}
+
+/* ─── Mobil "Ko'proq" varag'i ────────────────────────────────────────── */
+.tab-more{
+ flex:1;min-height:48px;display:flex;flex-direction:column;
+ align-items:center;justify-content:center;gap:3px;
+ color:var(--dim);font-size:11px;font-weight:500;background:none;border:0;
+}
+.tab-more.active{color:var(--green)}
+.sheet-backdrop{
+ position:fixed;inset:0;z-index:44;background:rgba(3,5,4,.6);
+ animation:fade var(--dur-base) var(--ease);
+}
+.sheet{
+ position:fixed;left:0;right:0;bottom:0;z-index:45;
+ background:var(--surface);border-top:1px solid var(--line);
+ border-radius:var(--r-xl) var(--r-xl) 0 0;
+ padding:var(--s3) var(--s4) calc(var(--s4) + 62px + env(safe-area-inset-bottom));
+ display:grid;gap:2px;
+ animation:sheet-up var(--dur-slow) var(--ease);
+}
+@keyframes sheet-up{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.sheet-grip{
+ width:36px;height:4px;border-radius:var(--r-full);background:var(--line-strong);
+ justify-self:center;margin-bottom:var(--s3);
+}
+.sheet-item{
+ display:flex;align-items:center;gap:var(--s4);
+ min-height:48px;padding:0 var(--s3);border-radius:var(--r-md);
+ color:var(--ink);font-size:var(--t-body);
+}
+.sheet-item:hover,.sheet-item.active{background:var(--surface-2)}
+.sheet-item.active{color:var(--green)}
+.sheet-ic{width:22px;text-align:center;color:var(--muted);font-size:15px}
+.sheet-item.active .sheet-ic{color:var(--green)}
+
+@media(max-width:1120px){
+ /* Oltita link tor ekranda siqiladi: ikkinchi guruh footerga qoladi. */
+ .nav-divider,.nav-aside{display:none}
+}
+
+/* ─── Kompilyator ────────────────────────────────────────────────────────
+   Bu uchinchi zona: na o'quv, na bellashuv — ish stoli. Shuning uchun sahifa
+   chromi minimal, editor esa ekranning katta qismini oladi. */
+.play-grid{
+ display:grid;grid-template-columns:minmax(0,1.75fr) minmax(300px,1fr);
+ gap:var(--s4);align-items:start;
+}
+.play-side{display:grid;gap:var(--s4);position:sticky;top:calc(var(--header-h) + var(--s4))}
+.play-io{
+ background:var(--surface);border:1px solid var(--line);
+ border-radius:var(--r-lg);padding:var(--s4);display:grid;gap:var(--s2);
+}
+.play-io h3{
+ margin:0;font-size:var(--t-xs);font-weight:500;color:var(--dim);
+ font-family:var(--font-sans);letter-spacing:0;text-transform:none;
+}
+.play-io textarea,.play-io pre{
+ margin:0;min-height:104px;resize:vertical;
+ background:var(--inset);border:1px solid var(--line);border-radius:var(--r-md);
+ padding:var(--s3);color:var(--ink);
+ font-family:var(--font-mono);font-size:var(--t-sm);line-height:1.55;
+ white-space:pre-wrap;overflow-wrap:anywhere;
+}
+.play-io pre{min-height:88px;overflow:auto}
+.play-io textarea:focus-visible{outline:2px solid var(--green);outline-offset:1px;border-color:transparent}
+.play-err{border-color:rgba(255,107,107,.4)}
+.play-err pre{color:var(--bad)}
+.play-note{font-size:var(--t-xs);line-height:1.5;margin:0}
+.ide-reset{margin-right:auto}
+
+/* ─── Do'kon ─────────────────────────────────────────────────────────────
+   Balans sahifaning birinchi haqiqati: tanga narxi faqat qancha borligini
+   bilganingizda ma'no kasb etadi. */
+.shop-top{display:grid;grid-template-columns:1.5fr 1fr;gap:var(--s4);margin-bottom:var(--s6)}
+.shop-top .panel{padding:var(--s5);display:grid;gap:var(--s3);align-content:start}
+.shop-top h3{margin:0;font-size:var(--t-h3)}
+.shop-top p{margin:0;font-size:var(--t-sm);line-height:1.55}
+.shop-streak{color:var(--green);font-weight:600}
+
+.ladder{display:grid;grid-template-columns:repeat(5,1fr);gap:var(--s2)}
+.ladder-step{
+ display:grid;gap:3px;justify-items:center;text-align:center;
+ padding:var(--s3) var(--s2);border-radius:var(--r-md);
+ background:var(--inset);border:1px solid var(--line);
+}
+.ladder-step b{font-family:var(--font-display);font-size:var(--t-sm);font-weight:600}
+.ladder-step span{font-size:var(--t-xs);color:var(--muted)}
+.ladder-step i{font-style:normal;font-size:13px;color:var(--dim)}
+.ladder-step.done{border-color:var(--green);background:var(--green-wash)}
+.ladder-step.done i,.ladder-step.done b{color:var(--green)}
+.ladder-foot{
+ display:flex;align-items:center;gap:var(--s3);flex-wrap:wrap;
+ font-size:var(--t-sm);color:var(--muted);
+}
+.ladder-foot .primary{margin-left:auto}
+
+.order-list{list-style:none;margin:0;padding:0;display:grid;gap:var(--s2)}
+.order-list li{
+ display:grid;grid-template-columns:1fr auto auto;gap:var(--s3);align-items:center;
+ padding:9px var(--s3);border-radius:var(--r-md);background:var(--inset);
+ font-size:var(--t-sm);
+}
+.order-list small{font-family:var(--font-mono);color:var(--muted)}
+.shop-field{display:grid;gap:5px}
+.shop-field span{font-size:var(--t-xs);color:var(--muted)}
+.shop-field input{
+ background:var(--inset);border:1px solid var(--line);border-radius:var(--r-md);
+ padding:10px var(--s3);color:var(--ink);font-size:var(--t-sm);width:100%;
+}
+
+.gift-card{position:relative;text-align:left}
+.gift-card h3{margin:0;font-size:var(--t-h3)}
+.gift-card p{margin:0;font-size:var(--t-sm);line-height:1.5;color:var(--muted);min-height:2.8em}
+.gift-art{
+ display:grid;place-items:center;height:112px;border-radius:var(--r-md);
+ background:var(--inset);border:1px solid var(--line-faint);
+}
+.gift-art img,.gift-art svg{max-height:80px;width:auto}
+.gift-meta{
+ display:flex;align-items:center;justify-content:space-between;gap:var(--s3);
+ font-size:var(--t-sm);color:var(--muted);
+}
+.gift-meta b{color:var(--ink);font-family:var(--font-display);font-weight:600}
+/* Sotib olib bo'lmaydigan kartochka o'chirilgan emas — tugmasi nima
+   yetishmayotganini aytadi, shuning uchun kartochka ham tirik ko'rinadi. */
+.gift-card.locked{opacity:.82}
+.gift-card.locked .gift-art{opacity:.6}
+.art-credit{font-size:var(--t-xs);color:var(--dim);margin-top:var(--s5)}
+
+@media(max-width:1024px){
+ .play-grid{grid-template-columns:1fr}
+ .play-side{position:static}
+ .shop-top{grid-template-columns:1fr}
+}
+@media(max-width:640px){
+ .ladder{grid-template-columns:repeat(3,1fr)}
+ .ladder-foot .primary{margin-left:0;width:100%}
+}
+
+/* ─── Yo'l xaritalari: holat yorlig'i ────────────────────────────────────
+   "OCHIQ", "QULFLANGAN", "TUGATILDI" — bular so'z, qisqartma emas. Katta
+   harf faqat AC/WA/TLE kabi uch-to'rt harfli belgilarda ma'no tashiydi. */
+.rm-badge{text-transform:none;letter-spacing:0;font-size:var(--t-xs);font-weight:500}
+.rm-node-meta .mono{color:var(--green)}
+
+/* Yo'l boshi va oxiri — bu yorliq, mukofot emas. Gradientli lime pilyulya
+   va 0.22em letter-spacing uni sahifadagi eng baland element qilib qo'ygan
+   edi, holbuki u shunchaki "bu yerdan boshlanadi" deydi. */
+.rm-cap{
+ justify-self:start;
+ font-family:var(--font-sans);font-size:var(--t-xs);font-weight:500;
+ letter-spacing:0;color:var(--dim);
+ background:none;border:1px solid var(--line);
+ border-radius:var(--r-full);padding:5px 12px;box-shadow:none;
+}
+.rm-cap.end{justify-self:end;background:none;color:var(--dim);border:1px solid var(--line)}
+
+/* ─── Yo'nalishlar daraxti ───────────────────────────────────────────────
+   Har bir qavat markazlashgan qator: shu holda daraxt daraxtga o'xshaydi —
+   bitta yo'nalishli qavat butun kenglikni egallab, keyingi to'rttalik qavat
+   yonida g'alati ko'rinmaydi. Grid auto-fit aynan shuni qilib qo'ygan edi.
+   Eski `.rm-node{width:236px}` esa kartochkani qavatdan qat'i nazar tor
+   tutib turardi. */
+.rm-tier{
+ display:flex;flex-wrap:wrap;justify-content:center;
+ gap:var(--s4);padding:0;position:relative;
+}
+.rm-node{
+ width:auto;flex:1 1 268px;max-width:340px;
+ font:inherit;position:relative;
+}
+.rm-tier.linked:before{
+ content:"";position:absolute;left:50%;top:calc(var(--s5) * -1);
+ width:1px;height:var(--s5);background:var(--line);
+}

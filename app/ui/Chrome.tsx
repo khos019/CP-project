@@ -23,15 +23,25 @@ import { fetchBalance, fetchStreak, localBalance, localStreak } from "./coins";
 
 export type Lang = "uz" | "en";
 
-/* Four destinations, and no more. Do'kon and Kompilyator moved out — a shop is
-   something you visit after earning coins, and a scratch compiler is something
-   you reach from the problem you are already looking at; neither competes with
-   the four screens the platform is actually about. */
+/* The header carries every section of the site, in two groups.
+ *
+ * The four the platform is about come first. The shop and the compiler follow
+ * after a divider: they are real destinations people go looking for, and
+ * hiding them behind an avatar menu meant a signed-out visitor had no way to
+ * reach the shop at all. What made the old header unreadable was that all
+ * seven were <button>s competing with the actual actions beside them — not
+ * that there were seven. They are links now, and the divider says which four
+ * are the spine and which two are the annexes. */
 const PRIMARY = [
   { view: "roadmaps", href: "/roadmaps", uz: "Yo‘l xaritalari", en: "Roadmaps" },
   { view: "problems", href: "/problems", uz: "Masalalar", en: "Problems" },
   { view: "duel", href: "/duel", uz: "Duel", en: "Duel" },
   { view: "leaderboard", href: "/leaderboard", uz: "Reyting", en: "Rating" },
+] as const;
+
+const SECONDARY = [
+  { view: "playground", href: "/playground", uz: "Kompilyator", en: "Compiler" },
+  { view: "shop", href: "/shop", uz: "Do‘kon", en: "Shop" },
 ] as const;
 
 /* On a phone the same four live in a bottom bar, where a thumb can reach them.
@@ -43,6 +53,15 @@ const TABS = [
   { view: "problems", href: "/problems", uz: "Masala", en: "Problems", icon: "≡" },
   { view: "duel", href: "/duel", uz: "Duel", en: "Duel", icon: "⚔" },
   { view: "profile", href: "/profile", uz: "Profil", en: "Profile", icon: "◉" },
+] as const;
+
+/* What the bottom bar cannot hold. A phone gets five thumb-sized tabs and no
+   more, so the rest live one tap away rather than nowhere. */
+const MORE = [
+  { view: "playground", href: "/playground", uz: "Kompilyator", en: "Compiler", icon: "⌨" },
+  { view: "shop", href: "/shop", uz: "Do‘kon", en: "Shop", icon: "◆" },
+  { view: "leaderboard", href: "/leaderboard", uz: "Reyting", en: "Rating", icon: "▲" },
+  { view: "placement", href: "/placement", uz: "Darajani aniqlash", en: "Placement", icon: "◎" },
 ] as const;
 
 /* A plain left-click on an unmodified link is the only one the router should
@@ -130,6 +149,16 @@ export function SiteHeader({
             onClick={linkTo(() => go(link.view))}
           >{uz ? link.uz : link.en}</a>
         ))}
+        <span className="nav-divider" aria-hidden />
+        {SECONDARY.map(link => (
+          <a
+            key={link.view}
+            className={view === link.view ? "nav-link nav-aside active" : "nav-link nav-aside"}
+            href={link.href}
+            aria-current={view === link.view ? "page" : undefined}
+            onClick={linkTo(() => go(link.view))}
+          >{uz ? link.uz : link.en}</a>
+        ))}
       </nav>
 
       <div className="actions">
@@ -195,17 +224,52 @@ export function SiteHeader({
 
 export function MobileTabBar({ lang, view, go }: { lang: Lang; view: string; go: Nav }) {
   const uz = lang === "uz";
+  const [more, setMore] = useState(false);
+  useEffect(() => {
+    if (!more) return;
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setMore(false); };
+    document.addEventListener("keydown", esc);
+    return () => document.removeEventListener("keydown", esc);
+  }, [more]);
+
   return (
-    <nav className="mobile-nav" aria-label={tr(lang,"chrome.asosiy_bolimlar")}>
-      {TABS.map(tab => (
-        <a key={tab.view} className={view === tab.view ? "active" : ""} href={tab.href}
-          aria-current={view === tab.view ? "page" : undefined}
-          onClick={linkTo(() => go(tab.view))}>
-          <span className="tab-ic" aria-hidden>{tab.icon}</span>
-          <span className="tab-label">{uz ? tab.uz : tab.en}</span>
-        </a>
-      ))}
-    </nav>
+    <>
+      {more && (
+        <>
+          <div className="sheet-backdrop" onClick={() => setMore(false)} aria-hidden />
+          <div className="sheet" role="dialog" aria-modal="true"
+            aria-label={uz ? "Boshqa bo‘limlar" : "More sections"}>
+            <span className="sheet-grip" aria-hidden />
+            {MORE.map(item => (
+              <a key={item.view} className={view === item.view ? "sheet-item active" : "sheet-item"}
+                href={item.href}
+                onClick={linkTo(() => { setMore(false); go(item.view); })}>
+                <span className="sheet-ic" aria-hidden>{item.icon}</span>
+                {uz ? item.uz : item.en}
+              </a>
+            ))}
+          </div>
+        </>
+      )}
+
+      <nav className="mobile-nav" aria-label={tr(lang, "chrome.asosiy_bolimlar")}>
+        {TABS.map(tab => (
+          <a key={tab.view} className={view === tab.view ? "active" : ""} href={tab.href}
+            aria-current={view === tab.view ? "page" : undefined}
+            onClick={linkTo(() => { setMore(false); go(tab.view); })}>
+            <span className="tab-ic" aria-hidden>{tab.icon}</span>
+            <span className="tab-label">{uz ? tab.uz : tab.en}</span>
+          </a>
+        ))}
+        {/* Five tabs is what a thumb can aim at. The rest are one tap away
+            rather than nowhere, which is where they were. */}
+        <button className={more ? "tab-more active" : "tab-more"} onClick={() => setMore(v => !v)}
+          aria-expanded={more} aria-label={uz ? "Boshqa bo‘limlar" : "More sections"}>
+          <span className="tab-ic" aria-hidden>⋯</span>
+          <span className="tab-label">{uz ? "Ko‘proq" : "More"}</span>
+        </button>
+      </nav>
+    </>
   );
 }
 

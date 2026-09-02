@@ -75,21 +75,21 @@ export function Playground({ lang }: { lang: Lang }) {
     <>
       <div className="page-head">
         <div>
-          <p className="eyebrow" style={{ color: "#637068" }}>{t.eyebrow}</p>
+          <p className="eyebrow">{t.eyebrow}</p>
           <h1 className="page-title">{t.title}</h1>
           <p className="muted">{t.sub}</p>
         </div>
         <span className="muted mono">5 s · 256 MB</span>
       </div>
 
-      <div className="play-grid">
+      <div className="play-grid" data-zone="tool">
         <CodeEditor
           code={code} setCode={setCode}
           lang={codeLang} setLang={switchLang}
-          onSubmit={run} submitLabel={`${t.run} ▶`} busy={busy}
+          onSubmit={run} submitLabel={t.run} busy={busy}
           verdict={out ? `${out.status} · ${out.runtimeMs} ms · ${out.memoryKb} KB` : ""}
           extraAction={<button className="ghost ide-reset" onClick={() => setCode(STARTERS[codeLang])}>{t.reset}</button>}
-          minHeight={420}
+          minHeight={520}
         />
 
         <aside className="play-side">
@@ -107,7 +107,7 @@ export function Playground({ lang }: { lang: Lang }) {
               <pre>{out.stderr}</pre>
             </div>
           )}
-          <p className="muted" style={{ fontSize: 12.5 }}>{t.note}</p>
+          <p className="play-note muted">{t.note}</p>
         </aside>
       </div>
     </>

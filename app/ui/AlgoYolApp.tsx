@@ -223,7 +223,7 @@ export function AlgoYolApp(){
   const base={roadmap:"foundations",unit:null,person:null};
   if(parts[0]==="roadmaps"&&parts[1])return {...base,view:"roadmap",roadmap:parts[1],unit:parts[2]||null};
   if(parts[0]==="u"&&parts[1])return {...base,view:parts[2]==="submissions"?"person-submissions":"person",person:decodeURIComponent(parts[1])};
-  const known:View[]=["home","roadmaps","problems","problem","duel","leaderboard","profile","auth","placement","admin","stats","users","messages","friends","submissions"];
+  const known:View[]=["home","roadmaps","problems","problem","duel","leaderboard","profile","auth","placement","admin","stats","users","messages","friends","submissions","shop","playground"];
   if(parts.length===0)return {...base,view:"home"};
   const v=known.find(x=>x===parts[0]);
   return {...base,view:v||"notfound"};

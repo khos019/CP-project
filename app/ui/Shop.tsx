@@ -121,16 +121,16 @@ export function Shop({ lang, signed, authLoading }: { lang: Lang; signed: boolea
     <>
       <div className="page-head">
         <div>
-          <p className="eyebrow" style={{ color: "#637068" }}>SHOP</p>
+          <p className="eyebrow">{tr(lang, "shop.eyebrow")}</p>
           <h1 className="page-title">{t.title}</h1>
           <p className="muted">{t.sub}</p>
         </div>
         <span className="coin-balance"><span className="coin-chip">◎</span> {balance} <small>{t.coins}</small></span>
       </div>
 
-      {!signed && !authLoading && <div className="notice" style={{ marginBottom: 16 }}>{t.localWarn}</div>}
+      {!signed && !authLoading && <div className="notice">{t.localWarn}</div>}
       {signed && probed && !server && (
-        <div className="notice" style={{ marginBottom: 16 }}>
+        <div className="notice">
           {offline === "signed-out" ? t.expired : offline === "not-migrated" ? t.notMigrated : t.offline}
         </div>
       )}
@@ -152,11 +152,11 @@ export function Shop({ lang, signed, authLoading }: { lang: Lang; signed: boolea
             })}
           </div>
           <div className="ladder-foot">
-            <span className="mono">{t.streak}: <b style={{ color: "var(--lime)" }}>{streak}</b> · {t.today}: {Math.floor(act.activeSeconds / 60)}/{DAY_SECONDS_REQUIRED / 60} {t.minutes} · {act.duels}/{DAY_DUELS_REQUIRED} {t.duels}</span>
+            <span className="mono">{t.streak}: <b className="shop-streak">{streak}</b> · {t.today}: {Math.floor(act.activeSeconds / 60)}/{DAY_SECONDS_REQUIRED / 60} {t.minutes} · {act.duels}/{DAY_DUELS_REQUIRED} {t.duels}</span>
             <button className="primary" onClick={claim} disabled={busy === "claim"}>{t.claim}</button>
           </div>
           {upcoming && <p className="muted">{t.next}: {upcoming.days} {t.day} → +{upcoming.coins} {t.coins} · {coinsForStreak(streak)}/{TOTAL_LADDER_COINS}</p>}
-          {message && <div className="quiz-result" style={{ marginTop: 12 }}>{message}</div>}
+          {message && <div className="quiz-result">{message}</div>}
         </section>
 
         <section className="panel">
@@ -174,7 +174,7 @@ export function Shop({ lang, signed, authLoading }: { lang: Lang; signed: boolea
               ))}
             </ul>
           )}
-          <p className="muted" style={{ marginTop: 14 }}>{t.fulfilNote}</p>
+          <p className="muted">{t.fulfilNote}</p>
           <label className="shop-field">
             <span>{t.tgLabel}</span>
             <input value={telegram} onChange={e => setTelegram(e.target.value)} placeholder={t.tgPlaceholder} aria-label={t.tgLabel} />
