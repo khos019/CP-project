@@ -1,11 +1,33 @@
 @import "tailwindcss";
 
+/* Self-hosted, subset by unicode-range: the latin-ext files are only fetched if
+   a page actually contains a character that needs them, and O‘zbek Latin —
+   including the turned comma U+02BB — lives entirely in the latin subset.
+   next/font is deliberately not used here: it wrote absolute build-machine
+   paths into the deployed stylesheet and every @font-face failed in production
+   (see the note in app/layout.tsx). */
+@font-face{font-family:"Space Grotesk";font-style:normal;font-weight:400 700;font-display:swap;
+ src:url(/fonts/space-grotesk-latin.woff2) format("woff2");
+ unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"Space Grotesk";font-style:normal;font-weight:400 700;font-display:swap;
+ src:url(/fonts/space-grotesk-latin-ext.woff2) format("woff2");
+ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+@font-face{font-family:"Inter var";font-style:normal;font-weight:400 700;font-display:swap;
+ src:url(/fonts/inter-latin.woff2) format("woff2");
+ unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:"Inter var";font-style:normal;font-weight:400 700;font-display:swap;
+ src:url(/fonts/inter-latin-ext.woff2) format("woff2");
+ unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}
+
+
 :root{
   color-scheme:dark;
 
   /* Shrift oilalari */
-  --font-sans:"Inter","Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,"Noto Sans",sans-serif;
+  --font-sans:"Inter var","Inter","Segoe UI Variable Text","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,"Noto Sans",sans-serif;
   --font-mono:"JetBrains Mono","Cascadia Code",ui-monospace,SFMono-Regular,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+
+  --font-display:"Space Grotesk","Inter var",var(--font-sans);
 
   /* Fon qatlamlari — chuqurlik soya bilan emas, daraja bilan beriladi */
   --bg:#070a09;
@@ -1355,4 +1377,254 @@ body{background:var(--bg);min-height:100vh}
 @media(max-width:600px){
  .topbar{gap:var(--s4);padding:0 var(--s4)}
  .streak,.lang{display:none}
+}
+
+/* ─── Tipografiya ────────────────────────────────────────────────────────
+   Display shrift faqat sarlavhalarda. Kichik yorliqlarda mono ishlatilmaydi. */
+h1,h2,h3,.page-title,.hero h1,.section-head h2,.big,.num{
+ font-family:var(--font-display);
+ letter-spacing:-.025em;font-weight:600;
+}
+.hero h1{font-size:var(--t-display);line-height:1.02;font-weight:700}
+.page-title{font-size:var(--t-h1);line-height:1.12}
+.section-head h2{font-size:var(--t-h2);line-height:1.15}
+h3{font-size:var(--t-h3)}
+body{font-size:var(--t-body);line-height:1.6}
+.mono,code,pre,kbd{font-family:var(--font-mono)}
+
+/* ─── Bosh sahifa ────────────────────────────────────────────────────────
+   Hero chapga tekislangan, o'ngda yagona grafik. Panelsiz — matn to'g'ridan
+   to'g'ri fonda turadi, bu sahifani yengilroq ko'rsatadi. */
+.hero{
+ display:grid;grid-template-columns:1.05fr .95fr;
+ gap:var(--s8);align-items:center;
+ min-height:min(78vh,640px);padding:var(--s7) 0 var(--s8);
+}
+.hero-copy{
+ background:none;border:0;border-radius:0;box-shadow:none;padding:0;
+ display:flex;flex-direction:column;align-items:flex-start;gap:var(--s5);
+}
+.hero-copy .eyebrow{display:none}
+.hero h1{margin:0;max-width:15ch;text-wrap:balance}
+.hero p{margin:0;max-width:52ch;font-size:1.05rem;line-height:1.65;color:var(--muted)}
+.hero-cta{display:flex;align-items:center;gap:var(--s5);flex-wrap:wrap}
+.hero-facts{
+ display:flex;flex-wrap:wrap;gap:var(--s3) var(--s6);
+ padding-top:var(--s5);margin-top:var(--s2);
+ border-top:1px solid var(--line-faint);width:100%;
+ color:var(--muted);font-size:var(--t-sm);
+}
+.hero-facts b{
+ font-family:var(--font-display);font-weight:600;font-size:1.15rem;
+ color:var(--ink);margin-right:5px;
+}
+.hero-graph{display:flex;justify-content:center}
+.orbit{display:none}
+
+/* Matn link — tugmaga o'xshamaydi, lekin bosiladigani ko'rinib turadi. */
+.text-link{
+ color:var(--ink);font-weight:500;font-size:var(--t-sm);
+ border-bottom:1px solid var(--line-strong);padding-bottom:2px;
+}
+.text-link:hover{border-bottom-color:var(--green);color:var(--green)}
+.see-all{color:var(--muted);font-size:var(--t-sm)}
+.see-all:hover{color:var(--ink)}
+
+/* ─── Yo'l xaritasi grafigi ──────────────────────────────────────────── */
+.rg{position:relative;width:100%;max-width:520px}
+.rg-svg{width:100%;height:auto;overflow:visible}
+.rg-track{
+ fill:none;stroke:var(--line-strong);stroke-width:2.5;
+ stroke-dasharray:1.1 1.7;stroke-linecap:round;
+}
+.rg-done{
+ fill:none;stroke:url(#rg-line);stroke-width:4;stroke-linecap:round;
+ transition:stroke-dashoffset 900ms var(--ease);
+}
+.rg-node{cursor:pointer;opacity:0;transform:scale(.7);transform-origin:center;
+ transition:opacity var(--dur-base) var(--ease),transform var(--dur-base) var(--ease)}
+.rg[data-drawn] .rg-node{opacity:1;transform:scale(1)}
+.rg-node:focus-visible{outline:none}
+.rg-node:focus-visible .rg-disc{stroke:var(--green);stroke-width:3}
+.rg-disc{fill:var(--surface-2);stroke:var(--line-strong);stroke-width:2.5;
+ transition:fill var(--dur-fast) var(--ease),stroke var(--dur-fast) var(--ease)}
+.rg-glyph{font-size:15px;font-family:var(--font-display);font-weight:600;fill:var(--muted);pointer-events:none}
+.rg-completed .rg-disc{fill:var(--green-wash);stroke:var(--green)}
+.rg-completed .rg-glyph{fill:var(--green)}
+.rg-available .rg-disc{stroke:var(--line-strong)}
+.rg-available .rg-glyph{fill:var(--muted)}
+.rg-current .rg-disc{fill:var(--orange-wash);stroke:var(--orange);stroke-width:2.5}
+.rg-current .rg-glyph{fill:var(--orange)}
+.rg-locked .rg-disc{fill:var(--surface);stroke:var(--line)}
+.rg-locked .rg-glyph{font-size:13px;opacity:.5}
+.rg-node:hover .rg-disc{stroke:var(--green)}
+/* Yagona pulsatsiya: "siz shu yerdasiz". */
+.rg-halo{fill:none;stroke:var(--orange);stroke-width:1.5;opacity:.35;
+ transform-origin:center;transform-box:fill-box;animation:rg-breathe 2.4s var(--ease) infinite}
+@keyframes rg-breathe{
+ 0%,100%{transform:scale(.9);opacity:.35}
+ 50%{transform:scale(1.06);opacity:.12}
+}
+.rg-tip{
+ position:absolute;transform:translate(-50%,calc(-100% - 18px));
+ background:var(--surface-3);border:1px solid var(--line-strong);
+ border-radius:var(--r-sm);padding:8px 11px;pointer-events:none;z-index:5;
+ display:grid;gap:2px;min-width:150px;box-shadow:0 12px 28px rgba(0,0,0,.5);
+}
+.rg-tip b{font-size:var(--t-sm);color:var(--ink)}
+.rg-tip span{font-size:var(--t-xs);color:var(--muted)}
+
+/* ─── To'rt qadamli halqa ────────────────────────────────────────────── */
+.loop{
+ list-style:none;margin:var(--s6) 0 0;padding:0;
+ display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s4);
+ position:relative;
+}
+.loop-step{
+ background:var(--surface);border:1px solid var(--line);
+ border-radius:var(--r-lg);padding:var(--s5);
+ display:grid;gap:var(--s2);align-content:start;
+}
+.loop-n{
+ width:26px;height:26px;border-radius:var(--r-full);
+ display:grid;place-items:center;
+ background:var(--green-wash);color:var(--green);
+ font-family:var(--font-display);font-weight:600;font-size:13px;
+}
+.loop-step b{font-size:var(--t-h3);font-family:var(--font-display);font-weight:600}
+.loop-step span{font-size:var(--t-sm);line-height:1.55}
+.loop-back{
+ grid-column:1/-1;text-align:center;color:var(--dim);font-size:var(--t-xs);
+ padding-top:var(--s2);
+}
+.lp-lede{max-width:62ch;margin:var(--s3) 0 0;line-height:1.65}
+
+/* ─── Sektsiya sarlavhasi ────────────────────────────────────────────── */
+.section-head{
+ display:flex;align-items:baseline;justify-content:space-between;gap:var(--s5);
+ border-top:0;padding-top:0;margin-bottom:var(--s5);
+}
+.section-head h2{margin:0}
+.eyebrow{display:none}
+.lp-block{margin-top:var(--s9);display:block}
+
+/* ─── CTA ────────────────────────────────────────────────────────────── */
+.lp-cta{
+ margin-top:var(--s9);padding:var(--s7);
+ background:var(--surface);border:1px solid var(--line);border-radius:var(--r-xl);
+ display:flex;align-items:center;justify-content:space-between;gap:var(--s6);
+}
+.lp-cta h2{margin:0 0 6px}
+.lp-cta p{margin:0;max-width:52ch}
+
+/* ─── Yo'l xaritasi kartochkasi ──────────────────────────────────────── */
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s4)}
+.road-card{
+ display:grid;gap:var(--s3);align-content:start;text-align:left;
+ background:var(--surface);border:1px solid var(--line);
+ border-radius:var(--r-lg);padding:var(--s5);
+ transition:border-color var(--dur-fast) var(--ease),background var(--dur-fast) var(--ease);
+}
+.road-card:hover{border-color:var(--line-strong);background:var(--surface-2)}
+.road-card h3{margin:0;font-size:1.05rem}
+.road-card p{margin:0;font-size:var(--t-sm);line-height:1.5;min-height:2.9em}
+.road-top{display:flex;align-items:center;justify-content:space-between}
+.road-icon{
+ width:38px;height:38px;border-radius:var(--r-md);
+ display:grid;place-items:center;color:#0a130d;
+ font-family:var(--font-display);font-weight:700;font-size:14px;
+}
+.road-lock{opacity:.5;font-size:13px}
+.road-done{color:var(--green);font-size:15px}
+.road-meta{
+ display:flex;justify-content:space-between;
+ font-size:var(--t-xs);color:var(--muted);font-variant-numeric:tabular-nums;
+}
+.road-level{font-family:var(--font-mono);font-size:11px;color:var(--dim)}
+.road-locked{opacity:.6}
+
+/* ─── Progress bar ───────────────────────────────────────────────────── */
+.bar{height:5px;border-radius:var(--r-full);background:var(--inset);overflow:hidden}
+.bar-fill{display:block;height:100%;border-radius:var(--r-full);
+ transition:width var(--dur-slow) var(--ease)}
+.bar-green{background:var(--green)}
+.bar-orange{background:var(--orange)}
+
+/* ─── Masala qatori ──────────────────────────────────────────────────── */
+.problem-list{
+ border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;
+ background:var(--surface);
+}
+.problem-row{
+ display:grid;grid-template-columns:28px 54px 1fr auto auto auto;
+ align-items:center;gap:var(--s4);
+ padding:13px var(--s5);border-bottom:1px solid var(--line-faint);
+ text-align:left;background:none;
+ transition:background var(--dur-fast) var(--ease);
+}
+.problem-row:last-child{border-bottom:0}
+.problem-row:hover{background:var(--surface-2)}
+.problem-name{font-size:var(--t-sm);color:var(--ink)}
+.problem-row .num{font-size:var(--t-xs);color:var(--dim)}
+.problem-row .rating-chip{font-size:var(--t-xs);font-weight:600}
+.pb-status{color:var(--dim);font-size:13px}
+.pb-status.solved{color:var(--green)}
+.difficulty{
+ font-size:10px;font-weight:700;letter-spacing:.04em;
+ padding:3px 7px;border-radius:var(--r-sm);
+}
+.difficulty.easy{background:var(--green-wash);color:var(--diff-easy)}
+.difficulty.medium{background:rgba(255,196,87,.12);color:var(--diff-medium)}
+.difficulty.hard{background:rgba(255,107,107,.12);color:var(--diff-hard)}
+.problem-row .tag{
+ font-size:var(--t-xs);color:var(--muted);
+ background:var(--surface-3);padding:3px 9px;border-radius:var(--r-full);
+}
+
+/* ─── Dashboard ──────────────────────────────────────────────────────── */
+.dash{
+ display:grid;grid-template-columns:1.9fr 1fr;gap:var(--s6);
+ margin-top:var(--s8);align-items:start;
+}
+.dash-path{display:grid;gap:var(--s4);padding:var(--s5)}
+.dash-path-top{display:flex;align-items:baseline;justify-content:space-between}
+.dash-path-top h3{margin:0;font-size:var(--t-h3)}
+.dash-path .rg{max-width:100%}
+
+/* ─── Bo'sh holat va skeleton ────────────────────────────────────────── */
+.empty{
+ display:grid;justify-items:center;gap:var(--s3);text-align:center;
+ padding:var(--s8) var(--s5);
+ border:1px dashed var(--line-strong);border-radius:var(--r-lg);
+}
+.empty-ic{font-size:26px;color:var(--dim)}
+.empty h3{margin:0;font-size:var(--t-h3)}
+.empty p{margin:0;max-width:44ch;font-size:var(--t-sm)}
+.skeleton-list{display:grid;gap:var(--s2)}
+.skeleton{
+ border-radius:var(--r-md);
+ background:linear-gradient(90deg,var(--surface) 25%,var(--surface-3) 37%,var(--surface) 63%);
+ background-size:400% 100%;animation:shimmer 1.4s linear infinite;
+}
+@keyframes shimmer{0%{background-position:100% 0}100%{background-position:-100% 0}}
+
+@media(max-width:1024px){
+ .hero{grid-template-columns:1fr;gap:var(--s6);min-height:0;padding-top:var(--s6)}
+ .hero-graph{order:2;justify-content:flex-start}
+ .grid{grid-template-columns:repeat(2,1fr)}
+ .loop{grid-template-columns:repeat(2,1fr)}
+ .dash{grid-template-columns:1fr}
+}
+@media(max-width:640px){
+ /* Kichik ekranda grafik shovqin: hero faqat matn, tugma va statistika. */
+ .hero-graph{display:none}
+ .grid,.loop{grid-template-columns:1fr}
+ .lp-cta{flex-direction:column;align-items:flex-start}
+ .problem-row{grid-template-columns:24px 1fr auto;gap:var(--s3)}
+ .problem-row .num,.problem-row .tag{display:none}
+ .lp-block{margin-top:var(--s8)}
+}
+@media(prefers-reduced-motion:reduce){
+ *,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;
+  transition-duration:.01ms!important;scroll-behavior:auto!important}
 }

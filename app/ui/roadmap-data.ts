@@ -64,4 +64,4 @@ export const roadmapCatalog:MasteryRoadmap[]=defs.map(d=>({
  }})
 }));
 
-export const roadmapCards=roadmapCatalog.map(r=>({slug:r.slug,icon:r.icon,color:r.color,uz:r.titleUz,en:r.titleEn,descUz:r.descriptionUz,descEn:r.descriptionEn,units:r.units.length,progress:0}));
+export const roadmapCards=roadmapCatalog.map(r=>({slug:r.slug,icon:r.icon,color:r.color,uz:r.titleUz,en:r.titleEn,descUz:r.descriptionUz,descEn:r.descriptionEn,units:r.units.length,level:r.level,progress:0}));

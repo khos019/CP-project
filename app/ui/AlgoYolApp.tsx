@@ -1,9 +1,11 @@
 ﻿"use client";
+/* eslint-disable @next/next/no-html-link-for-pages -- see the note in ./Chrome */
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { RoadmapExperience } from "./RoadmapExperience";
-import { RoadmapHub } from "./RoadmapHub";
+import { RoadmapHub, roadmapStatus, unitDone } from "./RoadmapHub";
 import { roadmapCards } from "./roadmap-data";
+import { roadmapCatalog } from "./roadmap-data";
 import { bankProblems, type BankProblem } from "./problem-bank";
 import { applySolve, ratingColor } from "./rating";
 import { Shop } from "./Shop";
@@ -20,13 +22,15 @@ import { AuthPage } from "./AuthPage";
 import { ContinueHero } from "./ContinueHero";
 import { OwnerStats } from "./OwnerStats";
 import { BrandMark } from "./BrandMark";
-import { MobileTabBar, SiteFooter, SiteHeader } from "./Chrome";
+import { MobileTabBar, SiteFooter, SiteHeader, linkTo } from "./Chrome";
+import { RoadmapGraph, buildSpine } from "./RoadmapGraph";
+import { EmptyState, ProgressBar, Skeleton } from "./kit";
 import { ProfilePage } from "./ProfilePage";
 import { UsersAdmin } from "./UsersAdmin";
 import { Messages } from "./Messages";
 import { PublicProfile } from "./PublicProfile";
-import { MASTERY_CONFIG, backfillMastery, loadMastery, recordEvidence } from "./mastery";
-import { loadProgress, readLocal as readLocalProgress, syncUp } from "./progress";
+import { MASTERY_CONFIG, backfillMastery, loadMastery, masteryOf, recordEvidence } from "./mastery";
+import { emptyProgress, loadProgress, readLocal as readLocalProgress, syncUp } from "./progress";
 import { can } from "./permissions";
 import { fetchFriends, recordSubmission, type FriendRow } from "./social";
 import { FriendsScreen, PersonSubmissions, SubmissionsScreen } from "./social-ui";
@@ -367,7 +371,7 @@ export function AlgoYolApp(){
   <button className="po-close" aria-label={lang==="uz"?"Yopish":"Dismiss"}
    onClick={()=>{writeScoped("algoyol-placement-dismissed","1");setOfferPlacement(false)}}>✕</button>
  </div>}
- <main className="main">{view==="home"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed&&profile?<><ContinueHero lang={lang} profile={profile} go={v=>go(v as View)} openRoadmap={openRoadmap}/><LandingStory lang={lang}/><LandingBrowse lang={lang} go={go} openRoadmap={openRoadmap}/><LandingCta lang={lang} go={go} signed/></>:<Home lang={lang} go={go} openRoadmap={openRoadmap}/>)} {view==="roadmaps"&&<RoadmapHub lang={lang} role={role} openRoadmap={openRoadmap}/>} {view==="roadmap"&&<RoadmapExperience slug={selectedRoadmap} lang={lang} role={role} unitId={selectedUnit} onOpenUnit={id=>pushScreen({unit:id})} onBack={back} onPractice={()=>pushScreen({view:"problem"})} onOpenProblem={(id:string)=>{const p=bankProblems.find(x=>x.id===id);if(p){setActiveProblem(p);setVerdict("");pushScreen({view:"problem"})}}}/>} {view==="problems"&&<Problems lang={lang} filter={filter} setFilter={setFilter} items={filtered} go={go} onSelect={p=>{setActiveProblem(p);setCode(p.judge==="max-subarray"?duelProblems[1].cpp:p.judge==="coin-change"?duelProblems[2].cpp:cpp);setVerdict("");go("problem")}}/>} {view==="problem"&&<Problem lang={lang} item={activeProblem} code={code} setCode={setCode} codeLang={codeLang} setCodeLang={setCodeLang} verdict={verdict} submit={judge} onBack={back}/>} {view==="duel"&&<DuelMatchmaking lang={lang} signed={signed} authLoading={auth.status==="loading"} needAuth={()=>go("auth")}/>} {view==="leaderboard"&&<Leaderboard lang={lang} me={profile} signed={signed} onOpenPerson={openPerson}/>} {view==="profile"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<ProfilePage lang={lang} profile={profile} onProfileChange={next=>setAuth({status:"authenticated",profile:next})} signOut={signOut} goAdmin={()=>go("admin")} goStats={()=>go("stats")} goUsers={()=>go("users")} goMessages={()=>go("messages")} isOwner={can(role,"user.manage_roles")} goRoadmaps={()=>go("roadmaps")} openRoadmap={openRoadmap} isStaff={can(role,"content.view_management")} goFriends={()=>go("friends")} goSubmissions={()=>go("submissions")}/>:<SignInRequired lang={lang} go={go} what="profile"/>)} {view==="auth"&&<AuthPage lang={lang} notice={authNotice} onAuthenticated={(token,remember,isNew,refreshToken)=>{void enterSession(token,remember,isNew,refreshToken)}}/>} {view==="placement"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed?<Placement lang={lang} signed={signed} onFinish={()=>go("roadmaps")} onRoadmap={openRoadmap}/>:<SignInRequired lang={lang} go={go} what="placement"/>)} {view==="admin"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<Admin lang={lang} profile={profile}/>:<SignInRequired lang={lang} go={go} what="admin"/>)} {view==="person"&&(person?<PublicProfile key={person} lang={lang} username={person} meId={profile?.id||null} signedIn={signed} onBack={back} onMessage={id=>{setMessageWith(id);go("messages")}} onMyProfile={()=>go("profile")} onSignIn={()=>go("auth")} onOpenSubmissions={h=>pushScreen({view:"person-submissions",person:h})}/>:<ScreenLoading lang={lang}/>)} {view==="shop"&&<Shop lang={lang} signed={signed} authLoading={auth.status==="loading"}/>} {view==="playground"&&<Playground lang={lang}/>} {view==="friends"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed?<FriendsScreen lang={lang} onBack={()=>go("profile")} onOpenPerson={openPerson}/>:<SignInRequired lang={lang} go={go} what="profile"/>)} {view==="submissions"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<SubmissionsScreen lang={lang} userId={profile.id} who={profile.display_name||profile.username} isMe signedIn onBack={()=>go("profile")}/>:<SignInRequired lang={lang} go={go} what="profile"/>)} {view==="person-submissions"&&(person?<PersonSubmissions key={person} lang={lang} handle={person} meId={profile?.id||null} signedIn={signed} onBack={back}/>:<ScreenLoading lang={lang}/>)} {view==="messages"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<Messages lang={lang} me={profile} openWith={messageWith} onOpened={()=>setMessageWith(null)} onUnreadChange={()=>{void refreshUnread()}} onOpenProfile={openPerson}/>:<SignInRequired lang={lang} go={go} what="messages"/>)} {view==="users"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:!profile?<SignInRequired lang={lang} go={go} what="users"/>:can(role,"user.manage_roles")?<UsersAdmin lang={lang} meId={profile.id} goProfile={()=>go("profile")} onMessage={id=>{setMessageWith(id);go("messages")}} onOpenProfile={openPerson} initialDay={usersDay} onDayConsumed={()=>setUsersDay(null)}/>:<div className="panel"><div className="notice notice-error">{lang==="uz"?"Bu sahifa faqat ega (owner) roli uchun.":"This page is for the owner role only."}</div></div>)} {view==="stats"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:!profile?<SignInRequired lang={lang} go={go} what="stats"/>:can(role,"stats.view")?<OwnerStats lang={lang} goProfile={()=>go("profile")} onPickDay={day=>{setUsersDay(day);go("users")}}/>:<div className="panel"><div className="notice notice-error">{lang==="uz"?"Bu sahifa faqat ega (owner) roli uchun.":"This page is for the owner role only."}</div></div>)}</main>
+ <main className="main">{view==="home"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed&&profile?<><Dashboard lang={lang} profile={profile} go={go} openRoadmap={openRoadmap} onSelectProblem={p=>{setActiveProblem(p);setVerdict("");go("problem")}}/></>:<Home lang={lang} go={go} openRoadmap={openRoadmap}/>)} {view==="roadmaps"&&<RoadmapHub lang={lang} role={role} openRoadmap={openRoadmap}/>} {view==="roadmap"&&<RoadmapExperience slug={selectedRoadmap} lang={lang} role={role} unitId={selectedUnit} onOpenUnit={id=>pushScreen({unit:id})} onBack={back} onPractice={()=>pushScreen({view:"problem"})} onOpenProblem={(id:string)=>{const p=bankProblems.find(x=>x.id===id);if(p){setActiveProblem(p);setVerdict("");pushScreen({view:"problem"})}}}/>} {view==="problems"&&<Problems lang={lang} filter={filter} setFilter={setFilter} items={filtered} go={go} onSelect={p=>{setActiveProblem(p);setCode(p.judge==="max-subarray"?duelProblems[1].cpp:p.judge==="coin-change"?duelProblems[2].cpp:cpp);setVerdict("");go("problem")}}/>} {view==="problem"&&<Problem lang={lang} item={activeProblem} code={code} setCode={setCode} codeLang={codeLang} setCodeLang={setCodeLang} verdict={verdict} submit={judge} onBack={back}/>} {view==="duel"&&<DuelMatchmaking lang={lang} signed={signed} authLoading={auth.status==="loading"} needAuth={()=>go("auth")}/>} {view==="leaderboard"&&<Leaderboard lang={lang} me={profile} signed={signed} onOpenPerson={openPerson}/>} {view==="profile"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<ProfilePage lang={lang} profile={profile} onProfileChange={next=>setAuth({status:"authenticated",profile:next})} signOut={signOut} goAdmin={()=>go("admin")} goStats={()=>go("stats")} goUsers={()=>go("users")} goMessages={()=>go("messages")} isOwner={can(role,"user.manage_roles")} goRoadmaps={()=>go("roadmaps")} openRoadmap={openRoadmap} isStaff={can(role,"content.view_management")} goFriends={()=>go("friends")} goSubmissions={()=>go("submissions")}/>:<SignInRequired lang={lang} go={go} what="profile"/>)} {view==="auth"&&<AuthPage lang={lang} notice={authNotice} onAuthenticated={(token,remember,isNew,refreshToken)=>{void enterSession(token,remember,isNew,refreshToken)}}/>} {view==="placement"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed?<Placement lang={lang} signed={signed} onFinish={()=>go("roadmaps")} onRoadmap={openRoadmap}/>:<SignInRequired lang={lang} go={go} what="placement"/>)} {view==="admin"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<Admin lang={lang} profile={profile}/>:<SignInRequired lang={lang} go={go} what="admin"/>)} {view==="person"&&(person?<PublicProfile key={person} lang={lang} username={person} meId={profile?.id||null} signedIn={signed} onBack={back} onMessage={id=>{setMessageWith(id);go("messages")}} onMyProfile={()=>go("profile")} onSignIn={()=>go("auth")} onOpenSubmissions={h=>pushScreen({view:"person-submissions",person:h})}/>:<ScreenLoading lang={lang}/>)} {view==="shop"&&<Shop lang={lang} signed={signed} authLoading={auth.status==="loading"}/>} {view==="playground"&&<Playground lang={lang}/>} {view==="friends"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed?<FriendsScreen lang={lang} onBack={()=>go("profile")} onOpenPerson={openPerson}/>:<SignInRequired lang={lang} go={go} what="profile"/>)} {view==="submissions"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<SubmissionsScreen lang={lang} userId={profile.id} who={profile.display_name||profile.username} isMe signedIn onBack={()=>go("profile")}/>:<SignInRequired lang={lang} go={go} what="profile"/>)} {view==="person-submissions"&&(person?<PersonSubmissions key={person} lang={lang} handle={person} meId={profile?.id||null} signedIn={signed} onBack={back}/>:<ScreenLoading lang={lang}/>)} {view==="messages"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<Messages lang={lang} me={profile} openWith={messageWith} onOpened={()=>setMessageWith(null)} onUnreadChange={()=>{void refreshUnread()}} onOpenProfile={openPerson}/>:<SignInRequired lang={lang} go={go} what="messages"/>)} {view==="users"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:!profile?<SignInRequired lang={lang} go={go} what="users"/>:can(role,"user.manage_roles")?<UsersAdmin lang={lang} meId={profile.id} goProfile={()=>go("profile")} onMessage={id=>{setMessageWith(id);go("messages")}} onOpenProfile={openPerson} initialDay={usersDay} onDayConsumed={()=>setUsersDay(null)}/>:<div className="panel"><div className="notice notice-error">{lang==="uz"?"Bu sahifa faqat ega (owner) roli uchun.":"This page is for the owner role only."}</div></div>)} {view==="stats"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:!profile?<SignInRequired lang={lang} go={go} what="stats"/>:can(role,"stats.view")?<OwnerStats lang={lang} goProfile={()=>go("profile")} onPickDay={day=>{setUsersDay(day);go("users")}}/>:<div className="panel"><div className="notice notice-error">{lang==="uz"?"Bu sahifa faqat ega (owner) roli uchun.":"This page is for the owner role only."}</div></div>)}</main>
  <MobileTabBar lang={lang} view={view} go={v=>go(v as View)} /><SiteFooter lang={lang} go={v=>go(v as View)} />
  {/* Above every screen: a challenge can arrive while the learner is halfway
      through a lesson, and five seconds is not long enough to go looking. */}
@@ -463,122 +467,208 @@ const LAND={uz:{
    signed-in learner gets their dashboard first and the same introduction below
    it. Only the pieces that would contradict the state change: the marketing
    hero and the "create an account" call to action. */
-function LandingStory({lang}:{lang:Lang}){
- const L=LAND[lang];
- const size=roadmapCatalogSize();
- const factValues=[String(size.tracks),String(size.units),"2","30"];
+/* The four-step loop. Numbered because the order is the mechanic — this is the
+   one place on the site where a number is allowed to be decoration-adjacent,
+   because it is not decoration. Laid out as a ring that closes back on itself,
+   since that is what the loop actually does. */
+/* The signed-in home. A learner who has an account does not need the pitch —
+   they need the answer to "where was I", which is why the marketing sections
+   are replaced rather than merely re-headed. Left column: what to do next.
+   Right column: how it is going, and the same path drawing from the landing
+   page, now filled in with their real progress. */
+function Dashboard({lang,profile,go,openRoadmap,onSelectProblem}:{
+ lang:Lang;profile:Profile;go:(v:View)=>void;openRoadmap:(slug:string)=>void;
+ onSelectProblem:(p:BankProblem)=>void;
+}){
+ const uz=lang==="uz";
+ const [nodes,setNodes]=useState<ReturnType<typeof buildSpine>>([]);
+ useEffect(()=>{
+  const read=()=>setNodes(buildSpine(lang));
+  read();
+  window.addEventListener("algoyol-progress",read);
+  return()=>window.removeEventListener("algoyol-progress",read);
+ },[lang]);
+
+ /* Practice is suggested from the weakest topics rather than from the top of
+    the bank: a recommendation that ignores what you are bad at is just a list. */
+ const suggestions=useMemo(()=>{
+  const mastery=loadMastery();
+  const weakest=[...new Set(problems.map(p=>p.topic))]
+   .sort((a,b)=>masteryOf(a)-masteryOf(b))
+   .slice(0,3);
+  const unsolved=problems.filter(p=>mastery.evidence[`problem:${p.id}`]===undefined);
+  const picked=weakest.flatMap(topic=>unsolved.filter(p=>p.topic===topic).slice(0,2));
+  return (picked.length?picked:unsolved).slice(0,4);
+ },[]);
+
+ const done=nodes.reduce((n,x)=>n+x.done,0);
+ const total=nodes.reduce((n,x)=>n+x.units,0);
+
  return <>
-  <section className="lp-block">
-   <div className="section-head"><div><p className="eyebrow">{L.whyEyebrow}</p><h2>{L.whyTitle}</h2></div></div>
-   <p className="lp-lede muted">{L.whyLede}</p>
-   <div className="lp-cards">{L.why.map(([title,body])=>
-    <div className="panel lp-card" key={title}><h3>{title}</h3><p className="muted">{body}</p></div>)}</div>
-  </section>
-
-  <section className="lp-block">
-   <div className="section-head"><div><p className="eyebrow">{L.howEyebrow}</p><h2>{L.howTitle}</h2></div></div>
-   <p className="lp-lede muted">{L.howLede}</p>
-   {/* Numbered because this genuinely is a sequence — the order is the mechanic. */}
-   <ol className="lp-loop">{L.how.map(([title,body],i)=>
-    <li className="lp-step" key={title}>
-     <span className="lp-step-n mono">{String(i+1).padStart(2,"0")}</span>
-     <b>{title}</b>
-     <span className="muted">{body}</span>
-    </li>)}</ol>
-  </section>
-
-  <section className="lp-block">
-   <div className="panel lp-rule">
-    <div className="lp-rule-copy">
-     <p className="eyebrow">{L.ruleEyebrow}</p>
-     <h2>{L.ruleTitle}</h2>
-     <p className="muted">{L.ruleBody}</p>
+  <ContinueHero lang={lang} profile={profile} go={v=>go(v as View)} openRoadmap={openRoadmap}/>
+  <section className="dash">
+   <div className="dash-main">
+    <div className="section-head">
+     <h2>{uz?"Sizga tavsiya etilgan masalalar":"Recommended problems"}</h2>
+     <a className="see-all" href="/problems" onClick={linkTo(()=>go("problems"))}>{uz?"Barchasini ko‘rish":"View all"}</a>
     </div>
-    <div className="lp-rule-chips">
-     <span className="lp-chip"><i>✓</i>{L.ruleQuiz}</span>
-     <span className="lp-chip"><i>✓</i>{L.ruleSolve}</span>
-     <span className="lp-chip lime">{L.ruleMastery}</span>
-    </div>
+    {suggestions.length
+     ? <ProblemList lang={lang} items={suggestions} go={go} onSelect={onSelectProblem}/>
+     : <EmptyState lang={lang} icon="◎"
+        title={uz?"Tavsiya qoldi emas":"Nothing left to suggest"}
+        body={uz?"Bankdagi masalalarni yechib bo‘ldingiz. Duelda sinab ko‘ring.":"You have solved the bank. Try the arena."}
+        action={{label:uz?"Duel topish":"Find a duel",onClick:()=>go("duel")}}/>}
    </div>
-  </section>
 
-  <section className="lp-block">
-   <div className="section-head"><div><p className="eyebrow">{L.factsEyebrow}</p><h2>{L.factsTitle}</h2></div></div>
-   <div className="lp-facts">{L.facts.map(([label,note],i)=>
-    <div className="lp-fact" key={label}><b className="mono">{factValues[i]}</b><span>{label}</span><small className="muted">{note}</small></div>)}</div>
+   <aside className="dash-side">
+    <div className="panel dash-path">
+     <div className="dash-path-top">
+      <h3>{uz?"Sizning yo‘lingiz":"Your path"}</h3>
+      <span className="muted">{done}/{total}</span>
+     </div>
+     <RoadmapGraph lang={lang} nodes={nodes} onOpen={openRoadmap} animate={false}/>
+     <a className="see-all" href="/roadmaps" onClick={linkTo(()=>go("roadmaps"))}>
+      {uz?"Barcha yo‘nalishlar":"All tracks"}
+     </a>
+    </div>
+   </aside>
   </section>
  </>;
 }
 
+function LandingLoop({lang}:{lang:Lang}){
+ const L=LAND[lang];
+ return <section className="lp-block">
+  <div className="section-head"><h2>{L.howTitle}</h2></div>
+  <p className="lp-lede muted">{L.howLede}</p>
+  <ol className="loop">{L.how.map(([title,body],i)=>
+   <li className="loop-step" key={title}>
+    <span className="loop-n">{i+1}</span>
+    <b>{title}</b>
+    <span className="muted">{body}</span>
+   </li>)}
+   <li className="loop-back" aria-hidden>{lang==="uz"?"va yana boshidan":"and around again"}</li>
+  </ol>
+ </section>;
+}
+
 function LandingBrowse({lang,go,openRoadmap}:{lang:Lang;go:(v:View)=>void;openRoadmap:(slug:string)=>void}){
  const t=copy[lang];
- return <>
-  <section className="lp-block">
-   <div className="section-head">
-    <div><p className="eyebrow">{lang==="uz"?"Bosqichma-bosqich":"Step by step"}</p><h2>{t.featured}</h2></div>
-    <button className="secondary" onClick={()=>go("roadmaps")}>{t.all} →</button>
-   </div>
-   <RoadGrid lang={lang} roads={allRoads.slice(0,3)} openRoadmap={openRoadmap}/>
-  </section>
-
-  <section className="lp-block">
-   <div className="section-head">
-    <div><p className="eyebrow">100 · 200 · 300</p><h2>{t.tasks}</h2></div>
-    <button className="secondary" onClick={()=>go("problems")}>{t.all} →</button>
-   </div>
-   <ProblemList lang={lang} items={problems.slice(0,4)} go={go}/>
-  </section>
- </>;
+ return <section className="lp-block">
+  <div className="section-head">
+   <h2>{t.featured}</h2>
+   <a className="see-all" href="/roadmaps" onClick={linkTo(()=>go("roadmaps"))}>{t.all}</a>
+  </div>
+  {/* Six, not three: three cards read as a sample, six read as a catalogue —
+      and the catalogue is the product. */}
+  <RoadGrid lang={lang} roads={allRoads.slice(0,6)} openRoadmap={openRoadmap}/>
+ </section>;
 }
 
 function LandingCta({lang,go,signed}:{lang:Lang;go:(v:View)=>void;signed:boolean}){
  const L=LAND[lang];
  return <section className="lp-cta">
-  <h2>{signed?L.ctaInTitle:L.ctaTitle}</h2>
-  <p className="muted">{signed?L.ctaInBody:L.ctaBody}</p>
-  <div className="hero-cta">
-   <button className="primary" onClick={()=>go("roadmaps")}>{signed?L.ctaInPrimary:L.ctaPrimary} →</button>
-   <button className="secondary" onClick={()=>go(signed?"duel":"auth")}>{signed?L.ctaInSecondary:L.ctaSecondary}</button>
+  <div>
+   <h2>{signed?L.ctaInTitle:L.ctaTitle}</h2>
+   <p className="muted">{signed?L.ctaInBody:L.ctaBody}</p>
   </div>
+  <button className="primary" onClick={()=>go("roadmaps")}>{signed?L.ctaInPrimary:L.ctaPrimary}</button>
  </section>;
 }
 
 function Home({lang,go,openRoadmap}:{lang:Lang,go:(v:View)=>void,openRoadmap:(slug:string)=>void}){
  const t=copy[lang],L=LAND[lang];
+ const nodes=useMemo(()=>buildSpine(lang),[lang]);
  return <>
   <section className="hero">
    <div className="hero-copy">
-    <div className="eyebrow">{lang==="uz"?"O‘zbekiston dasturchilari uchun":"Built for Uzbekistan’s coders"}</div>
-    <h1>{lang==="uz"?<>Algoritmlarni <em>o‘rganing</em>, bellashing va o‘sing.</>:<>Learn algorithms, <em>compete</em>, and grow.</>}</h1>
+    {/* No eyebrow label above the heading, and no single word painted a
+        different colour: the emphasis is carried by size and weight. */}
+    <h1>{lang==="uz"?"Algoritmlarni ona tilingizda o‘rganing va bellashing.":"Learn algorithms in your own language, then compete."}</h1>
     <p>{L.what}</p>
     <div className="hero-cta">
-     <button className="primary" onClick={()=>go("roadmaps")}>{t.start} →</button>
-     <button className="secondary" onClick={()=>go("duel")}>{t.arena}</button>
+     <button className="primary" onClick={()=>go(t.start==="Start learning"?"roadmaps":"roadmaps")}>{t.start}</button>
+     <a className="text-link" href="/duel" onClick={linkTo(()=>go("duel"))}>{t.arena}</a>
     </div>
-    <div className="orbit"/>
+    <PlatformStats lang={lang}/>
    </div>
-   <div className="hero-side"><PlatformStats lang={lang}/></div>
+   <div className="hero-graph"><RoadmapGraph lang={lang} nodes={nodes} onOpen={openRoadmap}/></div>
   </section>
-  <LandingStory lang={lang}/>
+  <LandingLoop lang={lang}/>
   <LandingBrowse lang={lang} go={go} openRoadmap={openRoadmap}/>
   <LandingCta lang={lang} go={go} signed={false}/>
  </>;
 }
 
-/* Real platform numbers only: how much curriculum exists, and how many people
-   have registered. Nothing here is a decorative invention. */
+/* Real platform numbers only, on one line under the hero rather than in a
+   section of their own — four large digits do not need a heading to introduce
+   them. The learner count is shown only once it is worth showing: a public
+   "5 registered" argues against the product it is meant to sell. */
 function PlatformStats({lang}:{lang:Lang}){
  const [learners,setLearners]=useState<number|null>(null);
  useEffect(()=>{let live=true;fetchLearnerCount().then(n=>{if(live)setLearners(n)});return()=>{live=false}},[]);
- const units=useMemo(()=>roadmapCatalogSize(),[]);
- return <>
-  <div className="stat-card"><span className="eyebrow">{lang==="uz"?"O‘quv dasturi":"Curriculum"}</span><span className="big">{units.tracks}</span><span className="muted">{lang==="uz"?`yo‘nalish · ${units.units} bosqich`:`tracks · ${units.units} units`}</span></div>
-  <div className="stat-card duel"><span className="eyebrow" style={{color:"#6f3516"}}>{lang==="uz"?"Ro‘yxatdan o‘tganlar":"Registered learners"}</span><span className="big">{learners===null?"—":String(learners).replace(/\B(?=(\d{3})+(?!\d))/g," ")}</span><span>{lang==="uz"?"AlgoYo‘lda o‘rganmoqda":"learning on AlgoYo‘l"} ⚡</span></div>
- </>;
+ const size=useMemo(()=>roadmapCatalogSize(),[]);
+ const uz=lang==="uz";
+ return <div className="hero-facts">
+  <span><b>{size.tracks}</b> {uz?"yo‘nalish":"tracks"}</span>
+  <span><b>{size.units}</b> {uz?"bosqich":"stages"}</span>
+  <span><b>C++</b> {uz?"va Python":"and Python"}</span>
+  {learners!==null&&learners>=500&&
+   <span><b>{String(learners).replace(/\B(?=(\d{3})+(?!\d))/g," ")}</b> {uz?"o‘quvchi":"learners"}</span>}
+ </div>;
 }
 
-function RoadGrid({lang,roads,openRoadmap}:{lang:Lang,roads:typeof allRoads,openRoadmap:(slug:string)=>void}){return <div className="grid">{roads.map((r)=><button className="road-card" style={{textAlign:"left"}} key={r.en} onClick={()=>openRoadmap(r.slug)}><span className="road-icon" style={{background:r.color}}>{r.icon}</span><h3>{lang==="uz"?r.uz:r.en}</h3><p className="muted">{lang==="uz"?r.descUz:r.descEn}</p><div className="meta"><span>{r.units} {lang==="uz"?"bosqich":"units"}</span><span>800 → 2200</span></div></button>)}</div>}
-function ProblemList({lang,items,go,onSelect}:{lang:Lang;items:BankProblem[];go:(v:View)=>void;onSelect?:(p:BankProblem)=>void}){const mastery=loadMastery();return <div className="problem-list">{items.map(p=>{const solved=mastery.evidence[`problem:${p.id}`]!==undefined;return <button className="problem-row" style={{textAlign:"left"}} key={p.id} onClick={()=>onSelect?onSelect(p):go("problem")}><span className="num">{p.id}</span><span><h3>{lang==="uz"?p.uz:p.en}</h3><span className="rating-chip" style={{color:ratingColor(p.rating||1200)}}>{p.rating||1200}</span> <span className={`difficulty ${p.difficulty}`}>{p.difficulty.toUpperCase()}</span></span><span className="tag">{p.tag}</span><span className={`pb-status ${solved?"solved":""}`}>{solved?"✓":"○"}</span></button>})}</div>}
+/* Roadmap cards. The whole card is the link — an "Open" button inside a card
+   that is already clickable gives the reader two targets for one destination
+   and makes them decide which is real. Progress is mandatory here: this is a
+   learning platform, so "6/15" is the most useful thing the card can say, and
+   the old card said everything except that. */
+function RoadGrid({lang,roads,openRoadmap}:{lang:Lang,roads:typeof allRoads,openRoadmap:(slug:string)=>void}){
+ const [progress,setProgress]=useState(emptyProgress);
+ useEffect(()=>{
+  const read=()=>setProgress(readLocalProgress());
+  read();window.addEventListener("algoyol-progress",read);
+  return()=>window.removeEventListener("algoyol-progress",read);
+ },[]);
+ return <div className="grid">{roads.map(r=>{
+  const road=roadmapCatalog.find(x=>x.slug===r.slug);
+  const total=road?road.units.length:r.units;
+  const done=road?road.units.filter(u=>unitDone(progress,u)).length:0;
+  const status=road?roadmapStatus(road,progress):"available";
+  return <a className={`road-card road-${status}`} key={r.slug} href={`/roadmaps/${r.slug}`}
+   onClick={linkTo(()=>openRoadmap(r.slug))}>
+   <span className="road-top">
+    <span className="road-icon" style={{background:r.color}}>{r.icon}</span>
+    {status==="locked"&&<span className="road-lock" aria-hidden>🔒</span>}
+    {status==="completed"&&<span className="road-done" aria-hidden>✓</span>}
+   </span>
+   <h3>{lang==="uz"?r.uz:r.en}</h3>
+   <p className="muted">{lang==="uz"?r.descUz:r.descEn}</p>
+   <ProgressBar done={done} total={total}/>
+   <span className="road-meta">
+    <span>{done}/{total} {lang==="uz"?"bosqich":"stages"}</span>
+    <span className="road-level">{r.level}</span>
+   </span>
+  </a>;
+ })}</div>;
+}
+
+function ProblemList({lang,items,go,onSelect}:{lang:Lang;items:BankProblem[];go:(v:View)=>void;onSelect?:(p:BankProblem)=>void}){
+ const mastery=loadMastery();
+ return <div className="problem-list">{items.map(p=>{
+  const solved=mastery.evidence[`problem:${p.id}`]!==undefined;
+  return <a className="problem-row" key={p.id} href={`/problems`}
+   onClick={linkTo(()=>onSelect?onSelect(p):go("problem"))}>
+   <span className={`pb-status ${solved?"solved":""}`} aria-hidden>{solved?"✓":"○"}</span>
+   <span className="num mono">{p.id}</span>
+   <span className="problem-name">{lang==="uz"?p.uz:p.en}</span>
+   <span className="rating-chip mono" style={{color:ratingColor(p.rating||1200)}}>{p.rating||1200}</span>
+   <span className={`difficulty ${p.difficulty}`}>{p.difficulty.toUpperCase()}</span>
+   <span className="tag">{p.tag}</span>
+  </a>;
+ })}</div>;
+}
+
 function Problems({lang,filter,setFilter,items,go,onSelect}:{lang:Lang,filter:string,setFilter:(x:string)=>void,items:BankProblem[],go:(v:View)=>void,onSelect:(p:BankProblem)=>void}){
  const [topic,setTopic]=useState("all");
  const topics=useMemo(()=>[...new Set(problems.map(p=>p.topic))],[]);

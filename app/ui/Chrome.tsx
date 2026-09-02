@@ -48,7 +48,7 @@ const TABS = [
    swallow. Anything else — a new tab, a new window, a download — belongs to the
    browser, and stealing it is how single-page apps break the back button and
    every "open in new tab" a learner tries. */
-function navHandler(go: () => void) {
+export function linkTo(go: () => void) {
   return (e: React.MouseEvent) => {
     if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     e.preventDefault();
@@ -110,12 +110,12 @@ export function SiteHeader({
 
   const item = (to: string, label: string) => (
     <a className="menu-item" role="menuitem" href={to}
-      onClick={navHandler(() => { setMenu(false); go(to.slice(1)); })}>{label}</a>
+      onClick={linkTo(() => { setMenu(false); go(to.slice(1)); })}>{label}</a>
   );
 
   return (
     <header className="topbar">
-      <a className="brand" href="/" onClick={navHandler(() => go("home"))}>
+      <a className="brand" href="/" onClick={linkTo(() => go("home"))}>
         <BrandMark className="brandmark" />AlgoYo‘l
       </a>
 
@@ -126,7 +126,7 @@ export function SiteHeader({
             className={view === link.view ? "nav-link active" : "nav-link"}
             href={link.href}
             aria-current={view === link.view ? "page" : undefined}
-            onClick={navHandler(() => go(link.view))}
+            onClick={linkTo(() => go(link.view))}
           >{uz ? link.uz : link.en}</a>
         ))}
       </nav>
@@ -142,7 +142,7 @@ export function SiteHeader({
         )}
 
         {signed && (
-          <a className="icon-link" href="/messages" onClick={navHandler(() => go("messages"))}
+          <a className="icon-link" href="/messages" onClick={linkTo(() => go("messages"))}
             aria-label={uz ? "Xabarlar" : "Messages"}>
             ✉{unread > 0 && <span className="msg-badge">{unread > 99 ? "99+" : unread}</span>}
           </a>
@@ -162,7 +162,7 @@ export function SiteHeader({
                 {/* The balance is the shop's doorway: coins mean nothing until you
                     see what they buy, so the number itself is the link. */}
                 <a className="menu-balance" role="menuitem" href="/shop"
-                  onClick={navHandler(() => { setMenu(false); go("shop"); })}>
+                  onClick={linkTo(() => { setMenu(false); go("shop"); })}>
                   <span><span aria-hidden>◆</span> {coins ?? 0} {uz ? "tanga" : "coins"}</span>
                   <span className="menu-balance-go">{uz ? "Do‘kon" : "Shop"}</span>
                 </a>
@@ -178,11 +178,11 @@ export function SiteHeader({
           </div>
         ) : (
           <>
-            <a className="nav-link" href="/auth" onClick={navHandler(() => go("auth"))}>
+            <a className="nav-link" href="/auth" onClick={linkTo(() => go("auth"))}>
               {uz ? "Kirish" : "Sign in"}
             </a>
             {/* The single solid button on a signed-out page. */}
-            <a className="primary" href="/auth" onClick={navHandler(() => go("auth"))}>
+            <a className="primary" href="/auth" onClick={linkTo(() => go("auth"))}>
               {uz ? "Ro‘yxatdan o‘tish" : "Create account"}
             </a>
           </>
@@ -199,7 +199,7 @@ export function MobileTabBar({ lang, view, go }: { lang: Lang; view: string; go:
       {TABS.map(tab => (
         <a key={tab.view} className={view === tab.view ? "active" : ""} href={tab.href}
           aria-current={view === tab.view ? "page" : undefined}
-          onClick={navHandler(() => go(tab.view))}>
+          onClick={linkTo(() => go(tab.view))}>
           <span className="tab-ic" aria-hidden>{tab.icon}</span>
           <span className="tab-label">{uz ? tab.uz : tab.en}</span>
         </a>
@@ -215,7 +215,7 @@ export function MobileTabBar({ lang, view, go }: { lang: Lang; view: string; go:
 export function SiteFooter({ lang, go }: { lang: Lang; go: Nav }) {
   const uz = lang === "uz";
   const link = (to: string, view: string, label: string) => (
-    <a href={to} onClick={navHandler(() => go(view))}>{label}</a>
+    <a href={to} onClick={linkTo(() => go(view))}>{label}</a>
   );
   return (
     <footer className="footer">
