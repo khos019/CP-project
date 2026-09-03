@@ -9,6 +9,7 @@
 // keeping a device-local copy.
 
 import { readScoped, writeScoped, readToken, supabaseConfig } from "./session";
+import { recordTopicDone } from "./coins";
 
 export type Progress = { quizScores: Record<string, number>; solved: Record<string, boolean> };
 export const emptyProgress: Progress = { quizScores: {}, solved: {} };
@@ -118,5 +119,10 @@ export async function saveUnit(current: Progress, unitSlug: string, patch: { qui
   if (patch.solved !== undefined) next.solved[unitSlug] = patch.solved;
   writeLocal(next);
   void pushUnit(unitSlug, patch);
+  // The daily task counts finished topics, so report the crossing — not the
+  // state. Only the save that completes the pair (quiz >= 70% and accepted)
+  // counts; re-taking either half of an already finished unit does not.
+  const done = (p: Progress) => (p.quizScores[unitSlug] || 0) >= 70 && !!p.solved[unitSlug];
+  if (!done(current) && done(next)) recordTopicDone();
   return next;
 }

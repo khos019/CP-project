@@ -19,6 +19,7 @@ import { tr } from "./i18n";
 import { bankProblems } from "./problem-bank";
 import { CodeEditor } from "./CodeEditor";
 import { useTabGuard } from "./duel-guard";
+import { recordDuelDone } from "./coins";
 import {
   // Accept and decline are the shell's job, not this screen's: the card can
   // appear anywhere in the app, so the handlers live where it is rendered.
@@ -242,7 +243,11 @@ export function DuelMatchmaking({
       else if (hadDuel.current) {
         hadDuel.current = false;
         const finished = await duelRecentResult();
-        if (finished && "id" in finished) setResult(finished);
+        if (finished && "id" in finished) {
+          setResult(finished);
+          // Finishing a duel is one of the three daily-task conditions.
+          recordDuelDone(finished.id);
+        }
       }
     }
   }, []);

@@ -2784,7 +2784,8 @@ body{font-size:var(--t-body);line-height:1.6}
 .ladder-step.done .ladder-gain{color:var(--green)}
 
 /* Bugungi shartlar: uchta o'lchov, har biri o'z chizig'i bilan. */
-.day-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s2);margin-top:var(--s4)}
+.day-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--s2);margin-top:var(--s4)}
+@media(max-width:900px){.day-stats{grid-template-columns:repeat(2,1fr)}}
 .day-stat{
  display:grid;gap:5px;padding:var(--s3);border-radius:var(--r-md);
  background:var(--inset);border:1px solid var(--line-faint);

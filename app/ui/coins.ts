@@ -15,7 +15,7 @@ export type ShopItem = {
   costCoins: number; telegramStars: number | null; art: string;
 };
 export type Order = { id: string; slug: string; status: string; costCoins: number; createdAt: string };
-export type DayActivity = { day: string; activeSeconds: number; duels: number };
+export type DayActivity = { day: string; activeSeconds: number; duels: number; topics: number };
 
 // Mirrors coin_rules in migration 013. 1+2+3+4+5 = 15 = one 15-star gift.
 export const COIN_RULES = [
@@ -25,12 +25,16 @@ export const COIN_RULES = [
   { days: 8, coins: 4 },
   { days: 10, coins: 5 },
 ] as const;
-export const DAY_SECONDS_REQUIRED = 30 * 60;
-export const DAY_DUELS_REQUIRED = 3;
+export const DAY_SECONDS_REQUIRED = 50 * 60;
+export const DAY_DUELS_REQUIRED = 1;
+// A finished topic is a roadmap unit crossing into done: quiz >= 70% and the
+// problem accepted. Reported once, at the transition — see saveUnit().
+export const DAY_TOPICS_REQUIRED = 1;
 export const TOTAL_LADDER_COINS = COIN_RULES.reduce((n, r) => n + r.coins, 0); // 15
 
 const ACT_KEY = "algoyol-activity";
 const CLAIM_KEY = "algoyol-coin-claims";
+const DUEL_KEY = "algoyol-counted-duels";
 const today = () => new Date().toISOString().slice(0, 10);
 const rest = (path: string) => {
   const { url, key } = supabaseConfig();
@@ -47,22 +51,48 @@ function writeActivity(all: Record<string, DayActivity>) {
   try { writeScoped(ACT_KEY, JSON.stringify(all)); } catch {}
 }
 
-/** Add watched time (and optionally finished duels) to today. */
-export function addLocalActivity(seconds: number, duels = 0) {
+/** Add watched time (and optionally finished duels/topics) to today. */
+export function addLocalActivity(seconds: number, duels = 0, topics = 0) {
   const all = readActivity();
   const day = today();
-  const cur = all[day] || { day, activeSeconds: 0, duels: 0 };
+  // `topics` postdates the first activity log, so days written before it
+  // exists come back without the field.
+  const cur = all[day] || { day, activeSeconds: 0, duels: 0, topics: 0 };
   cur.activeSeconds = Math.min(cur.activeSeconds + Math.max(0, Math.min(seconds, 300)), 86400);
   cur.duels += Math.max(0, duels);
+  cur.topics = (cur.topics || 0) + Math.max(0, topics);
   all[day] = cur;
   writeActivity(all);
+}
+
+/** Report one roadmap topic finished today, on both copies. */
+export function recordTopicDone() {
+  addLocalActivity(0, 0, 1);
+  void pushActivity(0, 0, 1);
+}
+
+/* One duel counts once. The result screen can be reached again — a reload, a
+   second refresh — so the duel's own id is what makes the report idempotent,
+   and only today's ids are kept. */
+export function recordDuelDone(duelId: string) {
+  let seen: { day: string; ids: string[] } = { day: today(), ids: [] };
+  try {
+    const raw = JSON.parse(readScoped(DUEL_KEY) || "null");
+    if (raw && raw.day === today() && Array.isArray(raw.ids)) seen = raw;
+  } catch {}
+  if (seen.ids.includes(duelId)) return;
+  seen.ids.push(duelId);
+  try { writeScoped(DUEL_KEY, JSON.stringify(seen)); } catch {}
+  addLocalActivity(0, 1, 0);
+  void pushActivity(0, 1, 0);
 }
 
 /** Consecutive qualifying days ending today or yesterday — mirrors the SQL. */
 export function localStreak(all = readActivity()): number {
   const qualifies = (d: string) => {
     const a = all[d];
-    return !!a && a.activeSeconds >= DAY_SECONDS_REQUIRED && a.duels >= DAY_DUELS_REQUIRED;
+    return !!a && a.activeSeconds >= DAY_SECONDS_REQUIRED && a.duels >= DAY_DUELS_REQUIRED
+      && (a.topics || 0) >= DAY_TOPICS_REQUIRED;
   };
   const shift = (d: string, n: number) => {
     const t = new Date(d + "T00:00:00Z");
@@ -94,7 +124,10 @@ export function localStreakStart(): string | null {
   const streak = localStreak();
   if (!streak) return null;
   const all = readActivity();
-  const days = Object.keys(all).filter(d => all[d].activeSeconds >= DAY_SECONDS_REQUIRED && all[d].duels >= DAY_DUELS_REQUIRED).sort();
+  const days = Object.keys(all).filter(d =>
+    all[d].activeSeconds >= DAY_SECONDS_REQUIRED
+    && all[d].duels >= DAY_DUELS_REQUIRED
+    && (all[d].topics || 0) >= DAY_TOPICS_REQUIRED).sort();
   const last = days[days.length - 1];
   const t = new Date(last + "T00:00:00Z");
   t.setUTCDate(t.getUTCDate() - (streak - 1));
@@ -158,11 +191,11 @@ export async function fetchStreak(): Promise<number | null> {
   } catch { return null; }
 }
 
-export async function pushActivity(seconds: number, duels = 0): Promise<boolean> {
+export async function pushActivity(seconds: number, duels = 0, topics = 0): Promise<boolean> {
   const r = rest("rpc/record_activity");
   if (!r) return false;
   try {
-    const res = await fetch(r.url, { method: "POST", headers: r.headers, body: JSON.stringify({ p_seconds: seconds, p_duels: duels }) });
+    const res = await fetch(r.url, { method: "POST", headers: r.headers, body: JSON.stringify({ p_seconds: seconds, p_duels: duels, p_topics: topics }) });
     return res.ok;
   } catch { return false; }
 }

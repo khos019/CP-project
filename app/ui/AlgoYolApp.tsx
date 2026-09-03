@@ -17,7 +17,7 @@ import { OnlineDot, onlineAmong } from "./presence";
 import { loadPlacement } from "./mastery";
 import { openDuelChannel, userTopic, matchTopic, type DuelChannel } from "./duel-realtime";
 import { acceptChallenge, declineChallenge, duelHeartbeat, duelState, type DuelState } from "./duel-client";
-import { addLocalActivity, pushActivity } from "./coins";
+import { addLocalActivity, pushActivity, recordTopicDone } from "./coins";
 import { Placement } from "./Placement";
 import { AuthPage } from "./AuthPage";
 import { ContinueHero } from "./ContinueHero";
@@ -202,7 +202,9 @@ export function AlgoYolApp(){
 
  // Reacts to a verdict that arrived from the judge, so the state it sets is a
  // consequence of a response rather than of rendering.
- useEffect(()=>{if(!verdict.startsWith("Qabul qilindi")&&!verdict.startsWith("Accepted"))return;if(activeProblem.judge){applySolve(activeProblem.id,activeProblem.rating||1200);const base=MASTERY_CONFIG.weights.problem[activeProblem.difficulty as keyof typeof MASTERY_CONFIG.weights.problem];recordEvidence(activeProblem.topic,"problem",`problem:${activeProblem.id}`,base)}const lesson=readScoped("algoyol-active-lesson");if(!lesson)return;let data={quizScores:{},solved:{}} as {quizScores:Record<string,number>;solved:Record<string,boolean>};try{data=JSON.parse(readScoped("algoyol-roadmap-progress")||JSON.stringify(data))}catch{}if(!data.solved[lesson])recordEvidence(lesson.slice(0,lesson.lastIndexOf("-")),"lesson",`lesson:${lesson}`,MASTERY_CONFIG.weights.lesson);data.solved={...data.solved,[lesson]:true};writeScoped("algoyol-roadmap-progress",JSON.stringify(data));removeScoped("algoyol-active-lesson");window.dispatchEvent(new Event("algoyol-progress"))},[verdict]);// eslint-disable-line react-hooks/exhaustive-deps
+ useEffect(()=>{if(!verdict.startsWith("Qabul qilindi")&&!verdict.startsWith("Accepted"))return;if(activeProblem.judge){applySolve(activeProblem.id,activeProblem.rating||1200);const base=MASTERY_CONFIG.weights.problem[activeProblem.difficulty as keyof typeof MASTERY_CONFIG.weights.problem];recordEvidence(activeProblem.topic,"problem",`problem:${activeProblem.id}`,base)}const lesson=readScoped("algoyol-active-lesson");if(!lesson)return;let data={quizScores:{},solved:{}} as {quizScores:Record<string,number>;solved:Record<string,boolean>};try{data=JSON.parse(readScoped("algoyol-roadmap-progress")||JSON.stringify(data))}catch{}if(!data.solved[lesson])recordEvidence(lesson.slice(0,lesson.lastIndexOf("-")),"lesson",`lesson:${lesson}`,MASTERY_CONFIG.weights.lesson);// Accepted can be the half that finishes the topic, and the daily task
+// counts finished topics — so report the crossing here too.
+const wasDone=!!data.solved[lesson]&&(data.quizScores[lesson]||0)>=70;data.solved={...data.solved,[lesson]:true};if(!wasDone&&(data.quizScores[lesson]||0)>=70)recordTopicDone();writeScoped("algoyol-roadmap-progress",JSON.stringify(data));removeScoped("algoyol-active-lesson");window.dispatchEvent(new Event("algoyol-progress"))},[verdict]);// eslint-disable-line react-hooks/exhaustive-deps
  // The address bar reflects the current screen — /roadmaps/{slug}/{unit} —
  // so two roadmaps (or two units) are never one indistinguishable URL.
  /* A screen is a view plus whatever that view is *about*. `person` is a handle

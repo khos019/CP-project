@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { tr } from "./i18n";
 import { GiftArtwork, ART_CREDIT, ART_CREDIT_EN } from "./gift-art";
 import {
-  COIN_RULES, DAY_DUELS_REQUIRED, DAY_SECONDS_REQUIRED, FALLBACK_ITEMS, TOTAL_LADDER_COINS,
+  COIN_RULES, DAY_DUELS_REQUIRED, DAY_SECONDS_REQUIRED, DAY_TOPICS_REQUIRED, FALLBACK_ITEMS, TOTAL_LADDER_COINS,
   claimLocal, claimServer, coinsForStreak, fetchBalance, fetchOrders, fetchShopItems, fetchStreak,
   localBalance, localStreak, nextMilestone, purchase, readActivity,
   type CoinServer, type Order, type ShopItem,
@@ -16,8 +16,8 @@ const T = {
   uz: {
     title: "Do‘kon markazi", sub: "Faollik uchun tanga yig‘ing va Telegram sovg‘asiga almashtiring.",
     balance: "Tangalaringiz", streak: "Ketma-ket kunlar", day: "kun", coins: "tanga",
-    ladder: "Tanga ishlash zinapoyasi", ladderNote: `Hisoblanadigan kun: kamida 30 daqiqa faollik + ${DAY_DUELS_REQUIRED} ta duel.`,
-    today: "Bugun", minutes: "daqiqa", duels: "duel", claim: "Tangalarni olish",
+    ladder: "Tanga ishlash zinapoyasi", ladderNote: `Hisoblanadigan kun: kamida ${DAY_SECONDS_REQUIRED / 60} daqiqa faollik + ${DAY_DUELS_REQUIRED} ta duel + ${DAY_TOPICS_REQUIRED} ta mavzuni tugatish.`,
+    today: "Bugun", minutes: "daqiqa", duels: "duel", topics: "mavzu", claim: "Tangalarni olish",
     claimed: "tanga qo‘shildi!", nothing: "Hozircha yangi tanga yo‘q.",
     next: "Keyingi bosqich", buy: "Sotib olish", cost: "narxi", stars: "yulduz",
     tgLabel: "Telegram username", tgPlaceholder: "@username",
@@ -33,8 +33,8 @@ const T = {
   en: {
     title: "Shop centre", sub: "Earn coins for staying active, then trade them for a Telegram gift.",
     balance: "Your coins", streak: "Day streak", day: "days", coins: "coins",
-    ladder: "Coin ladder", ladderNote: `A qualifying day is 30+ active minutes and ${DAY_DUELS_REQUIRED} duels.`,
-    today: "Today", minutes: "min", duels: "duels", claim: "Claim coins",
+    ladder: "Coin ladder", ladderNote: `A qualifying day is ${DAY_SECONDS_REQUIRED / 60}+ active minutes, ${DAY_DUELS_REQUIRED} duel and ${DAY_TOPICS_REQUIRED} finished topic.`,
+    today: "Today", minutes: "min", duels: "duels", topics: "topics", claim: "Claim coins",
     claimed: "coins added!", nothing: "No new coins yet.",
     next: "Next milestone", buy: "Buy", cost: "costs", stars: "stars",
     tgLabel: "Telegram username", tgPlaceholder: "@username",
@@ -90,7 +90,7 @@ export function Shop({ lang, signed, authLoading }: { lang: Lang; signed: boolea
     void refresh();
   }, [signed]);
 
-  const act = readActivity()[new Date().toISOString().slice(0, 10)] || { activeSeconds: 0, duels: 0 };
+  const act = readActivity()[new Date().toISOString().slice(0, 10)] || { activeSeconds: 0, duels: 0, topics: 0 };
   const upcoming = nextMilestone(streak);
 
   /* Zinapoya chizig'i uzluksiz: tugunlar orasidagi masofa ham to'ladi, shuning
@@ -187,6 +187,7 @@ export function Shop({ lang, signed, authLoading }: { lang: Lang; signed: boolea
               { k: "streak", label: t.streak, now: streak, goal: Math.max(1, upcoming?.days ?? streak), text: `${streak} ${t.day}`, hot: true },
               { k: "min", label: t.today, now: Math.floor(act.activeSeconds / 60), goal: DAY_SECONDS_REQUIRED / 60, text: `${Math.floor(act.activeSeconds / 60)}/${DAY_SECONDS_REQUIRED / 60} ${t.minutes}` },
               { k: "duel", label: t.duels, now: act.duels, goal: DAY_DUELS_REQUIRED, text: `${act.duels}/${DAY_DUELS_REQUIRED}` },
+              { k: "topic", label: t.topics, now: act.topics || 0, goal: DAY_TOPICS_REQUIRED, text: `${act.topics || 0}/${DAY_TOPICS_REQUIRED}` },
             ].map(stat => (
               <div key={stat.k} className={`day-stat ${stat.now >= stat.goal ? "met" : ""}`}>
                 <small>{stat.label}</small>
