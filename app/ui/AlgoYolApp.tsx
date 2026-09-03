@@ -780,7 +780,7 @@ function Problems({lang,filter,setFilter,items,go,onSelect}:{lang:Lang,filter:st
          return <tr key={p.id} className={solved?"solved":""} onClick={()=>onSelect(p)} tabIndex={0}
           onKeyDown={e=>{if(e.key==="Enter"){e.preventDefault();onSelect(p)}}}>
           <td><span className={`pb-status ${solved?"solved":""}`} aria-label={solved?(tr(lang,"algoYolApp.yechilgan")):(tr(lang,"algoYolApp.yechilmagan"))}>{solved?"✓":"○"}</span></td>
-          <td><span className="pb-id mono">{p.id}</span><span className="pb-name">{uz?p.uz:p.en}</span>
+          <td><span className="pb-id mono">{p.id}</span><span className="pb-name" style={{color:ratingColor(p.rating||1200)}}>{uz?p.uz:p.en}</span>
            <span className={`difficulty ${p.difficulty}`}>{p.difficulty.toUpperCase()}</span></td>
           <td className="mono pb-rating" style={{color:ratingColor(p.rating||1200)}}>{p.rating||1200}</td>
           <td className="pb-topic"><span className="tag">{p.tag}</span></td>

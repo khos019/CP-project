@@ -2693,3 +2693,228 @@ body{font-size:var(--t-body);line-height:1.6}
  .duel-steps{grid-template-columns:1fr}
  .step-who i{max-width:none}
 }
+
+/* ─── Bulut shakli, zinapoya va sovg'a kartochkalari ───────────────────────
+   Yo'l tugunlari to'rtburchak emas: bosqich — osmondagi bulut, va shakl
+   ma'noni ko'taradi. Silueti bitta filtr bilan chiziladi, chunki chegara
+   faqat quti atrofini o'raydi, bulut esa qutidan chiqib turadi. */
+.cloud-unit{
+ --cloud-fill:var(--surface-2);
+ position:relative;margin-top:26px;
+ background:var(--cloud-fill);border:0;
+ border-radius:64px 58px 60px 62px/48px 52px 46px 50px;
+ padding:var(--s5) var(--s5) var(--s5) var(--s4);
+ /* Siluet chegarasi chiziq bilan emas, bitta soya bilan beriladi: chegara
+    faqat to'rtburchakni o'raydi, soya esa buluti bilan birga chiqadi — va
+    bitta filtr o'n beshta kartochkada ham arzon. */
+ filter:drop-shadow(0 14px 22px rgba(0,0,0,.55));
+ transition:transform var(--dur-base) var(--ease),filter var(--dur-base) var(--ease);
+}
+/* Eski qatlamdagi ikkita "puf" endi kerak emas — ular quti ustida qorayib
+   turgan yarim doiralar edi. */
+.cloud-unit:before,.cloud-unit:after{content:none;display:none}
+.cloud-puffs{position:absolute;inset:0;pointer-events:none}
+.cloud-puffs i{
+ position:absolute;display:block;border-radius:50%;
+ background:var(--cloud-fill);
+}
+.cloud-puffs i:nth-child(1){width:78px;height:78px;left:7%;top:-30px}
+.cloud-puffs i:nth-child(2){width:104px;height:104px;left:24%;top:-44px}
+.cloud-puffs i:nth-child(3){width:86px;height:86px;left:49%;top:-34px}
+.cloud-puffs i:nth-child(4){width:62px;height:62px;right:8%;top:-22px}
+/* Pastdagi bo'rtma keng va yassi: bulutning tagi tekis bo'ladi, aks holda
+   u gapiruvchi pufakning dumiga o'xshab qoladi. */
+.cloud-puffs i:nth-child(5){width:46%;height:44px;left:27%;bottom:-16px}
+.cloud-unit:hover:not(:disabled){transform:translateY(-3px);background:var(--cloud-fill)}
+.cloud-step.current .cloud-unit{
+ --cloud-fill:#18271d;background:var(--cloud-fill);
+ filter:drop-shadow(0 0 1.5px var(--orange)) drop-shadow(0 0 26px rgba(255,135,92,.28));
+}
+.cloud-step.done .cloud-unit{--cloud-fill:#15271b;background:var(--cloud-fill);
+ filter:drop-shadow(0 0 1px rgba(154,239,79,.5)) drop-shadow(0 12px 20px rgba(0,0,0,.5))}
+.cloud-step.placed .cloud-unit{--cloud-fill:var(--surface-2);background:var(--cloud-fill)}
+/* Qulflangan bulut ham bulut bo'lib qolsin — u shunchaki xiraroq. */
+.cloud-step.locked .cloud-unit{
+ --cloud-fill:#111a16;background:var(--cloud-fill);opacity:.78;
+ filter:drop-shadow(0 0 .8px var(--line-strong));
+}
+.cloud-step.locked .cloud-unit:hover{transform:none}
+/* Bulut chetiga tegib turmasin: ichki ustunlar biroz nafas oladi. */
+.cloud-unit>.cloud-node{margin-left:var(--s3)}
+.cloud-unit>.unit-status{margin-right:var(--s3)}
+.cloud-link{margin-bottom:-14px}
+
+/* Reyting rangi masalaning nomida ham: qiyinlik ro'yxatdan o'qilmasdan
+   ko'rinadi. */
+.link-cell.rated,.pb-name{font-weight:550}
+.link-cell.rated:hover{text-decoration:underline;text-underline-offset:3px}
+
+/* ─── Tanga zinapoyasi ──────────────────────────────────────────────────── */
+.ladder{
+ list-style:none;margin:var(--s3) 0 var(--s2);padding:0;
+ display:grid;grid-template-columns:repeat(5,1fr);gap:0;
+}
+.ladder-step{
+ position:relative;display:grid;grid-template-columns:none;justify-items:center;gap:4px;text-align:center;
+ padding:var(--s2) 4px 0;background:none;border:0;border-radius:0;
+}
+.ladder-step:before,.ladder-step:after{content:none}
+.ladder-dot{
+ position:relative;z-index:1;
+ width:38px;height:38px;border-radius:var(--r-full);
+ display:grid;place-items:center;
+ background:var(--inset);border:2px solid var(--line);
+ font-family:var(--font-mono);font-size:var(--t-xs);font-weight:600;color:var(--dim);
+ transition:border-color var(--dur-base) var(--ease),color var(--dur-base) var(--ease);
+}
+.ladder-step.done .ladder-dot{
+ background:var(--green-wash);border-color:var(--green);color:var(--green);font-size:15px;
+}
+.ladder-step.next .ladder-dot{
+ border-color:var(--orange);color:var(--orange);
+ box-shadow:0 0 0 4px rgba(255,135,92,.1);
+}
+.ladder-step b{
+ margin-top:4px;font-family:var(--font-display);font-size:var(--t-sm);font-weight:600;
+ color:var(--muted);
+}
+.ladder-step.done b{color:var(--ink)}
+.ladder-step.next b{color:var(--orange)}
+.ladder-gain{font-size:var(--t-xs);color:var(--dim)}
+.ladder-step.done .ladder-gain{color:var(--green)}
+
+/* Bugungi shartlar: uchta o'lchov, har biri o'z chizig'i bilan. */
+.day-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:var(--s2);margin-top:var(--s4)}
+.day-stat{
+ display:grid;gap:5px;padding:var(--s3);border-radius:var(--r-md);
+ background:var(--inset);border:1px solid var(--line-faint);
+}
+.day-stat small{font-size:var(--t-xs);color:var(--dim)}
+.day-stat b{font-family:var(--font-display);font-size:var(--t-sm);font-weight:600;color:var(--ink)}
+.day-bar{display:block;height:3px;border-radius:var(--r-full);background:var(--surface-3);overflow:hidden}
+.day-bar i{display:block;height:100%;background:var(--muted);border-radius:var(--r-full);
+ transition:width var(--dur-slow) var(--ease)}
+.day-stat.met{border-color:var(--green)}
+.day-stat.met .day-bar i{background:var(--green)}
+
+.ladder-foot{
+ display:flex;align-items:center;gap:var(--s3);flex-wrap:wrap;margin-top:var(--s4);
+ padding-top:var(--s4);border-top:1px solid var(--line-faint);
+}
+.ladder-next{font-size:var(--t-sm);color:var(--muted);display:flex;align-items:center;gap:var(--s2)}
+.ladder-next b{color:var(--ink);font-weight:600}
+.ladder-next i{
+ font-style:normal;font-size:var(--t-xs);color:var(--muted);
+ background:var(--surface-3);padding:3px 8px;border-radius:var(--r-full);
+}
+
+/* ─── Sovg'a kartochkasi ────────────────────────────────────────────────── */
+.gift-card{padding:var(--s4);gap:var(--s3)}
+.gift-art{position:relative;height:120px;overflow:hidden}
+/* Yulduz qiymati sovg'aning ustida turadi — u narx emas, sovg'aning o'lchovi. */
+.tier-badge{
+ position:absolute;top:var(--s2);right:var(--s2);
+ display:inline-flex;align-items:center;gap:4px;
+ padding:3px 9px;border-radius:var(--r-full);
+ background:rgba(6,10,8,.82);border:1px solid rgba(255,196,87,.35);
+ color:var(--warn);font-family:var(--font-mono);font-size:var(--t-xs);font-weight:600;
+ letter-spacing:0;text-transform:none;backdrop-filter:blur(4px);
+}
+.gift-card h3{font-size:var(--t-body)}
+.gift-card p{min-height:2.6em;font-size:var(--t-xs)}
+.gift-meta{
+ display:flex;align-items:center;justify-content:space-between;gap:var(--s2);
+ padding-top:var(--s3);border-top:1px solid var(--line-faint);
+}
+.gift-price{display:inline-flex;align-items:baseline;gap:5px;font-size:var(--t-sm)}
+.gift-price .coin-chip{
+ align-self:center;padding:0;width:18px;height:18px;justify-content:center;
+ border-radius:var(--r-full);font-size:11px;
+}
+.gift-price b{font-family:var(--font-display);font-size:var(--t-h3);font-weight:600;color:var(--ink)}
+.gift-price small{font-size:var(--t-xs);color:var(--muted)}
+.gift-ready{color:var(--green);font-size:var(--t-sm)}
+.gift-card .primary,.gift-card .secondary{width:100%;justify-content:center}
+.gift-card .secondary{font-size:var(--t-xs)}
+
+@media(max-width:640px){
+ .ladder{grid-template-columns:repeat(5,1fr)}
+ .ladder-step b{font-size:var(--t-xs)}
+ .ladder-gain{display:none}
+ .day-stats{grid-template-columns:1fr}
+ .cloud-puffs i:nth-child(2){width:78px;height:78px;top:-32px}
+ .cloud-puffs i:nth-child(3){width:64px;height:64px}
+ .cloud-puffs i:nth-child(5){height:30px;bottom:-11px}
+}
+
+
+/* ─── Do'kon: balans, zinapoya rels'i, buyurtmalar, sovg'a kartochkasi ───── */
+.balance-card{
+ display:grid;justify-items:end;gap:2px;align-content:start;
+ padding:var(--s4) var(--s5);border-radius:var(--r-lg);
+ background:linear-gradient(160deg,rgba(255,135,92,.14),rgba(255,135,92,.03));
+ border:1px solid rgba(255,135,92,.28);min-width:190px;
+}
+.balance-head{display:inline-flex;align-items:center;gap:6px;font-size:var(--t-xs);color:var(--muted)}
+.balance-head .coin-chip{
+ padding:0;width:18px;height:18px;justify-content:center;border-radius:var(--r-full);font-size:11px;
+}
+.balance-card b{
+ font-family:var(--font-display);font-size:2.4rem;line-height:1.05;font-weight:600;
+ color:var(--orange);letter-spacing:-.03em;
+}
+.balance-card small{font-size:var(--t-xs);color:var(--dim);font-family:var(--font-mono)}
+
+/* Zinapoya rels'i: tugunlar ustida emas, ular orasida — va u uzluksiz to'ladi. */
+.ladder-wrap{position:relative;margin:var(--s3) 0 var(--s2)}
+.ladder-rail{
+ position:absolute;left:10%;right:10%;top:calc(var(--s2) + 19px);height:2px;
+ background:var(--line);border-radius:var(--r-full);z-index:0;overflow:hidden;
+}
+.ladder-rail i{
+ display:block;height:100%;border-radius:var(--r-full);
+ background:linear-gradient(90deg,var(--green),var(--lime));
+ transition:width var(--dur-slow) var(--ease);
+}
+.ladder{margin:0}
+
+/* Bo'sh buyurtmalar ro'yxati — panelning yarmini bo'sh qoldirmaydi. */
+.orders-empty{
+ display:grid;justify-items:center;gap:5px;text-align:center;
+ padding:var(--s5) var(--s4);border-radius:var(--r-md);
+ background:var(--inset);border:1px dashed var(--line);
+}
+.orders-empty span{
+ font-size:20px;color:var(--orange);opacity:.7;
+ width:38px;height:38px;border-radius:var(--r-full);display:grid;place-items:center;
+ background:var(--orange-wash);
+}
+.orders-empty b{font-family:var(--font-display);font-size:var(--t-sm);font-weight:600;color:var(--ink)}
+.orders-empty small{font-size:var(--t-xs);color:var(--dim);max-width:26ch;line-height:1.5}
+
+.shop-msg{
+ margin-top:var(--s2);padding:9px var(--s3);border-radius:var(--r-md);
+ background:var(--green-wash);color:var(--green);font-size:var(--t-sm);
+}
+
+/* Sovg'a kartochkasi: rasm ortida iliq nur, sotib olsa bo'ladiganida yashil
+   qirra, bo'lmaydiganida esa qancha qolganini ko'rsatuvchi chiziq. */
+.gift-card{transition:transform var(--dur-fast) var(--ease),border-color var(--dur-fast) var(--ease)}
+.gift-card:hover{transform:translateY(-2px)}
+.gift-art{
+ background:radial-gradient(circle at 50% 42%,rgba(255,196,87,.1),transparent 62%),var(--inset);
+}
+.gift-card:not(.locked){border-color:rgba(154,239,79,.3)}
+.gift-card:not(.locked):hover{border-color:var(--green)}
+.gift-progress{
+ display:block;height:3px;border-radius:var(--r-full);background:var(--surface-3);overflow:hidden;
+}
+.gift-progress i{
+ display:block;height:100%;border-radius:var(--r-full);background:var(--orange);
+ transition:width var(--dur-slow) var(--ease);
+}
+
+@media(max-width:640px){
+ .balance-card{justify-items:start;min-width:0;width:100%}
+ .balance-card b{font-size:2rem}
+}
