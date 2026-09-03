@@ -1256,6 +1256,110 @@ for(auto x:h)s+=mx-x;cout<<s<<"\\n";`)],
     solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;int lo=0,hi=n-1;while(lo<hi){int mid=(lo+hi)/2;if(a[mid]<a[mid+1])lo=mid+1;else hi=mid;}cout<<a[lo]<<\"\\n\";\nreturn 0;}\n",
     wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;cout<<a[n/2]<<\"\\n\";\nreturn 0;}\n"],
   },
+  "point-in-rect": {
+    solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nlong long x1,y1,x2,y2,px,py;cin>>x1>>y1>>x2>>y2>>px>>py;bool in=px>=min(x1,x2)&&px<=max(x1,x2)&&py>=min(y1,y2)&&py<=max(y1,y2);cout<<(in?\"YES\":\"NO\")<<\"\\n\";\nreturn 0;}\n",
+    wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nlong long x1,y1,x2,y2,px,py;cin>>x1>>y1>>x2>>y2>>px>>py;bool in=px>min(x1,x2)&&px<max(x1,x2)&&py>min(y1,y2)&&py<max(y1,y2);cout<<(in?\"YES\":\"NO\")<<\"\\n\";\nreturn 0;}\n"],
+  },
+  "geo-distance-int": {
+    solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nlong long x1,y1,x2,y2;cin>>x1>>y1>>x2>>y2;long long dx=x1-x2,dy=y1-y2;cout<<dx*dx+dy*dy<<\"\\n\";\nreturn 0;}\n",
+    wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint x1,y1,x2,y2;cin>>x1>>y1>>x2>>y2;int dx=x1-x2,dy=y1-y2;cout<<(long long)(dx*dx+dy*dy)<<\"\\n\";\nreturn 0;}\n"],
+  },
+  "geo-collinear": {
+    solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nlong long x1,y1,x2,y2,x3,y3;cin>>x1>>y1>>x2>>y2>>x3>>y3;cout<<(((x2-x1)*(y3-y1)-(x3-x1)*(y2-y1))==0?\"YES\":\"NO\")<<\"\\n\";\nreturn 0;}\n",
+    wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\ndouble x1,y1,x2,y2,x3,y3;cin>>x1>>y1>>x2>>y2>>x3>>y3;cout<<(fabs((y2-y1)/(x2-x1)-(y3-y1)/(x3-x1))<1e-9?\"YES\":\"NO\")<<\"\\n\";\nreturn 0;}\n"],
+  },
+  "geo-rect-overlap": {
+    solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nlong long a[4],b[4];for(int i=0;i<4;++i)cin>>a[i];for(int i=0;i<4;++i)cin>>b[i];long long ax1=min(a[0],a[2]),ay1=min(a[1],a[3]),ax2=max(a[0],a[2]),ay2=max(a[1],a[3]);long long bx1=min(b[0],b[2]),by1=min(b[1],b[3]),bx2=max(b[0],b[2]),by2=max(b[1],b[3]);cout<<((ax1<bx2&&bx1<ax2&&ay1<by2&&by1<ay2)?\"YES\":\"NO\")<<\"\\n\";\nreturn 0;}\n",
+    wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nlong long a[4],b[4];for(int i=0;i<4;++i)cin>>a[i];for(int i=0;i<4;++i)cin>>b[i];long long ax1=min(a[0],a[2]),ay1=min(a[1],a[3]),ax2=max(a[0],a[2]),ay2=max(a[1],a[3]);long long bx1=min(b[0],b[2]),by1=min(b[1],b[3]),bx2=max(b[0],b[2]),by2=max(b[1],b[3]);cout<<((ax1<=bx2&&bx1<=ax2&&ay1<=by2&&by1<=ay2)?\"YES\":\"NO\")<<\"\\n\";\nreturn 0;}\n"],
+  },
+  "geo-manhattan-circle": {
+    solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n;long long r;cin>>n>>r;int c=0;for(int i=0;i<n;++i){long long x,y;cin>>x>>y;if(x*x+y*y<=r*r)++c;}cout<<c<<\"\\n\";\nreturn 0;}\n",
+    wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n;long long r;cin>>n>>r;int c=0;for(int i=0;i<n;++i){long long x,y;cin>>x>>y;if(llabs(x)+llabs(y)<=r)++c;}cout<<c<<\"\\n\";\nreturn 0;}\n"],
+  },
+  "polygon-area2": {
+    solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n;cin>>n;vector<long long>x(n),y(n);for(int i=0;i<n;++i)cin>>x[i]>>y[i];long long s=0;for(int i=0;i<n;++i){int j=(i+1)%n;s+=x[i]*y[j]-x[j]*y[i];}cout<<llabs(s)<<\"\\n\";\nreturn 0;}\n",
+    wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n;cin>>n;vector<long long>x(n),y(n);for(int i=0;i<n;++i)cin>>x[i]>>y[i];long long s=0;for(int i=0;i+1<n;++i)s+=x[i]*y[i+1]-x[i+1]*y[i];cout<<llabs(s)<<\"\\n\";\nreturn 0;}\n"],
+  },
+  "geo-perimeter": {
+    solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n;cin>>n;vector<double>x(n),y(n);for(int i=0;i<n;++i)cin>>x[i]>>y[i];double t=0;for(int i=0;i<n;++i){int j=(i+1)%n;t+=hypot(x[j]-x[i],y[j]-y[i]);}cout<<fixed<<setprecision(6)<<t<<\"\\n\";\nreturn 0;}\n",
+    wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n;cin>>n;vector<double>x(n),y(n);for(int i=0;i<n;++i)cin>>x[i]>>y[i];double t=0;for(int i=0;i+1<n;++i)t+=hypot(x[i+1]-x[i],y[i+1]-y[i]);cout<<fixed<<setprecision(6)<<t<<\"\\n\";\nreturn 0;}\n"],
+  },
+  "geo-grid-lattice": {
+    solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nlong long x1,y1,x2,y2;cin>>x1>>y1>>x2>>y2;if(x1==x2&&y1==y2){cout<<\"0\\n\";return 0;}cout<<gcd(llabs(x2-x1),llabs(y2-y1))-1<<\"\\n\";\nreturn 0;}\n",
+    wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nlong long x1,y1,x2,y2;cin>>x1>>y1>>x2>>y2;if(x1==x2&&y1==y2){cout<<\"0\\n\";return 0;}cout<<gcd(llabs(x2-x1),llabs(y2-y1))<<\"\\n\";\nreturn 0;}\n"],
+  },
+  "convex-hull-size": {
+    solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n;cin>>n;vector<pair<long long,long long>>p(n);for(auto&q:p)cin>>q.first>>q.second;sort(p.begin(),p.end());auto cr=[](auto&O,auto&A,auto&B){return (A.first-O.first)*(B.second-O.second)-(A.second-O.second)*(B.first-O.first);};auto half=[&](vector<pair<long long,long long>>v){vector<pair<long long,long long>>h;for(auto&q:v){while(h.size()>=2&&cr(h[h.size()-2],h[h.size()-1],q)<=0)h.pop_back();h.push_back(q);}return h;};auto lo=half(p);vector<pair<long long,long long>>rp(p.rbegin(),p.rend());auto hi=half(rp);int sz=(int)lo.size()-1+(int)hi.size()-1;cout<<(sz>=3?sz:2)<<\"\\n\";\nreturn 0;}\n",
+    wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n;cin>>n;vector<pair<long long,long long>>p(n);for(auto&q:p)cin>>q.first>>q.second;sort(p.begin(),p.end());auto cr=[](auto&O,auto&A,auto&B){return (A.first-O.first)*(B.second-O.second)-(A.second-O.second)*(B.first-O.first);};auto half=[&](vector<pair<long long,long long>>v){vector<pair<long long,long long>>h;for(auto&q:v){while(h.size()>=2&&cr(h[h.size()-2],h[h.size()-1],q)<0)h.pop_back();h.push_back(q);}return h;};auto lo=half(p);vector<pair<long long,long long>>rp(p.rbegin(),p.rend());auto hi=half(rp);int sz=(int)lo.size()-1+(int)hi.size()-1;cout<<(sz>=3?sz:2)<<\"\\n\";\nreturn 0;}\n"],
+  },
+  "tree-height": {
+    solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n;cin>>n;vector<vector<int>>g(n+1);for(int i=0;i<n-1;++i){int a,b;cin>>a>>b;g[a].push_back(b);g[b].push_back(a);}vector<int>d(n+1,-1);queue<int>q;d[1]=0;q.push(1);int best=0;while(!q.empty()){int v=q.front();q.pop();best=max(best,d[v]);for(int u:g[v])if(d[u]<0){d[u]=d[v]+1;q.push(u);}}cout<<best<<\"\\n\";\nreturn 0;}\n",
+    wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n;cin>>n;vector<vector<int>>g(n+1);for(int i=0;i<n-1;++i){int a,b;cin>>a>>b;g[a].push_back(b);g[b].push_back(a);}vector<int>d(n+1,-1);queue<int>q;d[1]=0;q.push(1);int best=0;while(!q.empty()){int v=q.front();q.pop();best=max(best,d[v]);for(int u:g[v])if(d[u]<0){d[u]=d[v]+1;q.push(u);}}cout<<best+1<<\"\\n\";\nreturn 0;}\n"],
+  },
+  "tree-parent-depth": {
+    solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n;cin>>n;vector<vector<int>>g(n+1);for(int i=0;i<n-1;++i){int a,b;cin>>a>>b;g[a].push_back(b);g[b].push_back(a);}vector<int>d(n+1,-1);queue<int>q;d[1]=0;q.push(1);while(!q.empty()){int v=q.front();q.pop();for(int u:g[v])if(d[u]<0){d[u]=d[v]+1;q.push(u);}}for(int v=1;v<=n;++v)cout<<d[v]<<(v<n?\" \":\"\\n\");\nreturn 0;}\n",
+    wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n;cin>>n;vector<vector<int>>g(n+1);for(int i=0;i<n-1;++i){int a,b;cin>>a>>b;g[a].push_back(b);g[b].push_back(a);}vector<int>d(n+1,-1);queue<int>q;d[n]=0;q.push(n);while(!q.empty()){int v=q.front();q.pop();for(int u:g[v])if(d[u]<0){d[u]=d[v]+1;q.push(u);}}for(int v=1;v<=n;++v)cout<<d[v]<<(v<n?\" \":\"\\n\");\nreturn 0;}\n"],
+  },
+  "tree-count-paths-len2": {
+    solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n;cin>>n;vector<long long>d(n+1,0);for(int i=0;i<n-1;++i){int a,b;cin>>a>>b;++d[a];++d[b];}long long s=0;for(int v=1;v<=n;++v)s+=d[v]*(d[v]-1)/2;cout<<s<<\"\\n\";\nreturn 0;}\n",
+    wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n;cin>>n;vector<long long>d(n+1,0);for(int i=0;i<n-1;++i){int a,b;cin>>a>>b;++d[a];++d[b];}long long s=0;for(int v=1;v<=n;++v)s+=d[v];cout<<s<<\"\\n\";\nreturn 0;}\n"],
+  },
+  "tree-sum-subtree": {
+    solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n;cin>>n;vector<long long>val(n+1);for(int i=1;i<=n;++i)cin>>val[i];vector<vector<int>>g(n+1);for(int i=0;i<n-1;++i){int a,b;cin>>a>>b;g[a].push_back(b);g[b].push_back(a);}vector<int>par(n+1,0),order;vector<char>seen(n+1,0);vector<int>st{1};seen[1]=1;while(!st.empty()){int v=st.back();st.pop_back();order.push_back(v);for(int u:g[v])if(!seen[u]){seen[u]=1;par[u]=v;st.push_back(u);}}vector<long long>s(n+1);for(int v=1;v<=n;++v)s[v]=val[v];for(int i=(int)order.size()-1;i>=0;--i){int v=order[i];if(par[v])s[par[v]]+=s[v];}for(int v=1;v<=n;++v)cout<<s[v]<<(v<n?\" \":\"\\n\");\nreturn 0;}\n",
+    wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n;cin>>n;vector<long long>val(n+1);for(int i=1;i<=n;++i)cin>>val[i];for(int i=0;i<n-1;++i){int a,b;cin>>a>>b;}for(int v=1;v<=n;++v)cout<<val[v]<<(v<n?\" \":\"\\n\");\nreturn 0;}\n"],
+  },
+  "tree-centroid": {
+    solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n;cin>>n;vector<vector<int>>g(n+1);for(int i=0;i<n-1;++i){int a,b;cin>>a>>b;g[a].push_back(b);g[b].push_back(a);}vector<int>par(n+1,0),order,sz(n+1,1);vector<char>seen(n+1,0);vector<int>st{1};seen[1]=1;while(!st.empty()){int v=st.back();st.pop_back();order.push_back(v);for(int u:g[v])if(!seen[u]){seen[u]=1;par[u]=v;st.push_back(u);}}for(int i=(int)order.size()-1;i>=0;--i){int v=order[i];if(par[v])sz[par[v]]+=sz[v];}int best=n+1,bv=1;for(int v=1;v<=n;++v){int worst=n-sz[v];for(int u:g[v])if(u!=par[v])worst=max(worst,sz[u]);if(worst<best||(worst==best&&v<bv)){best=worst;bv=v;}}cout<<bv<<\"\\n\";\nreturn 0;}\n",
+    wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n;cin>>n;vector<int>d(n+1,0);for(int i=0;i<n-1;++i){int a,b;cin>>a>>b;++d[a];++d[b];}int bv=1;for(int v=2;v<=n;++v)if(d[v]>d[bv])bv=v;cout<<bv<<\"\\n\";\nreturn 0;}\n"],
+  },
+  "tree-is-balanced": {
+    solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n;cin>>n;vector<vector<int>>g(n+1);for(int i=0;i<n-1;++i){int a,b;cin>>a>>b;g[a].push_back(b);g[b].push_back(a);}vector<int>par(n+1,0),order,h(n+1,0);vector<char>seen(n+1,0);vector<int>st{1};seen[1]=1;while(!st.empty()){int v=st.back();st.pop_back();order.push_back(v);for(int u:g[v])if(!seen[u]){seen[u]=1;par[u]=v;st.push_back(u);}}bool ok=true;for(int i=(int)order.size()-1;i>=0;--i){int v=order[i];vector<int>ch;for(int u:g[v])if(u!=par[v])ch.push_back(h[u]);if(ch.size()>1){int mx=*max_element(ch.begin(),ch.end()),mn=*min_element(ch.begin(),ch.end());if(mx-mn>1)ok=false;}h[v]=1+(ch.empty()?0:*max_element(ch.begin(),ch.end()));}if(ok)for(int v:order){vector<int>ch;for(int u:g[v])if(u!=par[v])ch.push_back(h[u]);if(ch.size()==1&&ch[0]>1)ok=false;}cout<<(ok?\"YES\":\"NO\")<<\"\\n\";\nreturn 0;}\n",
+    wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n;cin>>n;vector<int>d(n+1,0);for(int i=0;i<n-1;++i){int a,b;cin>>a>>b;++d[a];++d[b];}cout<<(d[1]>1?\"YES\":\"NO\")<<\"\\n\";\nreturn 0;}\n"],
+  },
+  "str-longest-common-prefix": {
+    solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n;cin>>n;vector<string>w(n);for(auto&s:w)cin>>s;string p=w[0];for(int i=1;i<n;++i){while(w[i].compare(0,p.size(),p)!=0)p.pop_back();}cout<<(p.empty()?\"-\":p)<<\"\\n\";\nreturn 0;}\n",
+    wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n;cin>>n;vector<string>w(n);for(auto&s:w)cin>>s;size_t m=w[0].size();for(auto&s:w)m=min(m,s.size());string p=w[0].substr(0,m);cout<<(p.empty()?\"-\":p)<<\"\\n\";\nreturn 0;}\n"],
+  },
+  "str-reverse-words": {
+    solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nvector<string>w;string t;while(cin>>t)w.push_back(t);for(int i=(int)w.size()-1;i>=0;--i)cout<<w[i]<<(i?\" \":\"\\n\");\nreturn 0;}\n",
+    wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nvector<string>w;string t;while(cin>>t)w.push_back(t);string s;for(size_t i=0;i<w.size();++i)s+=w[i]+(i+1<w.size()?\" \":\"\");reverse(s.begin(),s.end());cout<<s<<\"\\n\";\nreturn 0;}\n"],
+  },
+  "merge-sort-manual": {
+    solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n,m;cin>>n>>m;vector<long long>a(n),b(m);for(auto&x:a)cin>>x;for(auto&x:b)cin>>x;vector<long long>c;c.reserve(n+m);merge(a.begin(),a.end(),b.begin(),b.end(),back_inserter(c));for(size_t i=0;i<c.size();++i)cout<<c[i]<<(i+1<c.size()?\" \":\"\\n\");\nreturn 0;}\n",
+    wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n,m;cin>>n>>m;vector<long long>a(n),b(m);for(auto&x:a)cin>>x;for(auto&x:b)cin>>x;for(long long x:b)a.push_back(x);for(size_t i=0;i<a.size();++i)cout<<a[i]<<(i+1<a.size()?\" \":\"\\n\");\nreturn 0;}\n"],
+  },
+  "bucket-by-key": {
+    solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n;cin>>n;vector<pair<int,int>>v(n);for(auto&p:v)cin>>p.first>>p.second;sort(v.begin(),v.end(),[](auto&a,auto&b){return a.second!=b.second?a.second>b.second:a.first<b.first;});for(int i=0;i<n;++i)cout<<v[i].first<<(i+1<n?\" \":\"\\n\");\nreturn 0;}\n",
+    wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n;cin>>n;vector<pair<int,int>>v(n);for(auto&p:v)cin>>p.first>>p.second;stable_sort(v.begin(),v.end(),[](auto&a,auto&b){return a.second>b.second;});for(int i=0;i<n;++i)cout<<v[i].first<<(i+1<n?\" \":\"\\n\");\nreturn 0;}\n"],
+  },
+  "bt-generate-binary": {
+    solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n;cin>>n;cout<<(1LL<<n)<<\"\\n\";\nreturn 0;}\n",
+    wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n;cin>>n;cout<<(1LL<<(n-1))<<\"\\n\";\nreturn 0;}\n"],
+  },
+  "bt-no-adjacent-ones": {
+    solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n;cin>>n;long long a=1,b=2;for(int i=1;i<n;++i){long long c=a+b;a=b;b=c;}cout<<b<<\"\\n\";\nreturn 0;}\n",
+    wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n;cin>>n;cout<<(1LL<<n)<<\"\\n\";\nreturn 0;}\n"],
+  },
+  "bt-sudoku-row": {
+    solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint z=0;for(int i=0;i<9;++i){int x;cin>>x;if(x==0)++z;}long long f=1;for(int i=2;i<=z;++i)f*=i;cout<<f<<\"\\n\";\nreturn 0;}\n",
+    wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint z=0;for(int i=0;i<9;++i){int x;cin>>x;if(x==0)++z;}cout<<z<<\"\\n\";\nreturn 0;}\n"],
+  },
+  "bt-string-permutations": {
+    solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nstring s;cin>>s;int c[26]={0};for(char ch:s)++c[ch-97];long long f=1;for(int i=2;i<=(int)s.size();++i)f*=i;for(int i=0;i<26;++i){long long g=1;for(int j=2;j<=c[i];++j)g*=j;f/=g;}cout<<f<<\"\\n\";\nreturn 0;}\n",
+    wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nstring s;cin>>s;long long f=1;for(int i=2;i<=(int)s.size();++i)f*=i;cout<<f<<\"\\n\";\nreturn 0;}\n"],
+  },
+  "bt-count-paths-grid": {
+    solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint r,c;cin>>r>>c;vector<string>g(r);for(auto&s:g)cin>>s;vector<vector<long long>>dp(r,vector<long long>(c,0));for(int y=0;y<r;++y)for(int x=0;x<c;++x){if(g[y][x]==35)continue;if(!y&&!x)dp[y][x]=1;else dp[y][x]=(y?dp[y-1][x]:0)+(x?dp[y][x-1]:0);}cout<<dp[r-1][c-1]<<\"\\n\";\nreturn 0;}\n",
+    wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint r,c;cin>>r>>c;vector<string>g(r);for(auto&s:g)cin>>s;vector<vector<long long>>dp(r,vector<long long>(c,0));for(int y=0;y<r;++y)for(int x=0;x<c;++x){if(!y&&!x)dp[y][x]=1;else dp[y][x]=(y?dp[y-1][x]:0)+(x?dp[y][x-1]:0);}cout<<dp[r-1][c-1]<<\"\\n\";\nreturn 0;}\n"],
+  },
+  "bt-sum-combinations": {
+    solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n,k;cin>>n>>k;vector<long long>dp(n+1,0);dp[0]=1;for(int v=1;v<=k;++v)for(int s=v;s<=n;++s)dp[s]+=dp[s-v];cout<<dp[n]<<\"\\n\";\nreturn 0;}\n",
+    wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n,k;cin>>n>>k;vector<long long>dp(n+1,0);dp[0]=1;for(int s=1;s<=n;++s)for(int v=1;v<=k;++v)if(s>=v)dp[s]+=dp[s-v];cout<<dp[n]<<\"\\n\";\nreturn 0;}\n"],
+  },
+  "bt-place-rooks": {
+    solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nlong long n,k;cin>>n>>k;auto C=[](long long a,long long b){long long r=1;for(long long i=0;i<b;++i){r=r*(a-i)/(i+1);}return r;};long long f=1;for(long long i=2;i<=k;++i)f*=i;cout<<C(n,k)*C(n,k)*f<<\"\\n\";\nreturn 0;}\n",
+    wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nlong long n,k;cin>>n>>k;auto C=[](long long a,long long b){long long r=1;for(long long i=0;i<b;++i){r=r*(a-i)/(i+1);}return r;};cout<<C(n,k)*C(n,k)<<\"\\n\";\nreturn 0;}\n"],
+  },
 };
 
 /** The problems the bot can actually play. Everything else falls back to
