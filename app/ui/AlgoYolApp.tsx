@@ -9,6 +9,7 @@ import { roadmapCards } from "./roadmap-data";
 import { roadmapCatalog } from "./roadmap-data";
 import { bankProblems, type BankProblem } from "./problem-bank";
 import { MathText } from "./math-text";
+import { LockIcon } from "./icons";
 import { applySolve, ratingColor } from "./rating";
 import { Shop } from "./Shop";
 import { Playground } from "./Playground";
@@ -714,7 +715,7 @@ function RoadGrid({lang,roads,openRoadmap}:{lang:Lang,roads:typeof allRoads,open
    onClick={linkTo(()=>openRoadmap(r.slug))}>
    <span className="road-top">
     <span className="road-icon" style={{background:r.color}}>{r.icon}</span>
-    {status==="locked"&&<span className="road-lock" aria-hidden>🔒</span>}
+    {status==="locked"&&<span className="road-lock" aria-hidden><LockIcon/></span>}
     {status==="completed"&&<span className="road-done" aria-hidden>✓</span>}
    </span>
    <h3>{lang==="uz"?r.uz:r.en}</h3>
@@ -914,7 +915,7 @@ function SignInRequired({lang,go,what}:{lang:Lang;go:(v:View)=>void;what:"profil
  const copyEn={profile:["Sign in to see your profile","Your profile, progress and rating belong to an account. Create one or sign in."],admin:["Sign in to continue","The admin studio is available to the admin and owner roles only."],placement:["Sign in to take the placement","Your results are saved to your account, so sign in first."],stats:["Sign in to continue","Platform statistics are available to the owner role only."],messages:["Sign in to use messages","Conversations belong to an account. Sign in and start writing."],users:["Sign in to continue","User administration is available to the owner role only."]}[what];
  const [title,body]=lang==="uz"?copyUz:copyEn;
  return <div className="screen-state panel">
-  <span className="screen-state-ic" aria-hidden>🔒</span>
+  <span className="screen-state-ic" aria-hidden><LockIcon/></span>
   <h1 className="page-title">{title}</h1>
   <p className="muted">{body}</p>
   <div className="match-actions"><button className="primary" onClick={()=>go("auth")}>{tr(lang,"algoYolApp.kirish_yoki_royxatdan_otish")}</button><button className="secondary" onClick={()=>go("roadmaps")}>{tr(lang,"algoYolApp.yol_xaritalarini_korish")}</button></div>

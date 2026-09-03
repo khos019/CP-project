@@ -5,6 +5,7 @@ import { tr } from "./i18n";
 import { roadmapCatalog } from "./roadmap-data";
 import { readLocal } from "./progress";
 import { roadmapStatus, unitDone } from "./RoadmapHub";
+import { LockGlyph } from "./icons";
 
 /* The one picture the platform is about: a path with the part you finished
    behind you, the step you are on lit, and the rest still locked.
@@ -138,9 +139,11 @@ export function RoadmapGraph({
               onKeyDown={e => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); onOpen(node.slug); } }}>
               {node.state === "current" && <circle className="rg-halo" cx={x} cy={y} r={r + 11} />}
               <circle className="rg-disc" cx={x} cy={y} r={r} />
-              <text className="rg-glyph" x={x} y={y} textAnchor="middle" dominantBaseline="central">
-                {node.state === "completed" ? "✓" : node.state === "locked" ? "🔒" : i + 1}
-              </text>
+              {node.state === "locked"
+                ? <LockGlyph x={x} y={y} size={Math.round(r * 0.95)} />
+                : <text className="rg-glyph" x={x} y={y} textAnchor="middle" dominantBaseline="central">
+                    {node.state === "completed" ? "✓" : i + 1}
+                  </text>}
             </g>
           );
         })}

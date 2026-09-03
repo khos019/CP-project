@@ -11,6 +11,7 @@ import { tr } from "./i18n";
 import { fetchPersonByUsername } from "./session";
 import { OnlineDot, onlineAmong } from "./presence";
 import { CodeBlock } from "./CodeBlock";
+import { LockIcon } from "./icons";
 import {
   addFriend, fetchFriends, fetchSubmissionCode, fetchSubmissions, removeFriend, unlockSubmissionCode,
   type CodeResult, type FriendRow, type SubmissionRow,
@@ -273,7 +274,7 @@ export function SubmissionHistory({
                   <td className="mono">{row.runtime_ms === null ? "—" : `${row.runtime_ms} ms`}</td>
                   <td>
                     <button className="link-btn" onClick={() => setOpenRow(row)}>
-                      {row.readable || isMe ? t.view : `🔒 ${t.locked}`}
+                      {row.readable || isMe ? t.view : <><LockIcon /> {t.locked}</>}
                     </button>
                   </td>
                 </tr>
@@ -355,7 +356,7 @@ function CodeViewer({
         )}
         {result?.state === "locked" && (
           <div className="code-locked">
-            <span aria-hidden>🔒</span>
+            <span className="code-locked-ic" aria-hidden><LockIcon /></span>
             <p className="muted">{t.whyPaid}</p>
             <button className="primary" onClick={buy} disabled={busy || result.balance < result.cost}>
               {t.buy(result.cost)}

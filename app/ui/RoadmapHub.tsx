@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { tr, catalogue } from "./i18n";
+import { LockIcon } from "./icons";
 import { roadmapCatalog, type LessonUnit, type MasteryRoadmap } from "./roadmap-data";
 import { masteryOf, MASTERY_CONFIG } from "./mastery";
 import { readLocal } from "./progress";
@@ -79,7 +80,7 @@ export function RoadmapHub({lang,role,openRoadmap}:{lang:Lang;role:Role;openRoad
      const s=statuses.get(r.slug)||"locked",done=doneIn(r),pct=Math.round(done/r.units.length*100);
      const lockedBy=r.prereqs.map(bySlug).filter((p):p is MasteryRoadmap=>!!p&&statuses.get(p.slug)!=="completed");
      return <button key={r.slug} className={`rm-node ${s}`} disabled={s==="locked"} onClick={()=>openRoadmap(r.slug)}>
-      <span className={`rm-badge ${s}`}>{s==="completed"?"✓":s==="locked"?"✕":s==="in-progress"?"◔":"▶"} {statusLabel(s,lang)}</span>
+      <span className={`rm-badge ${s}`}>{s==="locked"?<LockIcon/>:<i className="rm-badge-ic">{s==="completed"?"✓":s==="in-progress"?"◔":"▶"}</i>} {statusLabel(s,lang)}</span>
       <span className="rm-node-top"><span className="rm-node-ic" style={{background:r.color}}>{r.icon}</span><span><b>{lang==="uz"?r.titleUz:r.titleEn}</b><small>{r.level}</small></span></span>
       <span className="rm-node-meta"><span>{done}/{r.units.length} {t.unitsShort}</span><span className="mono">{tr(lang,"roadmapExperience.mahorat")} {masteryOf(r.slug)}</span><span>{pct}%</span></span>
       <span className="progress"><span style={{width:`${pct}%`}}/></span>

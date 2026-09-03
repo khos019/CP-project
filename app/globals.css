@@ -850,7 +850,7 @@ body{background:var(--bg);min-height:100vh}
    carry the article's bottom margin. */
 .code-sheet .codeblock{margin:0}
 .code-locked{display:grid;gap:10px;justify-items:center;text-align:center;padding:34px 18px;border:1px dashed #2b3d33;border-radius:16px}
-.code-locked>span{font-size:30px}
+.code-locked-ic{display:inline-flex;font-size:30px;color:var(--dim)}
 /* The submissions link sat flush against the stat tiles above it — two blocks
    with no air between them read as one broken block. It is an action, so it
    gets the spacing of an action and the arrow is pushed to the far edge where
@@ -1457,6 +1457,7 @@ body{font-size:var(--t-body);line-height:1.6}
 .rg-current .rg-glyph{fill:var(--orange)}
 .rg-locked .rg-disc{fill:var(--surface);stroke:var(--line)}
 .rg-locked .rg-glyph{font-size:13px;opacity:.5}
+.rg-locked .ic-lock{color:var(--dim);opacity:.75}
 .rg-node:hover .rg-disc{stroke:var(--green)}
 /* Yagona pulsatsiya: "siz shu yerdasiz". */
 .rg-halo{fill:none;stroke:var(--orange);stroke-width:1.5;opacity:.35;
@@ -1533,7 +1534,7 @@ body{font-size:var(--t-body);line-height:1.6}
  display:grid;place-items:center;color:#0a130d;
  font-family:var(--font-display);font-weight:700;font-size:14px;
 }
-.road-lock{opacity:.5;font-size:13px}
+.road-lock{display:inline-flex;opacity:.55;font-size:15px;color:var(--muted)}
 .road-done{color:var(--green);font-size:15px}
 .road-meta{
  display:flex;justify-content:space-between;
@@ -1763,11 +1764,20 @@ body{font-size:var(--t-body);line-height:1.6}
  display:flex;justify-content:space-between;gap:var(--s3);
  font-size:var(--t-xs);color:var(--muted);font-variant-numeric:tabular-nums;
 }
+/* ─── Line icons ─────────────────────────────────────────────────────── */
+/* Drawn, not typed: an emoji lock came in the operating system's colours and
+   weight, which is why the locked cards read as somebody else's artwork
+   dropped into the page. These take the colour of whatever they sit in. */
+.ic{display:inline-block;vertical-align:-0.14em;flex-shrink:0}
+.ic-lock{color:inherit}
+
 .rm-badge{
+ display:inline-flex;align-items:center;gap:5px;
  justify-self:start;font-size:10px;font-weight:600;letter-spacing:.03em;
  padding:3px 9px;border-radius:var(--r-full);
  background:var(--surface-3);color:var(--muted);
 }
+.rm-badge-ic{font-style:normal;line-height:1}
 .rm-badge.completed{background:var(--green-wash);color:var(--green)}
 .rm-badge.in-progress{background:var(--orange-wash);color:var(--orange)}
 .rm-badge.locked{background:var(--surface-3);color:var(--dim)}
