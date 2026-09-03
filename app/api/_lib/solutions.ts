@@ -1360,6 +1360,70 @@ for(auto x:h)s+=mx-x;cout<<s<<"\\n";`)],
     solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nlong long n,k;cin>>n>>k;auto C=[](long long a,long long b){long long r=1;for(long long i=0;i<b;++i){r=r*(a-i)/(i+1);}return r;};long long f=1;for(long long i=2;i<=k;++i)f*=i;cout<<C(n,k)*C(n,k)*f<<\"\\n\";\nreturn 0;}\n",
     wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nlong long n,k;cin>>n>>k;auto C=[](long long a,long long b){long long r=1;for(long long i=0;i<b;++i){r=r*(a-i)/(i+1);}return r;};cout<<C(n,k)*C(n,k)<<\"\\n\";\nreturn 0;}\n"],
   },
+  "subset-generate-count": {
+    solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n;long long k;cin>>n>>k;vector<long long>a(n);for(auto&x:a)cin>>x;long long c=0;for(int m=0;m<(1<<n);++m){long long s=0;for(int b=0;b<n;++b)if(m>>b&1)s+=a[b];if(s<=k)++c;}cout<<c<<\"\\n\";\nreturn 0;}\n",
+    wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n;long long k;cin>>n>>k;vector<long long>a(n);for(auto&x:a)cin>>x;long long c=0;for(int m=1;m<(1<<n);++m){long long s=0;for(int b=0;b<n;++b)if(m>>b&1)s+=a[b];if(s<=k)++c;}cout<<c<<\"\\n\";\nreturn 0;}\n"],
+  },
+  "permutation-rank": {
+    solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n;cin>>n;vector<int>p(n);for(auto&x:p)cin>>x;vector<int>rest=p;sort(rest.begin(),rest.end());long long rank=1;for(int k=0;k<n;++k){int idx=find(rest.begin(),rest.end(),p[k])-rest.begin();long long f=1;for(int i=2;i<=n-k-1;++i)f*=i;rank+=idx*f;rest.erase(rest.begin()+idx);}cout<<rank<<\"\\n\";\nreturn 0;}\n",
+    wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n;cin>>n;vector<int>p(n);for(auto&x:p)cin>>x;vector<int>rest=p;sort(rest.begin(),rest.end());long long rank=0;for(int k=0;k<n;++k){int idx=find(rest.begin(),rest.end(),p[k])-rest.begin();long long f=1;for(int i=2;i<=n-k-1;++i)f*=i;rank+=idx*f;rest.erase(rest.begin()+idx);}cout<<rank<<\"\\n\";\nreturn 0;}\n"],
+  },
+  "bt-partition-into-k": {
+    solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n,k;cin>>n>>k;vector<long long>a(n);for(auto&x:a)cin>>x;long long tot=0;for(long long x:a)tot+=x;if(tot%k){cout<<\"NO\\n\";return 0;}long long target=tot/k;sort(a.rbegin(),a.rend());if(a[0]>target){cout<<\"NO\\n\";return 0;}vector<long long>b(k,0);function<bool(int)>rec=[&](int i){if(i==n)return true;set<long long>seen;for(int j=0;j<k;++j){if(b[j]+a[i]>target||seen.count(b[j]))continue;seen.insert(b[j]);b[j]+=a[i];if(rec(i+1))return true;b[j]-=a[i];}return false;};cout<<(rec(0)?\"YES\":\"NO\")<<\"\\n\";\nreturn 0;}\n",
+    wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n,k;cin>>n>>k;vector<long long>a(n);for(auto&x:a)cin>>x;long long tot=0;for(long long x:a)tot+=x;cout<<(tot%k==0?\"YES\":\"NO\")<<\"\\n\";\nreturn 0;}\n"],
+  },
+  "bt-word-paths": {
+    solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint r,c;cin>>r>>c;vector<string>g(r);for(auto&s:g)cin>>s;string w;cin>>w;vector<vector<char>>used(r,vector<char>(c,0));function<bool(int,int,int)>rec=[&](int y,int x,int k)->bool{if(k==(int)w.size())return true;if(y<0||y>=r||x<0||x>=c||used[y][x]||g[y][x]!=w[k])return false;used[y][x]=1;int dy[]={1,-1,0,0},dx[]={0,0,1,-1};for(int t=0;t<4;++t)if(rec(y+dy[t],x+dx[t],k+1)){used[y][x]=0;return true;}used[y][x]=0;return false;};for(int y=0;y<r;++y)for(int x=0;x<c;++x)if(rec(y,x,0)){cout<<\"YES\\n\";return 0;}cout<<\"NO\\n\";\nreturn 0;}\n",
+    wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint r,c;cin>>r>>c;vector<string>g(r);for(auto&s:g)cin>>s;string w;cin>>w;function<bool(int,int,int)>rec=[&](int y,int x,int k)->bool{if(k==(int)w.size())return true;if(y<0||y>=r||x<0||x>=c||g[y][x]!=w[k])return false;int dy[]={1,-1,0,0},dx[]={0,0,1,-1};for(int t=0;t<4;++t)if(rec(y+dy[t],x+dx[t],k+1))return true;return false;};for(int y=0;y<r;++y)for(int x=0;x<c;++x)if(rec(y,x,0)){cout<<\"YES\\n\";return 0;}cout<<\"NO\\n\";\nreturn 0;}\n"],
+  },
+  "bt-knight-moves": {
+    solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint r1,c1,r2,c2;cin>>r1>>c1>>r2>>c2;if(r1==r2&&c1==c2){cout<<\"0\\n\";return 0;}vector<vector<int>>d(9,vector<int>(9,-1));queue<pair<int,int>>q;d[r1][c1]=0;q.push({r1,c1});int dr[]={1,2,-1,-2,1,2,-1,-2},dc[]={2,1,2,1,-2,-1,-2,-1};while(!q.empty()){auto[r,c]=q.front();q.pop();for(int k=0;k<8;++k){int nr=r+dr[k],nc=c+dc[k];if(nr>=1&&nr<=8&&nc>=1&&nc<=8&&d[nr][nc]<0){d[nr][nc]=d[r][c]+1;if(nr==r2&&nc==c2){cout<<d[nr][nc]<<\"\\n\";return 0;}q.push({nr,nc});}}}cout<<\"-1\\n\";\nreturn 0;}\n",
+    wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint r1,c1,r2,c2;cin>>r1>>c1>>r2>>c2;cout<<max(abs(r1-r2),abs(c1-c2))<<\"\\n\";\nreturn 0;}\n"],
+  },
+  "dp-max-product-subarray": {
+    solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;long long best=a[0],hi=a[0],lo=a[0];for(int i=1;i<n;++i){long long c1=a[i],c2=hi*a[i],c3=lo*a[i];hi=max(c1,max(c2,c3));lo=min(c1,min(c2,c3));best=max(best,hi);}cout<<best<<\"\\n\";\nreturn 0;}\n",
+    wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;long long best=a[0],cur=a[0];for(int i=1;i<n;++i){cur=max(a[i],cur*a[i]);best=max(best,cur);}cout<<best<<\"\\n\";\nreturn 0;}\n"],
+  },
+  "adv-inversions-fast": {
+    solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;vector<long long>tmp(n);long long c=0;function<void(int,int)>ms=[&](int l,int r){if(r-l<2)return;int m=(l+r)/2;ms(l,m);ms(m,r);int i=l,j=m,k=l;while(i<m&&j<r){if(a[i]<=a[j])tmp[k++]=a[i++];else{tmp[k++]=a[j++];c+=m-i;}}while(i<m)tmp[k++]=a[i++];while(j<r)tmp[k++]=a[j++];for(int t=l;t<r;++t)a[t]=tmp[t];};ms(0,n);cout<<c<<\"\\n\";\nreturn 0;}\n",
+    wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;long long c=0;for(int i=0;i+1<n;++i)if(a[i]>a[i+1])++c;cout<<c<<\"\\n\";\nreturn 0;}\n"],
+  },
+  "adv-lis-nlogn": {
+    solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;vector<long long>t;for(long long x:a){auto it=lower_bound(t.begin(),t.end(),x);if(it==t.end())t.push_back(x);else *it=x;}cout<<t.size()<<\"\\n\";\nreturn 0;}\n",
+    wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;vector<long long>t;for(long long x:a){auto it=upper_bound(t.begin(),t.end(),x);if(it==t.end())t.push_back(x);else *it=x;}cout<<t.size()<<\"\\n\";\nreturn 0;}\n"],
+  },
+  "adv-expected-rolls": {
+    solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nlong long n;cin>>n;cout<<fixed<<setprecision(6)<<(double)n<<\"\\n\";\nreturn 0;}\n",
+    wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nlong long n;cin>>n;cout<<fixed<<setprecision(6)<<(double)n/2<<\"\\n\";\nreturn 0;}\n"],
+  },
+  "adv-digit-dp-count": {
+    solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nlong long n;int k;cin>>n>>k;long long c=0;for(long long v=1;v<=n;++v){long long s=0,t=v;while(t){s+=t%10;t/=10;}if(s==k)++c;}cout<<c<<\"\\n\";\nreturn 0;}\n",
+    wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nlong long n;int k;cin>>n>>k;long long c=0;for(long long v=1;v<=n;++v){long long s=0,t=v;while(t){s+=t%10;t/=10;}if(s<=k)++c;}cout<<c<<\"\\n\";\nreturn 0;}\n"],
+  },
+  "sparse-min": {
+    solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n,q;cin>>n>>q;vector<long long>a(n);for(auto&x:a)cin>>x;while(q--){int l,r;cin>>l>>r;long long m=LLONG_MAX;for(int i=l-1;i<r;++i)m=min(m,a[i]);cout<<m<<\"\\n\";}\nreturn 0;}\n",
+    wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n,q;cin>>n>>q;vector<long long>a(n);for(auto&x:a)cin>>x;while(q--){int l,r;cin>>l>>r;long long m=LLONG_MAX;for(int i=l;i<r&&i<n;++i)m=min(m,a[i]);cout<<(m==LLONG_MAX?a[n-1]:m)<<\"\\n\";}\nreturn 0;}\n"],
+  },
+  "game-nim": {
+    solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n;cin>>n;long long x=0,v;while(n--){cin>>v;x^=v;}cout<<(x?\"WIN\":\"LOSE\")<<\"\\n\";\nreturn 0;}\n",
+    wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n;cin>>n;long long s=0,v;while(n--){cin>>v;s+=v;}cout<<(s%2?\"WIN\":\"LOSE\")<<\"\\n\";\nreturn 0;}\n"],
+  },
+  "mo-offline-distinct": {
+    solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n,q;cin>>n>>q;vector<long long>a(n);for(auto&x:a)cin>>x;while(q--){int l,r;cin>>l>>r;set<long long>s;for(int i=l-1;i<r;++i)s.insert(a[i]);cout<<s.size()<<\"\\n\";}\nreturn 0;}\n",
+    wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n,q;cin>>n>>q;vector<long long>a(n);for(auto&x:a)cin>>x;while(q--){int l,r;cin>>l>>r;cout<<r-l+1<<\"\\n\";}\nreturn 0;}\n"],
+  },
+  "matrix-power-fib": {
+    solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nlong long n;cin>>n;const long long M=1000000007;auto mul=[&](array<long long,4>A,array<long long,4>B){return array<long long,4>{(A[0]*B[0]+A[1]*B[2])%M,(A[0]*B[1]+A[1]*B[3])%M,(A[2]*B[0]+A[3]*B[2])%M,(A[2]*B[1]+A[3]*B[3])%M};};array<long long,4>r{1,0,0,1},b{1,1,1,0};long long e=n-1;while(e>0){if(e&1)r=mul(r,b);b=mul(b,b);e>>=1;}cout<<r[0]%M<<\"\\n\";\nreturn 0;}\n",
+    wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nlong long n;cin>>n;const long long M=1000000007;auto mul=[&](array<long long,4>A,array<long long,4>B){return array<long long,4>{(A[0]*B[0]+A[1]*B[2])%M,(A[0]*B[1]+A[1]*B[3])%M,(A[2]*B[0]+A[3]*B[2])%M,(A[2]*B[1]+A[3]*B[3])%M};};array<long long,4>r{1,0,0,1},b{1,1,1,0};long long e=n;while(e>0){if(e&1)r=mul(r,b);b=mul(b,b);e>>=1;}cout<<r[0]%M<<\"\\n\";\nreturn 0;}\n"],
+  },
+  "two-sat-simple": {
+    solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n,m;cin>>n>>m;vector<pair<int,int>>cl(m);for(auto&p:cl)cin>>p.first>>p.second;for(int mask=0;mask<(1<<n);++mask){bool ok=true;for(auto&[x,y]:cl){bool vx=((mask>>(abs(x)-1))&1)==(x>0);bool vy=((mask>>(abs(y)-1))&1)==(y>0);if(!vx&&!vy){ok=false;break;}}if(ok){cout<<\"YES\\n\";return 0;}}cout<<\"NO\\n\";\nreturn 0;}\n",
+    wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n,m;cin>>n>>m;vector<pair<int,int>>cl(m);for(auto&p:cl)cin>>p.first>>p.second;for(int mask=0;mask<(1<<n);++mask){bool ok=true;for(auto&[x,y]:cl){bool vx=(mask>>(abs(x)-1))&1;bool vy=(mask>>(abs(y)-1))&1;if(!vx&&!vy){ok=false;break;}}if(ok){cout<<\"YES\\n\";return 0;}}cout<<\"NO\\n\";\nreturn 0;}\n"],
+  },
+  "hld-path-sum": {
+    solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n,q;cin>>n>>q;vector<long long>val(n+1);for(int i=1;i<=n;++i)cin>>val[i];vector<vector<int>>g(n+1);for(int i=0;i<n-1;++i){int a,b;cin>>a>>b;g[a].push_back(b);g[b].push_back(a);}while(q--){int u,v;cin>>u>>v;vector<int>par(n+1,0);vector<char>seen(n+1,0);queue<int>bq;seen[u]=1;bq.push(u);while(!bq.empty()){int x=bq.front();bq.pop();for(int y:g[x])if(!seen[y]){seen[y]=1;par[y]=x;bq.push(y);}}long long s=0;int cur=v;while(true){s+=val[cur];if(cur==u)break;cur=par[cur];}cout<<s<<\"\\n\";}\nreturn 0;}\n",
+    wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n,q;cin>>n>>q;vector<long long>val(n+1);for(int i=1;i<=n;++i)cin>>val[i];for(int i=0;i<n-1;++i){int a,b;cin>>a>>b;}while(q--){int u,v;cin>>u>>v;cout<<(u==v?val[u]:val[u]+val[v])<<\"\\n\";}\nreturn 0;}\n"],
+  },
 };
 
 /** The problems the bot can actually play. Everything else falls back to
