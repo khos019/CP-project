@@ -36,8 +36,11 @@ export function CodeBlock({ code, lang, filename }: { code: string; lang: Lang; 
       <div className="codeblock-body">
         <pre className="codeblock-gutter" aria-hidden="true">{lines.map((_, n) => `${n + 1}\n`).join("")}</pre>
         <pre className="codeblock-code"><code>
+          {/* One span per line, for the key — and no class on it: nothing
+              styles a line on its own, and a class no rule matches is a
+              promise the stylesheet does not keep. */}
           {lines.map((toks, n) => (
-            <span className="cl" key={n}>
+            <span key={n}>
               {toks.map((tk, j) => <span className={tk.c} key={j}>{tk.t}</span>)}
               {"\n"}
             </span>

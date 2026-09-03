@@ -49,8 +49,6 @@ export function ProgressBar({ done, total, tone = "green" }: { done: number; tot
   );
 }
 
-/* Verdicts and difficulties carry meaning, so they never carry it in colour
-   alone — the word is always there next to the hue. */
-export function Badge({ kind, children }: { kind: string; children: React.ReactNode }) {
-  return <span className={`badge badge-${kind}`}>{children}</span>;
-}
+/* Badge lived here: a component nobody imported, whose .badge/.badge-* rules
+   were never written either. It would have rendered as unstyled text the first
+   time somebody reached for it, which is worse than not having it. */
