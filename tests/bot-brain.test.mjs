@@ -14,7 +14,8 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import { planDuel, solveProbability, getBotSubmissionBehavior } from "../app/api/_lib/bot.ts";
+import { planDuel, solveProbability, effectiveSolveProbability, getBotSubmissionBehavior,
+         DEFAULT_BOT_CONFIG } from "../app/api/_lib/bot.ts";
 
 const DIFFS = ["easy", "medium", "hard"];
 // The offsets duel_pick_problems() actually uses for the three rounds.
@@ -22,7 +23,7 @@ const OFFSETS = [-150, 0, 200];
 
 /** Simulates N duels across a spread of bot ratings and returns per-round facts. */
 function simulate(n = 20000) {
-  const stat = OFFSETS.map(() => ({ n: 0, wrong: 0, empty: 0, tSolved: [], tFailed: [] }));
+  const stat = OFFSETS.map(() => ({ n: 0, wrong: 0, empty: 0, lost: 0, lostQuiet: 0, tSolved: [], tFailed: [] }));
   for (let i = 0; i < n; i++) {
     const bot = 900 + (i % 12) * 100;
     const rounds = OFFSETS.map((off, r) => ({
@@ -33,7 +34,9 @@ function simulate(n = 20000) {
       const s = stat[rp.round];
       s.n++;
       if (!rp.attempts.length) s.empty++;
-      if (rp.attempts.some((a) => !a.correct)) s.wrong++;
+      const wrong = rp.attempts.some((a) => !a.correct);
+      if (wrong) s.wrong++;
+      if (!rp.solves) { s.lost++; if (!wrong) s.lostQuiet++; }
       const first = rp.attempts[0]?.at;
       if (typeof first === "number") (rp.solves ? s.tSolved : s.tFailed).push(first);
     }
@@ -54,7 +57,9 @@ test("every round the bot plays produces at least one submission", () => {
 test("solve rate tracks the Elo curve the rest of the platform uses", () => {
   for (const [r, s] of stat.entries()) {
     const solved = s.tSolved.length / s.n;
-    const expected = solveProbability(1200, 1200 + OFFSETS[r]);
+    // Elo, plus the two things the model layers on it: the skill bonus that
+    // makes the bot an opponent rather than a coin flip, and the second read.
+    const expected = effectiveSolveProbability(1200, 1200 + OFFSETS[r]);
     assert.ok(Math.abs(solved - expected) < 0.02,
       `round ${r} (problem ${OFFSETS[r]} from the bot): solved ${(solved * 100).toFixed(1)}%, Elo says ${(expected * 100).toFixed(1)}%`);
   }
@@ -71,10 +76,13 @@ test("how fast the bot is does not give away whether it will succeed", () => {
 });
 
 test("a bot that fails a round fails it visibly, and one that wins still fumbles sometimes", () => {
-  // A round it cannot solve must always show a rejected submission...
-  const hardest = stat[2];
-  assert.ok(hardest.wrong / hardest.n > 0.9,
-    `only ${(hardest.wrong / hardest.n * 100).toFixed(1)}% of over-its-head rounds show a wrong submission`);
+  // A round it cannot solve must ALWAYS show rejected submissions — not "most
+  // of the time". One silent lost round is an opponent that looks switched
+  // off, which is exactly what was reported from a real duel.
+  for (const [r, s] of stat.entries()) {
+    assert.equal(s.lostQuiet, 0,
+      `round ${r}: ${s.lostQuiet} of ${s.lost} lost rounds pass in silence`);
+  }
   // ...and a comfortable one must not be flawless, or it stops looking human.
   const easiest = stat[0];
   assert.ok(easiest.wrong / easiest.n > 0.25 && easiest.wrong / easiest.n < 0.75,
@@ -113,9 +121,26 @@ test("the plan is a function of the match id and nothing else", () => {
 });
 
 test("strength is expressed in the platform's own units", () => {
-  assert.equal(Math.round(solveProbability(1500, 1500) * 100), 50);
-  assert.ok(solveProbability(1500, 1100) > 0.9, "400 points of gap should be near-certain");
+  // Underneath the bonus it is still the platform's Elo curve, unchanged.
+  const plain = { ...DEFAULT_BOT_CONFIG, skillBonus: 0, lateSolveFactor: 0 };
+  assert.equal(Math.round(solveProbability(1500, 1500, plain) * 100), 50);
+  assert.ok(solveProbability(1500, 1100, plain) > 0.9, "400 points of gap should be near-certain");
+  // And the bonus is the whole of the difference, in rating points.
+  assert.equal(solveProbability(1500, 1500), solveProbability(1500 + DEFAULT_BOT_CONFIG.skillBonus, 1500, plain));
   const behaviour = getBotSubmissionBehavior(1500, 1900, "hard", "seed");
   assert.ok(behaviour.expectedDelay > getBotSubmissionBehavior(1500, 1100, "hard", "seed").expectedDelay,
     "a problem above the bot must take it longer than one below");
+});
+
+test("the bot is a test, not a coin flip, at the level it is matched at", () => {
+  // Its rating is the player's own strength and the problems are picked for
+  // that rating, so plain Elo would have it losing half its rounds without
+  // being made to work for them. A duel opponent should be slightly the
+  // harder side of even.
+  const even = effectiveSolveProbability(1400, 1400);
+  assert.ok(even > 0.7 && even < 0.85,
+    `at equal ratings the bot solves ${(even * 100).toFixed(1)}% of rounds — wanted a firm favourite, not a certainty`);
+  // Above its head it still loses, or the rating on the scoreboard is a lie.
+  assert.ok(effectiveSolveProbability(1400, 1800) < 0.35,
+    "a problem 400 points above the bot must usually beat it");
 });

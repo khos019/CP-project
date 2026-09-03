@@ -1,13 +1,14 @@
 ﻿"use client";
 /* eslint-disable @next/next/no-html-link-for-pages -- see the note in ./Chrome */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { tr, catalogue } from "./i18n";
 import { RoadmapExperience } from "./RoadmapExperience";
 import { RoadmapHub, roadmapStatus, unitDone } from "./RoadmapHub";
 import { roadmapCards } from "./roadmap-data";
 import { roadmapCatalog } from "./roadmap-data";
 import { bankProblems, type BankProblem } from "./problem-bank";
+import { MathText } from "./math-text";
 import { applySolve, ratingColor } from "./rating";
 import { Shop } from "./Shop";
 import { Playground } from "./Playground";
@@ -51,7 +52,16 @@ const roadmapCatalogSize=()=>({tracks:roadmapCards.length,units:roadmapCards.red
 // full statement and real hidden tests. The old inline entries were mostly
 // decorative — they had no judge key, so they could never be solved.
 const problems:BankProblem[]=[...bankProblems];
-const cpp=`#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    long long a, b;\n    cin >> a >> b;\n    cout << a + b << "\\n";\n    return 0;\n}`;
+/* What the editor starts with. The three duel problems ship their own opening
+   lines; everything else gets the empty skeleton — the same one the editor
+   loads when you switch language, so the prefill and the switch now agree
+   instead of handing out an a+b program for a problem that is not a+b. */
+const EMPTY_STARTER={cpp:"#include <bits/stdc++.h>\nusing namespace std;\n\nint main(){\n  ios::sync_with_stdio(false);\n  cin.tie(nullptr);\n  // yechimingizni shu yerga yozing\n  return 0;\n}\n",py:"import sys\ninput = sys.stdin.readline\n\n# yechimingizni shu yerga yozing\n"};
+const starterFor=(p:BankProblem,which:"cpp"|"py")=>{
+ if(p.statementUz)return EMPTY_STARTER[which];
+ const duel=duelProblems.find(d=>d.key===p.judge);
+ return duel?(which==="cpp"?duel.cpp:duel.py):EMPTY_STARTER[which];
+};
 
 /* Session, profile and role handling live in ./session — one module owns the
    difference between a guest and an account. Re-exported so existing imports
@@ -88,7 +98,7 @@ function readAuthReturn():AuthReturn{
 const roleLabel=(role:Role,lang:Lang)=>role==="owner"?(tr(lang,"algoYolApp.ega_owner")):role==="admin"?"ADMIN":(tr(lang,"algoYolApp.foydalanuvchi"));
 
 export function AlgoYolApp(){
- const [lang,setLang]=useState<Lang>("uz"),[view,setView]=useState<View>("home"),[filter,setFilter]=useState("all"),[code,setCode]=useState(cpp),[codeLang,setCodeLang]=useState<"cpp20"|"python3">("cpp20"),[verdict,setVerdict]=useState(""),[selectedRoadmap,setSelectedRoadmap]=useState("foundations"),[selectedUnit,setSelectedUnit]=useState<string|null>(null),[activeProblem,setActiveProblem]=useState<BankProblem>(problems[0]); const t=copy[lang];
+ const [lang,setLang]=useState<Lang>("uz"),[view,setView]=useState<View>("home"),[filter,setFilter]=useState("all"),[code,setCode]=useState(()=>starterFor(problems[0],"cpp")),[codeLang,setCodeLang]=useState<"cpp20"|"python3">("cpp20"),[verdict,setVerdict]=useState(""),[selectedRoadmap,setSelectedRoadmap]=useState("foundations"),[selectedUnit,setSelectedUnit]=useState<string|null>(null),[activeProblem,setActiveProblem]=useState<BankProblem>(problems[0]); const t=copy[lang];
  // A stored token is not proof of an account: it can be expired or revoked.
  // The app stays in "loading" until Supabase confirms it, then commits to
  // exactly one of guest / authenticated. It never renders account-shaped UI
@@ -360,7 +370,67 @@ const wasDone=!!data.solved[lesson]&&(data.quizScores[lesson]||0)>=70;data.solve
   setView("auth");
  },[]);// eslint-disable-line react-hooks/exhaustive-deps
  const filtered=useMemo(()=>filter==="all"?problems:problems.filter(p=>p.difficulty===filter),[filter]);
- const judge=async()=>{if(!signed){setView("auth");return}if(!activeProblem.judge){setVerdict(tr(lang,"algoYolApp.bu_masala_uchun_tekshiruvchi_tez_orada_ula"));return}setVerdict(tr(lang,"algoYolApp.navbatda_testlar_tekshirilmoqda"));try{const response=await fetch("/api/judge",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({problemId:activeProblem.judge,language:codeLang,sourceCode:code})});const r=await response.json();const names:Record<string,[string,string]>={ACCEPTED:["Qabul qilindi","Accepted"],WRONG_ANSWER:["Noto‘g‘ri javob","Wrong answer"],COMPILATION_ERROR:["Kompilyatsiya xatosi","Compilation error"],RUNTIME_ERROR:["Bajarilish xatosi","Runtime error"],TIME_LIMIT_EXCEEDED:["Vaqt chegarasi oshdi","Time limit exceeded"],MEMORY_LIMIT_EXCEEDED:["Xotira chegarasi oshdi","Memory limit exceeded"],JUDGE_ERROR:["Tekshiruvchi xatosi","Judge error"]};const title=(names[r.verdict]||names.JUDGE_ERROR)[lang==="uz"?0:1];const test=r.test?` · ${lang==="uz"?"test":"test"} #${r.test}`:"";const stats=r.verdict==="ACCEPTED"?` · ${r.passed}/${r.total} · ${r.runtimeMs} ms · ${r.memoryKb} KB`:"";setVerdict(`${title}${test}${stats}${r.details?`\n${String(r.details).slice(0,900)}`:""}`);
+ /* Opening a problem is one operation, and it was three: the list set the
+    problem, the dashboard set it without the starter code, and the lesson set
+    nothing at all — "Masalani yechish" pushed the problem screen and left
+    whatever problem happened to be selected in place, so a learner solved the
+    unit's problem and submitted it against a different one. */
+ const openProblem=useCallback((p:BankProblem,push=false)=>{
+  setActiveProblem(p);
+  setCode(starterFor(p,codeLang==="cpp20"?"cpp":"py"));
+  setVerdict("");
+  if(push)pushScreen({view:"problem"});else go("problem");
+ },[codeLang]);// eslint-disable-line react-hooks/exhaustive-deps
+ /* The lesson hands over a unit id; the problem it practises is that unit's
+    own, wherever the unit lives. */
+ const openUnitProblem=useCallback((unitId:string)=>{
+  const unit=roadmapCatalog.flatMap(r=>r.units).find(u=>u.id===unitId);
+  const p=unit?bankProblems.find(x=>x.id===unit.problemId||x.judge===unit.problemId):undefined;
+  if(p)openProblem(p,true);else pushScreen({view:"problem"});
+ },[openProblem]);// eslint-disable-line react-hooks/exhaustive-deps
+ /* What a verdict says. Short while it is running — the judge streams tests as
+    they settle, so "Tekshirilmoqda… 3/5" is a real count rather than a spinner
+    — and specific when it lands: which test fell, the way a contest site says
+    it, instead of a sentence that reads the same for every outcome. */
+ const VERDICT_NAMES:Record<string,[string,string]>={ACCEPTED:["Qabul qilindi","Accepted"],WRONG_ANSWER:["Noto‘g‘ri javob","Wrong answer"],COMPILATION_ERROR:["Kompilyatsiya xatosi","Compilation error"],RUNTIME_ERROR:["Bajarilish xatosi","Runtime error"],TIME_LIMIT_EXCEEDED:["Vaqt chegarasi oshdi","Time limit exceeded"],MEMORY_LIMIT_EXCEEDED:["Xotira chegarasi oshdi","Memory limit exceeded"],JUDGE_ERROR:["Tekshiruvchi xatosi","Judge error"]};
+ type JudgeReply={verdict?:string;test?:number;passed?:number;total?:number;runtimeMs?:number;memoryKb?:number;details?:string};
+ const verdictLine=(r:JudgeReply)=>{
+  const title=(VERDICT_NAMES[String(r.verdict)]||VERDICT_NAMES.JUDGE_ERROR)[lang==="uz"?0:1];
+  const at=r.test?(lang==="uz"?` · ${r.test}-test`:` on test ${r.test}`):"";
+  const stats=r.verdict==="ACCEPTED"
+   ?` · ${r.passed}/${r.total} · ${r.runtimeMs} ms · ${r.memoryKb} KB`
+   :r.total?` · ${r.passed??0}/${r.total}`:"";
+  return `${title}${at}${stats}${r.details?`\n${String(r.details).slice(0,900)}`:""}`;
+ };
+ const judge=async()=>{
+  if(!signed){setView("auth");return}
+  if(!activeProblem.judge){setVerdict(tr(lang,"algoYolApp.bu_masala_uchun_tekshiruvchi_tez_orada_ula"));return}
+  const judging=tr(lang,"algoYolApp.navbatda_testlar_tekshirilmoqda");
+  setVerdict(judging);
+  try{
+   const response=await fetch("/api/judge",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({problemId:activeProblem.judge,language:codeLang,sourceCode:code,stream:true})});
+   // Newline-delimited JSON: progress lines, then one result. A body we cannot
+   // stream (an error response, a proxy that buffers) still parses as JSON.
+   let r:JudgeReply|null=null;
+   const reader=response.body?.getReader();
+   if(reader){
+    const decoder=new TextDecoder();let buffer="";
+    for(;;){
+     const {done,value}=await reader.read();
+     if(value)buffer+=decoder.decode(value,{stream:true});
+     for(let cut=buffer.indexOf("\n");cut>=0;cut=buffer.indexOf("\n")){
+      const line=buffer.slice(0,cut).trim();buffer=buffer.slice(cut+1);
+      if(!line)continue;
+      let msg:{type?:string;settled?:number;total?:number}&JudgeReply;
+      try{msg=JSON.parse(line)}catch{continue}
+      if(msg.type==="progress")setVerdict(`${judging} ${msg.settled}/${msg.total}`);
+      else if(msg.type==="result"||msg.verdict)r=msg;
+     }
+     if(done)break;
+    }
+   }else r=await response.json().catch(()=>null);
+   if(!r){setVerdict(verdictLine({verdict:"JUDGE_ERROR"}));return}
+   setVerdict(verdictLine(r));
   // The verdict belongs to the account, not to this tab: it is what a profile
   // shows, and what decides whether this person may read other people's code
   // for the same problem. Written after the fact, so a failed write costs the
@@ -376,7 +446,7 @@ const wasDone=!!data.solved[lesson]&&(data.quizScores[lesson]||0)>=70;data.solve
   <button className="po-close" aria-label={tr(lang,"algoYolApp.yopish")}
    onClick={()=>{writeScoped("algoyol-placement-dismissed","1");setOfferPlacement(false)}}>✕</button>
  </div>}
- <main className="main">{view==="home"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed&&profile?<><Dashboard lang={lang} profile={profile} go={go} openRoadmap={openRoadmap} onSelectProblem={p=>{setActiveProblem(p);setVerdict("");go("problem")}}/></>:<Home lang={lang} go={go} openRoadmap={openRoadmap}/>)} {view==="roadmaps"&&<RoadmapHub lang={lang} role={role} openRoadmap={openRoadmap}/>} {view==="roadmap"&&<RoadmapExperience slug={selectedRoadmap} lang={lang} role={role} unitId={selectedUnit} onOpenUnit={id=>pushScreen({unit:id})} onBack={back} onPractice={()=>pushScreen({view:"problem"})} onOpenProblem={(id:string)=>{const p=bankProblems.find(x=>x.id===id);if(p){setActiveProblem(p);setVerdict("");pushScreen({view:"problem"})}}}/>} {view==="problems"&&<Problems lang={lang} filter={filter} setFilter={setFilter} items={filtered} go={go} onSelect={p=>{setActiveProblem(p);setCode(p.judge==="max-subarray"?duelProblems[1].cpp:p.judge==="coin-change"?duelProblems[2].cpp:cpp);setVerdict("");go("problem")}}/>} {view==="problem"&&<Problem lang={lang} item={activeProblem} code={code} setCode={setCode} codeLang={codeLang} setCodeLang={setCodeLang} verdict={verdict} submit={judge} onBack={back} go={go}/>} {view==="duel"&&<DuelMatchmaking lang={lang} signed={signed} authLoading={auth.status==="loading"} needAuth={()=>go("auth")}/>} {view==="leaderboard"&&<Leaderboard lang={lang} me={profile} signed={signed} onOpenPerson={openPerson}/>} {view==="profile"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<ProfilePage lang={lang} profile={profile} onProfileChange={next=>setAuth({status:"authenticated",profile:next})} signOut={signOut} goAdmin={()=>go("admin")} goStats={()=>go("stats")} goUsers={()=>go("users")} goMessages={()=>go("messages")} isOwner={can(role,"user.manage_roles")} goRoadmaps={()=>go("roadmaps")} openRoadmap={openRoadmap} isStaff={can(role,"content.view_management")} goFriends={()=>go("friends")} goSubmissions={()=>go("submissions")}/>:<SignInRequired lang={lang} go={go} what="profile"/>)} {view==="auth"&&<AuthPage lang={lang} notice={authNotice} onAuthenticated={(token,remember,isNew,refreshToken)=>{void enterSession(token,remember,isNew,refreshToken)}}/>} {view==="placement"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed?<Placement lang={lang} signed={signed} onFinish={()=>go("roadmaps")} onRoadmap={openRoadmap}/>:<SignInRequired lang={lang} go={go} what="placement"/>)} {view==="admin"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<Admin lang={lang} profile={profile}/>:<SignInRequired lang={lang} go={go} what="admin"/>)} {view==="person"&&(person?<PublicProfile key={person} lang={lang} username={person} meId={profile?.id||null} signedIn={signed} onBack={back} onMessage={id=>{setMessageWith(id);go("messages")}} onMyProfile={()=>go("profile")} onSignIn={()=>go("auth")} onOpenSubmissions={h=>pushScreen({view:"person-submissions",person:h})}/>:<ScreenLoading lang={lang}/>)} {view==="shop"&&<Shop lang={lang} signed={signed} authLoading={auth.status==="loading"}/>} {view==="playground"&&<Playground lang={lang}/>} {view==="notfound"&&<NotFound lang={lang} go={v=>go(v as View)}/>} {view==="friends"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed?<FriendsScreen lang={lang} onBack={()=>go("profile")} onOpenPerson={openPerson}/>:<SignInRequired lang={lang} go={go} what="profile"/>)} {view==="submissions"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<SubmissionsScreen lang={lang} userId={profile.id} who={profile.display_name||profile.username} isMe signedIn onBack={()=>go("profile")}/>:<SignInRequired lang={lang} go={go} what="profile"/>)} {view==="person-submissions"&&(person?<PersonSubmissions key={person} lang={lang} handle={person} meId={profile?.id||null} signedIn={signed} onBack={back}/>:<ScreenLoading lang={lang}/>)} {view==="messages"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<Messages lang={lang} me={profile} openWith={messageWith} onOpened={()=>setMessageWith(null)} onUnreadChange={()=>{void refreshUnread()}} onOpenProfile={openPerson}/>:<SignInRequired lang={lang} go={go} what="messages"/>)} {view==="users"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:!profile?<SignInRequired lang={lang} go={go} what="users"/>:can(role,"user.manage_roles")?<UsersAdmin lang={lang} meId={profile.id} goProfile={()=>go("profile")} onMessage={id=>{setMessageWith(id);go("messages")}} onOpenProfile={openPerson} initialDay={usersDay} onDayConsumed={()=>setUsersDay(null)}/>:<div className="panel"><div className="notice notice-error">{tr(lang,"algoYolApp.bu_sahifa_faqat_ega_owner_roli_uchun")}</div></div>)} {view==="stats"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:!profile?<SignInRequired lang={lang} go={go} what="stats"/>:can(role,"stats.view")?<OwnerStats lang={lang} goProfile={()=>go("profile")} onPickDay={day=>{setUsersDay(day);go("users")}}/>:<div className="panel"><div className="notice notice-error">{tr(lang,"algoYolApp.bu_sahifa_faqat_ega_owner_roli_uchun")}</div></div>)}</main>
+ <main className="main">{view==="home"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed&&profile?<><Dashboard lang={lang} profile={profile} go={go} openRoadmap={openRoadmap} onSelectProblem={p=>openProblem(p)}/></>:<Home lang={lang} go={go} openRoadmap={openRoadmap}/>)} {view==="roadmaps"&&<RoadmapHub lang={lang} role={role} openRoadmap={openRoadmap}/>} {view==="roadmap"&&<RoadmapExperience slug={selectedRoadmap} lang={lang} role={role} unitId={selectedUnit} onOpenUnit={id=>pushScreen({unit:id})} onBack={back} onPractice={openUnitProblem} onOpenProblem={(id:string)=>{const p=bankProblems.find(x=>x.id===id);if(p)openProblem(p,true)}}/>} {view==="problems"&&<Problems lang={lang} filter={filter} setFilter={setFilter} items={filtered} go={go} onSelect={p=>openProblem(p)}/>} {view==="problem"&&<Problem lang={lang} item={activeProblem} code={code} setCode={setCode} codeLang={codeLang} setCodeLang={setCodeLang} verdict={verdict} submit={judge} onBack={back} go={go}/>} {view==="duel"&&<DuelMatchmaking lang={lang} signed={signed} authLoading={auth.status==="loading"} needAuth={()=>go("auth")}/>} {view==="leaderboard"&&<Leaderboard lang={lang} me={profile} signed={signed} onOpenPerson={openPerson}/>} {view==="profile"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<ProfilePage lang={lang} profile={profile} onProfileChange={next=>setAuth({status:"authenticated",profile:next})} signOut={signOut} goAdmin={()=>go("admin")} goStats={()=>go("stats")} goUsers={()=>go("users")} goMessages={()=>go("messages")} isOwner={can(role,"user.manage_roles")} goRoadmaps={()=>go("roadmaps")} openRoadmap={openRoadmap} isStaff={can(role,"content.view_management")} goFriends={()=>go("friends")} goSubmissions={()=>go("submissions")}/>:<SignInRequired lang={lang} go={go} what="profile"/>)} {view==="auth"&&<AuthPage lang={lang} notice={authNotice} onAuthenticated={(token,remember,isNew,refreshToken)=>{void enterSession(token,remember,isNew,refreshToken)}}/>} {view==="placement"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed?<Placement lang={lang} signed={signed} onFinish={()=>go("roadmaps")} onRoadmap={openRoadmap}/>:<SignInRequired lang={lang} go={go} what="placement"/>)} {view==="admin"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<Admin lang={lang} profile={profile}/>:<SignInRequired lang={lang} go={go} what="admin"/>)} {view==="person"&&(person?<PublicProfile key={person} lang={lang} username={person} meId={profile?.id||null} signedIn={signed} onBack={back} onMessage={id=>{setMessageWith(id);go("messages")}} onMyProfile={()=>go("profile")} onSignIn={()=>go("auth")} onOpenSubmissions={h=>pushScreen({view:"person-submissions",person:h})}/>:<ScreenLoading lang={lang}/>)} {view==="shop"&&<Shop lang={lang} signed={signed} authLoading={auth.status==="loading"}/>} {view==="playground"&&<Playground lang={lang}/>} {view==="notfound"&&<NotFound lang={lang} go={v=>go(v as View)}/>} {view==="friends"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed?<FriendsScreen lang={lang} onBack={()=>go("profile")} onOpenPerson={openPerson}/>:<SignInRequired lang={lang} go={go} what="profile"/>)} {view==="submissions"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<SubmissionsScreen lang={lang} userId={profile.id} who={profile.display_name||profile.username} isMe signedIn onBack={()=>go("profile")}/>:<SignInRequired lang={lang} go={go} what="profile"/>)} {view==="person-submissions"&&(person?<PersonSubmissions key={person} lang={lang} handle={person} meId={profile?.id||null} signedIn={signed} onBack={back}/>:<ScreenLoading lang={lang}/>)} {view==="messages"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<Messages lang={lang} me={profile} openWith={messageWith} onOpened={()=>setMessageWith(null)} onUnreadChange={()=>{void refreshUnread()}} onOpenProfile={openPerson}/>:<SignInRequired lang={lang} go={go} what="messages"/>)} {view==="users"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:!profile?<SignInRequired lang={lang} go={go} what="users"/>:can(role,"user.manage_roles")?<UsersAdmin lang={lang} meId={profile.id} goProfile={()=>go("profile")} onMessage={id=>{setMessageWith(id);go("messages")}} onOpenProfile={openPerson} initialDay={usersDay} onDayConsumed={()=>setUsersDay(null)}/>:<div className="panel"><div className="notice notice-error">{tr(lang,"algoYolApp.bu_sahifa_faqat_ega_owner_roli_uchun")}</div></div>)} {view==="stats"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:!profile?<SignInRequired lang={lang} go={go} what="stats"/>:can(role,"stats.view")?<OwnerStats lang={lang} goProfile={()=>go("profile")} onPickDay={day=>{setUsersDay(day);go("users")}}/>:<div className="panel"><div className="notice notice-error">{tr(lang,"algoYolApp.bu_sahifa_faqat_ega_owner_roli_uchun")}</div></div>)}</main>
  <MobileTabBar lang={lang} view={view} go={v=>go(v as View)} /><SiteFooter lang={lang} go={v=>go(v as View)} />
  {/* Above every screen: a challenge can arrive while the learner is halfway
      through a lesson, and five seconds is not long enough to go looking. */}
@@ -799,13 +869,13 @@ function Problems({lang,filter,setFilter,items,go,onSelect}:{lang:Lang,filter:st
 }
 
 function Problem({lang,item,code,setCode,codeLang,setCodeLang,verdict,submit,onBack,go}:{lang:Lang;item:BankProblem;code:string;setCode:(x:string)=>void;codeLang:"cpp20"|"python3";setCodeLang:(x:"cpp20"|"python3")=>void;verdict:string;submit:()=>void;onBack:()=>void;go:(v:View)=>void}){
- const starter={cpp:"#include <bits/stdc++.h>\nusing namespace std;\n\nint main(){\n  ios::sync_with_stdio(false);\n  cin.tie(nullptr);\n  // yechimingizni shu yerga yozing\n  return 0;\n}\n",py:"import sys\ninput = sys.stdin.readline\n\n# yechimingizni shu yerga yozing\n"};
+ const starter=EMPTY_STARTER;
  // Bank problems carry their own statement; the three duel problems keep theirs.
  const duel=duelProblems.find(d=>d.key===item.judge);
  const judgeable=item.statementUz?{stUz:item.statementUz,stEn:item.statementEn||"",inUz:item.inputUz||"",inEn:item.inputEn||"",outUz:item.outputUz||"",outEn:item.outputEn||"",sample:(item.samples||[]).map(x=>`${x.input}${x.output}`).join("\n"),cpp:starter.cpp,py:starter.py}:duel;
  const solved=loadMastery().evidence[`problem:${item.id}`]!==undefined;
  return <><button className="crumb crumb-btn" onClick={onBack}>← {tr(lang,"algoYolApp.ortga")}</button><div className="page-head"><div><span className="tag">{item.id}</span> <span className="tag rating-tag" style={{color:ratingColor(item.rating||1200)}}>★ {item.rating||1200}</span> <span className="tag">{item.tag}</span> {solved&&<span className="tag tag-solved">✓ {tr(lang,"algoYolApp.yechilgan")}</span>}<h1 className="page-title" style={{marginTop:12}}>{lang==="uz"?item.uz:item.en}</h1></div><span className="muted mono">1 s · 256 MB</span></div>
- {judgeable?<div className="workspace"><article className="panel statement"><h2>{tr(lang,"algoYolApp.shart")}</h2>{(lang==="uz"?item.storyUz:item.storyEn)&&<p className="story">{lang==="uz"?item.storyUz:item.storyEn}</p>}<p>{lang==="uz"?judgeable.stUz:judgeable.stEn}</p><h3>{tr(lang,"algoYolApp.kirish")}</h3><p>{lang==="uz"?judgeable.inUz:judgeable.inEn}</p><h3>{tr(lang,"algoYolApp.chiqish")}</h3><p>{lang==="uz"?judgeable.outUz:judgeable.outEn}</p>{item.constraints&&<><h3>{tr(lang,"algoYolApp.cheklovlar")}</h3><p className="mono">{item.constraints}</p></>}<h3>{tr(lang,"algoYolApp.namunalar")}</h3>{(item.samples||[]).map((x,si)=><div className="sample" key={si}><b>{tr(lang,"algoYolApp.kirish")}</b><pre>{x.input}</pre><b>{tr(lang,"algoYolApp.chiqish")}</b><pre>{x.output}</pre></div>)}{(lang==="uz"?item.noteUz:item.noteEn)&&<><h3>{tr(lang,"algoYolApp.izoh")}</h3><p className="muted">{lang==="uz"?item.noteUz:item.noteEn}</p></>}</article><CodeEditor code={code} setCode={setCode} lang={codeLang} setLang={v=>{setCodeLang(v);setCode(v==="cpp20"?judgeable.cpp:judgeable.py)}} onSubmit={submit} submitLabel={copy[lang].submit} verdict={verdict}
+ {judgeable?<div className="workspace"><article className="panel statement"><h2>{tr(lang,"algoYolApp.shart")}</h2>{(lang==="uz"?item.storyUz:item.storyEn)&&<p className="story"><MathText text={(lang==="uz"?item.storyUz:item.storyEn)||""}/></p>}<p><MathText text={lang==="uz"?judgeable.stUz:judgeable.stEn}/></p><h3>{tr(lang,"algoYolApp.kirish")}</h3><p><MathText text={lang==="uz"?judgeable.inUz:judgeable.inEn}/></p><h3>{tr(lang,"algoYolApp.chiqish")}</h3><p><MathText text={lang==="uz"?judgeable.outUz:judgeable.outEn}/></p>{item.constraints&&<><h3>{tr(lang,"algoYolApp.cheklovlar")}</h3><p className="mono constraints"><MathText text={item.constraints||""}/></p></>}<h3>{tr(lang,"algoYolApp.namunalar")}</h3>{(item.samples||[]).map((x,si)=><div className="sample" key={si}><b>{tr(lang,"algoYolApp.kirish")}</b><pre>{x.input}</pre><b>{tr(lang,"algoYolApp.chiqish")}</b><pre>{x.output}</pre></div>)}{(lang==="uz"?item.noteUz:item.noteEn)&&<><h3>{tr(lang,"algoYolApp.izoh")}</h3><p className="muted"><MathText text={(lang==="uz"?item.noteUz:item.noteEn)||""}/></p></>}</article><CodeEditor code={code} setCode={setCode} lang={codeLang} setLang={v=>{setCodeLang(v);setCode(v==="cpp20"?judgeable.cpp:judgeable.py)}} onSubmit={submit} submitLabel={copy[lang].submit} verdict={verdict}
    extraAction={<a className="text-link editor-escape" href="/playground" onClick={linkTo(()=>go("playground"))}>{tr(lang,"algoYolApp.bosh_muhitda_ochish")}</a>}/></div>
  :<div className="panel" style={{maxWidth:680}}><div className="notice">{tr(lang,"algoYolApp.ushbu_masala_hozircha_korib_chiqish_rejimi")}<b>{item.tag}</b></div></div>}</>}
 type DuelProblem={key:string;code:string;difficulty:"easy"|"medium"|"hard";points:number;uz:string;en:string;stUz:string;stEn:string;inUz:string;inEn:string;outUz:string;outEn:string;sample:string;cpp:string;py:string;bot:[number,number];fail:number};

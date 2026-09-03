@@ -846,7 +846,9 @@ body{background:var(--bg);min-height:100vh}
 .code-sheet{width:min(880px,94vw);max-height:86vh;overflow:auto;background:#0a100d;border:1px solid #25372d;border-radius:20px;padding:22px;box-shadow:0 30px 80px rgba(0,0,0,.6);cursor:default}
 .code-sheet header{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:14px}
 .code-sheet h3{margin:4px 0 0;font-size:21px}
-.code-view{margin:0;padding:18px;border-radius:14px;background:#060a08;border:1px solid #1e2d25;color:#c8f7d3;font-family:var(--font-mono);font-size:13px;line-height:1.65;white-space:pre;overflow-x:auto}
+/* The sheet is a dialog, not an article: the code block inside it should not
+   carry the article's bottom margin. */
+.code-sheet .codeblock{margin:0}
 .code-locked{display:grid;gap:10px;justify-items:center;text-align:center;padding:34px 18px;border:1px dashed #2b3d33;border-radius:16px}
 .code-locked>span{font-size:30px}
 /* The submissions link sat flush against the stat tiles above it — two blocks
@@ -1568,9 +1570,14 @@ body{font-size:var(--t-body);line-height:1.6}
 .difficulty.medium{background:rgba(255,196,87,.12);color:var(--diff-medium)}
 .difficulty.hard{background:rgba(255,107,107,.12);color:var(--diff-hard)}
 .problem-row .tag{
+ display:inline-block;max-width:100%;white-space:nowrap;
+ overflow:hidden;text-overflow:ellipsis;
  font-size:var(--t-xs);color:var(--muted);
  background:var(--surface-3);padding:3px 9px;border-radius:var(--r-full);
 }
+/* …and the column it sits in has to be allowed to shrink, or the ellipsis
+   never comes: a grid track's default min-width is its content. */
+.problem-row>*{min-width:0}
 
 /* ─── Dashboard ──────────────────────────────────────────────────────── */
 .dash{
@@ -2040,7 +2047,9 @@ body{font-size:var(--t-body);line-height:1.6}
 }
 .pb-th-status{width:44px}
 .pb-th-rating{width:88px}
-.pb-th-topic{width:130px}
+/* Wide enough for the longest tag in the bank ("Binary search on answer");
+   past that the chip clips with an ellipsis rather than breaking apart. */
+.pb-th-topic{width:180px}
 .pb-table td{padding:11px var(--s4);border-bottom:1px solid var(--line-faint);vertical-align:middle}
 .pb-table tr:last-child td{border-bottom:0}
 .pb-table tbody tr{cursor:pointer;transition:background var(--dur-fast) var(--ease)}
@@ -2235,7 +2244,12 @@ body{font-size:var(--t-body);line-height:1.6}
 }
 .notice-error{border-color:rgba(255,107,107,.4);color:var(--bad);background:rgba(255,107,107,.08)}
 .notice-info{border-color:var(--line-strong)}
+/* A chip is a box, not a run of text. Left inline, a long tag ("Binary search
+   on answer") broke across two lines and the pill broke with it, painting half
+   a background on each. */
 .tag{
+ display:inline-block;max-width:100%;white-space:nowrap;
+ overflow:hidden;text-overflow:ellipsis;vertical-align:middle;
  font-size:var(--t-xs);color:var(--muted);
  background:var(--surface-3);padding:4px 10px;border-radius:var(--r-full);
 }
@@ -2584,6 +2598,16 @@ body{font-size:var(--t-body);line-height:1.6}
  font-size:var(--t-sm);color:var(--muted);
  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;
 }
+/* The bot is named like a player and disclosed like a bot: the chip carries
+   "AI" so the name does not have to. */
+.bot-name{color:var(--ink)}
+.bot-chip{
+ display:inline-block;margin-left:6px;padding:1px 6px;
+ font-family:var(--font-mono);font-size:10px;font-style:normal;font-weight:700;
+ letter-spacing:.06em;line-height:1.6;vertical-align:2px;
+ color:var(--lime);background:var(--green-wash);
+ border:1px solid var(--line);border-radius:var(--r-full);
+}
 .duel-score{
  font-family:var(--font-display);font-weight:600;font-size:2.4rem;line-height:1;
  color:var(--ink);font-variant-numeric:tabular-nums;
@@ -2919,3 +2943,12 @@ body{font-size:var(--t-body);line-height:1.6}
  .balance-card{justify-items:start;min-width:0;width:100%}
  .balance-card b{font-size:2rem}
 }
+
+/* ─── Inline maths in statements ─────────────────────────────────────── */
+/* Browsers shrink sup/sub and then let them push the line apart. Zeroing the
+   line-height keeps a paragraph with powers in it on the same rhythm as one
+   without. */
+.mth-sup,.mth-sub{font-size:.72em;line-height:0;position:relative;font-feature-settings:"tnum"}
+.mth-sup{top:-.45em}
+.mth-sub{bottom:-.22em}
+.statement .constraints{white-space:pre-line;line-height:1.9}

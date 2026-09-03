@@ -22,7 +22,9 @@ function verdictTone(v: string): string {
   const s = v.toLowerCase();
   if (!v) return "idle";
   if (s.includes("qabul") || s.includes("accepted") || s.startsWith("ok")) return "ok";
-  if (s.includes("navbat") || s.includes("queue") || s.includes("judging") || s.includes("ishlamoqda")) return "busy";
+  // "tekshirilmoqda" is the in-flight line, "tekshiruvchi xatosi" is a
+  // failure — near-identical words, opposite tones, so match the whole word.
+  if (s.includes("tekshirilmoqda") || s.includes("navbat") || s.includes("queue") || s.includes("judging") || s.includes("ishlamoqda")) return "busy";
   return "bad";
 }
 

@@ -20,6 +20,7 @@ import { bankProblems } from "./problem-bank";
 import { CodeEditor } from "./CodeEditor";
 import { useTabGuard } from "./duel-guard";
 import { recordDuelDone } from "./coins";
+import { MathText } from "./math-text";
 import {
   // Accept and decline are the shell's job, not this screen's: the card can
   // appear anywhere in the app, so the handlers live where it is rendered.
@@ -51,8 +52,15 @@ const clock = (total: number) =>
 
 const problemFor = (key: string) => bankProblems.find((p) => p.judge === key);
 const seatOf = (duel: ActiveDuel, seat: number) => duel.players.find((p) => p.seat === seat);
-const nameOf = (player: { is_bot: boolean; display_name: string; username: string | null } | undefined, lang: Lang) =>
-  !player ? "—" : player.is_bot ? (tr(lang,"duelArena.ai_raqib")) : player.display_name || player.username || "—";
+/* The bot has a name now. It used to appear as "🤖 AI raqib" — a label with
+   an emoji where an opponent's name goes, which reads like a placeholder that
+   was never filled in. It is an opponent, so it gets what every other opponent
+   on the scoreboard has: a name. The "AI" chip beside it is the disclosure —
+   nobody is being told they beat a person. */
+export const BOT_NAME = "Algo";
+const nameOf = (player: { is_bot: boolean; display_name: string; username: string | null } | undefined) =>
+  !player ? "—" : player.is_bot ? BOT_NAME : player.display_name || player.username || "—";
+const BotName = () => <><span className="bot-name">{BOT_NAME}</span><i className="bot-chip">AI</i></>;
 
 const T = {
   uz: {
@@ -61,10 +69,10 @@ const T = {
     ready: "Bellashishga tayyormisiz?", searching: "Raqib qidirilmoqda…",
     find: "Raqib qidirish", cancel: "Qidiruvni bekor qilish", needAuth: "Kirish talab qilinadi",
     range: "Reyting oralig‘i", online: "Mavjud raqiblar", elapsed: "Vaqt",
-    expanding: "Raqib topilmasa, oraliq kengayadi.", botSoon: "Odam topilmadi — AI raqib tayyorlanmoqda…",
+    expanding: "Raqib topilmasa, oraliq kengayadi.", botSoon: `Odam topilmadi — ${BOT_NAME} tayyorlanmoqda…`,
     challenge: "Duel chaqirig‘i", accept: "Qabul qilish", decline: "Rad etish",
     tooLate: "Kech qoldingiz — raqibni boshqa o‘yinchi oldi.", expired: "Chaqiriq muddati tugadi.",
-    vs: "qarshi", you: "Siz", bot: "AI raqib", points: "ball", locked: "Qulflangan", open: "Ochiq",
+    vs: "qarshi", you: "Siz", bot: BOT_NAME, points: "ball", locked: "Qulflangan", open: "Ochiq",
     submit: "Yuborish", judging: "Tekshirilmoqda…", forfeit: "Taslim bo‘lish",
     won: "G‘alaba!", lost: "Mag‘lubiyat", draw: "Durang", rematch: "Yangi duel", leave: "Chiqish",
     ratingChange: "Reyting o‘zgarishi", unrated: "Bu duel reytingga ta’sir qilmadi",
@@ -92,10 +100,10 @@ const T = {
     ready: "Ready to compete?", searching: "Searching for an opponent…",
     find: "Search for competitor", cancel: "Cancel search", needAuth: "Sign in required",
     range: "Rating range", online: "Available opponents", elapsed: "Elapsed",
-    expanding: "The range widens if nobody suitable is found.", botSoon: "No human found — preparing an AI opponent…",
+    expanding: "The range widens if nobody suitable is found.", botSoon: `No human found — ${BOT_NAME} is warming up…`,
     challenge: "Duel challenge", accept: "Accept", decline: "Decline",
     tooLate: "Too slow — another player took this opponent.", expired: "The challenge expired.",
-    vs: "vs", you: "You", bot: "AI opponent", points: "points", locked: "Locked", open: "Open",
+    vs: "vs", you: "You", bot: BOT_NAME, points: "points", locked: "Locked", open: "Open",
     submit: "Submit", judging: "Judging…", forfeit: "Forfeit",
     won: "You won!", lost: "You lost", draw: "Draw", rematch: "New duel", leave: "Leave",
     ratingChange: "Rating change", unrated: "This duel did not affect your rating",
@@ -462,7 +470,7 @@ function Arena({
         </div>
 
         <div className="duel-side them">
-          <span className="duel-who">{them?.is_bot ? `🤖 ${t.bot}` : nameOf(them, lang)}</span>
+          <span className="duel-who">{them?.is_bot ? <BotName /> : nameOf(them)}</span>
           <span className="duel-score">{them?.score ?? 0}</span>
           <span className="duel-elo">{them?.rating ?? "—"} Elo</span>
         </div>
@@ -521,8 +529,8 @@ function Arena({
                     <i className={mine ? "won" : "pending"} title={t.you}>
                       {mine ? "✓" : "●"} {t.you}
                     </i>
-                    <i className={theirs ? "won" : "pending"} title={them?.is_bot ? t.bot : nameOf(them, lang)}>
-                      {theirs ? "✓" : "●"} {them?.is_bot ? t.bot : nameOf(them, lang)}
+                    <i className={theirs ? "won" : "pending"} title={them?.is_bot ? t.bot : nameOf(them)}>
+                      {theirs ? "✓" : "●"} {them?.is_bot ? t.bot : nameOf(them)}
                     </i>
                   </span>
                   <span className="claim">
@@ -542,10 +550,10 @@ function Arena({
               <div className="duel-problem">
               <span className="tag">{problem.id} · {problem.difficulty.toUpperCase()} · {problem.rating}</span>
               <h2>{lang === "uz" ? problem.uz : problem.en}</h2>
-              <p>{lang === "uz" ? problem.statementUz : problem.statementEn}</p>
-              <p><b>{tr(lang,"algoYolApp.kirish")}:</b> {lang === "uz" ? problem.inputUz : problem.inputEn}</p>
-              <p><b>{tr(lang,"algoYolApp.chiqish")}:</b> {lang === "uz" ? problem.outputUz : problem.outputEn}</p>
-              {problem.constraints && <p className="muted">{problem.constraints}</p>}
+              <p><MathText text={(lang === "uz" ? problem.statementUz : problem.statementEn) || ""} /></p>
+              <p><b>{tr(lang,"algoYolApp.kirish")}:</b> <MathText text={(lang === "uz" ? problem.inputUz : problem.inputEn) || ""} /></p>
+              <p><b>{tr(lang,"algoYolApp.chiqish")}:</b> <MathText text={(lang === "uz" ? problem.outputUz : problem.outputEn) || ""} /></p>
+              {problem.constraints && <p className="muted"><MathText text={problem.constraints} /></p>}
               {problem.samples?.[0] && (
                 <pre className="sample">{problem.samples[0].input}{"\n"}{problem.samples[0].output}</pre>
               )}
@@ -577,7 +585,7 @@ function Arena({
               .map((a, i) => (
                 <div className="status-line" key={`${a.created_at}-${i}`}>
                   <span className="feed-time">#{a.round + 1}</span>{" "}
-                  {a.mine ? t.you : nameOf(them, lang)} ·{" "}
+                  {a.mine ? t.you : nameOf(them)} ·{" "}
                   <b style={{ color: a.verdict === "ACCEPTED" ? "#9aef4f" : "#ff875c" }}>{a.verdict}</b>
                 </div>
               ))}
@@ -778,12 +786,12 @@ function ResultScreen({
       <div className="result-score">{me?.score ?? 0} : {them?.score ?? 0}</div>
       {note && <p className="notice notice-error result-why">{note}</p>}
       <p className="muted">
-        {t.you} {t.vs} {them?.is_bot ? `🤖 ${t.bot}` : nameOf(them, lang)} · {them?.rating ?? "—"} Elo
+        {t.you} {t.vs} {them?.is_bot ? <BotName /> : nameOf(them)} · {them?.rating ?? "—"} Elo
       </p>
 
       <div className="duel-stats">
         <div><b>{me?.score ?? 0}</b><small>{t.you}</small></div>
-        <div><b>{them?.score ?? 0}</b><small>{them?.is_bot ? t.bot : nameOf(them, lang)}</small></div>
+        <div><b>{them?.score ?? 0}</b><small>{them?.is_bot ? t.bot : nameOf(them)}</small></div>
         <div>
           <b style={{ color: (me?.delta ?? 0) >= 0 ? "#9aef4f" : "#ff875c" }}>
             {rated ? `${(me?.delta ?? 0) > 0 ? "+" : ""}${me?.delta ?? 0}` : "—"}

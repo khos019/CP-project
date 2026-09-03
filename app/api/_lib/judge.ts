@@ -102,7 +102,11 @@ class JudgeTimeout extends Error {
 
 const isFinal = (r: Result) => (r.status?.id || 0) > 2;
 
-async function execute(submissions: Submission[]): Promise<Result[]> {
+/** Called as tests settle, so a caller can stream "test 3/5" to the learner
+ *  while the batch is still running. */
+export type JudgeProgress = (settled: number, total: number) => void;
+
+async function execute(submissions: Submission[], onProgress?: JudgeProgress): Promise<Result[]> {
   const { url, headers } = endpoint();
   const created = await fetch(`${url}/submissions/batch?base64_encoded=false`, {
     method: "POST", headers, body: JSON.stringify({ submissions }),
@@ -122,6 +126,7 @@ async function execute(submissions: Submission[]): Promise<Result[]> {
     const results = ((await checked.json()) as { submissions: Result[] }).submissions || [];
     if (results.length !== tokens.length) continue;
     settled = results.filter(isFinal).length;
+    onProgress?.(settled, tokens.length);
     // Status ids 1 and 2 are "in queue" and "processing"; anything above is final.
     if (results.every(isFinal)) return results;
     /* A verdict can be decided before the batch is: once a test has failed and
@@ -150,7 +155,7 @@ export const isJudgeableProblem = (key: string): key is keyof typeof tests => ke
  *  verdict — a duel submission, a practice submission and a bot submission all
  *  arrive here, which is what makes a bot's WRONG_ANSWER a real one. */
 export async function judgeSource(
-  problemId: string, language: Language, sourceCode: string,
+  problemId: string, language: Language, sourceCode: string, onProgress?: JudgeProgress,
 ): Promise<JudgeOutcome> {
   if (!isJudgeableProblem(problemId)) {
     return { verdict: "JUDGE_ERROR", passed: 0, total: 0, runtimeMs: 0, memoryKb: 0, details: "Unknown problem." };
@@ -163,7 +168,7 @@ export async function judgeSource(
   }));
 
   try {
-    const results = await execute(submissions);
+    const results = await execute(submissions, onProgress);
     const runtimeMs = Math.ceil(Math.max(...results.map((r) => Number(r.time || 0))) * 1000);
     const memoryKb = Math.max(...results.map((r) => r.memory || 0));
     const failedIndex = results.findIndex((r) => r.status?.id !== 3);

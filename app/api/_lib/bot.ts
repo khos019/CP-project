@@ -30,6 +30,21 @@ export type BotConfig = {
   mistakeRate: number;
   minDelaySeconds: number;
   maxDelaySeconds: number;
+  /** Rating points the bot plays above the level it was matched at.
+   *
+   *  The bot's rating is the player's own strength, and the problems are
+   *  chosen for that same rating — so a plain Elo expectation puts the bot at
+   *  a coin flip on every round, and the coin flip it loses it loses without
+   *  submitting anything worth watching. An opponent is supposed to be a test.
+   *  This bonus is where "the bot should be a little stronger" lives, and it
+   *  is expressed in rating points so it still means the same thing as every
+   *  other number in the model. */
+  skillBonus: number;
+  /** A second chance, as a fraction of the first. A player who does not see a
+   *  problem on the first read often sees it on the second; a bot that gives
+   *  up the moment its first roll fails is the "switched off" opponent this
+   *  model keeps trying not to be. */
+  lateSolveFactor: number;
 };
 
 export const DEFAULT_BOT_CONFIG: BotConfig = {
@@ -38,6 +53,8 @@ export const DEFAULT_BOT_CONFIG: BotConfig = {
   mistakeRate: 1,
   minDelaySeconds: 35,
   maxDelaySeconds: 900,
+  skillBonus: 120,
+  lateSolveFactor: 0.5,
 };
 
 export type Attempt = {
@@ -94,8 +111,17 @@ function seeded(seed: string): () => number {
  *  Plain Elo expectation: equal ratings meet at 0.5, and every 400 points of
  *  gap moves the odds by a factor of ten. */
 export function solveProbability(botRating: number, problemRating: number, config = DEFAULT_BOT_CONFIG): number {
-  const gap = (botRating - problemRating) * config.difficultyScale;
+  const gap = (botRating + config.skillBonus - problemRating) * config.difficultyScale;
   return 1 / (1 + Math.pow(10, -gap / 400));
+}
+
+/** The chance the bot solves the round at all, first read or second. Exported
+ *  because it, not solveProbability, is what a balancing run should read. */
+export function effectiveSolveProbability(
+  botRating: number, problemRating: number, config = DEFAULT_BOT_CONFIG,
+): number {
+  const p = solveProbability(botRating, problemRating, config);
+  return p + (1 - p) * Math.min(1, Math.max(0, p * config.lateSolveFactor));
 }
 
 /** Expected seconds of thinking before a first submission.
@@ -115,7 +141,7 @@ export function expectedThinkingSeconds(
   // for six minutes is indistinguishable from an opponent that is broken, and
   // that is what the first bot duels actually looked like.
   const base = { easy: 60, medium: 125, hard: 210 }[difficulty] ?? 125;
-  const gap = botRating - problemRating;
+  const gap = botRating + config.skillBonus - problemRating;
   const stretched = base * Math.exp(-gap / 520) * config.timeScale;
   return Math.min(config.maxDelaySeconds, Math.max(config.minDelaySeconds, stretched));
 }
@@ -124,7 +150,7 @@ export function expectedThinkingSeconds(
 export function getBotSubmissionBehavior(
   botRating: number, problemRating: number, difficulty: "easy" | "medium" | "hard",
   seed: string, config = DEFAULT_BOT_CONFIG,
-): { shouldSolve: boolean; expectedDelay: number; mistakeProbability: number } {
+): { shouldSolve: boolean; solvesLate: boolean; expectedDelay: number; mistakeProbability: number } {
   const random = seeded(`${seed}:outcome`);
   const p = solveProbability(botRating, problemRating, config);
   // Mistakes track the same gap: a bot comfortably above a problem rarely
@@ -134,8 +160,14 @@ export function getBotSubmissionBehavior(
   // bot that has literally never submitted a wrong answer is the one thing a
   // human opponent never looks like.
   const mistakeProbability = Math.min(0.85, Math.max(0.07, (1 - p) * config.mistakeRate));
+  // Two draws from the same stream, in order: the first read, then the second.
+  // The second is conditional on the first having failed, which is why it is
+  // drawn after it rather than beside it.
+  const early = random() < p;
+  const late = !early && random() < p * config.lateSolveFactor;
   return {
-    shouldSolve: random() < p,
+    shouldSolve: early || late,
+    solvesLate: late,
     expectedDelay: expectedThinkingSeconds(botRating, problemRating, difficulty, config),
     mistakeProbability,
   };
@@ -178,21 +210,31 @@ export function planDuel(
     const attempts: Attempt[] = [];
     // Wrong submissions come first and cost time — a rejected attempt is a
     // person re-reading the statement, not a free reroll.
-    const maxWrong = Math.max(0, Math.min(2, round.wrongVariants ?? 1));
+    const maxWrong = Math.max(0, Math.min(3, round.wrongVariants ?? 1));
     let wrongCount = 0;
     while (wrongCount < maxWrong && mistakes() < behaviour.mistakeProbability) wrongCount++;
-    // A round the bot cannot solve still has to be *played*. Without this the
-    // plan for such a round can come out completely empty, and the opponent
-    // watches a scoreboard that never moves — no WRONG_ANSWER, no time limit,
-    // nothing — which reads as a bot that is switched off rather than one that
-    // is losing. Somebody who fails a problem fails it visibly.
-    if (!behaviour.shouldSolve && wrongCount === 0) wrongCount = Math.min(1, maxWrong);
+    // A round the bot cannot solve still has to be *played*, and played for
+    // longer than one submission. The first version sent a single wrong answer
+    // and then went quiet for the rest of the round, which from the other side
+    // of the scoreboard is indistinguishable from an opponent that crashed —
+    // exactly the complaint this is fixing. Somebody who cannot solve a problem
+    // keeps trying at it until the round is gone.
+    if (!behaviour.shouldSolve) wrongCount = maxWrong;
+    // A second read follows something that failed. Without this the late solve
+    // is the bot's FIRST submission and it lands late, so how long the opponent
+    // waited for the opening attempt would quietly predict whether the bot was
+    // about to solve the round — the same tell the seeded streams above exist
+    // to remove.
+    if (behaviour.solvesLate && wrongCount === 0) wrongCount = Math.min(1, maxWrong);
 
     let at = think;
     for (let i = 0; i < wrongCount; i++) {
       attempts.push({ at: Math.round(at), correct: false, variant: i });
       at += Math.max(20, think * 0.35 * (0.7 + timing() * 0.6));
     }
+    // The second read costs real time: a late solve arrives well after the
+    // point the bot would have submitted if it had seen the answer at once.
+    if (behaviour.solvesLate) at += think * (0.8 + timing() * 0.6);
     if (behaviour.shouldSolve) attempts.push({ at: Math.round(at), correct: true });
 
     const openAt = Math.round(clock);
@@ -226,5 +268,7 @@ export function botConfigFrom(row: Record<string, unknown> | null | undefined): 
     mistakeRate: num("bot_mistake_rate", DEFAULT_BOT_CONFIG.mistakeRate),
     minDelaySeconds: num("bot_min_delay", DEFAULT_BOT_CONFIG.minDelaySeconds),
     maxDelaySeconds: num("bot_max_delay", DEFAULT_BOT_CONFIG.maxDelaySeconds),
+    skillBonus: num("bot_skill_bonus", DEFAULT_BOT_CONFIG.skillBonus),
+    lateSolveFactor: num("bot_late_solve", DEFAULT_BOT_CONFIG.lateSolveFactor),
   };
 }

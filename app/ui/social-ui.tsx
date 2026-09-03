@@ -10,6 +10,7 @@ import { useEffect, useState } from "react";
 import { tr } from "./i18n";
 import { fetchPersonByUsername } from "./session";
 import { OnlineDot, onlineAmong } from "./presence";
+import { CodeBlock } from "./CodeBlock";
 import {
   addFriend, fetchFriends, fetchSubmissionCode, fetchSubmissions, removeFriend, unlockSubmissionCode,
   type CodeResult, type FriendRow, type SubmissionRow,
@@ -342,7 +343,16 @@ function CodeViewer({
           </button>
         </header>
         {!result && <p className="muted">{t.loading}</p>}
-        {result?.state === "ok" && <pre className="code-view">{result.source}</pre>}
+        {/* The same highlighter the editor and the lesson blocks use. A
+            submission opened here used to be one flat green wall of text —
+            the one place on the site where code was not coloured. */}
+        {result?.state === "ok" && (
+          <CodeBlock
+            code={result.source}
+            lang={(result.language || row.language) === "python3" ? "python" : "cpp"}
+            filename={(result.language || row.language) === "python3" ? "main.py" : "main.cpp"}
+          />
+        )}
         {result?.state === "locked" && (
           <div className="code-locked">
             <span aria-hidden>🔒</span>
