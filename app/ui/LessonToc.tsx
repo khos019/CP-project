@@ -18,8 +18,13 @@ export function LessonToc({ lang, unitId }: { lang: "uz" | "en"; unitId: string 
 
   useEffect(() => {
     const heads = [...document.querySelectorAll<HTMLHeadingElement>(".lesson-content h2")];
+    /* The id is rewritten on every unit, not assigned only when missing.
+       React reuses heading nodes across units, so a kept node carried its old
+       id while a newly created one was numbered by its new position — two
+       headings could end up with the same id, and the id is this list's key.
+       Keying the unit into the id makes a collision impossible. */
     const entries = heads.map((h, i) => {
-      if (!h.id) h.id = `lesson-sec-${i + 1}`;
+      h.id = `${unitId}-sec-${i + 1}`;
       return { id: h.id, text: h.textContent || `${i + 1}` };
     });
     // Reads the rendered headings: the state is a consequence of the DOM the

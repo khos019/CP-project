@@ -120,6 +120,26 @@ function CodeWalk({ lang, code, notes, codeLang, captionUz, captionEn }: {
   );
 }
 
+/* A question the reader answers before reading on.
+   The reveal is React state rather than a native <details>: disclosure is not
+   honoured everywhere (some embedded browsers render the content open), and an
+   answer that is visible from the start is not an exercise. */
+function TryIt({ lang, b }: { lang: Lang; b: Extract<Block, { t: "exercise" }> }) {
+  const [shown, setShown] = useState(false);
+  return (
+    <div className="try">
+      <span className="try-tag">{lang === "uz" ? "O‘zingiz sinab ko‘ring" : "Try it yourself"}</span>
+      <p className="try-q">{pick(lang, b.qUz, b.qEn)}</p>
+      <button className="try-toggle" onClick={() => setShown(s => !s)} aria-expanded={shown}>
+        {shown
+          ? (lang === "uz" ? "Javobni yashirish" : "Hide the answer")
+          : (lang === "uz" ? "Javobni ko‘rsatish" : "Show the answer")}
+      </button>
+      {shown && <p className="try-a">{pick(lang, b.aUz, b.aEn)}</p>}
+    </div>
+  );
+}
+
 function BlockView({ lang, b }: { lang: Lang; b: Block }) {
   switch (b.t) {
     case "p": return <p>{pick(lang, b.uz, b.en)}</p>;
@@ -166,6 +186,7 @@ function BlockView({ lang, b }: { lang: Lang; b: Block }) {
       <CodeWalk lang={lang} code={b.code} notes={b.notes} codeLang={b.lang || "cpp"}
         captionUz={b.captionUz} captionEn={b.captionEn} />
     );
+    case "exercise": return <TryIt lang={lang} b={b} />;
     case "diagram": return <DiagramFromSpec spec={b.spec} />;
     case "sim": return <StepPlayer lang={lang} titleUz={b.titleUz} titleEn={b.titleEn} frames={b.frames} />;
   }

@@ -3123,3 +3123,25 @@ a.editor-escape:hover{color:var(--ink);border-color:var(--line-strong);backgroun
  .sim-dots{margin-left:0;width:100%}
  .walk-notes button{font-size:var(--t-xs)}
 }
+
+/* "O'zingiz sinab ko'ring" — javobni ochishdan oldin o'ylab ko'rish uchun.
+   Tushuntirishni o'qish tushunganday tuyuladi; javobni o'zi topishga urinish
+   esa haqiqatan tushungan-tushunmaganini ko'rsatadi. */
+.try{
+ margin:var(--s4) 0;padding:var(--s4) var(--s5);
+ border:1px dashed var(--line-strong);border-radius:var(--r-md);background:var(--inset);
+}
+.try-tag{
+ display:block;font-size:var(--t-xs);font-weight:600;letter-spacing:.04em;
+ text-transform:uppercase;color:var(--orange);
+}
+.try-q{margin:6px 0 0;color:var(--ink);font-size:var(--t-sm);line-height:1.6}
+.try-toggle{
+ margin-top:var(--s3);padding:6px 12px;border:1px solid var(--line);border-radius:var(--r-sm);
+ background:var(--surface);color:var(--muted);font-size:var(--t-xs);
+}
+.try-toggle:hover{color:var(--ink);border-color:var(--line-strong)}
+.try-a{
+ margin:var(--s3) 0 0;padding-top:var(--s3);border-top:1px solid var(--line-faint);
+ color:var(--muted);font-size:var(--t-sm);line-height:1.7;
+}

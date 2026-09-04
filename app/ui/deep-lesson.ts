@@ -42,18 +42,24 @@ export type Block =
   /** A single picture. */
   | { t: "diagram"; spec: Spec }
   /** A picture the learner steps through: the algorithm, frame by frame. */
-  | { t: "sim"; titleUz: string; titleEn: string; frames: { spec: Spec; uz: string; en: string }[] };
+  | { t: "sim"; titleUz: string; titleEn: string; frames: { spec: Spec; uz: string; en: string }[] }
+  /* A question the reader answers before reading on, with the answer hidden
+     behind a click. Reading an explanation feels like understanding it; trying
+     to answer first is what tells you whether you actually do. */
+  | { t: "exercise"; qUz: string; qEn: string; aUz: string; aEn: string };
 
 export type DeepSection = { titleUz: string; titleEn: string; blocks: Block[] };
 export type DeepLesson = { sections: DeepSection[] };
 
 import { programmingBasicsLessons } from "./lessons/programming-basics";
+import { foundationsLessons } from "./lessons/foundations";
 
 /* One module per roadmap, merged here. Keeping them apart matters: a single
    file holding every deep lesson would be tens of thousands of lines, and the
    section being written is the only one anybody edits at a time. */
 export const deepLessons: Record<string, DeepLesson> = {
   ...programmingBasicsLessons,
+  ...foundationsLessons,
 };
 
 export const deepLessonFor = (unitId: string): DeepLesson | undefined => deepLessons[unitId];
