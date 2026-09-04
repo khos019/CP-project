@@ -140,8 +140,11 @@ function TableView(s: Extract<Spec, { kind: "table" }>) {
   </>;
 }
 
-export function DiagramFromSpec({ spec }: { spec: Spec }) {
-  const body =
+/* The drawing on its own, with no figure or caption around it. The step
+   player reuses it: a simulation is the same picture redrawn frame by frame,
+   and it needs the caption slot for the step's own explanation. */
+export function DiagramBody({ spec }: { spec: Spec }) {
+  return (
     spec.kind === "array" ? <ArrayView {...spec} /> :
     spec.kind === "tworow" ? <TwoRow {...spec} /> :
     spec.kind === "grid" ? <GridView {...spec} /> :
@@ -149,10 +152,14 @@ export function DiagramFromSpec({ spec }: { spec: Spec }) {
     spec.kind === "stack" ? <StackView {...spec} /> :
     spec.kind === "flow" ? <FlowView {...spec} /> :
     spec.kind === "curve" ? <CurveView {...spec} /> :
-    <TableView {...spec} />;
+    <TableView {...spec} />
+  );
+}
+
+export function DiagramFromSpec({ spec }: { spec: Spec }) {
   return (
     <figure className="concept-figure">
-      <svg viewBox="0 0 520 152" role="img" aria-label={spec.label}>{body}</svg>
+      <svg viewBox="0 0 520 152" role="img" aria-label={spec.label}><DiagramBody spec={spec} /></svg>
       <figcaption>{spec.label}</figcaption>
     </figure>
   );

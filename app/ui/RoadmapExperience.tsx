@@ -12,6 +12,8 @@ import { bankProblems } from "./problem-bank";
 import { ratingColor } from "./rating";
 import { unitCode } from "./unit-code";
 import { deepContent } from "./dp-deep-content";
+import { deepLessonFor } from "./deep-lesson";
+import { DeepLessonView } from "./DeepLesson";
 import { emptyProgress as empty, loadProgress, saveUnit, type Progress } from "./progress";
 import { LockIcon } from "./icons";
 import { clearedUnits, masteryOf, masteryLabel, recordEvidence, MASTERY_CONFIG } from "./mastery";
@@ -130,6 +132,10 @@ function Lesson({roadmap,unit,index,lang,progress,setProgress,onBack,onPractice,
  // eslint-disable-next-line react-hooks/set-state-in-effect
  useEffect(()=>{setChecked(false);setAnswer(null);setResult("")},[unit.id]);
  const unitSpec=specForUnit(unit.titleUz,roadmap.slug);
+ /* The long-form lesson, when this unit has one. It slots in after the short
+    "Asosiy tushuncha" summary and before the mistakes list, so the summary
+    still opens the page and the teaching happens in between. */
+ const deep=deepLessonFor(unit.id);
  const prevUnit=index>0?roadmap.units[index-1]:null;
  const nextUnit=index<roadmap.units.length-1?roadmap.units[index+1]:null;
  // This unit's own problem first, then the rest of the roadmap by rating, so
@@ -156,6 +162,7 @@ function Lesson({roadmap,unit,index,lang,progress,setProgress,onBack,onPractice,
   <h2>{tr(lang,"roadmapExperience.asosiy_tushuncha")}</h2><p>{lang==="uz"?content.coreUz:content.coreEn}</p>
   {unitSpec&&<DiagramFromSpec spec={unitSpec}/>}<h2>{tr(lang,"roadmapExperience.kod_namunasi")}</h2><div className="code-tabs"><button className={codeLang==="cpp"?"active":""} onClick={()=>setCodeLang("cpp")}>C++20</button><button className={codeLang==="python"?"active":""} onClick={()=>setCodeLang("python")}>Python 3</button></div><CodeBlock code={codeLang==="cpp"?code.cpp:code.python} lang={codeLang}/>
   <h2>{tr(lang,"roadmapExperience.bosqichma_bosqich")}</h2><p>{lang==="uz"?content.walkUz:content.walkEn}</p>
+  {deep&&<DeepLessonView lang={lang} lesson={deep}/>}
   <h2>{tr(lang,"roadmapExperience.keng_tarqalgan_xatolar")}</h2><ul className="lesson-list">{(lang==="uz"?content.mistakesUz:content.mistakesEn).map(m=><li key={m}>{m}</li>)}</ul>
   <h2>{tr(lang,"roadmapExperience.naqsh_va_maslahatlar")}</h2><p>{lang==="uz"?content.patternUz:content.patternEn}</p><ul className="lesson-list">{(lang==="uz"?content.hintsUz:content.hintsEn).map(h=><li key={h}>{h}</li>)}</ul>
   <h2>{tr(lang,"roadmapExperience.xulosa")}</h2><p>{lang==="uz"?content.recapUz:content.recapEn}</p><p className="muted">{lang==="uz"?content.nextUz:content.nextEn}</p>

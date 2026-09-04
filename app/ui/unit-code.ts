@@ -23,6 +23,9 @@ export const unitCode: Record<string, UnitCode> = {
   "programming-basics-14": { cpp: "void addOne(int &x) { x++; }  // reference: caller's value changes\nvoid f(const vector<int> &a) { /* read-only, no copy */ }", python: "# Python passes references to mutable objects (lists) by default\ndef add_one(lst): lst.append(1)" },
   "programming-basics-15": { cpp: "vector<int> a = {5, 3, 1, 4};\nsort(a.begin(), a.end());\nlong long s = accumulate(a.begin(), a.end(), 0LL);\nint mx = *max_element(a.begin(), a.end());", python: "a = [5, 3, 1, 4]\na.sort()\ns = sum(a)\nmx = max(a)" },
 
+  "programming-basics-16": { cpp: "if (n & 1) { /* toq son */ }\nint half = n >> 1;          // n / 2\nbool on = (mask >> k) & 1;  // k-bit yoqilganmi\nmask |= (1 << k);           // k-bitni yoqish\nmask &= ~(1 << k);          // k-bitni o'chirish\nint bits = __builtin_popcount(mask);", python: "if n & 1:\n    pass                    # toq son\nhalf = n >> 1               # n // 2\non = (mask >> k) & 1        # k-bit yoqilganmi\nmask |= 1 << k              # yoqish\nmask &= ~(1 << k)           # o'chirish\nbits = bin(mask).count('1')" },
+  "programming-basics-17": { cpp: "// cerr judgega bormaydi — debug uchun xavfsiz\ncerr << \"sum = \" << sum << '\\n';\nassert(0 <= i && i < n);", python: "import sys\nprint('debug:', x, file=sys.stderr)   # stderr judgega bormaydi\nassert 0 <= i < n" },
+
   // ---- Foundations & Complexity (15-stage deep track) ----
   "foundations-1": { cpp: "// same answer, wildly different speed:\n// O(n) pass vs O(n^2) all-pairs -- correctness isn't enough, speed matters", python: "# same answer, wildly different speed:\n# O(n) pass vs O(n^2) all-pairs -- correctness isn't enough, speed matters" },
   "foundations-2": { cpp: "// n <= 1e5, t <= 1e4 -> total work must respect sum(n) bound", python: "# n <= 1e5, t <= 1e4 -> check the constraints section first" },

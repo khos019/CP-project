@@ -1942,6 +1942,9 @@ body{font-size:var(--t-body);line-height:1.6}
 .lesson-content p{max-width:68ch;margin:0 0 var(--s4);color:var(--muted)}
 .lesson-list{max-width:68ch;padding-left:1.15em;color:var(--muted)}
 .lesson-list li{margin-bottom:var(--s2)}
+/* Raqamlangan ro'yxat: tartib muhim bo'lgan joyda (tekshiruv ro'yxati, qadamlar). */
+.lesson-list.ol{list-style:decimal;padding-left:1.5em}
+.lesson-list.ol li::marker{color:var(--green);font-variant-numeric:tabular-nums}
 .concept-box{
  display:flex;align-items:center;gap:var(--s3);flex-wrap:wrap;
  background:var(--inset);border-left:3px solid var(--green);
@@ -3012,4 +3015,111 @@ a.editor-escape:hover{color:var(--ink);border-color:var(--line-strong);backgroun
 @media(max-width:600px){
  .ps-head .sub-verdict{min-width:0;width:100%}
  .ps-head .link-btn{margin-left:0}
+}
+
+/* ─── Chuqur dars: bloklar, simulyatsiya, kod izohi ──────────────────── */
+/* Dars endi qisqa xulosa emas — hech narsani bilmagan odam uchun yozilgan
+   to'liq matn. Shuning uchun uning o'z tipografiyasi bor: sarlavhalar,
+   kartochkalar, jadval, rasm va qadamma-qadam ijro etiladigan animatsiya. */
+.deep-section{margin-top:var(--s7)}
+.deep-section>p{max-width:74ch}
+.deep-h{
+ margin:var(--s5) 0 var(--s3);font-size:var(--t-md);font-weight:600;
+ color:var(--ink);letter-spacing:-.01em;
+}
+.deep-math{
+ margin:var(--s4) 0;padding:var(--s4) var(--s5);
+ background:var(--inset);border-left:2px solid var(--green);border-radius:0 var(--r-md) var(--r-md) 0;
+ font-size:var(--t-sm);color:var(--ink);
+}
+.deep-cap{margin-top:calc(var(--s2) * -1);font-size:var(--t-xs)}
+.deep-code{margin:var(--s4) 0}
+
+/* Kartochka: asosiy g'oya, ogohlantirish, maslahat. */
+.callout{
+ margin:var(--s4) 0;padding:var(--s4) var(--s5);
+ border:1px solid var(--line);border-left-width:3px;border-radius:var(--r-md);
+ background:var(--surface-2);
+}
+.callout p{margin:6px 0 0;max-width:70ch}
+.callout-tag{
+ font-size:var(--t-xs);font-weight:600;letter-spacing:.04em;text-transform:uppercase;
+}
+.callout.key{border-left-color:var(--green);background:var(--green-wash)}
+.callout.key .callout-tag{color:var(--green)}
+.callout.warn{border-left-color:var(--bad);background:rgba(255,107,107,.08)}
+.callout.warn .callout-tag{color:var(--bad)}
+.callout.tip{border-left-color:var(--orange);background:var(--orange-wash)}
+.callout.tip .callout-tag{color:var(--orange)}
+
+.deep-table-wrap{margin:var(--s4) 0;overflow-x:auto}
+.deep-table{width:100%;border-collapse:collapse;font-size:var(--t-sm)}
+.deep-table th{
+ text-align:left;padding:9px var(--s4);border-bottom:1px solid var(--line);
+ font-size:var(--t-xs);font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.04em;
+}
+.deep-table td{padding:9px var(--s4);border-bottom:1px solid var(--line-faint);vertical-align:top}
+.deep-table tr:last-child td{border-bottom:0}
+
+/* Simulyatsiya: bitta rasm bitta holatni ko'rsatadi, algoritm esa holatlar
+   ketma-ketligi — shuning uchun bu yerda rasm qadam-baqadam almashadi. */
+.sim{
+ margin:var(--s5) 0;padding:var(--s4);
+ border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surface-2);
+}
+.sim svg{width:100%;height:auto;display:block}
+.sim-head{display:flex;align-items:baseline;justify-content:space-between;gap:var(--s3);margin-bottom:var(--s3)}
+.sim-head b{font-size:var(--t-sm)}
+.sim-count{font-size:var(--t-xs);color:var(--dim)}
+.sim-step{
+ display:flex;gap:var(--s3);align-items:flex-start;
+ margin:var(--s3) 0 0;padding:var(--s3) var(--s4);
+ background:var(--inset);border-radius:var(--r-md);font-size:var(--t-sm);min-height:64px;
+}
+.sim-step-no{
+ flex-shrink:0;width:22px;height:22px;border-radius:var(--r-full);
+ display:grid;place-items:center;background:var(--green);color:#071008;
+ font-size:11px;font-weight:700;
+}
+.sim-bar{display:flex;align-items:center;gap:var(--s3);margin-top:var(--s3);flex-wrap:wrap}
+.sim-bar>button{
+ border:1px solid var(--line);background:var(--surface);color:var(--ink);
+ border-radius:var(--r-sm);padding:6px 12px;font-size:var(--t-sm);
+}
+.sim-bar>button:hover:not(:disabled){border-color:var(--line-strong)}
+.sim-bar>button:disabled{opacity:.35}
+.sim-play{min-width:118px;font-weight:600}
+.sim-dots{display:flex;gap:5px;margin-left:auto}
+.sim-dots button{
+ width:9px;height:9px;padding:0;border-radius:var(--r-full);
+ border:1px solid var(--line-strong);background:transparent;
+}
+.sim-dots button.on{background:var(--green);border-color:var(--green)}
+
+/* Kod izohi: qaysi qator nima qilishini ko'rsatib berish. */
+.walk{margin:var(--s5) 0}
+.walk-hint{font-size:var(--t-xs);color:var(--dim)}
+.walk-code .codeblock-gutter .lit{color:var(--green)}
+/* Faqat rang o'zgaradi, joylashuv emas: display yoki width berilsa, qator
+   ichidagi 
+ blokning ichida qolib, keyingi qator yonma-yon chiqib ketadi. */
+.walk-lit{background:var(--green-wash);border-radius:3px}
+.walk-dim{opacity:.38;transition:opacity var(--dur-fast) var(--ease)}
+.walk-notes{list-style:none;margin:var(--s3) 0 0;padding:0;display:grid;gap:4px}
+.walk-notes button{
+ display:flex;gap:var(--s3);width:100%;text-align:left;
+ padding:9px var(--s3);border:1px solid transparent;border-radius:var(--r-md);
+ background:transparent;color:var(--muted);font-size:var(--t-sm);line-height:1.55;
+}
+.walk-notes button:hover{background:var(--surface-2);color:var(--ink)}
+.walk-notes button.on{background:var(--surface-2);border-color:var(--line);color:var(--ink)}
+.walk-lines{
+ flex-shrink:0;min-width:38px;height:22px;padding:0 6px;border-radius:var(--r-sm);
+ display:grid;place-items:center;background:var(--inset);color:var(--dim);font-size:11px;
+}
+.walk-notes button.on .walk-lines{background:var(--green);color:#071008;font-weight:700}
+.walk-cap{margin-top:var(--s3);font-size:var(--t-xs)}
+@media(max-width:600px){
+ .sim-dots{margin-left:0;width:100%}
+ .walk-notes button{font-size:var(--t-xs)}
 }
