@@ -185,6 +185,73 @@ export async function recordSubmission(entry: {
   }
 }
 
+/* My own submissions for one problem, newest first.
+ *
+ * This reads bank_submissions directly rather than going through
+ * user_submissions: RLS on that table already restricts every row to its
+ * author, so the source code comes back with the row and the problem page can
+ * show "what I sent last time" without a request per entry. Nobody else's code
+ * is reachable this way — the paywalled RPCs stay the only door to that. */
+export type OwnSubmissionRow = {
+  id: string;
+  problem_key: string;
+  problem_title: string;
+  language: "cpp20" | "python3";
+  verdict: string;
+  runtime_ms: number | null;
+  memory_kb: number | null;
+  passed: number | null;
+  total: number | null;
+  created_at: string;
+  source_code: string;
+};
+
+const OWN_COLUMNS = "id,problem_key,problem_title,language,verdict,runtime_ms,memory_kb,passed,total,created_at,source_code";
+
+export async function fetchMySubmissionsFor(
+  problemKey: string,
+  limit = 25,
+): Promise<OwnSubmissionRow[] | "not-migrated" | null> {
+  const r = auth(
+    `bank_submissions?problem_key=eq.${encodeURIComponent(problemKey)}&select=${OWN_COLUMNS}` +
+      `&order=created_at.desc&limit=${limit}`,
+  );
+  if (!r) return null;
+  try {
+    const res = await fetch(r.url, { headers: r.headers });
+    if (res.status === 404) return "not-migrated";
+    if (!res.ok) return null;
+    const rows = await res.json();
+    return Array.isArray(rows) ? (rows as OwnSubmissionRow[]) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Every problem this account has ever sent something for, and how it went.
+    The map the problems list colours itself from — solved beats attempted, and
+    it is the account's answer, so it survives a sign-out on any device. */
+export async function fetchMyProblemStatuses(): Promise<Record<string, "solved" | "attempted"> | null> {
+  const r = auth("bank_submissions?select=problem_key,verdict&limit=2000");
+  if (!r) return null;
+  try {
+    const res = await fetch(r.url, { headers: r.headers });
+    if (!res.ok) return null;
+    const rows = await res.json();
+    if (!Array.isArray(rows)) return null;
+    const map: Record<string, "solved" | "attempted"> = {};
+    for (const row of rows as Array<{ problem_key?: string; verdict?: string }>) {
+      const key = row.problem_key;
+      if (!key) continue;
+      if (row.verdict === "ACCEPTED") map[key] = "solved";
+      else if (map[key] !== "solved") map[key] = "attempted";
+    }
+    return map;
+  } catch {
+    return null;
+  }
+}
+
 type CodeReply = { ok?: boolean; reason?: string; source?: string; language?: string; cost?: number; balance?: number; charged?: number };
 
 const readCode = async (path: string, id: string): Promise<CodeResult> => {

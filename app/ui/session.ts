@@ -101,6 +101,7 @@ export function storeSession(token: string, remember: boolean, userId?: string, 
 
 export function clearSession() {
   if (typeof window === "undefined") return;
+  clearCachedProfile();
   sessionStorage.removeItem(TOKEN_SESSION);
   sessionStorage.removeItem(REFRESH_SESSION);
   sessionStorage.removeItem(USER_ID);
@@ -128,37 +129,103 @@ function tokenExpiry(token: string): number | null {
   }
 }
 
-/** Trades the stored refresh token for a new access token. Null on failure —
-    the refresh token is single-use, so a rejected one means "sign in again". */
-export async function refreshSession(): Promise<string | null> {
+/* Why a failure has to say *which* failure.
+ *
+ * "The server refused this token" and "the request never arrived" used to come
+ * back the same way — as null — and boot treated both as "not signed in", so it
+ * wiped the stored session. A reload cancels in-flight requests, so two quick
+ * refreshes were enough to abort the profile check and sign the learner out of
+ * a session that was perfectly valid. Nothing below ever discards a token for a
+ * network fault; only a real rejection does. */
+export type AuthFailure = "invalid" | "offline";
+type Refreshed = { ok: true; token: string } | { ok: false; reason: AuthFailure };
+
+/* One refresh at a time. Refresh tokens rotate on use, so two calls racing each
+   other means the loser holds a token the server has already retired. */
+let refreshFlight: Promise<Refreshed> | null = null;
+
+async function runRefresh(): Promise<Refreshed> {
   const { url, key } = supabaseConfig();
   const refresh = readRefreshToken();
-  if (!url || !key || !refresh) return null;
+  if (!url || !key) return { ok: false, reason: "offline" };
+  if (!refresh) return { ok: false, reason: "invalid" };
+  let response: Response;
   try {
-    const response = await fetch(`${url}/auth/v1/token?grant_type=refresh_token`, {
+    response = await fetch(`${url}/auth/v1/token?grant_type=refresh_token`, {
       method: "POST",
       headers: { apikey: key, "content-type": "application/json" },
       body: JSON.stringify({ refresh_token: refresh }),
     });
-    if (!response.ok) return null;
-    const result = (await response.json()) as { access_token?: string; refresh_token?: string };
-    if (!result.access_token) return null;
-    const remember = localStorage.getItem(REFRESH_REMEMBER) !== null || localStorage.getItem(TOKEN_REMEMBER) !== null;
-    storeSession(result.access_token, remember, readStoredUserId() || undefined, result.refresh_token);
-    return result.access_token;
   } catch {
-    return null;
+    return { ok: false, reason: "offline" };
   }
+  // 400/401 is the server saying this token is spent or forged. A 5xx is the
+  // server having a bad day, which is not the learner's problem to pay for.
+  if (!response.ok) return { ok: false, reason: response.status >= 500 ? "offline" : "invalid" };
+  const result = (await response.json().catch(() => ({}))) as { access_token?: string; refresh_token?: string };
+  if (!result.access_token) return { ok: false, reason: "offline" };
+  const remember = localStorage.getItem(REFRESH_REMEMBER) !== null || localStorage.getItem(TOKEN_REMEMBER) !== null;
+  storeSession(result.access_token, remember, readStoredUserId() || undefined, result.refresh_token);
+  return { ok: true, token: result.access_token };
+}
+
+export function refreshSessionResult(): Promise<Refreshed> {
+  if (!refreshFlight) refreshFlight = runRefresh().finally(() => { refreshFlight = null; });
+  return refreshFlight;
+}
+
+/** Trades the stored refresh token for a new access token. Null on failure. */
+export async function refreshSession(): Promise<string | null> {
+  const result = await refreshSessionResult();
+  return result.ok ? result.token : null;
+}
+
+type FreshToken = { ok: true; token: string } | { ok: false; reason: AuthFailure };
+export async function freshToken(): Promise<FreshToken> {
+  const token = readToken();
+  if (!token) return { ok: false, reason: "invalid" };
+  const exp = tokenExpiry(token);
+  if (exp === null || exp - EXPIRY_MARGIN_SECONDS > Date.now() / 1000) return { ok: true, token };
+  return refreshSessionResult();
 }
 
 /** A token that is still valid, renewing it first when it is close to expiry.
     Null means there is no usable session left. */
 export async function ensureFreshToken(): Promise<string | null> {
-  const token = readToken();
-  if (!token) return null;
-  const exp = tokenExpiry(token);
-  if (exp === null || exp - EXPIRY_MARGIN_SECONDS > Date.now() / 1000) return token;
-  return refreshSession();
+  const result = await freshToken();
+  return result.ok ? result.token : null;
+}
+
+/* The last profile this browser saw, so a boot that cannot reach the server
+   still knows who is signed in instead of falling back to a guest screen. It is
+   a cache, never an authority: the verified copy replaces it as soon as one
+   arrives, and sign-out removes it. */
+const PROFILE_CACHE = "algoyol-profile-cache";
+export function cacheProfile(profile: Profile) {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(PROFILE_CACHE, JSON.stringify(profile));
+  } catch {}
+}
+export function clearCachedProfile() {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.removeItem(PROFILE_CACHE);
+  } catch {}
+}
+export function readCachedProfile(): Profile | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem(PROFILE_CACHE);
+    if (!raw) return null;
+    const profile = JSON.parse(raw) as Profile;
+    // A cache that outlived its account belongs to nobody.
+    const stored = readStoredUserId();
+    if (!profile?.id || (stored && stored !== profile.id)) return null;
+    return profile;
+  } catch {
+    return null;
+  }
 }
 
 /* Sign-out must not leave the previous learner's work readable by whoever uses
@@ -247,24 +314,59 @@ async function profileColumns() {
 /* Verifies a stored token against Supabase and returns the account it belongs
    to. A null result means "not signed in" — never "signed in with no data",
    which is how the old code ended up rendering invented numbers. */
-export async function fetchProfile(token: string): Promise<Profile | null> {
+export type ProfileFetch = { ok: true; profile: Profile } | { ok: false; reason: AuthFailure };
+
+export async function fetchProfileResult(token: string): Promise<ProfileFetch> {
   const { url, key } = supabaseConfig();
-  if (!url || !key || !token) return null;
+  if (!url || !key) return { ok: false, reason: "offline" };
+  if (!token) return { ok: false, reason: "invalid" };
   const headers = { apikey: key, Authorization: `Bearer ${token}` };
   try {
     const account = await fetch(`${url}/auth/v1/user`, { headers });
-    if (!account.ok) return null;
+    // 401/403 means this token is not a session. Anything else — a 5xx, a
+    // gateway, a request the browser cancelled — is a fault, not a verdict.
+    if (!account.ok) return { ok: false, reason: account.status === 401 || account.status === 403 ? "invalid" : "offline" };
     const user = (await account.json()) as { id?: string; email?: string };
-    if (!user.id) return null;
+    if (!user.id) return { ok: false, reason: "invalid" };
     const columns = await profileColumns();
     const rows = await fetch(`${url}/rest/v1/profiles?id=eq.${user.id}&select=${columns}`, { headers });
-    if (!rows.ok) return null;
+    if (!rows.ok) return { ok: false, reason: "offline" };
     const list = (await rows.json()) as Array<Omit<Profile, "email">>;
-    if (!list.length) return null;
-    return { ...list[0], email: user.email || "" };
+    // A verified token with no profile row is a signup whose bootstrap failed:
+    // there is no account to sign in to.
+    if (!list.length) return { ok: false, reason: "invalid" };
+    const profile = { ...list[0], email: user.email || "" };
+    cacheProfile(profile);
+    return { ok: true, profile };
   } catch {
-    return null;
+    return { ok: false, reason: "offline" };
   }
+}
+
+export async function fetchProfile(token: string): Promise<Profile | null> {
+  const result = await fetchProfileResult(token);
+  return result.ok ? result.profile : null;
+}
+
+/* Boot's single question: who is signed in on this browser?
+ *
+ *   "ok"      — verified against the server just now.
+ *   "invalid" — the stored session is genuinely dead; drop it.
+ *   "offline" — we could not ask. The session stays, and the cached profile
+ *               (when there is one) keeps the learner signed in.
+ */
+export type SessionCheck =
+  | { status: "ok"; profile: Profile }
+  | { status: "invalid" }
+  | { status: "offline"; profile: Profile | null };
+
+export async function verifyStoredSession(): Promise<SessionCheck> {
+  if (!readToken()) return { status: "invalid" };
+  const fresh = await freshToken();
+  if (!fresh.ok) return fresh.reason === "invalid" ? { status: "invalid" } : { status: "offline", profile: readCachedProfile() };
+  const result = await fetchProfileResult(fresh.token);
+  if (result.ok) return { status: "ok", profile: result.profile };
+  return result.reason === "invalid" ? { status: "invalid" } : { status: "offline", profile: readCachedProfile() };
 }
 
 /* Which sign-in methods the backend will actually accept. The Google button

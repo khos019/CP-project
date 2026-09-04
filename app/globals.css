@@ -1569,6 +1569,10 @@ body{font-size:var(--t-body);line-height:1.6}
 .problem-row .rating-chip{font-size:var(--t-xs);font-weight:600}
 .pb-status{color:var(--dim);font-size:13px}
 .pb-status.solved{color:var(--green)}
+/* Urinilgan, lekin yechilmagan — qizil. Yashil "yechdim" degani, qizil esa
+   "urinib ko'rdim, hali bo'lmadi"; belgisi yo'q kulrang doira — hech
+   urinilmagan masala. */
+.pb-status.attempted{color:var(--bad)}
 .difficulty{
  font-size:10px;font-weight:700;letter-spacing:.04em;
  padding:3px 7px;border-radius:var(--r-sm);
@@ -2082,6 +2086,8 @@ body{font-size:var(--t-body);line-height:1.6}
 .pb-name{font-size:var(--t-sm);color:var(--ink);margin-right:var(--s3)}
 .pb-rating{font-size:var(--t-sm);font-weight:600;font-variant-numeric:tabular-nums}
 .pb-table tr.solved .pb-name{color:var(--muted)}
+.pb-table tr.solved td:first-child{box-shadow:inset 2px 0 0 var(--green)}
+.pb-table tr.attempted td:first-child{box-shadow:inset 2px 0 0 var(--bad)}
 
 @media(max-width:1024px){
  .pb-layout{grid-template-columns:1fr}
@@ -2151,7 +2157,16 @@ body{font-size:var(--t-body);line-height:1.6}
 .sample pre{margin:0;font-family:var(--font-mono);font-size:var(--t-sm);color:var(--ink);white-space:pre-wrap}
 .rating-tag{font-family:var(--font-mono);font-weight:600}
 .tag-solved{background:var(--green-wash);color:var(--green)}
-.editor-escape{margin-right:auto;font-size:var(--t-xs)}
+/* Tab qatoridagi havola. .ide-tabs align-items:stretch bo'lgani uchun oddiy
+   .text-link butun balandlikka cho'zilib, pastki chizig'i tab qatorining
+   ostidagi ikkinchi chiziqqa aylanardi — shuning uchun o'z ko'rinishi bor. */
+a.editor-escape{
+ display:inline-flex;align-items:center;align-self:center;
+ margin:0 8px 0 auto;padding:5px 10px;
+ border:1px solid var(--line);border-radius:var(--r-sm);
+ font-size:var(--t-xs);line-height:1;color:var(--dim);white-space:nowrap;
+}
+a.editor-escape:hover{color:var(--ink);border-color:var(--line-strong);background:var(--surface-2)}
 
 /* Judge natijasi modal emas — editor ostidagi panelda, o'z joyida. */
 .verdict{
@@ -2197,10 +2212,12 @@ body{font-size:var(--t-body);line-height:1.6}
 }
 .leader-row:hover{background:var(--surface-2)}
 .leader-row .rank{font-family:var(--font-mono);color:var(--dim);font-size:var(--t-sm)}
-/* Siz — amber chegara bilan ajratilasiz, shunda o'zingizni darhol topasiz. */
+/* Siz — amber chegara bilan ajratilasiz, shunda o'zingizni darhol topasiz.
+   Sticky emas: ro'yxat o'zi scroll konteyner (.leaderboard overflow:hidden),
+   shuning uchun sticky qator top offset'iga surilib, keyingi qatorning ustiga
+   chiqib qolar edi — #1 va #2 bir-birining ustida ko'rinardi. */
 .leader-row.me{
  background:var(--orange-wash);border-left:2px solid var(--orange);
- position:sticky;top:calc(var(--header-h));z-index:2;
 }
 .leaderboard{border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;background:var(--surface)}
 .leader-tools{display:flex;gap:var(--s3);flex-wrap:wrap;margin-bottom:var(--s4)}
@@ -2975,3 +2992,24 @@ body{font-size:var(--t-body);line-height:1.6}
 .mth-sup{top:-.45em}
 .mth-sub{bottom:-.22em}
 .statement .constraints{white-space:pre-line;line-height:1.9}
+
+/* ─── Masala sahifasidagi yuborishlar tarixi ─────────────────────────── */
+/* Muharrir ostida: oxirgi marta nima yuborgani — masalaga qaytgan odam uchun
+   sahifadagi eng foydali narsa. */
+.ps-panel{margin-top:var(--s5)}
+.ps-title{margin:0 0 var(--s4);font-size:var(--t-md)}
+.ps-list{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.ps-item{border-top:1px solid var(--line-faint)}
+.ps-item:first-child{border-top:0}
+.ps-head{
+ display:flex;align-items:center;gap:var(--s4);flex-wrap:wrap;
+ padding:10px 0;font-size:var(--t-sm);
+}
+.ps-head .sub-verdict{min-width:150px}
+.ps-when,.ps-lang,.ps-time{color:var(--dim);font-size:var(--t-xs)}
+.ps-head .link-btn{margin-left:auto}
+.ps-code{padding:0 0 var(--s4);display:grid;gap:var(--s3);justify-items:start}
+@media(max-width:600px){
+ .ps-head .sub-verdict{min-width:0;width:100%}
+ .ps-head .link-btn{margin-left:0}
+}

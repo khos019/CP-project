@@ -13,8 +13,9 @@ import { OnlineDot, onlineAmong } from "./presence";
 import { CodeBlock } from "./CodeBlock";
 import { LockIcon } from "./icons";
 import {
-  addFriend, fetchFriends, fetchSubmissionCode, fetchSubmissions, removeFriend, unlockSubmissionCode,
-  type CodeResult, type FriendRow, type SubmissionRow,
+  addFriend, fetchFriends, fetchMySubmissionsFor, fetchSubmissionCode, fetchSubmissions, removeFriend,
+  unlockSubmissionCode,
+  type CodeResult, type FriendRow, type OwnSubmissionRow, type SubmissionRow,
 } from "./social";
 
 type Lang = "uz" | "en";
@@ -55,6 +56,13 @@ const T = {
     back: "Profilga qaytish",
     backPerson: "Profilga qaytish",
     mySubs: "Yechimlarim",
+    pastTitle: "Oldingi yuborishlaringiz",
+    pastNone: "Bu masalaga hali kod yubormagansiz.",
+    pastFailed: "Oldingi yuborishlarni olib bo'lmadi.",
+    pastSignIn: "Yuborishlar tarixi hisobingizga bog'langan — kiring.",
+    pastShow: "Kodni ko'rish",
+    pastHide: "Yopish",
+    pastReuse: "Muharrirga qo'yish",
     theirSubs: (who: string) => `${who} — yuborilgan yechimlar`,
     openSubs: "Yechimlarini ko‘rish",
     verdicts: {
@@ -98,6 +106,13 @@ const T = {
     back: "Back to profile",
     backPerson: "Back to profile",
     mySubs: "My submissions",
+    pastTitle: "Your earlier submissions",
+    pastNone: "You have not sent any code for this problem yet.",
+    pastFailed: "Could not load your earlier submissions.",
+    pastSignIn: "Submission history lives on your account — sign in to see it.",
+    pastShow: "View code",
+    pastHide: "Close",
+    pastReuse: "Load into the editor",
     theirSubs: (who: string) => `${who} — submissions`,
     openSubs: "See their submissions",
     verdicts: {
@@ -378,6 +393,98 @@ function CodeViewer({
 /* The two screens the profile used to carry inline. They were a scroll away at
    the bottom of a page nobody scrolls, which is the same as not being there:
    both are now a button in the profile header and a URL of their own. */
+
+/* One problem's own history, shown under the editor.
+ *
+ * Every verdict a person gets for a problem is theirs to look back at: what
+ * they tried last time is the most useful thing on the page when they come
+ * back to a problem they failed. The rows come from the account, so they are
+ * still there after a sign-out, and on any other device. The code is their
+ * own, which is why it is opened inline here rather than through the paywalled
+ * viewer that guards other people's solutions. */
+export function ProblemSubmissions({
+  lang, problemKey, signedIn, reloadKey, onReuse,
+}: {
+  lang: Lang;
+  problemKey: string;
+  signedIn: boolean;
+  /** Changes when a new verdict lands, so the list picks it up. */
+  reloadKey?: string;
+  onReuse?: (source: string, language: "cpp20" | "python3") => void;
+}) {
+  const t = T[lang];
+  const [rows, setRows] = useState<OwnSubmissionRow[] | null>(null);
+  const [state, setState] = useState<"loading" | "ready" | "error" | "missing">("loading");
+  const [openId, setOpenId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!signedIn || !problemKey) return;
+    let live = true;
+    const pull = () => {
+      void fetchMySubmissionsFor(problemKey).then((list) => {
+        if (!live) return;
+        if (list === "not-migrated") { setState("missing"); return; }
+        if (!list) { setState("error"); return; }
+        setRows(list);
+        setState("ready");
+      });
+    };
+    pull();
+    /* A verdict is written to the account just after it is shown, so the reload
+       that follows one asks again a moment later rather than racing it. */
+    const id = reloadKey ? window.setTimeout(pull, 1500) : 0;
+    return () => { live = false; if (id) window.clearTimeout(id); };
+  }, [problemKey, signedIn, reloadKey]);
+
+  if (!signedIn) return null;
+
+  return (
+    <section className="panel ps-panel">
+      <h3 className="ps-title">{t.pastTitle}</h3>
+      {state === "loading" && <p className="muted">{t.loading}</p>}
+      {state === "error" && <p className="muted">{t.pastFailed}</p>}
+      {state === "missing" && <p className="muted">{t.missing}</p>}
+      {state === "ready" && rows && !rows.length && <p className="muted">{t.pastNone}</p>}
+      {state === "ready" && rows && rows.length > 0 && (
+        <ul className="ps-list">
+          {rows.map((row) => (
+            <li key={row.id} className="ps-item">
+              <div className="ps-head">
+                <span className={`sub-verdict ${row.verdict === "ACCEPTED" ? "ok" : "bad"}`}>
+                  {t.verdicts[row.verdict] || row.verdict}
+                  {row.passed !== null && row.total !== null && row.verdict !== "ACCEPTED" && (
+                    <small className="mono"> {row.passed}/{row.total}</small>
+                  )}
+                </span>
+                <span className="mono ps-when">{when(row.created_at, lang)}</span>
+                <span className="mono ps-lang">{LANG_LABEL[row.language] || row.language}</span>
+                <span className="mono ps-time">{row.runtime_ms === null ? "—" : `${row.runtime_ms} ms`}</span>
+                <button className="link-btn" onClick={() => setOpenId(openId === row.id ? null : row.id)}>
+                  {openId === row.id ? t.pastHide : t.pastShow}
+                </button>
+              </div>
+              {openId === row.id && (
+                <div className="ps-code">
+                  <CodeBlock
+                    code={row.source_code}
+                    lang={row.language === "python3" ? "python" : "cpp"}
+                    filename={row.language === "python3" ? "main.py" : "main.cpp"}
+                  />
+                  {onReuse && (
+                    <button className="secondary" onClick={() => onReuse(row.source_code, row.language)}>
+                      {t.pastReuse}
+                    </button>
+                  )}
+                </div>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 export function FriendsScreen({
   lang, onBack, onOpenPerson,
 }: {
