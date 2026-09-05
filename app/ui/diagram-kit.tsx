@@ -80,11 +80,21 @@ const R = (x: number, y: number, w: number, h: number, on: boolean) => (
   <rect x={x} y={y} width={w} height={h} rx="5" fill={on ? DC.on : DC.bg} stroke={on ? DC.onLine : DC.dim} strokeWidth="1.5" />
 );
 
+/* Text in these diagrams sits inside boxes of a fixed width, and a label that
+   is wider than its box does not clip — it runs over its neighbour. Rather
+   than trimming the words, the type shrinks until it fits, down to a floor
+   where it would stop being readable. The mono face used here averages about
+   0.62em per character, which is close enough to place a label safely. */
+const CHAR_W = 0.62;
+const textW = (t: string, size: number) => t.length * size * CHAR_W;
+const fit = (t: string, boxW: number, base: number, min = 7.5) =>
+  Math.max(min, Math.min(base, boxW / Math.max(t.length * CHAR_W, 0.001)));
+
 function ArrayView(s: Extract<Spec, { kind: "array" }>) {
   const n = s.values.length, w = Math.min(58, 460 / n), x0 = 260 - (n * w) / 2;
   return <>
     {s.values.map((v, i) => <g key={i}>{R(x0 + i * w, 42, w - 6, 34, !!s.hi?.includes(i))}
-      {T(x0 + i * w + (w - 6) / 2, 64, String(v), s.hi?.includes(i) ? DC.lime : DC.ink, 12)}
+      {T(x0 + i * w + (w - 6) / 2, 64, String(v), s.hi?.includes(i) ? DC.lime : DC.ink, fit(String(v), w - 10, 12))}
       {T(x0 + i * w + (w - 6) / 2, 92, String(i), DC.mute, 10)}</g>)}
     {s.ptr?.map((p, i) => <g key={`p${i}`}>
       <path d={`M${x0 + p.at * w + (w - 6) / 2} 34 L${x0 + p.at * w + (w - 6) / 2} 20`} stroke={p.color || DC.warm} strokeWidth="2" />
@@ -98,9 +108,9 @@ function TwoRow(s: Extract<Spec, { kind: "tworow" }>) {
   return <>
     {s.topName && T(x0 - 14, 44, s.topName, DC.mute, 11, "end")}
     {s.bottomName && T(x0 - 14, 92, s.bottomName, DC.mute, 11, "end")}
-    {s.top.map((v, i) => <g key={`t${i}`}>{R(x0 + i * w, 26, w - 6, 28, false)}{T(x0 + i * w + (w - 6) / 2, 45, String(v), DC.ink, 12)}</g>)}
+    {s.top.map((v, i) => <g key={`t${i}`}>{R(x0 + i * w, 26, w - 6, 28, false)}{T(x0 + i * w + (w - 6) / 2, 45, String(v), DC.ink, fit(String(v), w - 10, 12))}</g>)}
     {s.bottom.map((v, i) => <g key={`b${i}`}>{R(x0 + i * w, 72, w - 6, 28, !!s.hi?.includes(i))}
-      {T(x0 + i * w + (w - 6) / 2, 91, String(v), s.hi?.includes(i) ? DC.lime : DC.ink, 12)}</g>)}
+      {T(x0 + i * w + (w - 6) / 2, 91, String(v), s.hi?.includes(i) ? DC.lime : DC.ink, fit(String(v), w - 10, 12))}</g>)}
     {s.note && T(260, 126, s.note, DC.lime, 12)}
   </>;
 }
@@ -116,7 +126,7 @@ function GridView(s: Extract<Spec, { kind: "grid" }>) {
       {ch === "#" && T(x0 + x * cell + cell / 2 - 1, y0 + y * cell + cell / 2 + 3, "▧", DC.mute, 10)}
       {ch === "*" && T(x0 + x * cell + cell / 2 - 1, y0 + y * cell + cell / 2 + 4, "•", DC.lime, 12)}
     </g>))}
-    {s.note && T(260, y0 + r * cell + 22, s.note, DC.lime, 12)}
+    {s.note && T(260, Math.min(146, y0 + r * cell + 22), s.note, DC.lime, 12)}
   </>;
 }
 
@@ -135,7 +145,9 @@ function GraphView(s: Extract<Spec, { kind: "graph" }>) {
     {s.nodes.map(([x, y, lab], i) => <g key={`n${i}`}>
       <circle cx={x} cy={y} r="16" fill={DC.bg} stroke={palette[i % palette.length]} strokeWidth="2" />
       {T(x, y + 5, lab, palette[i % palette.length], 12)}</g>)}
-    {s.note && T(260, 142, s.note, DC.lime, 12)}
+    {/* A note under the figure only works when the figure leaves room for it;
+        with nodes this low it goes above instead of on top of them. */}
+    {s.note && T(260, Math.max(...s.nodes.map(n => n[1])) > 108 ? 12 : 142, s.note, DC.lime, 12)}
   </>;
 }
 
@@ -157,7 +169,7 @@ function FlowView(s: Extract<Spec, { kind: "flow" }>) {
   return <>
     {s.steps.map((st, i) => <g key={i}>
       <rect x={x0 + i * w} y={48} width={w - 22} height={44} rx="9" fill={DC.bg} stroke={i === 0 ? DC.onLine : DC.dim} strokeWidth="1.6" />
-      {T(x0 + i * w + (w - 22) / 2, 74, st, i === 0 ? DC.lime : DC.ink, 11)}
+      {T(x0 + i * w + (w - 22) / 2, 74, st, i === 0 ? DC.lime : DC.ink, fit(st, w - 28, 11))}
       {i < n - 1 && <path d={`M${x0 + i * w + w - 20} 70 L${x0 + (i + 1) * w - 4} 70`} stroke={DC.line} strokeWidth="1.8" />}
     </g>)}
     {s.note && T(260, 122, s.note, DC.lime, 12)}
@@ -180,17 +192,31 @@ function CurveView(s: Extract<Spec, { kind: "curve" }>) {
 
 function TableView(s: Extract<Spec, { kind: "table" }>) {
   const rows = s.rows.length, cols = s.rows[0].length;
-  const cw = Math.min(62, 400 / cols), ch = Math.min(28, 90 / rows);
-  const x0 = 260 - (cols * cw) / 2, y0 = 22;
+  const ch = Math.min(28, 90 / rows);
+  /* Columns take the width their content asks for. Equal columns look tidy
+     until one holds "= |A| + |B| − |A ∩ B|" and the next holds "67", at which
+     point the long one spills across its neighbour. */
+  const widest = Array.from({ length: cols }, (_, c) =>
+    Math.max(...s.rows.map(r => String(r[c] ?? "").length), 1));
+  const weight = widest.reduce((a, b) => a + b, 0);
+  const avail = 470;
+  const colW = widest.map(w => Math.max(34, (avail * w) / weight));
+  const total = colW.reduce((a, b) => a + b, 0);
+  const scale = total > avail ? avail / total : 1;
+  const w = colW.map(v => v * scale);
+  const left = 260 - w.reduce((a, b) => a + b, 0) / 2;
+  const xOf = (c: number) => left + w.slice(0, c).reduce((a, b) => a + b, 0);
   return <>
     {s.rows.map((row, r) => row.map((v, c) => {
       const on = s.hi ? s.hi[0] === r && s.hi[1] === c : false;
-      return <g key={`${r}-${c}`}>{R(x0 + c * cw, y0 + r * ch, cw - 5, ch - 4, on)}
-        {T(x0 + c * cw + (cw - 5) / 2, y0 + r * ch + ch / 2 + 4, String(v), on ? DC.lime : DC.mute, 11)}</g>;
+      const txt = String(v), boxW = w[c] - 5;
+      return <g key={`${r}-${c}`}>{R(xOf(c), y0T + r * ch, boxW, ch - 4, on)}
+        {T(xOf(c) + boxW / 2, y0T + r * ch + ch / 2 + 4, txt, on ? DC.lime : DC.mute, fit(txt, boxW - 6, 11))}</g>;
     }))}
-    {s.note && T(260, y0 + rows * ch + 24, s.note, DC.lime, 12)}
+    {s.note && T(260, Math.min(148, y0T + rows * ch + 24), s.note, DC.lime, 12)}
   </>;
 }
+const y0T = 22;
 
 const BAR_FILL: Record<BarState, string> = {
   cmp: DC.cool, swap: DC.warm, sorted: "#6fd17a", pivot: DC.pink, key: DC.lime,
@@ -220,7 +246,7 @@ function BarsView(s: Extract<Spec, { kind: "bars" }>) {
       return <g key={"br" + k}>
         <path d={"M" + xa + " 26 L" + xa + " 20 L" + xb + " 20 L" + xb + " 26"}
           stroke={DC.line} strokeWidth="1.3" fill="none" />
-        {T((xa + xb) / 2, 15, b.text, DC.mute, 10)}
+        {T((xa + xb) / 2, 15, b.text, DC.mute, fit(b.text, Math.max(xb - xa, 30), 10))}
       </g>;
     })}
     {s.note && T(260, 145, s.note, DC.lime, 11)}
@@ -268,7 +294,7 @@ function ZonesView(s: Extract<Spec, { kind: "zones" }>) {
       return <g key={"z" + k}>
         <path d={"M" + xa + " 44 L" + xa + " 38 L" + xb + " 38 L" + xb + " 44"}
           stroke={col} strokeWidth="1.4" fill="none" />
-        {T((xa + xb) / 2, 32, z.text, col, 10)}
+        {T((xa + xb) / 2, 32, z.text, col, fit(z.text, Math.max(xb - xa, 30), 10))}
       </g>;
     })}
     {s.values.map((v, i) => {
@@ -276,7 +302,7 @@ function ZonesView(s: Extract<Spec, { kind: "zones" }>) {
       return <g key={i}>
         <rect x={x0 + i * w} y={56} width={w - 6} height={34} rx="5"
           fill={tone && tone !== "dim" ? DC.on : DC.bg} stroke={col} strokeWidth="1.5" />
-        {T(x0 + i * w + (w - 6) / 2, 78, String(v), tone && tone !== "dim" ? col : DC.ink, 12)}
+        {T(x0 + i * w + (w - 6) / 2, 78, String(v), tone && tone !== "dim" ? col : DC.ink, fit(String(v), w - 10, 12))}
         {T(x0 + i * w + (w - 6) / 2, 104, String(i), DC.mute, 9)}
       </g>;
     })}
@@ -299,7 +325,7 @@ function MergeView(s: Extract<Spec, { kind: "merge" }>) {
     {vals.map((v, i) => <g key={name + i}>
       <rect x={x0 + i * w} y={y} width={w - 5} height={25} rx="4"
         fill={i === lit ? DC.on : DC.bg} stroke={i === lit ? col : DC.dim} strokeWidth={i === lit ? 2 : 1.3} />
-      {T(x0 + i * w + (w - 5) / 2, y + 17, String(v), i === lit ? col : DC.ink, 11)}
+      {T(x0 + i * w + (w - 5) / 2, y + 17, String(v), i === lit ? col : DC.ink, fit(String(v), w - 9, 11))}
     </g>)}
   </>;
   return <>
@@ -327,7 +353,7 @@ function BucketsView(s: Extract<Spec, { kind: "buckets" }>) {
         {s.counts[i] > 0 && <rect x={x0 + i * w + 3} y={top + box - fillH - 3} width={w - 14} height={fillH} rx="3"
           fill={on ? "rgba(200,255,118,.22)" : "rgba(122,145,132,.16)"} stroke={col} strokeWidth="1" />}
         {T(x0 + i * w + (w - 8) / 2, top + box - 8, String(s.counts[i]), on ? DC.lime : DC.ink, 12)}
-        {T(x0 + i * w + (w - 8) / 2, top + box + 19, String(k), DC.mute, 11)}
+        {T(x0 + i * w + (w - 8) / 2, top + box + 19, String(k), DC.mute, fit(String(k), w - 8, 11))}
       </g>;
     })}
     {T(x0 - 12, top + box / 2, "soni", DC.mute, 10, "end")}
@@ -395,7 +421,9 @@ function TreeView(s: Extract<Spec, { kind: "tree" }>) {
         {st === "pruned" && T(xOf(n.id) + r + 6, yOf(n) + 4, "✗", TREE_COLOR.pruned, 10)}
       </g>;
     })}
-    {s.note && T(260, 143, s.note, DC.lime, 11)}
+    {/* Deep trees reach the bottom of the canvas, so their note moves up top
+        rather than printing over the last row of nodes. */}
+    {s.note && T(260, 24 + maxDepth * rowH + r + 14 > 148 ? 12 : 24 + maxDepth * rowH + r + 14, s.note, DC.lime, 11)}
   </>;
 }
 
@@ -444,7 +472,7 @@ function CallStackView(s: Extract<Spec, { kind: "callstack" }>) {
       </g>;
     })}
     <line x1="140" y1={baseY + 4} x2="440" y2={baseY + 4} stroke={DC.dim} strokeWidth="1.4" />
-    {T(140, baseY + 18, "main", DC.mute, 10, "start")}
+    {T(16, baseY + 18, "main", DC.mute, 10, "start")}
     {s.ret && T(400, 20, "qaytadi: " + s.ret, "#6fd17a", 11)}
     {s.note && T(260, 144, s.note, DC.lime, 11)}
   </>;
@@ -573,28 +601,34 @@ function PascalView(s: Extract<Spec, { kind: "pascal" }>) {
    arbitrary written down and obvious drawn. */
 function VennView(s: Extract<Spec, { kind: "venn" }>) {
   const three = s.sets.length >= 3;
-  const R = three ? 40 : 44, cy = three ? 68 : 76;
+  /* Every label is placed where nothing else is drawn. The three-set case is
+     the tight one: its lowest circle leaves no room underneath, so the whole
+     figure lifts and that label sits below it with the note above instead. */
+  const R = three ? 31 : 42, cy = three ? 58 : 74;
   const pts: [number, number][] = three
-    ? [[228, cy - 12], [292, cy - 12], [260, cy + 34]]
+    ? [[234, cy], [286, cy], [260, cy + 30]]
     : [[228, cy], [292, cy]];
   const cols = [DC.lime, DC.cool, DC.warm];
+  const labelAt: [number, number][] = three
+    ? [[186, cy - 6], [334, cy - 6], [260, cy + 30 + R + 15]]
+    : [[168, cy + 4], [352, cy + 4]];
   return <>
     {pts.map(([x, y], i) => (
       <circle key={i} cx={x} cy={y} r={R} fill="none" stroke={cols[i]} strokeWidth="1.8" opacity="0.9" />
     ))}
-    {pts.map(([x, y], i) => {
-      const dx = x < 260 ? -R - 6 : x > 260 ? R + 6 : 0;
-      const dy = y > cy ? R + 14 : -R - 6;
-      return T(x + dx, dx === 0 ? y + dy : y - R - 4, s.sets[i], cols[i], 11);
+    {pts.map((_, i) => {
+      const [lx, ly] = labelAt[i];
+      return T(lx, ly, s.sets[i], cols[i], fit(s.sets[i], three ? 92 : 108, 11));
     })}
     {s.counts?.map((c, i) => {
       const spots: [number, number][] = three
-        ? [[212, cy - 20], [308, cy - 20], [260, cy + 46], [260, cy - 22], [232, cy + 16], [288, cy + 16], [260, cy + 8]]
-        : [[224, cy], [296, cy], [260, cy]];
+        ? [[214, cy - 12], [306, cy - 12], [260, cy + 44], [260, cy - 14], [236, cy + 20], [284, cy + 20], [260, cy + 12]]
+        : [[218, cy], [302, cy], [260, cy]];
       const [x, y] = spots[i] || [260, cy];
-      return T(x, y + 4, c, DC.ink, 11);
+      return c ? T(x, y + 4, c, DC.ink, 11) : null;
     })}
-    {s.note && T(260, 148, s.note, DC.lime, 11)}
+    {/* Three sets fill the bottom, so their note goes above the figure. */}
+    {s.note && T(260, three ? 14 : 148, s.note, DC.lime, 11)}
   </>;
 }
 
