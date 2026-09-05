@@ -59,7 +59,21 @@ export type Spec =
   | { kind: "pascal"; label: string; rows: number; hi?: [number, number][];
       note?: string }
   | { kind: "venn"; label: string; sets: string[]; counts?: string[]; note?: string }
-  | { kind: "squares"; label: string; w: number; h: number; note?: string };
+  | { kind: "squares"; label: string; w: number; h: number; note?: string }
+  /* Data structures' own vocabulary. What matters about each of these is a
+     relationship a row of boxes cannot show: which range a node owns, which
+     indices one counter covers, which set a element belongs to, which slot a
+     key hashed into, and which end of a queue is moving. */
+  | { kind: "segtree"; label: string; n: number; hi?: string[]; note?: string }
+  | { kind: "ranges"; label: string; n: number;
+      spans: { at: number; from: number; to: number; text?: string; on?: boolean }[];
+      note?: string }
+  | { kind: "forest"; label: string;
+      nodes: { id: number; parent: number | null; text?: string; state?: TreeState }[];
+      note?: string }
+  | { kind: "hashtable"; label: string; slots: (string[] | null)[]; hi?: number[]; note?: string }
+  | { kind: "queue"; label: string; items: (string | number)[]; front?: number; back?: number;
+      note?: string };
 
 /** How one number of a sieve grid is doing. */
 export type NumState = "prime" | "composite" | "current" | "marked" | "picked";
@@ -662,6 +676,181 @@ function SquaresView(s: Extract<Spec, { kind: "squares" }>) {
   </>;
 }
 
+/* A segment tree drawn over the array it indexes: every node shows the range
+   it owns, which is the one thing the code never says out loud. */
+function SegTreeView(s: Extract<Spec, { kind: "segtree" }>) {
+  const nodes: { l: number; r: number; d: number }[] = [];
+  const build = (l: number, r: number, d: number) => {
+    nodes.push({ l, r, d });
+    if (l === r || d >= 3) return;
+    const m = Math.floor((l + r) / 2);
+    build(l, m, d + 1); build(m + 1, r, d + 1);
+  };
+  build(0, s.n - 1, 0);
+  const maxD = Math.max(...nodes.map(n => n.d));
+  const rowH = maxD >= 3 ? 30 : 38;
+  const key = (n: { l: number; r: number }) => n.l + "-" + n.r;
+  const lit = (n: { l: number; r: number }) => !!s.hi?.includes(key(n));
+  const cellW = Math.min(64, 440 / s.n);
+  const x0 = 260 - (s.n * cellW) / 2;
+  const xOf = (n: { l: number; r: number }) => x0 + ((n.l + n.r + 1) / 2) * cellW;
+  return <>
+    {nodes.map((n, i) => {
+      if (n.d === 0) return null;
+      const parent = nodes.find(p => p.d === n.d - 1 && p.l <= n.l && p.r >= n.r);
+      if (!parent) return null;
+      return <line key={"e" + i} x1={xOf(parent)} y1={18 + (n.d - 1) * rowH + 9}
+        x2={xOf(n)} y2={18 + n.d * rowH - 9} stroke={DC.line} strokeWidth="1.3" />;
+    })}
+    {nodes.map((n, i) => {
+      const w = Math.max(26, (n.r - n.l + 1) * cellW - 8), y = 18 + n.d * rowH;
+      const on = lit(n);
+      const txt = n.l === n.r ? String(n.l) : n.l + ".." + n.r;
+      return <g key={i}>
+        <rect x={xOf(n) - w / 2} y={y - 9} width={w} height={18} rx="4"
+          fill={on ? DC.on : DC.bg} stroke={on ? DC.lime : DC.dim} strokeWidth={on ? 2 : 1.2} />
+        {T(xOf(n), y + 4, txt, on ? DC.lime : DC.mute, fit(txt, w - 6, 10))}
+      </g>;
+    })}
+    {s.note && T(260, Math.min(148, 18 + (maxD + 1) * rowH + 8), s.note, DC.lime, 11)}
+  </>;
+}
+
+/* Which indices one entry is responsible for. A Fenwick tree is impossible to
+   picture without this, and a sparse table only slightly easier. */
+function RangesView(s: Extract<Spec, { kind: "ranges" }>) {
+  const w = Math.min(40, 430 / s.n), x0 = 260 - (s.n * w) / 2;
+  const rows = Math.max(...s.spans.map(sp => sp.at)) + 1;
+  const rowH = Math.min(22, 96 / Math.max(rows, 1));
+  return <>
+    {Array.from({ length: s.n }, (_, i) => (
+      <g key={"c" + i}>
+        <rect x={x0 + i * w} y={18} width={w - 4} height={20} rx="3" fill={DC.bg} stroke={DC.dim} strokeWidth="1.1" />
+        {T(x0 + i * w + (w - 4) / 2, 32, String(i + 1), DC.mute, 10)}
+      </g>
+    ))}
+    {s.spans.map((sp, k) => {
+      const xa = x0 + sp.from * w, xb = x0 + (sp.to + 1) * w - 4;
+      const y = 46 + sp.at * rowH;
+      const col = sp.on ? DC.lime : DC.line;
+      return <g key={k}>
+        <rect x={xa} y={y} width={xb - xa} height={rowH - 5} rx="3"
+          fill={sp.on ? DC.on : DC.bg} stroke={col} strokeWidth={sp.on ? 1.8 : 1.1} />
+        {sp.text && T((xa + xb) / 2, y + rowH / 2 + 2, sp.text, sp.on ? DC.lime : DC.mute,
+          fit(sp.text, xb - xa - 4, 10))}
+      </g>;
+    })}
+    {s.note && T(260, Math.min(148, 46 + rows * rowH + 14), s.note, DC.lime, 11)}
+  </>;
+}
+
+/* Several parent-pointer trees at once: the shape a DSU actually has, and the
+   only way to see a union or a path compression happen. */
+function ForestView(s: Extract<Spec, { kind: "forest" }>) {
+  const roots = s.nodes.filter(n => n.parent === null);
+  const kids = (id: number) => s.nodes.filter(n => n.parent === id);
+  const depth = (n: typeof s.nodes[number]): number => {
+    let d = 0, cur = n;
+    while (cur.parent !== null) {
+      const p = s.nodes.find(x => x.id === cur.parent);
+      if (!p) break;
+      cur = p; ++d;
+    }
+    return d;
+  };
+  const order: number[] = [];
+  const walk = (id: number) => { const c = kids(id); if (!c.length) { order.push(id); return; } c.forEach(x => walk(x.id)); };
+  roots.forEach(r => walk(r.id));
+  const span = Math.min(60, 450 / Math.max(order.length, 1));
+  const x0 = 260 - ((order.length - 1) * span) / 2;
+  const leafX = new Map(order.map((id, i) => [id, x0 + i * span]));
+  const xOf = (id: number): number => {
+    if (leafX.has(id)) return leafX.get(id) as number;
+    const c = kids(id);
+    return c.reduce((a, k) => a + xOf(k.id), 0) / Math.max(c.length, 1);
+  };
+  const maxD = Math.max(...s.nodes.map(depth), 0);
+  const rowH = maxD >= 2 ? 40 : 46;
+  const yOf = (n: typeof s.nodes[number]) => 30 + depth(n) * rowH;
+  return <>
+    {s.nodes.map(n => {
+      if (n.parent === null) return null;
+      const p = s.nodes.find(x => x.id === n.parent);
+      if (!p) return null;
+      return <path key={"e" + n.id}
+        d={"M" + xOf(n.id) + " " + (yOf(n) - 14) + " L" + xOf(p.id) + " " + (yOf(p) + 14)}
+        stroke={n.state === "active" ? DC.lime : DC.line} strokeWidth={n.state === "active" ? 2 : 1.4}
+        markerEnd="url(#fm)" fill="none" />;
+    })}
+    <defs><marker id="fm" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0 0 L6 3 L0 6 z" fill={DC.line} /></marker></defs>
+    {s.nodes.map(n => {
+      const on = n.state === "active" || n.state === "solution";
+      const col = n.state === "solution" ? DC.warm : on ? DC.lime : DC.line;
+      return <g key={n.id}>
+        <circle cx={xOf(n.id)} cy={yOf(n)} r="13" fill={on ? DC.on : DC.bg} stroke={col} strokeWidth={on ? 2.2 : 1.4} />
+        {T(xOf(n.id), yOf(n) + 4, String(n.text ?? n.id), on ? col : DC.ink, 11)}
+      </g>;
+    })}
+    {s.note && T(260, Math.min(148, 30 + (maxD + 1) * rowH + 6), s.note, DC.lime, 11)}
+  </>;
+}
+
+/* Slots with chains hanging off them — a hash table's whole story is which
+   keys landed together. */
+function HashTableView(s: Extract<Spec, { kind: "hashtable" }>) {
+  const n = s.slots.length, w = Math.min(60, 440 / n), x0 = 260 - (n * w) / 2;
+  return <>
+    {s.slots.map((chain, i) => {
+      const on = !!s.hi?.includes(i);
+      const col = on ? DC.lime : DC.dim;
+      return <g key={i}>
+        <rect x={x0 + i * w} y={20} width={w - 6} height={22} rx="3"
+          fill={on ? DC.on : DC.bg} stroke={col} strokeWidth={on ? 2 : 1.2} />
+        {T(x0 + i * w + (w - 6) / 2, 35, String(i), col, 10)}
+        {(chain || []).map((item, k) => (
+          <g key={k}>
+            <line x1={x0 + i * w + (w - 6) / 2} y1={42 + k * 26} x2={x0 + i * w + (w - 6) / 2} y2={50 + k * 26}
+              stroke={DC.line} strokeWidth="1.2" />
+            <rect x={x0 + i * w + 3} y={50 + k * 26} width={w - 12} height={20} rx="3"
+              fill={DC.bg} stroke={on ? DC.lime : DC.line} strokeWidth="1.2" />
+            {T(x0 + i * w + (w - 6) / 2, 64 + k * 26, item, on ? DC.lime : DC.ink, fit(item, w - 16, 10))}
+          </g>
+        ))}
+      </g>;
+    })}
+    {s.note && T(260, 146, s.note, DC.lime, 11)}
+  </>;
+}
+
+/* A queue, with the two ends named. Everything confusing about a deque is
+   which end an operation touches. */
+function QueueView(s: Extract<Spec, { kind: "queue" }>) {
+  const n = Math.max(s.items.length, 1), w = Math.min(58, 420 / n), x0 = 260 - (n * w) / 2;
+  return <>
+    {s.items.map((v, i) => {
+      const isF = s.front === i, isB = s.back === i;
+      const col = isF ? DC.lime : isB ? DC.warm : DC.dim;
+      return <g key={i}>
+        <rect x={x0 + i * w} y={54} width={w - 6} height={32} rx="4"
+          fill={isF || isB ? DC.on : DC.bg} stroke={col} strokeWidth={isF || isB ? 2 : 1.3} />
+        {T(x0 + i * w + (w - 6) / 2, 75, String(v), isF || isB ? col : DC.ink, fit(String(v), w - 12, 12))}
+      </g>;
+    })}
+    {s.front !== undefined && <>
+      <path d={"M" + (x0 + s.front * w + (w - 6) / 2) + " 46 L" + (x0 + s.front * w + (w - 6) / 2) + " 38"}
+        stroke={DC.lime} strokeWidth="2" />
+      {T(x0 + s.front * w + (w - 6) / 2, 32, "front", DC.lime, 10)}
+    </>}
+    {s.back !== undefined && <>
+      <path d={"M" + (x0 + s.back * w + (w - 6) / 2) + " 94 L" + (x0 + s.back * w + (w - 6) / 2) + " 102"}
+        stroke={DC.warm} strokeWidth="2" />
+      {T(x0 + s.back * w + (w - 6) / 2, 116, "back", DC.warm, 10)}
+    </>}
+    {s.note && T(260, 143, s.note, DC.lime, 11)}
+  </>;
+}
+
 /* The drawing on its own, with no figure or caption around it. The step
    player reuses it: a simulation is the same picture redrawn frame by frame,
    and it needs the caption slot for the step's own explanation. */
@@ -689,6 +878,11 @@ export function DiagramBody({ spec }: { spec: Spec }) {
     case "pascal": return <PascalView {...spec} />;
     case "venn": return <VennView {...spec} />;
     case "squares": return <SquaresView {...spec} />;
+    case "segtree": return <SegTreeView {...spec} />;
+    case "ranges": return <RangesView {...spec} />;
+    case "forest": return <ForestView {...spec} />;
+    case "hashtable": return <HashTableView {...spec} />;
+    case "queue": return <QueueView {...spec} />;
   }
 }
 
