@@ -35,7 +35,24 @@ export type Spec =
   | { kind: "merge"; label: string; left: (string | number)[]; right: (string | number)[];
       out: (string | number)[]; li?: number; ri?: number; note?: string }
   | { kind: "buckets"; label: string; keys: (string | number)[]; counts: number[];
-      hi?: number[]; note?: string };
+      hi?: number[]; note?: string }
+  /* Recursion's own vocabulary. What a learner cannot see here is the machine:
+     the frames piling up on the stack, the branch being abandoned, the board
+     state a queen forbids, the bits standing in for a subset. Each of these
+     draws one of those invisible things. */
+  | { kind: "tree"; label: string;
+      nodes: { id: number; parent: number | null; text: string; state?: TreeState; edge?: string }[];
+      note?: string }
+  | { kind: "board"; label: string; cells: string[]; note?: string }
+  | { kind: "callstack"; label: string;
+      frames: { text: string; state?: FrameState }[]; ret?: string; note?: string }
+  | { kind: "bits"; label: string; value: number; width: number;
+      names?: string[]; hi?: number[]; note?: string };
+
+/** How a node of a search tree is taking part in the current step. */
+export type TreeState = "active" | "done" | "pruned" | "solution" | "idle";
+/** A stack frame is either running, waiting for a callee, or finished. */
+export type FrameState = "active" | "waiting" | "returned";
 
 /** How a bar is taking part in the current step. */
 export type BarState = "cmp" | "swap" | "sorted" | "pivot" | "key";
@@ -303,6 +320,145 @@ function BucketsView(s: Extract<Spec, { kind: "buckets" }>) {
   </>;
 }
 
+const TREE_COLOR: Record<TreeState, string> = {
+  active: DC.lime, done: "#6fd17a", pruned: "#7a5a5a", solution: DC.warm, idle: DC.line,
+};
+const FRAME_COLOR: Record<FrameState, string> = {
+  active: DC.lime, waiting: DC.line, returned: "#6fd17a",
+};
+
+/* The search tree, laid out automatically from parent links. Backtracking is
+   a walk over this shape, and drawing it by hand for every step would be
+   unmaintainable — so a node only says who its parent is. */
+function TreeView(s: Extract<Spec, { kind: "tree" }>) {
+  const nodes = s.nodes;
+  const byId = new Map(nodes.map(n => [n.id, n]));
+  const depthOf = (n: typeof nodes[number]): number => {
+    let d = 0, cur = n;
+    while (cur.parent !== null) { const p = byId.get(cur.parent); if (!p) break; cur = p; ++d; }
+    return d;
+  };
+  const kids = (id: number) => nodes.filter(n => n.parent === id);
+  const leaves = nodes.filter(n => kids(n.id).length === 0);
+  const leafX = new Map<number, number>();
+  const span = Math.min(78, 440 / Math.max(leaves.length, 1));
+  const x0 = 260 - ((leaves.length - 1) * span) / 2;
+  leaves.forEach((n, i) => leafX.set(n.id, x0 + i * span));
+  const xOf = (id: number): number => {
+    if (leafX.has(id)) return leafX.get(id) as number;
+    const ch = kids(id);
+    const xs = ch.map(c => xOf(c.id));
+    return xs.reduce((a, b) => a + b, 0) / Math.max(xs.length, 1);
+  };
+  const maxDepth = Math.max(...nodes.map(depthOf), 0);
+  /* A four-level tree has to leave room for the note underneath it, so the
+     rows close up and the discs shrink rather than running off the canvas. */
+  const rowH = maxDepth >= 3 ? 32 : 44;
+  const yOf = (n: typeof nodes[number]) => 22 + depthOf(n) * rowH;
+  const r = maxDepth >= 3 ? 11 : 14;
+
+  return <>
+    {nodes.map(n => {
+      if (n.parent === null) return null;
+      const p = byId.get(n.parent);
+      if (!p) return null;
+      const x1 = xOf(p.id), y1 = yOf(p), x2 = xOf(n.id), y2 = yOf(n);
+      const col = n.state === "pruned" ? TREE_COLOR.pruned : DC.line;
+      return <g key={"e" + n.id}>
+        <line x1={x1} y1={y1 + r} x2={x2} y2={y2 - r} stroke={col} strokeWidth="1.5"
+          strokeDasharray={n.state === "pruned" ? "3 3" : undefined} />
+        {n.edge && T((x1 + x2) / 2 + (x2 > x1 ? 12 : -12), (y1 + y2) / 2 + 3, n.edge, DC.mute, 9)}
+      </g>;
+    })}
+    {nodes.map(n => {
+      const st = n.state || "idle", col = TREE_COLOR[st];
+      const filled = st === "active" || st === "solution";
+      return <g key={"n" + n.id}>
+        <circle cx={xOf(n.id)} cy={yOf(n)} r={r} fill={filled ? DC.on : DC.bg} stroke={col}
+          strokeWidth={filled ? 2.2 : 1.5} strokeDasharray={st === "pruned" ? "3 2" : undefined} />
+        {T(xOf(n.id), yOf(n) + 4, n.text, st === "idle" ? DC.ink : col, r > 12 ? 11 : 10)}
+        {st === "pruned" && T(xOf(n.id) + r + 6, yOf(n) + 4, "✗", TREE_COLOR.pruned, 10)}
+      </g>;
+    })}
+    {s.note && T(260, 143, s.note, DC.lime, 11)}
+  </>;
+}
+
+/* A board, for the problems whose state IS a board: queens, knights, a maze.
+   'Q' a piece, 'x' a square it attacks, '!' a conflict, '*' a candidate. */
+function BoardView(s: Extract<Spec, { kind: "board" }>) {
+  const rows = s.cells.length, cols = s.cells[0]?.length || 1;
+  const cell = Math.min(26, 118 / Math.max(rows, cols));
+  const x0 = 260 - (cols * cell) / 2, y0 = 16;
+  const bg = (ch: string, r: number, c: number) =>
+    ch === "!" ? "rgba(255,107,107,.20)" :
+    ch === "Q" ? "rgba(200,255,118,.18)" :
+    ch === "x" ? "rgba(122,145,132,.13)" :
+    ch === "*" ? "rgba(138,216,255,.14)" :
+    (r + c) % 2 ? "#0f1713" : DC.bg;
+  return <>
+    {s.cells.map((row, r) => row.split("").map((ch, c) => <g key={r + "-" + c}>
+      <rect x={x0 + c * cell} y={y0 + r * cell} width={cell - 1.5} height={cell - 1.5} rx="2"
+        fill={bg(ch, r, c)} stroke={ch === "Q" ? DC.lime : ch === "!" ? "#ff6b6b" : DC.dim}
+        strokeWidth={ch === "Q" || ch === "!" ? 1.6 : 1} />
+      {ch === "Q" && T(x0 + c * cell + cell / 2 - 0.75, y0 + r * cell + cell / 2 + 4, "♛", DC.lime, cell * 0.62)}
+      {ch === "x" && T(x0 + c * cell + cell / 2 - 0.75, y0 + r * cell + cell / 2 + 3, "·", DC.mute, cell * 0.7)}
+      {ch === "!" && T(x0 + c * cell + cell / 2 - 0.75, y0 + r * cell + cell / 2 + 4, "✗", "#ff6b6b", cell * 0.5)}
+      {ch === "*" && T(x0 + c * cell + cell / 2 - 0.75, y0 + r * cell + cell / 2 + 4, "?", DC.cool, cell * 0.5)}
+    </g>))}
+    {s.note && T(260, Math.min(144, y0 + rows * cell + 16), s.note, DC.lime, 11)}
+  </>;
+}
+
+/* The call stack. The one thing a beginner cannot see about recursion is that
+   every call is still sitting there, waiting for the one above it to return. */
+function CallStackView(s: Extract<Spec, { kind: "callstack" }>) {
+  const n = s.frames.length, h = Math.min(21, 118 / Math.max(n, 1));
+  const baseY = 132;
+  return <>
+    {T(16, 20, "chaqiruvlar steki", DC.mute, 10, "start")}
+    {s.frames.map((f, i) => {
+      const st = f.state || "waiting", col = FRAME_COLOR[st];
+      const y = baseY - (i + 1) * (h + 2);
+      const indent = i * 12;
+      return <g key={i}>
+        <rect x={150 + indent} y={y} width={Math.max(90, 250 - indent)} height={h} rx="4"
+          fill={st === "active" ? DC.on : DC.bg} stroke={col} strokeWidth={st === "active" ? 2 : 1.3} />
+        {T(160 + indent, y + h / 2 + 4, f.text, st === "waiting" ? DC.ink : col, 11, "start")}
+        {st === "returned" && T(150 + indent + Math.max(90, 250 - indent) + 10, y + h / 2 + 4, "↩", "#6fd17a", 11, "start")}
+      </g>;
+    })}
+    <line x1="140" y1={baseY + 4} x2="440" y2={baseY + 4} stroke={DC.dim} strokeWidth="1.4" />
+    {T(140, baseY + 18, "main", DC.mute, 10, "start")}
+    {s.ret && T(400, 20, "qaytadi: " + s.ret, "#6fd17a", 11)}
+    {s.note && T(260, 144, s.note, DC.lime, 11)}
+  </>;
+}
+
+/* Bits, for when a subset is being carried inside an integer. Element i is
+   present exactly when bit i is set, and the picture says so directly. */
+function BitsView(s: Extract<Spec, { kind: "bits" }>) {
+  const w = Math.min(46, 400 / s.width), x0 = 260 - (s.width * w) / 2;
+  return <>
+    {Array.from({ length: s.width }, (_, k) => {
+      const bit = s.width - 1 - k;              // MSB on the left, as written
+      const on = ((s.value >> bit) & 1) === 1;
+      const lit = !!s.hi?.includes(bit);
+      const col = lit ? DC.warm : on ? DC.lime : DC.dim;
+      return <g key={k}>
+        <rect x={x0 + k * w} y={44} width={w - 6} height={32} rx="4"
+          fill={on ? DC.on : DC.bg} stroke={col} strokeWidth={lit ? 2.2 : 1.4} />
+        {T(x0 + k * w + (w - 6) / 2, 65, on ? "1" : "0", col, 13)}
+        {T(x0 + k * w + (w - 6) / 2, 92, "bit " + bit, DC.mute, 9)}
+        {s.names?.[bit] && T(x0 + k * w + (w - 6) / 2, 34, s.names[bit], on ? DC.lime : DC.mute, 10)}
+      </g>;
+    })}
+    {T(x0 - 12, 65, "mask", DC.mute, 10, "end")}
+    {T(260, 116, "= " + s.value, DC.ink, 12)}
+    {s.note && T(260, 140, s.note, DC.lime, 11)}
+  </>;
+}
+
 /* The drawing on its own, with no figure or caption around it. The step
    player reuses it: a simulation is the same picture redrawn frame by frame,
    and it needs the caption slot for the step's own explanation. */
@@ -321,6 +477,10 @@ export function DiagramBody({ spec }: { spec: Spec }) {
     case "zones": return <ZonesView {...spec} />;
     case "merge": return <MergeView {...spec} />;
     case "buckets": return <BucketsView {...spec} />;
+    case "tree": return <TreeView {...spec} />;
+    case "board": return <BoardView {...spec} />;
+    case "callstack": return <CallStackView {...spec} />;
+    case "bits": return <BitsView {...spec} />;
   }
 }
 
