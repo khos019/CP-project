@@ -19,7 +19,27 @@ export type Spec =
   | { kind: "stack"; label: string; items: string[]; note?: string }
   | { kind: "flow"; label: string; steps: string[]; note?: string }
   | { kind: "curve"; label: string; note?: string }
-  | { kind: "table"; label: string; rows: (string | number)[][]; hi?: [number, number]; note?: string };
+  | { kind: "table"; label: string; rows: (string | number)[][]; hi?: [number, number]; note?: string }
+  /* Sorting's own vocabulary. Fifteen stages about rearranging one array would
+     otherwise all show the same row of boxes; these give each mechanism the
+     shape it actually has — heights you can compare at a glance, a tree for a
+     heap, labelled regions for an invariant, two streams feeding one, and
+     buckets for counting. */
+  | { kind: "bars"; label: string; values: number[]; state?: Record<number, BarState>;
+      brace?: { from: number; to: number; text: string }[]; note?: string }
+  | { kind: "heap"; label: string; values: (string | number)[]; hi?: number[];
+      edgeHi?: [number, number][]; note?: string }
+  | { kind: "zones"; label: string; values: (string | number)[];
+      zones: { from: number; to: number; text: string; tone?: ZoneTone }[];
+      ptr?: { at: number; text: string; color?: string }[]; note?: string }
+  | { kind: "merge"; label: string; left: (string | number)[]; right: (string | number)[];
+      out: (string | number)[]; li?: number; ri?: number; note?: string }
+  | { kind: "buckets"; label: string; keys: (string | number)[]; counts: number[];
+      hi?: number[]; note?: string };
+
+/** How a bar is taking part in the current step. */
+export type BarState = "cmp" | "swap" | "sorted" | "pivot" | "key";
+export type ZoneTone = "ok" | "warm" | "cool" | "dim";
 
 const T = (x: number, y: number, s: string, fill = DC.ink, size = 13, anchor: "middle" | "start" | "end" = "middle") => (
   <text x={x} y={y} fill={fill} fontSize={size} textAnchor={anchor} fontFamily="ui-monospace, monospace">{s}</text>
@@ -140,20 +160,168 @@ function TableView(s: Extract<Spec, { kind: "table" }>) {
   </>;
 }
 
+const BAR_FILL: Record<BarState, string> = {
+  cmp: DC.cool, swap: DC.warm, sorted: "#6fd17a", pivot: DC.pink, key: DC.lime,
+};
+const ZONE_COLOR: Record<ZoneTone, string> = {
+  ok: "#6fd17a", warm: DC.warm, cool: DC.cool, dim: DC.mute,
+};
+
+/* Heights, not numbers in boxes. The point of a sorting picture is that you
+   can see the order is wrong without reading anything. */
+function BarsView(s: Extract<Spec, { kind: "bars" }>) {
+  const n = s.values.length, w = Math.min(46, 440 / n), x0 = 260 - (n * w) / 2;
+  const mx = Math.max(...s.values, 1), base = 116, maxH = 74;
+  return <>
+    {s.values.map((v, i) => {
+      const h = Math.max(7, Math.round((v / mx) * maxH));
+      const st = s.state?.[i], col = st ? BAR_FILL[st] : DC.dim;
+      return <g key={i}>
+        <rect x={x0 + i * w} y={base - h} width={Math.max(6, w - 7)} height={h} rx="3"
+          fill={st ? col : "#18241e"} stroke={col} strokeWidth="1.4" opacity={st === "sorted" ? 0.85 : 1} />
+        {T(x0 + i * w + (w - 7) / 2, base - h - 5, String(v), st ? col : DC.mute, 10)}
+        {T(x0 + i * w + (w - 7) / 2, base + 14, String(i), DC.mute, 9)}
+      </g>;
+    })}
+    {s.brace?.map((b, k) => {
+      const xa = x0 + b.from * w, xb = x0 + (b.to + 1) * w - 7;
+      return <g key={"br" + k}>
+        <path d={"M" + xa + " 26 L" + xa + " 20 L" + xb + " 20 L" + xb + " 26"}
+          stroke={DC.line} strokeWidth="1.3" fill="none" />
+        {T((xa + xb) / 2, 15, b.text, DC.mute, 10)}
+      </g>;
+    })}
+    {s.note && T(260, 145, s.note, DC.lime, 11)}
+  </>;
+}
+
+/* A heap is an array, but nobody reasons about it as one. Laid out by index:
+   node i sits above 2i+1 and 2i+2. */
+function HeapView(s: Extract<Spec, { kind: "heap" }>) {
+  const place = (i: number): [number, number] => {
+    const lvl = Math.floor(Math.log2(i + 1)), inLvl = i - (2 ** lvl - 1), count = 2 ** lvl;
+    return [40 + (440 / (count + 1)) * (inLvl + 1), 28 + lvl * 44];
+  };
+  const on = (i: number) => !!s.hi?.includes(i);
+  const edgeLit = (a: number, b: number) => !!s.edgeHi?.some(([x, y]) => x === a && y === b);
+  return <>
+    {s.values.map((_, i) => {
+      if (i === 0) return null;
+      const parent = Math.floor((i - 1) / 2);
+      const [x1, y1] = place(parent), [x2, y2] = place(i);
+      return <line key={"e" + i} x1={x1} y1={y1 + 14} x2={x2} y2={y2 - 14}
+        stroke={edgeLit(parent, i) ? DC.lime : DC.line} strokeWidth={edgeLit(parent, i) ? 2.2 : 1.4} />;
+    })}
+    {s.values.map((v, i) => {
+      const [x, y] = place(i);
+      return <g key={"n" + i}>
+        <circle cx={x} cy={y} r="15" fill={on(i) ? DC.on : DC.bg}
+          stroke={on(i) ? DC.lime : DC.line} strokeWidth={on(i) ? 2.2 : 1.5} />
+        {T(x, y + 4, String(v), on(i) ? DC.lime : DC.ink, 12)}
+        {T(x + 21, y - 11, String(i), DC.mute, 8)}
+      </g>;
+    })}
+    {s.note && T(260, 146, s.note, DC.lime, 11)}
+  </>;
+}
+
+/* An array carved into named regions. Every in-place sort is really a claim
+   about which part is already finished — this draws that claim. */
+function ZonesView(s: Extract<Spec, { kind: "zones" }>) {
+  const n = s.values.length, w = Math.min(52, 450 / n), x0 = 260 - (n * w) / 2;
+  const toneOf = (i: number) => s.zones.find(z => i >= z.from && i <= z.to)?.tone;
+  return <>
+    {s.zones.map((z, k) => {
+      const xa = x0 + z.from * w, xb = x0 + (z.to + 1) * w - 6, col = ZONE_COLOR[z.tone || "dim"];
+      return <g key={"z" + k}>
+        <path d={"M" + xa + " 44 L" + xa + " 38 L" + xb + " 38 L" + xb + " 44"}
+          stroke={col} strokeWidth="1.4" fill="none" />
+        {T((xa + xb) / 2, 32, z.text, col, 10)}
+      </g>;
+    })}
+    {s.values.map((v, i) => {
+      const tone = toneOf(i), col = tone ? ZONE_COLOR[tone] : DC.dim;
+      return <g key={i}>
+        <rect x={x0 + i * w} y={56} width={w - 6} height={34} rx="5"
+          fill={tone && tone !== "dim" ? DC.on : DC.bg} stroke={col} strokeWidth="1.5" />
+        {T(x0 + i * w + (w - 6) / 2, 78, String(v), tone && tone !== "dim" ? col : DC.ink, 12)}
+        {T(x0 + i * w + (w - 6) / 2, 104, String(i), DC.mute, 9)}
+      </g>;
+    })}
+    {s.ptr?.map((pt, k) => <g key={"p" + k}>
+      <path d={"M" + (x0 + pt.at * w + (w - 6) / 2) + " 112 L" + (x0 + pt.at * w + (w - 6) / 2) + " 122"}
+        stroke={pt.color || DC.warm} strokeWidth="2" />
+      {T(x0 + pt.at * w + (w - 6) / 2, 136, pt.text, pt.color || DC.warm, 11)}
+    </g>)}
+    {s.note && T(260, 148, s.note, DC.lime, 11)}
+  </>;
+}
+
+/* Two sorted streams feeding one output — the picture merge sort deserves and
+   that a plain two-row diagram cannot give it. */
+function MergeView(s: Extract<Spec, { kind: "merge" }>) {
+  const cells = Math.max(s.left.length, s.right.length, s.out.length, 1);
+  const w = Math.min(40, 330 / cells), x0 = 150;
+  const row = (vals: (string | number)[], y: number, lit: number | undefined, name: string, col: string) => <>
+    {T(x0 - 12, y + 17, name, DC.mute, 10, "end")}
+    {vals.map((v, i) => <g key={name + i}>
+      <rect x={x0 + i * w} y={y} width={w - 5} height={25} rx="4"
+        fill={i === lit ? DC.on : DC.bg} stroke={i === lit ? col : DC.dim} strokeWidth={i === lit ? 2 : 1.3} />
+      {T(x0 + i * w + (w - 5) / 2, y + 17, String(v), i === lit ? col : DC.ink, 11)}
+    </g>)}
+  </>;
+  return <>
+    {row(s.left, 18, s.li, "chap", DC.cool)}
+    {row(s.right, 52, s.ri, "o‘ng", DC.warm)}
+    <path d="M260 84 L260 96" stroke={DC.line} strokeWidth="1.6" />
+    <path d="M254 90 L260 97 L266 90" fill="none" stroke={DC.line} strokeWidth="1.6" />
+    {row(s.out, 102, undefined, "natija", DC.lime)}
+    {s.note && T(260, 148, s.note, DC.lime, 11)}
+  </>;
+}
+
+/* Counting sort compares nothing; it drops values into labelled containers.
+   So the picture is containers, not a row. */
+function BucketsView(s: Extract<Spec, { kind: "buckets" }>) {
+  const n = s.keys.length, w = Math.min(56, 450 / n), x0 = 260 - (n * w) / 2;
+  const mx = Math.max(...s.counts, 1), top = 30, box = 66;
+  return <>
+    {s.keys.map((k, i) => {
+      const on = !!s.hi?.includes(i);
+      const fillH = Math.round((s.counts[i] / mx) * (box - 6));
+      const col = on ? DC.lime : DC.line;
+      return <g key={i}>
+        <rect x={x0 + i * w} y={top} width={w - 8} height={box} rx="4" fill={DC.bg} stroke={col} strokeWidth="1.4" />
+        {s.counts[i] > 0 && <rect x={x0 + i * w + 3} y={top + box - fillH - 3} width={w - 14} height={fillH} rx="3"
+          fill={on ? "rgba(200,255,118,.22)" : "rgba(122,145,132,.16)"} stroke={col} strokeWidth="1" />}
+        {T(x0 + i * w + (w - 8) / 2, top + box - 8, String(s.counts[i]), on ? DC.lime : DC.ink, 12)}
+        {T(x0 + i * w + (w - 8) / 2, top + box + 19, String(k), DC.mute, 11)}
+      </g>;
+    })}
+    {T(x0 - 12, top + box / 2, "soni", DC.mute, 10, "end")}
+    {s.note && T(260, 146, s.note, DC.lime, 11)}
+  </>;
+}
+
 /* The drawing on its own, with no figure or caption around it. The step
    player reuses it: a simulation is the same picture redrawn frame by frame,
    and it needs the caption slot for the step's own explanation. */
 export function DiagramBody({ spec }: { spec: Spec }) {
-  return (
-    spec.kind === "array" ? <ArrayView {...spec} /> :
-    spec.kind === "tworow" ? <TwoRow {...spec} /> :
-    spec.kind === "grid" ? <GridView {...spec} /> :
-    spec.kind === "graph" ? <GraphView {...spec} /> :
-    spec.kind === "stack" ? <StackView {...spec} /> :
-    spec.kind === "flow" ? <FlowView {...spec} /> :
-    spec.kind === "curve" ? <CurveView {...spec} /> :
-    <TableView {...spec} />
-  );
+  switch (spec.kind) {
+    case "array": return <ArrayView {...spec} />;
+    case "tworow": return <TwoRow {...spec} />;
+    case "grid": return <GridView {...spec} />;
+    case "graph": return <GraphView {...spec} />;
+    case "stack": return <StackView {...spec} />;
+    case "flow": return <FlowView {...spec} />;
+    case "curve": return <CurveView {...spec} />;
+    case "table": return <TableView {...spec} />;
+    case "bars": return <BarsView {...spec} />;
+    case "heap": return <HeapView {...spec} />;
+    case "zones": return <ZonesView {...spec} />;
+    case "merge": return <MergeView {...spec} />;
+    case "buckets": return <BucketsView {...spec} />;
+  }
 }
 
 export function DiagramFromSpec({ spec }: { spec: Spec }) {
