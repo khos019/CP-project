@@ -47,7 +47,22 @@ export type Spec =
   | { kind: "callstack"; label: string;
       frames: { text: string; state?: FrameState }[]; ret?: string; note?: string }
   | { kind: "bits"; label: string; value: number; width: number;
-      names?: string[]; hi?: number[]; note?: string };
+      names?: string[]; hi?: number[]; note?: string }
+  /* Number theory's own vocabulary. Arithmetic modulo m is a circle, a sieve
+     is a grid being crossed out, binomials are a triangle, counting overlaps
+     is a Venn diagram, and Euclid's algorithm is a rectangle being peeled
+     into squares. Drawing any of these as a row of boxes loses the idea. */
+  | { kind: "wheel"; label: string; m: number; hi?: number[]; ptr?: number;
+      arc?: [number, number]; centre?: string; note?: string }
+  | { kind: "numgrid"; label: string; from: number; to: number; cols?: number;
+      state?: Record<number, NumState>; note?: string }
+  | { kind: "pascal"; label: string; rows: number; hi?: [number, number][];
+      note?: string }
+  | { kind: "venn"; label: string; sets: string[]; counts?: string[]; note?: string }
+  | { kind: "squares"; label: string; w: number; h: number; note?: string };
+
+/** How one number of a sieve grid is doing. */
+export type NumState = "prime" | "composite" | "current" | "marked" | "picked";
 
 /** How a node of a search tree is taking part in the current step. */
 export type TreeState = "active" | "done" | "pruned" | "solution" | "idle";
@@ -459,6 +474,160 @@ function BitsView(s: Extract<Spec, { kind: "bits" }>) {
   </>;
 }
 
+const NUM_COLOR: Record<NumState, string> = {
+  prime: "#6fd17a", composite: DC.mute, current: DC.lime, marked: DC.warm, picked: DC.cool,
+};
+
+/* Arithmetic modulo m is not a line, it is a circle — and every confusing
+   thing about it (negative remainders, wrap-around, cycles) stops being
+   confusing the moment you see the circle. */
+function WheelView(s: Extract<Spec, { kind: "wheel" }>) {
+  const cx = 260, cy = 78, R = 56;
+  const at = (i: number): [number, number] => {
+    const a = (-Math.PI / 2) + (2 * Math.PI * i) / s.m;
+    return [cx + R * Math.cos(a), cy + R * Math.sin(a)];
+  };
+  return <>
+    <circle cx={cx} cy={cy} r={R} fill="none" stroke={DC.dim} strokeWidth="1.3" />
+    {s.arc && (() => {
+      const [f, t] = s.arc;
+      const [x1, y1] = at(f), [x2, y2] = at(t);
+      const span = ((t - f) % s.m + s.m) % s.m;
+      return <path d={"M" + x1 + " " + y1 + " A " + R + " " + R + " 0 " + (span * 2 > s.m ? 1 : 0) + " 1 " + x2 + " " + y2}
+        fill="none" stroke={DC.warm} strokeWidth="2.4" />;
+    })()}
+    {/* The discs shrink as the modulus grows, so a mod-15 wheel does not
+        collide with itself the way a mod-7 one never would. */}
+    {Array.from({ length: s.m }, (_, i) => {
+      const [x, y] = at(i);
+      const rad = s.m > 12 ? 9 : s.m > 8 ? 10.5 : 12;
+      const on = !!s.hi?.includes(i), isPtr = s.ptr === i;
+      const col = isPtr ? DC.warm : on ? DC.lime : DC.mute;
+      return <g key={i}>
+        <circle cx={x} cy={y} r={rad} fill={on || isPtr ? DC.on : DC.bg} stroke={col} strokeWidth={on || isPtr ? 2 : 1.2} />
+        {T(x, y + 4, String(i), col, s.m > 12 ? 9 : 11)}
+      </g>;
+    })}
+    {s.centre && T(cx, cy + 5, s.centre, DC.ink, 13)}
+    {s.ptr !== undefined && (() => {
+      const [x, y] = at(s.ptr);
+      return <line x1={cx} y1={cy} x2={x - (x - cx) * 0.24} y2={y - (y - cy) * 0.24} stroke={DC.warm} strokeWidth="1.8" />;
+    })()}
+    {s.note && T(260, 148, s.note, DC.lime, 11)}
+  </>;
+}
+
+/* A sieve is a grid of numbers being struck out. Showing which are still
+   standing, which fell, and which multiple is being crossed right now. */
+function NumGridView(s: Extract<Spec, { kind: "numgrid" }>) {
+  const total = s.to - s.from + 1;
+  const cols = s.cols || Math.min(10, total);
+  const rows = Math.ceil(total / cols);
+  const w = Math.min(42, 440 / cols), h = Math.min(24, 112 / rows);
+  const x0 = 260 - (cols * w) / 2, y0 = 18;
+  return <>
+    {Array.from({ length: total }, (_, k) => {
+      const v = s.from + k, r = Math.floor(k / cols), c = k % cols;
+      const st = s.state?.[v], col = st ? NUM_COLOR[st] : DC.dim;
+      const strike = st === "composite" || st === "marked";
+      const x = x0 + c * w, y = y0 + r * h;
+      return <g key={v}>
+        <rect x={x} y={y} width={w - 3} height={h - 3} rx="3"
+          fill={st === "current" || st === "prime" || st === "picked" ? DC.on : DC.bg}
+          stroke={col} strokeWidth={st === "current" ? 2.2 : 1.1} />
+        {T(x + (w - 3) / 2, y + (h - 3) / 2 + 4, String(v), col, 10)}
+        {strike && <line x1={x + 3} y1={y + (h - 3) / 2} x2={x + w - 6} y2={y + (h - 3) / 2}
+          stroke={col} strokeWidth="1.2" />}
+      </g>;
+    })}
+    {s.note && T(260, Math.min(146, y0 + rows * h + 14), s.note, DC.lime, 11)}
+  </>;
+}
+
+/* Pascal's triangle. Every identity about binomial coefficients is visible in
+   it, so the picture does more explaining than the formula does. */
+function PascalView(s: Extract<Spec, { kind: "pascal" }>) {
+  const rows = Math.min(s.rows, 6);
+  const cell = Math.min(46, 300 / rows), rowH = Math.min(22, 118 / rows);
+  const val: number[][] = [];
+  for (let r = 0; r < rows; ++r) {
+    val.push([]);
+    for (let c = 0; c <= r; ++c) val[r].push(c === 0 || c === r ? 1 : val[r - 1][c - 1] + val[r - 1][c]);
+  }
+  const lit = (r: number, c: number) => !!s.hi?.some(([a, b]) => a === r && b === c);
+  return <>
+    {val.map((row, r) => row.map((v, c) => {
+      const x = 260 + (c - r / 2) * cell, y = 22 + r * rowH;
+      const on = lit(r, c);
+      return <g key={r + "-" + c}>
+        <rect x={x - cell / 2 + 3} y={y - rowH / 2 + 2} width={cell - 6} height={rowH - 4} rx="3"
+          fill={on ? DC.on : DC.bg} stroke={on ? DC.lime : DC.dim} strokeWidth={on ? 2 : 1} />
+        {T(x, y + 4, String(v), on ? DC.lime : DC.ink, 10)}
+      </g>;
+    }))}
+    {s.note && T(260, Math.min(146, 22 + rows * rowH + 16), s.note, DC.lime, 11)}
+  </>;
+}
+
+/* Overlapping sets. Inclusion-exclusion is one of those rules that looks
+   arbitrary written down and obvious drawn. */
+function VennView(s: Extract<Spec, { kind: "venn" }>) {
+  const three = s.sets.length >= 3;
+  const R = three ? 40 : 44, cy = three ? 68 : 76;
+  const pts: [number, number][] = three
+    ? [[228, cy - 12], [292, cy - 12], [260, cy + 34]]
+    : [[228, cy], [292, cy]];
+  const cols = [DC.lime, DC.cool, DC.warm];
+  return <>
+    {pts.map(([x, y], i) => (
+      <circle key={i} cx={x} cy={y} r={R} fill="none" stroke={cols[i]} strokeWidth="1.8" opacity="0.9" />
+    ))}
+    {pts.map(([x, y], i) => {
+      const dx = x < 260 ? -R - 6 : x > 260 ? R + 6 : 0;
+      const dy = y > cy ? R + 14 : -R - 6;
+      return T(x + dx, dx === 0 ? y + dy : y - R - 4, s.sets[i], cols[i], 11);
+    })}
+    {s.counts?.map((c, i) => {
+      const spots: [number, number][] = three
+        ? [[212, cy - 20], [308, cy - 20], [260, cy + 46], [260, cy - 22], [232, cy + 16], [288, cy + 16], [260, cy + 8]]
+        : [[224, cy], [296, cy], [260, cy]];
+      const [x, y] = spots[i] || [260, cy];
+      return T(x, y + 4, c, DC.ink, 11);
+    })}
+    {s.note && T(260, 148, s.note, DC.lime, 11)}
+  </>;
+}
+
+/* Euclid's algorithm, the way the Greeks saw it: peel the largest square you
+   can off a rectangle and repeat. The last square is the gcd. */
+function SquaresView(s: Extract<Spec, { kind: "squares" }>) {
+  /* 92, not 104: the rectangle has to leave room for the dimension label and
+     the note beneath it without either clearing the bottom of the canvas. */
+  const scale = Math.min(300 / Math.max(s.w, 1), 92 / Math.max(s.h, 1));
+  const x0 = 260 - (s.w * scale) / 2, y0 = 20;
+  const parts: { x: number; y: number; side: number; i: number }[] = [];
+  let w = s.w, h = s.h, ox = 0, oy = 0, guard = 0;
+  while (w > 0 && h > 0 && guard++ < 40) {
+    const side = Math.min(w, h);
+    if (w >= h) { parts.push({ x: ox, y: oy, side, i: parts.length }); ox += side; w -= side; }
+    else { parts.push({ x: ox, y: oy, side, i: parts.length }); oy += side; h -= side; }
+  }
+  const last = parts.length ? parts[parts.length - 1].side : 0;
+  return <>
+    {parts.map(pt => {
+      const isLast = pt.side === last;
+      return <g key={pt.i}>
+        <rect x={x0 + pt.x * scale} y={y0 + pt.y * scale} width={pt.side * scale} height={pt.side * scale}
+          fill={isLast ? "rgba(200,255,118,.12)" : DC.bg} stroke={isLast ? DC.lime : DC.line} strokeWidth="1.4" />
+        {pt.side * scale > 20 && T(x0 + (pt.x + pt.side / 2) * scale, y0 + (pt.y + pt.side / 2) * scale + 4,
+          String(pt.side), isLast ? DC.lime : DC.mute, 10)}
+      </g>;
+    })}
+    {T(x0 + (s.w * scale) / 2, y0 + s.h * scale + 13, s.w + " × " + s.h, DC.mute, 10)}
+    {s.note && T(260, Math.min(145, y0 + s.h * scale + 30), s.note, DC.lime, 11)}
+  </>;
+}
+
 /* The drawing on its own, with no figure or caption around it. The step
    player reuses it: a simulation is the same picture redrawn frame by frame,
    and it needs the caption slot for the step's own explanation. */
@@ -481,6 +650,11 @@ export function DiagramBody({ spec }: { spec: Spec }) {
     case "board": return <BoardView {...spec} />;
     case "callstack": return <CallStackView {...spec} />;
     case "bits": return <BitsView {...spec} />;
+    case "wheel": return <WheelView {...spec} />;
+    case "numgrid": return <NumGridView {...spec} />;
+    case "pascal": return <PascalView {...spec} />;
+    case "venn": return <VennView {...spec} />;
+    case "squares": return <SquaresView {...spec} />;
   }
 }
 

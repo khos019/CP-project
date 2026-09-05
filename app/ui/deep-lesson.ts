@@ -55,6 +55,7 @@ import { programmingBasicsLessons } from "./lessons/programming-basics";
 import { foundationsLessons } from "./lessons/foundations";
 import { sortingLessons } from "./lessons/sorting";
 import { backtrackingLessons } from "./lessons/backtracking";
+import { mathLessons } from "./lessons/math";
 
 /* One module per roadmap, merged here. Keeping them apart matters: a single
    file holding every deep lesson would be tens of thousands of lines, and the
@@ -64,6 +65,7 @@ export const deepLessons: Record<string, DeepLesson> = {
   ...foundationsLessons,
   ...sortingLessons,
   ...backtrackingLessons,
+  ...mathLessons,
 };
 
 export const deepLessonFor = (unitId: string): DeepLesson | undefined => deepLessons[unitId];
