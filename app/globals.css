@@ -3145,3 +3145,18 @@ a.editor-escape:hover{color:var(--ink);border-color:var(--line-strong);backgroun
  margin:var(--s3) 0 0;padding-top:var(--s3);border-top:1px solid var(--line-faint);
  color:var(--muted);font-size:var(--t-sm);line-height:1.7;
 }
+/* ---------------------------------------------------------------------------
+   Statement layout, Codeforces-shaped.
+
+   Limits go above the legend because they are what decides which algorithm is
+   allowed; a solver who reads them after the constraints has already chosen.
+   --------------------------------------------------------------------------- */
+.statement .limits{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:center;padding:10px 14px;margin:0 0 18px;border-radius:12px;background:#0b1310;border:1px solid #1e2d25;font-size:12.5px;color:#93a49a}
+.statement .limits b{color:#c7d8cd;font-weight:700;margin-right:5px}
+.statement .limits .rating-chip{margin-left:auto;font-family:var(--font-mono);font-weight:800;color:var(--lime);background:rgba(223,255,116,.08);border:1px solid rgba(223,255,116,.22);border-radius:999px;padding:2px 11px}
+.statement ul.constraints{margin:8px 0 0;padding-left:20px;display:grid;gap:5px}
+.statement ul.constraints li{font-family:var(--font-mono);font-size:13px;color:#c7d8cd}
+.statement .sample-head{font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:800;color:var(--lime);margin-bottom:8px}
+.statement .sample-note{margin-top:10px;padding-top:10px;border-top:1px solid #1e2d25}
+.statement .sample-note b{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+.statement .sample-note p{margin:0;font-family:var(--font-sans);font-size:13.5px;line-height:1.6;white-space:normal}

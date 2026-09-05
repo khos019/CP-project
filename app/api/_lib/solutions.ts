@@ -77,9 +77,9 @@ long long q=s/n;if(s%n!=0&&((s<0)!=(n<0)))--q;cout<<q<<"\\n";`),
 
   // ---------------------------------------------------------------- 900
   "gcd-lcm": {
-    solution: cpp(`long long a,b;cin>>a>>b;long long g=__gcd(a,b);cout<<g<<" "<<a/g*b<<"\\n";`),
+    solution: cpp(`long long a,b;cin>>a>>b;long long g=gcd(a,b);cout<<g<<" "<<a/g*b<<"\\n";`),
     // Both numbers are right, in the wrong order.
-    wrong: [cpp(`long long a,b;cin>>a>>b;long long g=__gcd(a,b);cout<<a/g*b<<" "<<g<<"\\n";`)],
+    wrong: [cpp(`long long a,b;cin>>a>>b;long long g=gcd(a,b);cout<<a/g*b<<" "<<g<<"\\n";`)],
   },
   "palindrome-word": {
     solution: cpp(`string s;cin>>s;string r=s;reverse(r.begin(),r.end());cout<<(s==r?"YES":"NO")<<"\\n";`),
