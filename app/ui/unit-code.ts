@@ -134,6 +134,14 @@ export const unitCode: Record<string, UnitCode> = {
   "binary-search-5": { cpp: "double lo=0,hi=1e6;\nfor(int i=0;i<100;++i){double mid=(lo+hi)/2;f(mid)<target?lo=mid:hi=mid;}", python: "lo, hi = 0.0, 1e6\nfor _ in range(100):\n    mid = (lo + hi) / 2\n    if f(mid) < target: lo = mid\n    else: hi = mid" },
   "binary-search-6": { cpp: "// predicate must be monotonic: false...false true...true\nbool pred(long long mid) { return check(mid); }", python: "def pred(mid):\n    return check(mid)  # must stay monotonic across the range" },
 
+  "binary-search-7": { cpp: "int lo=0,hi=n-2;\nwhile(lo<hi){int mid=(lo+hi)/2;a[mid]>a[mid+1]?hi=mid:lo=mid+1;}  // cho'qqi", python: "lo, hi = 0, n - 2\nwhile lo < hi:\n    mid = (lo + hi) // 2\n    if a[mid] > a[mid + 1]: hi = mid\n    else: lo = mid + 1" },
+  "binary-search-8": { cpp: "int r=0,c=m-1;\nwhile(r<n&&c>=0){if(g[r][c]==x)return true;g[r][c]>x?--c:++r;}", python: "r, c = 0, m - 1\nwhile r < n and c >= 0:\n    if g[r][c] == x: break\n    if g[r][c] > x: c -= 1\n    else: r += 1" },
+  "binary-search-9": { cpp: "bool ok(long long t){ return fits(t) && count(t) <= k; }  // kompozit predikat", python: "def ok(t):\n    return fits(t) and count(t) <= k  # composite predicate" },
+  "binary-search-10": { cpp: "// parallel binary search: har so'rov uchun [lo,hi], barchasini birga yuritamiz\nfor(int it=0;it<LOG;++it){ bucket_queries_by_mid(); sweep_structure(); }", python: "# parallel binary search: keep [lo, hi] per query and advance them together\nfor _ in range(LOG):\n    bucket_queries_by_mid(); sweep_structure()" },
+  "binary-search-11": { cpp: "long long hi=1;\nwhile(!pred(hi)) hi*=2;                 // chegarani ikkilantirish\nlong long lo=hi/2;\nwhile(lo+1<hi){long long mid=lo+(hi-lo)/2;pred(mid)?hi=mid:lo=mid;}", python: "hi = 1\nwhile not pred(hi): hi *= 2\nlo = hi // 2\nwhile lo + 1 < hi:\n    mid = (lo + hi) // 2\n    if pred(mid): hi = mid\n    else: lo = mid" },
+  "binary-search-12": { cpp: "long long ans=0;\nfor(int k=62;k>=0;--k){long long nxt=ans|(1LL<<k);if(nxt<=LIMIT&&pred(nxt))ans=nxt;}", python: "ans = 0\nfor k in range(62, -1, -1):\n    nxt = ans | (1 << k)\n    if nxt <= LIMIT and pred(nxt): ans = nxt" },
+  "binary-search-13": { cpp: "// \"minimal x shunday ki P(x)\" -> firstTrue\n// \"javob kasr\"           -> 100 iteratsiya\n// \"cho'qqi bor\"          -> ternary\n// \"chegara noma'lum\"     -> ikkilantirish", python: "# \"minimal x such that P(x)\" -> firstTrue\n# \"real answer\"            -> 100 iterations\n# \"unimodal\"               -> ternary\n# \"unknown bound\"          -> doubling" },
+
   // ---- Greedy Algorithms ----
   "greedy-1": { cpp: "sort(a.begin(), a.end(), greater<int>());  // largest-first greedy choice", python: "a.sort(reverse=True)" },
   "greedy-2": { cpp: "// exchange argument: swapping any two picks never improves the answer", python: "# prove greedy correctness with an exchange argument before coding" },

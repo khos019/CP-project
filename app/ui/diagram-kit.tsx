@@ -73,7 +73,17 @@ export type Spec =
       note?: string }
   | { kind: "hashtable"; label: string; slots: (string[] | null)[]; hi?: number[]; note?: string }
   | { kind: "queue"; label: string; items: (string | number)[]; front?: number; back?: number;
-      note?: string };
+      note?: string }
+  /* Binary search's own vocabulary. What it does is shrink something — an
+     interval on a line, a region of a plot, a corner of a matrix — and the
+     shrinking is the whole idea, so the pictures have to show it. */
+  | { kind: "numberline"; label: string; from: number; to: number;
+      marks?: { at: number; text: string; tone?: "lo" | "hi" | "mid" | "hit" }[];
+      span?: [number, number]; ticks?: number; note?: string }
+  | { kind: "plot"; label: string; values: number[];
+      marks?: { at: number; text: string }[]; drop?: [number, number]; note?: string }
+  | { kind: "matrix"; label: string; rows: (string | number)[][];
+      hi?: [number, number][]; dim?: [number, number][]; note?: string };
 
 /** How one number of a sieve grid is doing. */
 export type NumState = "prime" | "composite" | "current" | "marked" | "picked";
@@ -851,6 +861,94 @@ function QueueView(s: Extract<Spec, { kind: "queue" }>) {
   </>;
 }
 
+const MARK_COLOR: Record<string, string> = {
+  lo: DC.cool, hi: DC.warm, mid: DC.lime, hit: "#6fd17a",
+};
+
+/* A continuous axis. Searching over real numbers or over an unbounded range
+   has no cells to draw, only an interval that keeps halving. */
+function NumberLineView(s: Extract<Spec, { kind: "numberline" }>) {
+  const x0 = 60, x1 = 460, y = 82;
+  const at = (v: number) => x0 + ((v - s.from) / Math.max(s.to - s.from, 1e-9)) * (x1 - x0);
+  const ticks = s.ticks ?? 5;
+  return <>
+    {s.span && (
+      <rect x={at(s.span[0])} y={y - 13} width={Math.max(2, at(s.span[1]) - at(s.span[0]))} height={26}
+        rx="3" fill="rgba(200,255,118,.10)" stroke={DC.onLine} strokeWidth="1.2" />
+    )}
+    <line x1={x0} y1={y} x2={x1} y2={y} stroke={DC.line} strokeWidth="1.6" />
+    {Array.from({ length: ticks + 1 }, (_, i) => {
+      const v = s.from + ((s.to - s.from) * i) / ticks;
+      const x = at(v);
+      const lab = Math.abs(v) >= 1000 ? v.toExponential(0) : String(Math.round(v * 100) / 100);
+      return <g key={i}>
+        <line x1={x} y1={y - 4} x2={x} y2={y + 4} stroke={DC.dim} strokeWidth="1.2" />
+        {T(x, y + 20, lab, DC.mute, 9)}
+      </g>;
+    })}
+    {s.marks?.map((m, i) => {
+      const x = at(m.at), col = MARK_COLOR[m.tone || "mid"];
+      const up = i % 2 === 0;
+      return <g key={"m" + i}>
+        <line x1={x} y1={up ? y - 14 : y + 14} x2={x} y2={up ? y - 30 : y + 30} stroke={col} strokeWidth="2" />
+        <circle cx={x} cy={y} r="4" fill={col} />
+        {T(x, up ? y - 34 : y + 42, m.text, col, 10)}
+      </g>;
+    })}
+    {s.note && T(260, 142, s.note, DC.lime, 11)}
+  </>;
+}
+
+/* A sampled function. Ternary search and peak finding are about the SHAPE of
+   the values, which a row of numbers hides and a curve makes obvious. */
+function PlotView(s: Extract<Spec, { kind: "plot" }>) {
+  const n = s.values.length, x0 = 56, x1 = 464, baseY = 112, h = 76;
+  const mn = Math.min(...s.values), mx = Math.max(...s.values);
+  const xAt = (i: number) => x0 + (i / Math.max(n - 1, 1)) * (x1 - x0);
+  const yAt = (v: number) => baseY - ((v - mn) / Math.max(mx - mn, 1e-9)) * h;
+  const path = s.values.map((v, i) => (i ? "L" : "M") + xAt(i).toFixed(1) + " " + yAt(v).toFixed(1)).join(" ");
+  return <>
+    {s.drop && (
+      <rect x={xAt(s.drop[0])} y={baseY - h - 8} width={Math.max(2, xAt(s.drop[1]) - xAt(s.drop[0]))}
+        height={h + 16} rx="3" fill="rgba(255,107,107,.08)" stroke="#5a3a3a" strokeWidth="1" strokeDasharray="3 3" />
+    )}
+    <line x1={x0 - 6} y1={baseY} x2={x1 + 6} y2={baseY} stroke={DC.dim} strokeWidth="1.3" />
+    <path d={path} fill="none" stroke={DC.cool} strokeWidth="2.2" />
+    {s.values.map((v, i) => <circle key={i} cx={xAt(i)} cy={yAt(v)} r="2.6" fill={DC.cool} />)}
+    {s.marks?.map((m, i) => (
+      <g key={"k" + i}>
+        <line x1={xAt(m.at)} y1={yAt(s.values[m.at])} x2={xAt(m.at)} y2={baseY} stroke={DC.lime} strokeWidth="1.6" />
+        <circle cx={xAt(m.at)} cy={yAt(s.values[m.at])} r="4.5" fill={DC.on} stroke={DC.lime} strokeWidth="2" />
+        {T(xAt(m.at), baseY + 16, m.text, DC.lime, 10)}
+      </g>
+    ))}
+    {s.note && T(260, 144, s.note, DC.lime, 11)}
+  </>;
+}
+
+/* A small matrix with cells you can single out. Searching a sorted matrix is a
+   walk from one corner, and the discarded quadrant is the point. */
+function MatrixView(s: Extract<Spec, { kind: "matrix" }>) {
+  const rows = s.rows.length, cols = s.rows[0].length;
+  const cw = Math.min(56, 380 / cols), chh = Math.min(26, 104 / rows);
+  const x0 = 260 - (cols * cw) / 2, y0 = 18;
+  const isHi = (r: number, c: number) => !!s.hi?.some(([a, b]) => a === r && b === c);
+  const isDim = (r: number, c: number) => !!s.dim?.some(([a, b]) => a === r && b === c);
+  return <>
+    {s.rows.map((row, r) => row.map((v, c) => {
+      const on = isHi(r, c), off = isDim(r, c);
+      const col = on ? DC.lime : off ? "#3a4a42" : DC.dim;
+      return <g key={r + "-" + c}>
+        <rect x={x0 + c * cw} y={y0 + r * chh} width={cw - 4} height={chh - 4} rx="3"
+          fill={on ? DC.on : DC.bg} stroke={col} strokeWidth={on ? 2 : 1.1} opacity={off ? 0.45 : 1} />
+        {T(x0 + c * cw + (cw - 4) / 2, y0 + r * chh + chh / 2 + 3, String(v),
+          on ? DC.lime : off ? "#5a6a62" : DC.ink, fit(String(v), cw - 10, 11))}
+      </g>;
+    }))}
+    {s.note && T(260, Math.min(146, y0 + rows * chh + 16), s.note, DC.lime, 11)}
+  </>;
+}
+
 /* The drawing on its own, with no figure or caption around it. The step
    player reuses it: a simulation is the same picture redrawn frame by frame,
    and it needs the caption slot for the step's own explanation. */
@@ -883,6 +981,9 @@ export function DiagramBody({ spec }: { spec: Spec }) {
     case "forest": return <ForestView {...spec} />;
     case "hashtable": return <HashTableView {...spec} />;
     case "queue": return <QueueView {...spec} />;
+    case "numberline": return <NumberLineView {...spec} />;
+    case "plot": return <PlotView {...spec} />;
+    case "matrix": return <MatrixView {...spec} />;
   }
 }
 
