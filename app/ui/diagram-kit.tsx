@@ -154,7 +154,19 @@ export type Spec =
       pts?: GeoPt[]; segs?: GeoSeg[]; note?: string }
   | { kind: "lattice"; label: string; w: number; h: number;
       poly: [number, number][]; inside?: [number, number][];
-      onEdge?: [number, number][]; note?: string };
+      onEdge?: [number, number][]; note?: string }
+  /* Dynamic programming's own vocabulary. A DP table drawn as a plain grid of
+     numbers hides the only thing that matters — WHICH CELLS FEED WHICH — so
+     the table here draws its dependencies. Digit DP needs the tight prefix
+     made visible, and expectation DP needs branches carrying weights. */
+  | { kind: "dptable"; label: string; rows: (string | number)[][];
+      cur?: [number, number]; deps?: [number, number][];
+      path?: [number, number][]; done?: [number, number][]; note?: string }
+  | { kind: "digits"; label: string; num: string; built?: string;
+      at?: number; tight?: number; note?: string }
+  | { kind: "prob"; label: string; root: string;
+      branches: { p: string; text: string; value?: string }[];
+      expect?: string; note?: string };
 
 export type Box4 = [number, number, number, number];
 export type GeoTone = "ink" | "lime" | "cool" | "warm" | "pink";
@@ -1639,6 +1651,105 @@ function LatticeView(s: Extract<Spec, { kind: "lattice" }>) {
   </>;
 }
 
+/* A DP table that shows its dependencies. Numbers alone tell a learner what
+   the answer was; the arrows tell them where it came from, which is the only
+   part they cannot reconstruct on their own. */
+function DpTableView(s: Extract<Spec, { kind: "dptable" }>) {
+  const nr = s.rows.length, nc = s.rows[0].length;
+  const cw = Math.min(48, 400 / nc), ch = Math.min(24, 104 / nr);
+  const x0 = 260 - (nc * cw) / 2, y0 = 16;
+  const cx = (c: number) => x0 + c * cw + (cw - 4) / 2;
+  const cy = (r: number) => y0 + r * ch + ch / 2;
+  const has = (list: [number, number][] | undefined, r: number, c: number) =>
+    !!list?.some(([a, b]) => a === r && b === c);
+  return <>
+    <defs><marker id="dpm" markerWidth="8" markerHeight="8" refX="7" refY="2.5" orient="auto">
+      <path d="M0 0 L5 2.5 L0 5 z" fill={DC.warm} /></marker></defs>
+    {s.rows.map((row, r) => row.map((v, c) => {
+      const isCur = s.cur?.[0] === r && s.cur?.[1] === c;
+      const isDep = has(s.deps, r, c), isPath = has(s.path, r, c), isDone = has(s.done, r, c);
+      const col = isCur ? DC.lime : isDep ? DC.warm : isPath ? DC.pink : isDone ? DC.onLine : DC.dim;
+      const txt = String(v);
+      return <g key={r + "-" + c}>
+        {txt !== "" && (
+          <rect x={x0 + c * cw} y={y0 + r * ch} width={cw - 4} height={ch - 3} rx="3"
+            fill={isCur || isPath ? DC.on : DC.bg} stroke={col} strokeWidth={isCur ? 2 : 1.1} />
+        )}
+        {T(cx(c), cy(r) + 3, txt, isCur ? DC.lime : isDep ? DC.warm : isPath ? DC.pink : DC.ink,
+          fit(txt, cw - 9, 11))}
+      </g>;
+    }))}
+    {s.cur && s.deps?.map(([r, c], i) => (
+      <line key={"a" + i} x1={cx(c)} y1={cy(r)} x2={cx(s.cur![1])} y2={cy(s.cur![0])}
+        stroke={DC.warm} strokeWidth="1.3" markerEnd="url(#dpm)" opacity="0.85" />
+    ))}
+    {s.note && T(260, Math.min(147, y0 + nr * ch + 16), s.note, DC.lime, 11)}
+  </>;
+}
+
+/* Digit DP is about one thing a row of numbers cannot show: which prefix is
+   still PINNED to the bound, and where the digits become free. */
+function DigitsView(s: Extract<Spec, { kind: "digits" }>) {
+  const d = s.num.split("");
+  const w = Math.min(38, 400 / Math.max(d.length, 1)), x0 = 260 - (d.length * w) / 2;
+  const built = (s.built || "").split("");
+  return <>
+    {d.map((ch, i) => {
+      const pinned = s.tight !== undefined && i < s.tight;
+      const isAt = s.at === i;
+      const col = isAt ? DC.lime : pinned ? DC.warm : DC.dim;
+      return <g key={"n" + i}>
+        <rect x={x0 + i * w} y={22} width={w - 4} height={26} rx="3"
+          fill={isAt ? DC.on : DC.bg} stroke={col} strokeWidth={isAt ? 2 : 1.2} />
+        {T(x0 + i * w + (w - 4) / 2, 40, ch, isAt ? DC.lime : pinned ? DC.warm : DC.ink,
+          fit(ch, w - 8, 13))}
+      </g>;
+    })}
+    {T(x0 - 10, 40, "N", DC.mute, 10, "end")}
+    {s.tight !== undefined && s.tight > 0 && <>
+      <path d={"M " + x0 + " 54 L " + x0 + " 60 L " + (x0 + s.tight * w - 4) + " 60 L " +
+        (x0 + s.tight * w - 4) + " 54"} fill="none" stroke={DC.warm} strokeWidth="1.4" />
+      {T(x0 + (s.tight * w - 4) / 2, 72, "tight", DC.warm, 10)}
+    </>}
+    {built.length > 0 && <>
+      {T(x0 - 10, 100, "x", DC.mute, 10, "end")}
+      {built.map((ch, i) => (
+        <g key={"b" + i}>
+          <rect x={x0 + i * w} y={82} width={w - 4} height={26} rx="3" fill={DC.on}
+            stroke={DC.onLine} strokeWidth="1.4" />
+          {T(x0 + i * w + (w - 4) / 2, 100, ch, DC.lime, fit(ch, w - 8, 13))}
+        </g>
+      ))}
+    </>}
+    {s.note && T(260, 130, s.note, DC.lime, 11)}
+  </>;
+}
+
+/* Expectation is a weighted sum over branches, so the weights have to sit on
+   the branches — a plain tree hides exactly the numbers being averaged. */
+function ProbView(s: Extract<Spec, { kind: "prob" }>) {
+  const n = Math.max(s.branches.length, 1);
+  const ox = 92, oy = 74;
+  const bx = 330;
+  const by = (i: number) => 74 + (i - (n - 1) / 2) * Math.min(34, 100 / n);
+  return <>
+    {s.branches.map((b, i) => (
+      <g key={i}>
+        <line x1={ox + 20} y1={oy} x2={bx - 46} y2={by(i)} stroke={DC.line} strokeWidth="1.5" />
+        {T((ox + 20 + bx - 46) / 2, (oy + by(i)) / 2 - 5, b.p, DC.warm, 10)}
+        <rect x={bx - 44} y={by(i) - 12} width={88} height={24} rx="4" fill={DC.bg}
+          stroke={DC.onLine} strokeWidth="1.3" />
+        {T(bx, by(i) + 4, b.text, DC.ink, fit(b.text, 82, 11))}
+        {b.value && T(bx + 58, by(i) + 4, b.value, DC.lime, 10, "start")}
+      </g>
+    ))}
+    <circle cx={ox} cy={oy} r="20" fill={DC.on} stroke={DC.lime} strokeWidth="1.8" />
+    {T(ox, oy + 4, s.root, DC.lime, fit(s.root, 36, 11))}
+    {s.expect && T(260, 20, s.expect, DC.pink, 11)}
+    {s.note && T(260, 146, s.note, DC.lime, 11)}
+  </>;
+}
+
 /* The drawing on its own, with no figure or caption around it. The step
    player reuses it: a simulation is the same picture redrawn frame by frame,
    and it needs the caption slot for the step's own explanation. */
@@ -1694,6 +1805,9 @@ export function DiagramBody({ spec }: { spec: Spec }) {
     case "sweep": return <SweepView {...spec} />;
     case "circle": return <CircleView {...spec} />;
     case "lattice": return <LatticeView {...spec} />;
+    case "dptable": return <DpTableView {...spec} />;
+    case "digits": return <DigitsView {...spec} />;
+    case "prob": return <ProbView {...spec} />;
   }
 }
 
