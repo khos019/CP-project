@@ -8,6 +8,7 @@
 
 export type PickState = "pick" | "drop" | "idle";
 export type LayerState = "src" | "seen" | "frontier" | "far";
+export type SpanTone = "ok" | "warm" | "cool";
 
 export const DC = {
   dim: "#2b3f34", line: "#4a6b58", ink: "#cfe0d6", lime: "#c8ff76",
@@ -117,7 +118,25 @@ export type Spec =
   | { kind: "rho"; label: string; tail: (string | number)[]; cycle: (string | number)[];
       hi?: number[]; marks?: { at: number; text: string }[]; note?: string }
   | { kind: "bip"; label: string; left: string[]; right: string[];
-      edges: [number, number][]; match?: [number, number][]; note?: string };
+      edges: [number, number][]; match?: [number, number][]; note?: string }
+  /* The strings track's own vocabulary. Everything here happens to a row of
+     characters: a pattern slides under a text, a border is a span that repeats
+     at both ends, a suffix array is a sorted list with LCP between neighbours,
+     a palindrome is a radius around a centre, and an automaton is states with
+     suffix links. A plain array of boxes shows none of that. */
+  | { kind: "align"; label: string; text: string; pat: string; at: number;
+      match?: number; mism?: number; note?: string }
+  | { kind: "strspans"; label: string; text: string;
+      spans: { from: number; to: number; text: string; tone?: SpanTone }[];
+      note?: string }
+  | { kind: "sarray"; label: string;
+      rows: { idx: string | number; suf: string; lcp?: string | number }[];
+      hi?: number[]; note?: string }
+  | { kind: "palin"; label: string; text: string; radii?: number[];
+      centre?: number; note?: string }
+  | { kind: "automaton"; label: string; nodes: [number, number, string][];
+      edges: { from: number; to: number; text?: string }[];
+      links?: [number, number][]; note?: string };
 
 /** How one number of a sieve grid is doing. */
 export type NumState = "prime" | "composite" | "current" | "marked" | "picked";
@@ -1304,6 +1323,142 @@ function BipView(s: Extract<Spec, { kind: "bip" }>) {
   </>;
 }
 
+const SPAN_COLOR: Record<string, string> = { ok: DC.lime, warm: DC.warm, cool: DC.cool };
+
+/* A pattern sitting under a text at some shift. Every matching algorithm in
+   this track is a rule for choosing the NEXT shift, so the shift itself has
+   to be the thing the picture shows. */
+function AlignView(s: Extract<Spec, { kind: "align" }>) {
+  const t = s.text.split(""), pt = s.pat.split("");
+  const w = Math.min(30, 452 / Math.max(t.length, 1)), x0 = 260 - (t.length * w) / 2;
+  const cell = (ch: string, i: number, y: number, col: string, on: boolean) => (
+    <g key={y + "-" + i}>
+      <rect x={x0 + i * w} y={y} width={w - 3} height={26} rx="3"
+        fill={on ? DC.on : DC.bg} stroke={col} strokeWidth={on ? 2 : 1.1} />
+      {T(x0 + i * w + (w - 3) / 2, y + 18, ch, on ? col : DC.ink, fit(ch, w - 6, 13))}
+    </g>
+  );
+  return <>
+    {t.map((ch, i) => cell(ch, i, 26, DC.dim, false))}
+    {pt.map((ch, j) => {
+      const i = s.at + j;
+      const good = s.match !== undefined && j < s.match;
+      const bad = s.mism !== undefined && j === s.mism;
+      return cell(ch, i, 64, bad ? DC.warm : good ? DC.onLine : DC.line, good || bad);
+    })}
+    {t.map((_, i) => <g key={"x" + i}>{T(x0 + i * w + (w - 3) / 2, 110, String(i), DC.mute,
+      Math.min(9, w * 0.5))}</g>)}
+    {s.note && T(260, 138, s.note, DC.lime, 11)}
+  </>;
+}
+
+/* Brackets under a string. Borders, periods and repeated blocks are all
+   claims about which SPANS are equal, and a bracket says that directly. */
+function StrSpansView(s: Extract<Spec, { kind: "strspans" }>) {
+  const t = s.text.split("");
+  const w = Math.min(30, 452 / Math.max(t.length, 1)), x0 = 260 - (t.length * w) / 2;
+  const rowH = Math.min(24, 66 / Math.max(s.spans.length, 1));
+  return <>
+    {t.map((ch, i) => <g key={i}>
+      <rect x={x0 + i * w} y={22} width={w - 3} height={26} rx="3" fill={DC.bg}
+        stroke={DC.dim} strokeWidth="1.1" />
+      {T(x0 + i * w + (w - 3) / 2, 40, ch, DC.ink, fit(ch, w - 6, 13))}
+    </g>)}
+    {s.spans.map((sp, k) => {
+      const xa = x0 + sp.from * w, xb = x0 + (sp.to + 1) * w - 3;
+      const y = 58 + k * rowH, col = SPAN_COLOR[sp.tone || "ok"];
+      return <g key={"s" + k}>
+        <path d={"M " + xa + " " + y + " L " + xa + " " + (y + 6) + " L " + xb + " " + (y + 6) +
+          " L " + xb + " " + y} fill="none" stroke={col} strokeWidth="1.6" />
+        {T((xa + xb) / 2, y + rowH - 2, sp.text, col, fit(sp.text, xb - xa, 10))}
+      </g>;
+    })}
+    {s.note && T(260, Math.min(147, 58 + s.spans.length * rowH + 14), s.note, DC.lime, 11)}
+  </>;
+}
+
+/* The suffix array as it is actually used: sorted suffixes with the length of
+   the shared prefix printed between neighbours. The LCP column is the point —
+   without it the table is just a sort. */
+function SArrayView(s: Extract<Spec, { kind: "sarray" }>) {
+  const n = Math.max(s.rows.length, 1), rowH = Math.min(20, 104 / n), y0 = 34;
+  return <>
+    {T(72, 22, "i", DC.mute, 9)}
+    {T(120, 22, "suffiks", DC.mute, 9, "start")}
+    {T(430, 22, "LCP", DC.mute, 9)}
+    {s.rows.map((r, k) => {
+      const y = y0 + k * rowH, on = !!s.hi?.includes(k);
+      return <g key={k}>
+        <rect x={96} y={y - rowH + 5} width={300} height={rowH - 2} rx="3"
+          fill={on ? DC.on : DC.bg} stroke={on ? DC.onLine : DC.dim} strokeWidth={on ? 1.6 : 1} />
+        {T(72, y, String(r.idx), DC.mute, 10)}
+        {T(104, y, r.suf, on ? DC.lime : DC.ink, fit(r.suf, 288, 12), "start")}
+        {r.lcp !== undefined && T(430, y, String(r.lcp), DC.warm, 10)}
+      </g>;
+    })}
+    {s.note && T(260, Math.min(147, y0 + n * rowH + 12), s.note, DC.lime, 11)}
+  </>;
+}
+
+/* A palindrome is a radius around a centre, so the picture is a bar per
+   position. Manacher's whole trick is reusing a neighbour's bar. */
+function PalinView(s: Extract<Spec, { kind: "palin" }>) {
+  const t = s.text.split("");
+  const w = Math.min(30, 452 / Math.max(t.length, 1)), x0 = 260 - (t.length * w) / 2;
+  const mx = Math.max(...(s.radii || [1]), 1);
+  return <>
+    {t.map((ch, i) => {
+      const on = s.centre === i;
+      return <g key={i}>
+        <rect x={x0 + i * w} y={20} width={w - 3} height={26} rx="3"
+          fill={on ? DC.on : DC.bg} stroke={on ? DC.pink : DC.dim} strokeWidth={on ? 2 : 1.1} />
+        {T(x0 + i * w + (w - 3) / 2, 38, ch, on ? DC.pink : DC.ink, fit(ch, w - 6, 13))}
+      </g>;
+    })}
+    {s.radii?.map((r, i) => {
+      const h = (r / mx) * 52;
+      return <g key={"r" + i}>
+        <rect x={x0 + i * w + 2} y={112 - h} width={Math.max(w - 7, 3)} height={Math.max(h, 1)}
+          rx="2" fill={DC.on} stroke={DC.onLine} strokeWidth="1.1" />
+        {w >= 16 && T(x0 + i * w + (w - 3) / 2, 126, String(r), DC.lime, Math.min(9, w * 0.5))}
+      </g>;
+    })}
+    {s.note && T(260, 145, s.note, DC.lime, 11)}
+  </>;
+}
+
+/* States with two kinds of arrow: transitions you follow on a character, and
+   suffix links you fall back along. Drawing both the same way hides the whole
+   idea behind Aho-Corasick and the suffix automaton. */
+function AutomatonView(s: Extract<Spec, { kind: "automaton" }>) {
+  return <>
+    <defs><marker id="am" markerWidth="9" markerHeight="9" refX="16" refY="3" orient="auto">
+      <path d="M0 0 L6 3 L0 6 z" fill={DC.line} /></marker>
+      <marker id="amL" markerWidth="8" markerHeight="8" refX="15" refY="3" orient="auto">
+      <path d="M0 0 L5 3 L0 6 z" fill={DC.warm} /></marker></defs>
+    {s.links?.map(([a, b], i) => {
+      const [x1, y1] = s.nodes[a], [x2, y2] = s.nodes[b];
+      const mx = (x1 + x2) / 2, my = Math.max(y1, y2) + 26;
+      return <path key={"l" + i} d={"M " + x1 + " " + y1 + " Q " + mx + " " + my + " " + x2 + " " + y2}
+        fill="none" stroke={DC.warm} strokeWidth="1.2" strokeDasharray="4 3" markerEnd="url(#amL)" />;
+    })}
+    {s.edges.map((e, i) => {
+      const [x1, y1] = s.nodes[e.from], [x2, y2] = s.nodes[e.to];
+      const dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy) || 1;
+      return <g key={"e" + i}>
+        <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={DC.line} strokeWidth="1.5" markerEnd="url(#am)" />
+        {e.text && T((x1 + x2) / 2 - (dy / len) * 10, (y1 + y2) / 2 + (dx / len) * 10 - 3,
+          e.text, DC.cool, 10)}
+      </g>;
+    })}
+    {s.nodes.map(([x, y, lab], i) => <g key={"n" + i}>
+      <circle cx={x} cy={y} r="14" fill={DC.bg} stroke={DC.onLine} strokeWidth="1.8" />
+      {T(x, y + 4, lab, DC.ink, fit(lab, 24, 11))}
+    </g>)}
+    {s.note && T(260, 146, s.note, DC.lime, 11)}
+  </>;
+}
+
 /* The drawing on its own, with no figure or caption around it. The step
    player reuses it: a simulation is the same picture redrawn frame by frame,
    and it needs the caption slot for the step's own explanation. */
@@ -1349,6 +1504,11 @@ export function DiagramBody({ spec }: { spec: Spec }) {
     case "flownet": return <FlowNetView {...spec} />;
     case "rho": return <RhoView {...spec} />;
     case "bip": return <BipView {...spec} />;
+    case "align": return <AlignView {...spec} />;
+    case "strspans": return <StrSpansView {...spec} />;
+    case "sarray": return <SArrayView {...spec} />;
+    case "palin": return <PalinView {...spec} />;
+    case "automaton": return <AutomatonView {...spec} />;
   }
 }
 
