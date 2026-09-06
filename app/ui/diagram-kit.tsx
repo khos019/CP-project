@@ -6,6 +6,8 @@
 // showed the same image. These are primitives instead: a unit supplies a small
 // spec and gets its own picture. All original SVG.
 
+export type PickState = "pick" | "drop" | "idle";
+
 export const DC = {
   dim: "#2b3f34", line: "#4a6b58", ink: "#cfe0d6", lime: "#c8ff76",
   warm: "#ffbd8f", cool: "#8ad8ff", pink: "#f5a6ff", mute: "#7d8f85", bg: "#0d1310", on: "#12261a", onLine: "#3f7a44",
@@ -83,7 +85,22 @@ export type Spec =
   | { kind: "plot"; label: string; values: number[];
       marks?: { at: number; text: string }[]; drop?: [number, number]; note?: string }
   | { kind: "matrix"; label: string; rows: (string | number)[][];
-      hi?: [number, number][]; dim?: [number, number][]; note?: string };
+      hi?: [number, number][]; dim?: [number, number][]; note?: string }
+  /* Greedy's own vocabulary. A greedy algorithm is a sequence of commitments,
+     and every classic one commits to a different kind of thing: a slot on a
+     timeline, a swap that proves a choice was safe, a value-per-kilogram, a
+     lead that is never given up, a stack that throws away what it regrets. */
+  | { kind: "timeline"; label: string; from: number; to: number;
+      items: { s: number; e: number; text?: string; state?: PickState }[];
+      cut?: { at: number; text: string }; note?: string }
+  | { kind: "exchange"; label: string; opt: (string | number)[]; greedy: (string | number)[];
+      swap?: [number, number]; optName?: string; greedyName?: string; note?: string }
+  | { kind: "ratio"; label: string; items: { w: number; v: number; text?: string }[];
+      cap?: number; note?: string }
+  | { kind: "stairs"; label: string; a: number[]; b: number[];
+      aName?: string; bName?: string; note?: string }
+  | { kind: "mstack"; label: string; kept: (string | number)[]; popped?: (string | number)[];
+      incoming?: string; note?: string };
 
 /** How one number of a sieve grid is doing. */
 export type NumState = "prime" | "composite" | "current" | "marked" | "picked";
@@ -949,6 +966,164 @@ function MatrixView(s: Extract<Spec, { kind: "matrix" }>) {
   </>;
 }
 
+const PICK_COLOR: Record<string, string> = { pick: DC.lime, drop: "#8a5a5a", idle: DC.line };
+
+/* Intervals on a real time axis. Activity selection, interval merging and
+   deadline scheduling all argue about WHEN things sit next to each other,
+   which a row of boxes cannot show and a timeline shows immediately. */
+function TimelineView(s: Extract<Spec, { kind: "timeline" }>) {
+  const x0 = 48, x1 = 472, n = Math.max(s.items.length, 1);
+  const rowH = Math.min(22, 88 / n);
+  const at = (v: number) => x0 + ((v - s.from) / Math.max(s.to - s.from, 1e-9)) * (x1 - x0);
+  const axisY = 18 + n * rowH + 8;
+  return <>
+    {s.cut && <>
+      <line x1={at(s.cut.at)} y1={16} x2={at(s.cut.at)} y2={axisY} stroke={DC.warm}
+        strokeWidth="1.4" strokeDasharray="4 3" />
+      {T(at(s.cut.at), 13, s.cut.text, DC.warm, 10)}
+    </>}
+    {s.items.map((it, i) => {
+      const xa = at(it.s), xb = Math.max(at(it.e), xa + 8);
+      const y = 18 + i * rowH, col = PICK_COLOR[it.state || "idle"];
+      const picked = it.state === "pick";
+      return <g key={i}>
+        <rect x={xa} y={y} width={xb - xa} height={rowH - 5} rx="3"
+          fill={picked ? DC.on : DC.bg} stroke={col} strokeWidth={picked ? 2 : 1.2}
+          opacity={it.state === "drop" ? 0.6 : 1} strokeDasharray={it.state === "drop" ? "3 3" : undefined} />
+        {it.text && T((xa + xb) / 2, y + (rowH - 5) / 2 + 3, it.text,
+          picked ? DC.lime : it.state === "drop" ? "#a97b7b" : DC.ink,
+          fit(it.text, xb - xa - 4, 10))}
+      </g>;
+    })}
+    <line x1={x0} y1={axisY} x2={x1} y2={axisY} stroke={DC.line} strokeWidth="1.4" />
+    {Array.from({ length: 5 }, (_, i) => {
+      const v = s.from + ((s.to - s.from) * i) / 4, x = at(v);
+      return <g key={"t" + i}>
+        <line x1={x} y1={axisY - 3} x2={x} y2={axisY + 3} stroke={DC.dim} strokeWidth="1.1" />
+        {T(x, axisY + 14, String(Math.round(v * 10) / 10), DC.mute, 9)}
+      </g>;
+    })}
+    {s.note && T(260, Math.min(147, axisY + 30), s.note, DC.lime, 11)}
+  </>;
+}
+
+/* The exchange argument, drawn. Two solutions side by side and the single
+   swap that turns one into the other: that swap IS the proof, and a learner
+   who sees it stops treating greedy correctness as a matter of faith. */
+function ExchangeView(s: Extract<Spec, { kind: "exchange" }>) {
+  const n = Math.max(s.opt.length, s.greedy.length);
+  const w = Math.min(48, 380 / Math.max(n, 1)), x0 = 300 - (n * w) / 2;
+  const row = (vals: (string | number)[], y: number, hi: number[]) => vals.map((v, i) => (
+    <g key={y + "-" + i}>
+      {R(x0 + i * w, y, w - 5, 26, hi.includes(i))}
+      {T(x0 + i * w + (w - 5) / 2, y + 17, String(v), hi.includes(i) ? DC.lime : DC.ink,
+        fit(String(v), w - 11, 12))}
+    </g>
+  ));
+  const sw = s.swap;
+  const cx = (i: number) => x0 + i * w + (w - 5) / 2;
+  return <>
+    {T(8, 71, s.optName || "OPT", DC.mute, 10, "start")}
+    {T(8, 119, s.greedyName || "greedy", DC.mute, 10, "start")}
+    {row(s.opt, 54, sw ? [sw[0], sw[1]] : [])}
+    {row(s.greedy, 102, [])}
+    {sw && <>
+      <path d={"M " + cx(sw[0]) + " 50 C " + cx(sw[0]) + " 26, " + cx(sw[1]) + " 26, " + cx(sw[1]) + " 50"}
+        fill="none" stroke={DC.warm} strokeWidth="1.6" />
+      {T((cx(sw[0]) + cx(sw[1])) / 2, 24, "almashtiramiz", DC.warm, 10)}
+    </>}
+    {s.note && T(260, 145, s.note, DC.lime, 11)}
+  </>;
+}
+
+/* Value per kilogram, as area. Fractional knapsack is the one greedy whose
+   correctness you can literally see: sort the blocks by height and fill from
+   the left, and no rearrangement can put more area under the same width. */
+function RatioView(s: Extract<Spec, { kind: "ratio" }>) {
+  const baseY = 116, totalW = s.items.reduce((t, it) => t + it.w, 0) || 1;
+  const scale = 400 / Math.max(totalW, s.cap || 0);
+  const maxR = Math.max(...s.items.map(it => it.v / it.w), 1e-9);
+  let x = 56;
+  const bars = s.items.map((it, i) => {
+    const bw = it.w * scale, h = Math.max(10, (it.v / it.w / maxR) * 80);
+    const topY = baseY - h, bx = x; x += bw;
+    return <g key={i}>
+      <rect x={bx} y={topY} width={Math.max(bw - 3, 4)} height={h} rx="3"
+        fill={DC.on} stroke={DC.onLine} strokeWidth="1.4" />
+      {T(bx + (bw - 3) / 2, Math.max(34, topY - 5),
+        String(Math.round((it.v / it.w) * 10) / 10), DC.lime, fit(String(it.v / it.w), bw - 4, 10))}
+      {it.text && T(bx + (bw - 3) / 2, baseY + 15, it.text, DC.mute, fit(it.text, bw - 2, 10))}
+    </g>;
+  });
+  const capX = 56 + (s.cap || 0) * scale;
+  return <>
+    {T(6, 74, "qiymat/kg", DC.mute, 8, "start")}
+    {bars}
+    <line x1={50} y1={baseY} x2={470} y2={baseY} stroke={DC.line} strokeWidth="1.4" />
+    {s.cap !== undefined && <>
+      <line x1={capX} y1={30} x2={capX} y2={baseY + 6} stroke={DC.warm} strokeWidth="1.6" strokeDasharray="4 3" />
+      {T(capX, 18, "sig‘im", DC.warm, 10)}
+    </>}
+    {s.note && T(260, 146, s.note, DC.lime, 11)}
+  </>;
+}
+
+/* Two running totals, step by step. "Stays ahead" is a claim about every
+   prefix at once, so the picture has to be two curves, never two numbers. */
+function StairsView(s: Extract<Spec, { kind: "stairs" }>) {
+  const n = Math.max(s.a.length, s.b.length), x0 = 60, x1 = 468, baseY = 116;
+  const mx = Math.max(...s.a, ...s.b, 1);
+  const xAt = (i: number) => x0 + (i / Math.max(n - 1, 1)) * (x1 - x0);
+  const yAt = (v: number) => baseY - (v / mx) * 74;
+  const step = (vals: number[]) => vals.map((v, i) =>
+    (i ? "L " + xAt(i) + " " + yAt(vals[i - 1]) + " L " + xAt(i) + " " + yAt(v)
+       : "M " + xAt(0) + " " + yAt(v))).join(" ");
+  return <>
+    <line x1={x0 - 8} y1={baseY} x2={x1 + 4} y2={baseY} stroke={DC.dim} strokeWidth="1.3" />
+    <path d={step(s.b)} fill="none" stroke={DC.line} strokeWidth="2" strokeDasharray="5 3" />
+    <path d={step(s.a)} fill="none" stroke={DC.lime} strokeWidth="2.4" />
+    {s.a.map((v, i) => <circle key={i} cx={xAt(i)} cy={yAt(v)} r="2.8" fill={DC.lime} />)}
+    {Array.from({ length: n }, (_, i) => <g key={"x" + i}>{T(xAt(i), baseY + 15, String(i + 1), DC.mute, 9)}</g>)}
+    <line x1={92} y1={22} x2={116} y2={22} stroke={DC.lime} strokeWidth="2.4" />
+    {T(122, 26, s.aName || "greedy", DC.lime, 10, "start")}
+    <line x1={280} y1={22} x2={304} y2={22} stroke={DC.line} strokeWidth="2" strokeDasharray="5 3" />
+    {T(310, 26, s.bName || "optimal", DC.mute, 10, "start")}
+    {s.note && T(260, 146, s.note, DC.lime, 11)}
+  </>;
+}
+
+/* A stack that regrets. Lexicographic greedy keeps a monotone prefix and
+   throws away everything it now wishes it had not taken — the discarded
+   items have to stay visible, or the rule looks arbitrary. */
+function MStackView(s: Extract<Spec, { kind: "mstack" }>) {
+  const kept = s.kept, popped = s.popped || [];
+  const total = kept.length + popped.length + (s.incoming ? 1 : 0);
+  const w = Math.min(46, 400 / Math.max(total, 1)), y = 62;
+  const x0 = 260 - (total * w) / 2;
+  const box = (v: string | number, i: number, tone: "kept" | "pop" | "in") => {
+    const x = x0 + i * w;
+    const col = tone === "kept" ? DC.onLine : tone === "pop" ? "#8a5a5a" : DC.cool;
+    return <g key={tone + i}>
+      <rect x={x} y={y} width={w - 5} height={28} rx="4" fill={tone === "kept" ? DC.on : DC.bg}
+        stroke={col} strokeWidth={tone === "kept" ? 1.8 : 1.3}
+        strokeDasharray={tone === "pop" ? "3 3" : undefined} opacity={tone === "pop" ? 0.65 : 1} />
+      {T(x + (w - 5) / 2, y + 19, String(v),
+        tone === "kept" ? DC.lime : tone === "pop" ? "#a97b7b" : DC.cool, fit(String(v), w - 11, 13))}
+    </g>;
+  };
+  const mid = (from: number, count: number) => x0 + from * w + (count * w - 5) / 2;
+  return <>
+    {kept.map((v, i) => box(v, i, "kept"))}
+    {popped.map((v, i) => box(v, kept.length + i, "pop"))}
+    {s.incoming && box(s.incoming, total - 1, "in")}
+    {kept.length > 0 && T(mid(0, kept.length), y - 12, "stek", DC.lime, fit("stek", kept.length * w, 10))}
+    {popped.length > 0 && T(mid(kept.length, popped.length), y - 12, "chiqarildi", "#a97b7b",
+      fit("chiqarildi", popped.length * w, 10))}
+    {s.incoming && T(mid(total - 1, 1), y + 48, "kelmoqda", DC.cool, fit("kelmoqda", w + 12, 10))}
+    {s.note && T(260, 140, s.note, DC.lime, 11)}
+  </>;
+}
+
 /* The drawing on its own, with no figure or caption around it. The step
    player reuses it: a simulation is the same picture redrawn frame by frame,
    and it needs the caption slot for the step's own explanation. */
@@ -984,6 +1159,11 @@ export function DiagramBody({ spec }: { spec: Spec }) {
     case "numberline": return <NumberLineView {...spec} />;
     case "plot": return <PlotView {...spec} />;
     case "matrix": return <MatrixView {...spec} />;
+    case "timeline": return <TimelineView {...spec} />;
+    case "exchange": return <ExchangeView {...spec} />;
+    case "ratio": return <RatioView {...spec} />;
+    case "stairs": return <StairsView {...spec} />;
+    case "mstack": return <MStackView {...spec} />;
   }
 }
 
