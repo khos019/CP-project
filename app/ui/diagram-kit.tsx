@@ -166,7 +166,16 @@ export type Spec =
       at?: number; tight?: number; note?: string }
   | { kind: "prob"; label: string; root: string;
       branches: { p: string; text: string; value?: string }[];
-      expect?: string; note?: string };
+      expect?: string; note?: string }
+  /* Two pointers' own vocabulary. The technique is two indices that only ever
+     move forward, and the two things a learner needs to see are exactly that:
+     the WINDOW they bound right now, and the fact that neither ever goes
+     back — which is the whole proof that the walk is linear. */
+  | { kind: "window"; label: string; values: (string | number)[];
+      l: number; r: number; agg?: string; bad?: boolean;
+      best?: [number, number]; note?: string }
+  | { kind: "ptrace"; label: string; n: number;
+      steps: { l: number; r: number }[]; note?: string };
 
 export type Box4 = [number, number, number, number];
 export type GeoTone = "ink" | "lime" | "cool" | "warm" | "pink";
@@ -1750,6 +1759,73 @@ function ProbView(s: Extract<Spec, { kind: "prob" }>) {
   </>;
 }
 
+/* The window itself. Drawing the array and leaving l and r to the caption
+   hides the one thing the reader is trying to follow. */
+function WindowView(s: Extract<Spec, { kind: "window" }>) {
+  const v = s.values, n = Math.max(v.length, 1);
+  const w = Math.min(46, 440 / n), x0 = 260 - (n * w) / 2;
+  const cx = (i: number) => x0 + i * w + (w - 4) / 2;
+  const inWin = (i: number) => i >= s.l && i <= s.r;
+  const col = s.bad ? DC.warm : DC.lime;
+  const empty = s.r < s.l;
+  return <>
+    {s.best && (
+      <rect x={x0 + s.best[0] * w - 2} y={26} width={(s.best[1] - s.best[0] + 1) * w} height={38}
+        rx="4" fill="none" stroke={DC.cool} strokeWidth="1.2" strokeDasharray="4 3" />
+    )}
+    {!empty && (
+      <rect x={x0 + s.l * w - 2} y={30} width={(s.r - s.l + 1) * w} height={30} rx="4"
+        fill={s.bad ? "rgba(255,189,143,.10)" : "rgba(200,255,118,.10)"} stroke={col} strokeWidth="1.8" />
+    )}
+    {v.map((val, i) => (
+      <g key={i}>
+        <rect x={x0 + i * w} y={34} width={w - 4} height={24} rx="3"
+          fill={inWin(i) ? DC.on : DC.bg} stroke={inWin(i) ? col : DC.dim} strokeWidth="1.1" />
+        {T(cx(i), 51, String(val), inWin(i) ? col : DC.ink, fit(String(val), w - 9, 12))}
+        {T(cx(i), 86, String(i), DC.mute, Math.min(9, w * 0.42))}
+      </g>
+    ))}
+    {empty
+      ? T(x0 + s.l * w + (w - 4) / 2, 72, "l, r", DC.mute, 10)
+      : s.l === s.r
+        ? T(cx(s.l), 72, "l = r", col, 10)
+        : <>{T(cx(s.l), 72, "l", col, 11)}{T(cx(s.r), 72, "r", col, 11)}</>}
+    {s.agg && T(260, 110, s.agg, s.bad ? DC.warm : DC.lime, 11)}
+    {s.best && T(x0 + (s.best[0] + (s.best[1] - s.best[0] + 1) / 2) * w - 2, 22,
+      "eng yaxshi", DC.cool, 9)}
+    {s.note && T(260, 140, s.note, DC.lime, 11)}
+  </>;
+}
+
+/* Why two pointers is linear, drawn. Both indices only ever move right, so
+   the total work is bounded by how far they can travel — not by how many
+   times the inner loop appears to run. */
+function PTraceView(s: Extract<Spec, { kind: "ptrace" }>) {
+  const m = Math.max(s.steps.length, 1);
+  const x0 = 70, x1 = 460, yTop = 34, yBot = 108;
+  const xAt = (i: number) => x0 + (i / Math.max(m - 1, 1)) * (x1 - x0);
+  const yAt = (p: number) => yBot - (p / Math.max(s.n, 1)) * (yBot - yTop);
+  const path = (get: (st: { l: number; r: number }) => number) =>
+    s.steps.map((st, i) => (i ? "L " : "M ") + xAt(i).toFixed(1) + " " + yAt(get(st)).toFixed(1)).join(" ");
+  return <>
+    <line x1={x0 - 8} y1={yBot} x2={x1 + 6} y2={yBot} stroke={DC.dim} strokeWidth="1.2" />
+    <line x1={x0 - 8} y1={yBot} x2={x0 - 8} y2={yTop - 6} stroke={DC.dim} strokeWidth="1.2" />
+    <path d={path(st => st.r)} fill="none" stroke={DC.cool} strokeWidth="2.2" />
+    <path d={path(st => st.l)} fill="none" stroke={DC.lime} strokeWidth="2.2" />
+    {s.steps.map((st, i) => <g key={i}>
+      <circle cx={xAt(i)} cy={yAt(st.r)} r="2.6" fill={DC.cool} />
+      <circle cx={xAt(i)} cy={yAt(st.l)} r="2.6" fill={DC.lime} />
+    </g>)}
+    {T(x0 - 14, yTop - 10, "indeks", DC.mute, 9, "start")}
+    {T(x1 + 6, yBot + 14, "qadam", DC.mute, 9, "end")}
+    <line x1={122} y1={20} x2={144} y2={20} stroke={DC.lime} strokeWidth="2.2" />
+    {T(150, 24, "l", DC.lime, 10, "start")}
+    <line x1={300} y1={20} x2={322} y2={20} stroke={DC.cool} strokeWidth="2.2" />
+    {T(328, 24, "r", DC.cool, 10, "start")}
+    {s.note && T(260, 142, s.note, DC.lime, 11)}
+  </>;
+}
+
 /* The drawing on its own, with no figure or caption around it. The step
    player reuses it: a simulation is the same picture redrawn frame by frame,
    and it needs the caption slot for the step's own explanation. */
@@ -1808,6 +1884,8 @@ export function DiagramBody({ spec }: { spec: Spec }) {
     case "dptable": return <DpTableView {...spec} />;
     case "digits": return <DigitsView {...spec} />;
     case "prob": return <ProbView {...spec} />;
+    case "window": return <WindowView {...spec} />;
+    case "ptrace": return <PTraceView {...spec} />;
   }
 }
 
