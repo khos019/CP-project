@@ -7,6 +7,7 @@
 // spec and gets its own picture. All original SVG.
 
 export type PickState = "pick" | "drop" | "idle";
+export type LayerState = "src" | "seen" | "frontier" | "far";
 
 export const DC = {
   dim: "#2b3f34", line: "#4a6b58", ink: "#cfe0d6", lime: "#c8ff76",
@@ -100,7 +101,23 @@ export type Spec =
   | { kind: "stairs"; label: string; a: number[]; b: number[];
       aName?: string; bName?: string; note?: string }
   | { kind: "mstack"; label: string; kept: (string | number)[]; popped?: (string | number)[];
-      incoming?: string; note?: string };
+      incoming?: string; note?: string }
+  /* The graph track's own vocabulary. A generic node-and-edge picture hides
+     the very things these algorithms are about: the wavefront moving outward
+     in levels, a grid being flooded, capacity against flow on an edge, the
+     rho shape a successor function always makes, two sides being matched. */
+  | { kind: "layers"; label: string;
+      cols: { text: string; nodes: { text: string; state?: LayerState }[] }[];
+      links?: [number, number, number][]; note?: string }
+  | { kind: "gridpath"; label: string; rows: string[]; nums?: (string | number)[][];
+      note?: string }
+  | { kind: "flownet"; label: string; nodes: [number, number, string][];
+      edges: { from: number; to: number; cap: number; flow?: number; on?: boolean }[];
+      cut?: { x: number; text: string }; note?: string }
+  | { kind: "rho"; label: string; tail: (string | number)[]; cycle: (string | number)[];
+      hi?: number[]; marks?: { at: number; text: string }[]; note?: string }
+  | { kind: "bip"; label: string; left: string[]; right: string[];
+      edges: [number, number][]; match?: [number, number][]; note?: string };
 
 /** How one number of a sieve grid is doing. */
 export type NumState = "prime" | "composite" | "current" | "marked" | "picked";
@@ -1124,6 +1141,169 @@ function MStackView(s: Extract<Spec, { kind: "mstack" }>) {
   </>;
 }
 
+const LAYER_COLOR: Record<string, string> = {
+  src: DC.pink, seen: DC.lime, frontier: DC.cool, far: DC.line,
+};
+
+/* BFS in the shape it actually has: a wavefront, one column per distance.
+   Drawn as a normal tangle of nodes, the single most important fact — that
+   everything at distance k is finished before distance k+1 begins — is
+   invisible. Here it is the whole picture. */
+function LayersView(s: Extract<Spec, { kind: "layers" }>) {
+  const n = Math.max(s.cols.length, 1), colW = 400 / n;
+  const cx = (i: number) => 60 + colW * (i + 0.5);
+  const cy = (i: number, count: number) => 80 + (i - (count - 1) / 2) * 30;
+  return <>
+    {s.links?.map(([c, a, b], i) => {
+      const ca = s.cols[c], cb = s.cols[c + 1];
+      if (!ca || !cb) return null;
+      return <line key={"l" + i} x1={cx(c) + 13} y1={cy(a, ca.nodes.length)}
+        x2={cx(c + 1) - 13} y2={cy(b, cb.nodes.length)} stroke={DC.dim} strokeWidth="1.3" />;
+    })}
+    {s.cols.map((col, c) => <g key={"c" + c}>
+      {T(cx(c), 18, col.text, DC.mute, fit(col.text, colW - 6, 10))}
+      {col.nodes.map((nd, i) => {
+        const y = cy(i, col.nodes.length), colr = LAYER_COLOR[nd.state || "far"];
+        return <g key={i}>
+          <circle cx={cx(c)} cy={y} r="13" fill={nd.state && nd.state !== "far" ? DC.on : DC.bg}
+            stroke={colr} strokeWidth="2" />
+          {T(cx(c), y + 4, nd.text, colr, fit(nd.text, 22, 11))}
+        </g>;
+      })}
+    </g>)}
+    {s.note && T(260, 146, s.note, DC.lime, 11)}
+  </>;
+}
+
+const CELL_COLOR: Record<string, [string, string]> = {
+  "#": ["#161c19", "#243029"], ".": [DC.bg, DC.dim], S: [DC.on, DC.pink],
+  T: [DC.on, DC.warm], o: [DC.on, DC.onLine], f: [DC.bg, DC.cool], "*": [DC.on, DC.lime],
+};
+
+/* A grid being flooded. Most graph problems in practice are grids, and on a
+   grid the interesting thing is WHICH cells are already reached and how far
+   they are — so the cells carry their distance. */
+function GridPathView(s: Extract<Spec, { kind: "gridpath" }>) {
+  const r = s.rows.length, c = s.rows[0].length;
+  const cell = Math.min(26, Math.min(300 / c, 104 / r));
+  const x0 = 260 - (c * cell) / 2, y0 = 20;
+  return <>
+    {s.rows.map((row, y) => row.split("").map((ch, x) => {
+      const [fill, stroke] = CELL_COLOR[ch] || CELL_COLOR["."];
+      const txt = s.nums?.[y]?.[x];
+      const ink = ch === "#" ? DC.mute : ch === "S" ? DC.pink : ch === "T" ? DC.warm
+        : ch === "f" ? DC.cool : ch === "*" ? DC.lime : DC.ink;
+      return <g key={y + "-" + x}>
+        <rect x={x0 + x * cell} y={y0 + y * cell} width={cell - 3} height={cell - 3} rx="3"
+          fill={fill} stroke={stroke} strokeWidth="1.2" />
+        {txt !== undefined && txt !== "" &&
+          T(x0 + x * cell + (cell - 3) / 2, y0 + y * cell + cell / 2 + 3, String(txt), ink,
+            fit(String(txt), cell - 6, 11))}
+      </g>;
+    }))}
+    {s.note && T(260, Math.min(147, y0 + r * cell + 18), s.note, DC.lime, 11)}
+  </>;
+}
+
+/* Capacity against flow. An edge in a flow network carries two numbers and
+   the whole algorithm is about the gap between them, so the label has to
+   show both — and the augmenting path has to be visible as a path. */
+function FlowNetView(s: Extract<Spec, { kind: "flownet" }>) {
+  return <>
+    <defs><marker id="fm" markerWidth="9" markerHeight="9" refX="17" refY="3" orient="auto">
+      <path d="M0 0 L6 3 L0 6 z" fill={DC.line} /></marker>
+      <marker id="fmOn" markerWidth="9" markerHeight="9" refX="17" refY="3" orient="auto">
+      <path d="M0 0 L6 3 L0 6 z" fill={DC.lime} /></marker></defs>
+    {s.cut && <>
+      <line x1={s.cut.x} y1={26} x2={s.cut.x} y2={124} stroke={DC.warm} strokeWidth="1.5"
+        strokeDasharray="5 3" />
+      {T(s.cut.x, 18, s.cut.text, DC.warm, 10)}
+    </>}
+    {s.edges.map((e, i) => {
+      const [x1, y1] = s.nodes[e.from], [x2, y2] = s.nodes[e.to];
+      const mx = (x1 + x2) / 2, my = (y1 + y2) / 2;
+      const dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy) || 1;
+      const lab = (e.flow ?? 0) + "/" + e.cap;
+      return <g key={i}>
+        <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={e.on ? DC.lime : DC.line}
+          strokeWidth={e.on ? 2.4 : 1.5} markerEnd={e.on ? "url(#fmOn)" : "url(#fm)"} />
+        {T(mx - (dy / len) * 11, my + (dx / len) * 11 + 4, lab, e.on ? DC.lime : DC.mute, 10)}
+      </g>;
+    })}
+    {s.nodes.map(([x, y, lab], i) => <g key={"n" + i}>
+      <circle cx={x} cy={y} r="15" fill={DC.bg} stroke={DC.cool} strokeWidth="2" />
+      {T(x, y + 5, lab, DC.cool, fit(lab, 26, 12))}
+    </g>)}
+    {s.note && T(260, 146, s.note, DC.lime, 11)}
+  </>;
+}
+
+/* The rho. Follow a successor function from any start and you walk a tail
+   into a cycle, always — the shape is the theorem, and it is the reason
+   tortoise-and-hare works at all. */
+function RhoView(s: Extract<Spec, { kind: "rho" }>) {
+  const t = s.tail.length, k = Math.max(s.cycle.length, 1);
+  const step = Math.min(46, 200 / Math.max(t, 1));
+  const cr = Math.min(38, 300 / k + 12);
+  const cxC = 40 + t * step + cr + 16, cyC = 76;
+  const pos = (i: number): [number, number] => {
+    if (i < t) return [40 + i * step, cyC];
+    const a = Math.PI - ((i - t) * 2 * Math.PI) / k;
+    return [cxC + cr * Math.cos(a), cyC - cr * Math.sin(a)];
+  };
+  const total = t + k;
+  const isHi = (i: number) => !!s.hi?.includes(i);
+  return <>
+    {Array.from({ length: total }, (_, i) => {
+      const nxt = i < total - 1 ? i + 1 : t;
+      if (i === total - 1 && k === 1) return null;
+      const [x1, y1] = pos(i), [x2, y2] = pos(nxt);
+      const dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy) || 1;
+      return <line key={"e" + i} x1={x1 + (dx / len) * 13} y1={y1 + (dy / len) * 13}
+        x2={x2 - (dx / len) * 14} y2={y2 - (dy / len) * 14} stroke={DC.line} strokeWidth="1.5" />;
+    })}
+    {Array.from({ length: total }, (_, i) => {
+      const [x, y] = pos(i), on = isHi(i);
+      return <g key={"n" + i}>
+        <circle cx={x} cy={y} r="13" fill={on ? DC.on : DC.bg} stroke={on ? DC.lime : DC.line}
+          strokeWidth={on ? 2.2 : 1.6} />
+        {T(x, y + 4, String(i < t ? s.tail[i] : s.cycle[i - t]), on ? DC.lime : DC.ink,
+          fit(String(i < t ? s.tail[i] : s.cycle[i - t]), 22, 11))}
+      </g>;
+    })}
+    {s.marks?.map((m, i) => {
+      const [x, y] = pos(m.at);
+      const below = y > cyC;
+      return <g key={"m" + i}>{T(x, below ? y + 28 : y - 20, m.text, DC.warm, 10)}</g>;
+    })}
+    {s.note && T(260, 146, s.note, DC.lime, 11)}
+  </>;
+}
+
+/* Two sides and the edges between them. Matching is the one graph problem
+   whose picture must separate the parts, because "which side" is the whole
+   constraint. Matched edges are thick; the rest are the options not taken. */
+function BipView(s: Extract<Spec, { kind: "bip" }>) {
+  const xa = 150, xb = 370;
+  const yAt = (i: number, n: number) => 76 + (i - (n - 1) / 2) * Math.min(34, 96 / Math.max(n, 1));
+  const matched = (a: number, b: number) => !!s.match?.some(([p, q]) => p === a && q === b);
+  return <>
+    {s.edges.map(([a, b], i) => (
+      <line key={i} x1={xa + 14} y1={yAt(a, s.left.length)} x2={xb - 14} y2={yAt(b, s.right.length)}
+        stroke={matched(a, b) ? DC.lime : DC.dim} strokeWidth={matched(a, b) ? 2.6 : 1.2} />
+    ))}
+    {s.left.map((v, i) => <g key={"a" + i}>
+      <circle cx={xa} cy={yAt(i, s.left.length)} r="14" fill={DC.bg} stroke={DC.cool} strokeWidth="1.8" />
+      {T(xa, yAt(i, s.left.length) + 4, v, DC.cool, fit(v, 24, 11))}
+    </g>)}
+    {s.right.map((v, i) => <g key={"b" + i}>
+      <circle cx={xb} cy={yAt(i, s.right.length)} r="14" fill={DC.bg} stroke={DC.warm} strokeWidth="1.8" />
+      {T(xb, yAt(i, s.right.length) + 4, v, DC.warm, fit(v, 24, 11))}
+    </g>)}
+    {s.note && T(260, 146, s.note, DC.lime, 11)}
+  </>;
+}
+
 /* The drawing on its own, with no figure or caption around it. The step
    player reuses it: a simulation is the same picture redrawn frame by frame,
    and it needs the caption slot for the step's own explanation. */
@@ -1164,6 +1344,11 @@ export function DiagramBody({ spec }: { spec: Spec }) {
     case "ratio": return <RatioView {...spec} />;
     case "stairs": return <StairsView {...spec} />;
     case "mstack": return <MStackView {...spec} />;
+    case "layers": return <LayersView {...spec} />;
+    case "gridpath": return <GridPathView {...spec} />;
+    case "flownet": return <FlowNetView {...spec} />;
+    case "rho": return <RhoView {...spec} />;
+    case "bip": return <BipView {...spec} />;
   }
 }
 
