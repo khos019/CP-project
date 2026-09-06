@@ -1245,7 +1245,7 @@ for(auto x:h)s+=mx-x;cout<<s<<"\\n";`)],
     wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\nint n;cin>>n;vector<int>a(n);for(auto&x:a)cin>>x;int ans=-1;for(int i=0;i<n;++i)if(a[i]==1)ans=i+1;cout<<ans<<\"\\n\";\nreturn 0;}\n"],
   },
   "bs-sqrt-real": {
-    solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\ndouble x;cin>>x;double lo=-100000,hi=100000;for(int i=0;i<300;++i){double mid=(lo+hi)/2;if(mid*mid*mid<x)lo=mid;else hi=mid;}cout<<fixed<<setprecision(6)<<(lo+hi)/2<<\"\\n\";\nreturn 0;}\n",
+    solution: "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\ndouble x;cin>>x;double lo=-100000,hi=100000;for(int i=0;i<300;++i){double mid=(lo+hi)/2;if(mid*mid*mid<x)lo=mid;else hi=mid;}double r=(lo+hi)/2;if(fabs(r)<5e-7)r=0.0;cout<<fixed<<setprecision(6)<<r<<\"\\n\";\nreturn 0;}\n",
     wrong: ["#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\ndouble x;cin>>x;cout<<fixed<<setprecision(6)<<pow(x,1.0/3)<<\"\\n\";\nreturn 0;}\n"],
   },
   "bs-min-capacity": {
