@@ -136,7 +136,31 @@ export type Spec =
       centre?: number; note?: string }
   | { kind: "automaton"; label: string; nodes: [number, number, string][];
       edges: { from: number; to: number; text?: string }[];
-      links?: [number, number][]; note?: string };
+      links?: [number, number][]; note?: string }
+  /* Geometry's own vocabulary. Everything here lives on a plane, and a plane
+     drawn with the wrong aspect ratio is worse than no picture at all — a
+     right angle that does not look right teaches the wrong thing. So these
+     all share one mapper that preserves shape. */
+  | { kind: "plane"; label: string; view?: Box4;
+      pts?: GeoPt[]; segs?: GeoSeg[]; poly?: [number, number][];
+      fill?: boolean; note?: string }
+  | { kind: "angle"; label: string; u: [number, number]; v: [number, number];
+      uName?: string; vName?: string; text?: string; note?: string }
+  | { kind: "sweep"; label: string; view?: Box4;
+      rects: { x1: number; y1: number; x2: number; y2: number; on?: boolean }[];
+      at?: number; atText?: string; note?: string }
+  | { kind: "circle"; label: string; view?: Box4;
+      circles: { x: number; y: number; r: number; text?: string; tone?: GeoTone }[];
+      pts?: GeoPt[]; segs?: GeoSeg[]; note?: string }
+  | { kind: "lattice"; label: string; w: number; h: number;
+      poly: [number, number][]; inside?: [number, number][];
+      onEdge?: [number, number][]; note?: string };
+
+export type Box4 = [number, number, number, number];
+export type GeoTone = "ink" | "lime" | "cool" | "warm" | "pink";
+export type GeoPt = { x: number; y: number; text?: string; tone?: GeoTone; below?: boolean };
+export type GeoSeg = { a: [number, number]; b: [number, number]; text?: string;
+                       tone?: GeoTone; dash?: boolean };
 
 /** How one number of a sieve grid is doing. */
 export type NumState = "prime" | "composite" | "current" | "marked" | "picked";
@@ -1459,6 +1483,162 @@ function AutomatonView(s: Extract<Spec, { kind: "automaton" }>) {
   </>;
 }
 
+const GEO_COLOR: Record<string, string> = {
+  ink: DC.ink, lime: DC.lime, cool: DC.cool, warm: DC.warm, pink: DC.pink,
+};
+
+/* One mapper for every geometry picture. It preserves the aspect ratio on
+   purpose: a diagram where a right angle does not look like a right angle
+   teaches the reader something false. */
+function geoMap(view: Box4) {
+  const [x0, y0, x1, y1] = view;
+  const w = Math.max(x1 - x0, 1e-9), h = Math.max(y1 - y0, 1e-9);
+  const k = Math.min(430 / w, 96 / h);
+  const cx = 262 - ((x0 + x1) / 2) * k, cy = 74 + ((y0 + y1) / 2) * k;
+  return {
+    X: (x: number) => cx + x * k,
+    Y: (y: number) => cy - y * k,
+    k,
+  };
+}
+
+function geoBounds(pts: [number, number][]): Box4 {
+  if (!pts.length) return [0, 0, 1, 1];
+  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+  const pad = 0.6;
+  return [Math.min(...xs) - pad, Math.min(...ys) - pad,
+          Math.max(...xs) + pad, Math.max(...ys) + pad];
+}
+
+function geoDraw(m: ReturnType<typeof geoMap>, segs?: GeoSeg[], pts?: GeoPt[]) {
+  return <>
+    {segs?.map((sg, i) => {
+      const col = GEO_COLOR[sg.tone || "cool"];
+      const [ax, ay] = sg.a, [bx, by] = sg.b;
+      return <g key={"s" + i}>
+        <line x1={m.X(ax)} y1={m.Y(ay)} x2={m.X(bx)} y2={m.Y(by)} stroke={col}
+          strokeWidth="1.8" strokeDasharray={sg.dash ? "4 3" : undefined} />
+        {sg.text && T((m.X(ax) + m.X(bx)) / 2, (m.Y(ay) + m.Y(by)) / 2 - 6, sg.text, col, 10)}
+      </g>;
+    })}
+    {pts?.map((pt, i) => {
+      const col = GEO_COLOR[pt.tone || "lime"];
+      return <g key={"p" + i}>
+        <circle cx={m.X(pt.x)} cy={m.Y(pt.y)} r="3.6" fill={col} />
+        {pt.text && T(m.X(pt.x), m.Y(pt.y) + (pt.below ? 16 : -9), pt.text, col, 10)}
+      </g>;
+    })}
+  </>;
+}
+
+/* Points, segments and a polygon on a plane — the workhorse of the track. */
+function PlaneView(s: Extract<Spec, { kind: "plane" }>) {
+  const all: [number, number][] = [
+    ...(s.pts || []).map(p => [p.x, p.y] as [number, number]),
+    ...(s.segs || []).flatMap(g => [g.a, g.b]),
+    ...(s.poly || []),
+  ];
+  const m = geoMap(s.view || geoBounds(all));
+  return <>
+    {s.poly && s.poly.length > 1 && (
+      <polygon points={s.poly.map(([x, y]) => m.X(x) + "," + m.Y(y)).join(" ")}
+        fill={s.fill ? "rgba(200,255,118,.10)" : "none"} stroke={DC.onLine} strokeWidth="1.8" />
+    )}
+    {geoDraw(m, s.segs, s.pts)}
+    {s.note && T(260, 146, s.note, DC.lime, 11)}
+  </>;
+}
+
+/* Two vectors from one origin, with the arc between them. Dot and cross
+   products are statements about that angle, so the angle has to be drawn. */
+function AngleView(s: Extract<Spec, { kind: "angle" }>) {
+  const ox = 176, oy = 88;
+  const len = Math.max(Math.hypot(...s.u), Math.hypot(...s.v), 1e-9);
+  const k = 66 / len;
+  const px = (v: [number, number]) => ox + v[0] * k;
+  const py = (v: [number, number]) => oy - v[1] * k;
+  const arcR = 26;
+  const clampY = (y: number) => Math.max(24, Math.min(132, y));
+  const au = Math.atan2(s.u[1], s.u[0]), av = Math.atan2(s.v[1], s.v[0]);
+  const arc = "M " + (ox + arcR * Math.cos(au)) + " " + (oy - arcR * Math.sin(au)) +
+    " A " + arcR + " " + arcR + " 0 0 " + (av > au ? 0 : 1) + " " +
+    (ox + arcR * Math.cos(av)) + " " + (oy - arcR * Math.sin(av));
+  return <>
+    <line x1={ox - 78} y1={oy} x2={ox + 96} y2={oy} stroke={DC.dim} strokeWidth="1.1" />
+    <line x1={ox} y1={oy - 62} x2={ox} y2={oy + 50} stroke={DC.dim} strokeWidth="1.1" />
+    <path d={arc} fill="none" stroke={DC.warm} strokeWidth="1.4" />
+    <line x1={ox} y1={oy} x2={px(s.u)} y2={py(s.u)} stroke={DC.lime} strokeWidth="2.4" />
+    <line x1={ox} y1={oy} x2={px(s.v)} y2={py(s.v)} stroke={DC.cool} strokeWidth="2.4" />
+    <circle cx={ox} cy={oy} r="3" fill={DC.mute} />
+    {T(px(s.u) + 12, clampY(py(s.u) + 4), s.uName || "u", DC.lime, 11, "start")}
+    {T(px(s.v) + 12, clampY(py(s.v) + 4), s.vName || "v", DC.cool, 11, "start")}
+    {s.text && T(372, 40, s.text, DC.warm, 11)}
+    {s.note && T(260, 146, s.note, DC.lime, 11)}
+  </>;
+}
+
+/* A vertical line moving across rectangles. The sweep is an ORDER of events,
+   and the line is the only honest way to show which ones are open. */
+function SweepView(s: Extract<Spec, { kind: "sweep" }>) {
+  const all: [number, number][] = s.rects.flatMap(r =>
+    [[r.x1, r.y1], [r.x2, r.y2]] as [number, number][]);
+  const m = geoMap(s.view || geoBounds(all));
+  return <>
+    {s.rects.map((r, i) => (
+      <rect key={i} x={m.X(Math.min(r.x1, r.x2))} y={m.Y(Math.max(r.y1, r.y2))}
+        width={Math.abs(m.X(r.x2) - m.X(r.x1))} height={Math.abs(m.Y(r.y1) - m.Y(r.y2))}
+        rx="2" fill={r.on ? "rgba(200,255,118,.13)" : "rgba(120,140,130,.07)"}
+        stroke={r.on ? DC.onLine : DC.dim} strokeWidth={r.on ? 1.8 : 1.1} />
+    ))}
+    {s.at !== undefined && <>
+      <line x1={m.X(s.at)} y1={16} x2={m.X(s.at)} y2={128} stroke={DC.warm}
+        strokeWidth="1.8" strokeDasharray="5 3" />
+      {T(m.X(s.at), 13, s.atText || "sweep", DC.warm, 10)}
+    </>}
+    {s.note && T(260, 146, s.note, DC.lime, 11)}
+  </>;
+}
+
+/* Circles, with the points and lines that meet them. */
+function CircleView(s: Extract<Spec, { kind: "circle" }>) {
+  const all: [number, number][] = s.circles.flatMap(c =>
+    [[c.x - c.r, c.y - c.r], [c.x + c.r, c.y + c.r]] as [number, number][]);
+  const m = geoMap(s.view || geoBounds(all));
+  return <>
+    {s.circles.map((c, i) => {
+      const col = GEO_COLOR[c.tone || "cool"];
+      return <g key={i}>
+        <circle cx={m.X(c.x)} cy={m.Y(c.y)} r={c.r * m.k} fill="none" stroke={col} strokeWidth="1.8" />
+        <circle cx={m.X(c.x)} cy={m.Y(c.y)} r="2.4" fill={col} />
+        {c.text && T(m.X(c.x), m.Y(c.y) - c.r * m.k - 6, c.text, col, 10)}
+      </g>;
+    })}
+    {geoDraw(m, s.segs, s.pts)}
+    {s.note && T(260, 146, s.note, DC.lime, 11)}
+  </>;
+}
+
+/* Integer points under a polygon: Pick's theorem is a statement about which
+   dots are inside and which sit on the edge, so the dots have to be drawn. */
+function LatticeView(s: Extract<Spec, { kind: "lattice" }>) {
+  const m = geoMap([-0.5, -0.5, s.w + 0.5, s.h + 0.5]);
+  const isIn = (x: number, y: number) => !!s.inside?.some(([a, b]) => a === x && b === y);
+  const isOn = (x: number, y: number) => !!s.onEdge?.some(([a, b]) => a === x && b === y);
+  const dots = [];
+  for (let x = 0; x <= s.w; ++x)
+    for (let y = 0; y <= s.h; ++y) {
+      const on = isOn(x, y), inn = isIn(x, y);
+      dots.push(<circle key={x + "," + y} cx={m.X(x)} cy={m.Y(y)}
+        r={on || inn ? 3.4 : 1.8} fill={on ? DC.warm : inn ? DC.lime : DC.dim} />);
+    }
+  return <>
+    <polygon points={s.poly.map(([x, y]) => m.X(x) + "," + m.Y(y)).join(" ")}
+      fill="rgba(200,255,118,.09)" stroke={DC.onLine} strokeWidth="1.8" />
+    {dots}
+    {s.note && T(260, 146, s.note, DC.lime, 11)}
+  </>;
+}
+
 /* The drawing on its own, with no figure or caption around it. The step
    player reuses it: a simulation is the same picture redrawn frame by frame,
    and it needs the caption slot for the step's own explanation. */
@@ -1509,6 +1689,11 @@ export function DiagramBody({ spec }: { spec: Spec }) {
     case "sarray": return <SArrayView {...spec} />;
     case "palin": return <PalinView {...spec} />;
     case "automaton": return <AutomatonView {...spec} />;
+    case "plane": return <PlaneView {...spec} />;
+    case "angle": return <AngleView {...spec} />;
+    case "sweep": return <SweepView {...spec} />;
+    case "circle": return <CircleView {...spec} />;
+    case "lattice": return <LatticeView {...spec} />;
   }
 }
 
