@@ -20,7 +20,7 @@ import { OnlineDot, onlineAmong } from "./presence";
 import { loadPlacement } from "./mastery";
 import { openDuelChannel, userTopic, matchTopic, type DuelChannel } from "./duel-realtime";
 import { acceptChallenge, declineChallenge, duelHeartbeat, duelState, type DuelState } from "./duel-client";
-import { addLocalActivity, pushActivity, recordTopicDone } from "./coins";
+import { recordHeartbeat, recordTopicDone } from "./coins";
 import { Placement } from "./Placement";
 import { AuthPage } from "./AuthPage";
 import { ContinueHero } from "./ContinueHero";
@@ -310,7 +310,7 @@ const wasDone=!!data.solved[lesson]&&(data.quizScores[lesson]||0)>=70;data.solve
  const back=()=>{if(navDepth.current>0)window.history.back();else pushScreen({view:"roadmaps",unit:null})};
  // Coin streaks need real engaged time, so the clock stops on a hidden tab
  // and time is banked in 60s chunks rather than trusted as one large number.
- useEffect(()=>{const tick=()=>{if(document.visibilityState!=="visible")return;addLocalActivity(60);void pushActivity(60)};const id=window.setInterval(tick,60000);return()=>window.clearInterval(id)},[]);
+ useEffect(()=>{const tick=()=>{if(document.visibilityState!=="visible")return;recordHeartbeat(60)};const id=window.setInterval(tick,60000);return()=>window.clearInterval(id)},[]);
  // Browser back/forward: each screen change pushes an entry, popstate restores it.
  useEffect(()=>{applyScreen(screenRef.current);window.history.replaceState(screenRef.current,"",screenToPath(screenRef.current));const onPop=(e:PopStateEvent)=>{const st=e.state as Screen|null;applyScreen(st&&typeof st==="object"&&"view" in st?st:pathToScreen(window.location.pathname));navDepth.current=Math.max(0,navDepth.current-1)};window.addEventListener("popstate",onPop);return()=>window.removeEventListener("popstate",onPop)},[]); const applyLang=(n:Lang)=>{setLang(n);localStorage.setItem("algoyol-lang",n)};
  const swap=()=>applyLang(lang==="uz"?"en":"uz");

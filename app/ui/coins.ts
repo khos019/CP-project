@@ -51,18 +51,39 @@ function writeActivity(all: Record<string, DayActivity>) {
   try { writeScoped(ACT_KEY, JSON.stringify(all)); } catch {}
 }
 
+/* The heartbeat may bank five minutes at a time — a call claiming more than
+   that is a bug or a forged one, and the server clamps it identically. A duel
+   is the one credit that legitimately arrives in a single lump, so it says so
+   with `cap`; nothing else may. */
+const HEARTBEAT_CAP = 300;
+export const DUEL_CAP = 4 * 3600;
+
 /** Add watched time (and optionally finished duels/topics) to today. */
-export function addLocalActivity(seconds: number, duels = 0, topics = 0) {
+export function addLocalActivity(seconds: number, duels = 0, topics = 0, cap = HEARTBEAT_CAP) {
   const all = readActivity();
   const day = today();
   // `topics` postdates the first activity log, so days written before it
   // exists come back without the field.
   const cur = all[day] || { day, activeSeconds: 0, duels: 0, topics: 0 };
-  cur.activeSeconds = Math.min(cur.activeSeconds + Math.max(0, Math.min(seconds, 300)), 86400);
+  cur.activeSeconds = Math.min(cur.activeSeconds + Math.max(0, Math.min(seconds, cap)), 86400);
   cur.duels += Math.max(0, duels);
   cur.topics = (cur.topics || 0) + Math.max(0, topics);
   all[day] = cur;
   writeActivity(all);
+}
+
+/* Seconds the visible-tab heartbeat has banked since this page loaded. A duel
+   runs inside that same clock, so crediting its full length on top would pay
+   an attentive player twice for the same minutes; the arena reads this before
+   and after, and asks only for the difference. */
+let heartbeatSeconds = 0;
+export function heartbeatMark(): number { return heartbeatSeconds; }
+
+/** One minute of visible time, on both copies. */
+export function recordHeartbeat(seconds: number) {
+  heartbeatSeconds += seconds;
+  addLocalActivity(seconds);
+  void pushActivity(seconds);
 }
 
 /** Report one roadmap topic finished today, on both copies. */
@@ -71,10 +92,12 @@ export function recordTopicDone() {
   void pushActivity(0, 0, 1);
 }
 
-/* One duel counts once. The result screen can be reached again — a reload, a
-   second refresh — so the duel's own id is what makes the report idempotent,
-   and only today's ids are kept. */
-export function recordDuelDone(duelId: string) {
+/* One duel counts once, and it counts for its LENGTH: half an hour spent in
+   the arena is half an hour spent on the site, whatever the tab was doing.
+   The duel's own id is what makes the report idempotent — the result screen
+   can be reached again by a reload — and only today's ids are kept.
+   `seconds` is what the arena has left over after the heartbeat's share. */
+export function recordDuelDone(duelId: string, seconds = 0) {
   let seen: { day: string; ids: string[] } = { day: today(), ids: [] };
   try {
     const raw = JSON.parse(readScoped(DUEL_KEY) || "null");
@@ -83,8 +106,33 @@ export function recordDuelDone(duelId: string) {
   if (seen.ids.includes(duelId)) return;
   seen.ids.push(duelId);
   try { writeScoped(DUEL_KEY, JSON.stringify(seen)); } catch {}
-  addLocalActivity(0, 1, 0);
-  void pushActivity(0, 1, 0);
+  const credit = Math.max(0, Math.round(seconds));
+  addLocalActivity(credit, 1, 0, DUEL_CAP);
+  void pushDuelActivity(duelId, credit);
+}
+
+/* The account copy of the same credit. record_duel_activity() is idempotent on
+   (user, duel) server-side, which the localStorage guard above cannot be — it
+   is per-device — and it caps the credit at the duel's real length, which a
+   browser cannot be trusted to do either.
+   The fallback runs on one condition only: PostgREST saying that function does
+   not exist, which is migration 029 not having been applied yet. A network
+   failure is NOT a reason to fall back — the call may well have landed, and
+   record_activity() has no idempotency to save us from paying twice. */
+async function pushDuelActivity(duelId: string, seconds: number): Promise<void> {
+  const r = rest("rpc/record_duel_activity");
+  if (!r) return;                                   // signed out: local copy only
+  try {
+    const res = await fetch(r.url, {
+      method: "POST", headers: r.headers,
+      body: JSON.stringify({ p_match: duelId, p_seconds: seconds }),
+    });
+    if (res.ok || res.status !== 404) return;
+  } catch { return; }
+
+  await pushActivity(0, 1, 0);
+  for (let left = seconds; left > 0; left -= HEARTBEAT_CAP)
+    await pushActivity(Math.min(left, HEARTBEAT_CAP));
 }
 
 /** Consecutive qualifying days ending today or yesterday — mirrors the SQL. */

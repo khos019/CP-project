@@ -19,7 +19,7 @@ import { tr } from "./i18n";
 import { bankProblems } from "./problem-bank";
 import { CodeEditor } from "./CodeEditor";
 import { useTabGuard } from "./duel-guard";
-import { recordDuelDone } from "./coins";
+import { heartbeatMark, recordDuelDone } from "./coins";
 import { MathText } from "./math-text";
 import {
   // Accept and decline are the shell's job, not this screen's: the card can
@@ -239,13 +239,21 @@ export function DuelMatchmaking({
   const [lostByLeaving, setLostByLeaving] = useState(false);
   const [busy, setBusy] = useState(false);
   const hadDuel = useRef(false);
+  /* What the visible-tab heartbeat had already banked when this duel began.
+     The duel's own length is credited at the end, and this is what stops an
+     attentive player being paid twice for the same half hour. */
+  const heartbeatAtStart = useRef<number | null>(null);
 
   const refresh = useCallback(async () => {
     const next = await duelState();
     if (next && "status" in next) {
       setState(next);
       setDrawnAt(Date.now());
-      if (next.duel) { hadDuel.current = true; setResult(null); }
+      if (next.duel) {
+        if (!hadDuel.current) heartbeatAtStart.current = heartbeatMark();
+        hadDuel.current = true;
+        setResult(null);
+      }
       // The duel we were in has gone: it finished. duel_state() stops
       // reporting it at that moment, so the scoreboard is a second question.
       else if (hadDuel.current) {
@@ -253,8 +261,15 @@ export function DuelMatchmaking({
         const finished = await duelRecentResult();
         if (finished && "id" in finished) {
           setResult(finished);
-          // Finishing a duel is one of the three daily-task conditions.
-          recordDuelDone(finished.id);
+          /* Finishing a duel is one of the three daily-task conditions, and
+             the time it took is time on the site. The duel reports its own
+             start and finish, so a player who spent the round reading the
+             statement in another tab is credited the same as one who watched
+             the clock — minus whatever the heartbeat already counted. */
+          const played = (Date.parse(finished.finished_at) - Date.parse(finished.started_at)) / 1000;
+          const counted = heartbeatAtStart.current === null ? 0 : heartbeatMark() - heartbeatAtStart.current;
+          heartbeatAtStart.current = null;
+          recordDuelDone(finished.id, Number.isFinite(played) ? played - counted : 0);
         }
       }
     }

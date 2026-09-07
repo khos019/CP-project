@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { tokenize } from "./highlight";
 
 // Editor-shaped code input with live syntax highlighting.
@@ -17,6 +17,26 @@ export type EditorLang = "cpp20" | "python3";
 const NAME: Record<EditorLang, string> = { cpp20: "main.cpp", python3: "main.py" };
 const LABEL: Record<EditorLang, string> = { cpp20: "C++20", python3: "Python 3" };
 const TOKEN_LANG: Record<EditorLang, "cpp" | "python"> = { cpp20: "cpp", python3: "python" };
+
+/* Bracket behaviour, the part of an editor people only notice when it is
+   missing. An opener types its partner and keeps the caret between them; the
+   partner types over itself rather than doubling; backspace inside an empty
+   pair removes both. Quotes are their own closer, which is why they need the
+   word check below — an apostrophe in don't must not open a string. */
+const CLOSE_OF: Record<string, string> = { "(": ")", "[": "]", "{": "}", '"': '"', "'": "'" };
+const OPENERS = Object.keys(CLOSE_OF).filter(k => k !== CLOSE_OF[k]);
+const CLOSERS = Object.values(CLOSE_OF);
+const INDENT = "    ";
+
+/* Where the caret goes after we rewrite the text.
+ *
+ * The textarea is controlled, so React writes `value` during its commit — and
+ * assigning value to a textarea drops the caret at the end. Restoring it from
+ * a requestAnimationFrame, which is what the Tab key used to do, is a race:
+ * React commits after that frame often enough that Tab in the middle of a line
+ * would send the caret to the end of the file. A layout effect is not a race,
+ * because it runs as part of the same commit that wrote the value. */
+const useCommitEffect = typeof window === "undefined" ? useEffect : useLayoutEffect;
 
 function verdictTone(v: string): string {
   const s = v.toLowerCase();
@@ -55,6 +75,7 @@ export function CodeEditor({
   const gutter = useRef<HTMLPreElement>(null);
   const overlay = useRef<HTMLPreElement>(null);
   const [pos, setPos] = useState({ line: 1, col: 1 });
+  const pendingCaret = useRef<number | null>(null);
 
   const lines = code.split("\n");
   const tokens = tokenize(code, TOKEN_LANG[lang]);
@@ -79,6 +100,24 @@ export function CodeEditor({
     setPos({ line: upto.length, col: upto[upto.length - 1].length + 1 });
   };
 
+  /* Replace [from, to) with `text` and ask for the caret at `caret`; the effect
+     below puts it there once React has written the new value. */
+  const apply = (from: number, to: number, text: string, caret: number) => {
+    pendingCaret.current = caret;
+    setCode(code.slice(0, from) + text + code.slice(to));
+  };
+
+  useCommitEffect(() => {
+    const caret = pendingCaret.current;
+    if (caret === null) return;
+    pendingCaret.current = null;
+    const el = ta.current;
+    if (!el) return;
+    el.selectionStart = el.selectionEnd = caret;
+    updatePos();
+    sync();
+  }, [code]);   // eslint-disable-line react-hooks/exhaustive-deps
+
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
       e.preventDefault();
@@ -87,12 +126,63 @@ export function CodeEditor({
       else if (!busy) onSubmit();
       return;
     }
-    if (e.key !== "Tab" || e.shiftKey) return;
+    // While an IME is composing, the keys belong to the IME.
+    if (e.ctrlKey || e.metaKey || e.altKey || e.nativeEvent.isComposing) return;
+
     const el = e.currentTarget;
-    e.preventDefault();
     const s = el.selectionStart, t = el.selectionEnd;
-    setCode(code.slice(0, s) + "    " + code.slice(t));
-    requestAnimationFrame(() => { el.selectionStart = el.selectionEnd = s + 4; });
+    const before = code.slice(0, s), after = code.slice(t);
+    const prev = before.slice(-1), next = after.slice(0, 1);
+
+    if (e.key === "Tab" && !e.shiftKey) {
+      e.preventDefault();
+      apply(s, t, INDENT, s + INDENT.length);
+      return;
+    }
+
+    /* Enter keeps the block you are inside. The indent of the current line is
+       carried down; an unclosed opener adds one level; and a closer waiting on
+       the right is pushed onto a line of its own, so the caret lands in the
+       empty body rather than beside the brace. */
+    if (e.key === "Enter" && !e.shiftKey) {
+      const lineStart = before.lastIndexOf("\n") + 1;
+      const indent = (before.slice(lineStart).match(/^[ \t]*/) || [""])[0];
+      const opensBlock = OPENERS.includes(prev) || (lang === "python3" && /:\s*$/.test(before.slice(lineStart)));
+      const inner = opensBlock ? indent + INDENT : indent;
+      e.preventDefault();
+      if (opensBlock && CLOSE_OF[prev] === next) {
+        apply(s, t, "\n" + inner + "\n" + indent, s + 1 + inner.length);
+      } else {
+        apply(s, t, "\n" + inner, s + 1 + inner.length);
+      }
+      return;
+    }
+
+    // Backspace between the halves of an empty pair takes both.
+    if (e.key === "Backspace" && s === t && CLOSE_OF[prev] === next) {
+      e.preventDefault();
+      apply(s - 1, t + 1, "", s - 1);
+      return;
+    }
+
+    // Typing the closer that is already sitting there steps over it instead of
+    // adding a second one — otherwise every auto-inserted bracket is doubled.
+    if (s === t && next === e.key && CLOSERS.includes(e.key)) {
+      e.preventDefault();
+      el.selectionStart = el.selectionEnd = s + 1;   // no re-render to race with
+      updatePos();
+      return;
+    }
+
+    if (CLOSE_OF[e.key]) {
+      const close = CLOSE_OF[e.key];
+      // A quote after a word is an apostrophe, not the start of a string.
+      if (e.key === close && (/[\w]/.test(prev) || /[\w]/.test(next))) return;
+      e.preventDefault();
+      if (s !== t) apply(s, t, e.key + code.slice(s, t) + close, t + 2);   // wrap the selection
+      else apply(s, t, e.key + close, s + 1);
+      return;
+    }
   };
 
   const style = minHeight ? { minHeight } : undefined;
