@@ -165,6 +165,24 @@ export function CodeEditor({
       return;
     }
 
+    /* Backspace inside the leading indentation removes a whole level. Tab puts
+       four spaces in, so one press taking one space back out meant four presses
+       to undo one — and the editor looked broken rather than merely fussy.
+       The step lands on the previous multiple of four rather than always
+       removing four, so an indent that is out by a space or two is straightened
+       instead of over-shooting. Only spaces before the caret qualify: mid-line
+       and after any real character, Backspace stays ordinary. */
+    if (e.key === "Backspace" && s === t && s > 0) {
+      const lineStart = before.lastIndexOf("\n") + 1;
+      const lead = before.slice(lineStart);
+      if (lead.length > 0 && /^ +$/.test(lead)) {
+        const back = ((lead.length - 1) % INDENT.length) + 1;
+        e.preventDefault();
+        apply(s - back, t, "", s - back);
+        return;
+      }
+    }
+
     // Typing the closer that is already sitting there steps over it instead of
     // adding a second one — otherwise every auto-inserted bracket is doubled.
     if (s === t && next === e.key && CLOSERS.includes(e.key)) {

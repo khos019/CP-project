@@ -101,6 +101,8 @@ export const hasRatedSolve = (problemId: string) => ratedSolves().includes(probl
 export const solvedCount = () => ratedSolves().length;
 
 /** Difficulty band label for a problem, used to colour its rating chip. */
-export function difficultyOf(rating: number): "easy" | "medium" | "hard" {
-  return rating < 1200 ? "easy" : rating < 1800 ? "medium" : "hard";
+export function difficultyOf(rating: number): "easy" | "medium" | "hard" | "insane" {
+  // Insane starts where the bank's own ceiling begins: 2000 and up is the
+  // advanced-cp end of the ladder, not merely a hard version of the rest.
+  return rating < 1200 ? "easy" : rating < 1800 ? "medium" : rating < 2000 ? "hard" : "insane";
 }

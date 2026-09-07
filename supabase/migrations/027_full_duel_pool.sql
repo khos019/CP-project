@@ -100,14 +100,14 @@ insert into public.duel_problem_pool(problem_key, rating, difficulty, topic) val
   ('dp-max-product-subarray', 1900, 'hard', 'dynamic-programming'),
   ('sparse-min', 1900, 'hard', 'advanced-cp'),
   ('tree-centroid', 1900, 'hard', 'trees'),
-  ('adv-expected-rolls', 2000, 'hard', 'advanced-cp'),
-  ('adv-inversions-fast', 2000, 'hard', 'advanced-cp'),
-  ('adv-lis-nlogn', 2000, 'hard', 'advanced-cp'),
-  ('matrix-power-fib', 2000, 'hard', 'advanced-cp'),
-  ('mo-offline-distinct', 2000, 'hard', 'advanced-cp'),
-  ('adv-digit-dp-count', 2100, 'hard', 'advanced-cp'),
-  ('hld-path-sum', 2100, 'hard', 'advanced-cp'),
-  ('two-sat-simple', 2100, 'hard', 'advanced-cp')
+  ('adv-expected-rolls', 2000, 'insane', 'advanced-cp'),
+  ('adv-inversions-fast', 2000, 'insane', 'advanced-cp'),
+  ('adv-lis-nlogn', 2000, 'insane', 'advanced-cp'),
+  ('matrix-power-fib', 2000, 'insane', 'advanced-cp'),
+  ('mo-offline-distinct', 2000, 'insane', 'advanced-cp'),
+  ('adv-digit-dp-count', 2100, 'insane', 'advanced-cp'),
+  ('hld-path-sum', 2100, 'insane', 'advanced-cp'),
+  ('two-sat-simple', 2100, 'insane', 'advanced-cp')
 on conflict (problem_key) do update set rating = excluded.rating,
   difficulty = excluded.difficulty, topic = excluded.topic;
 

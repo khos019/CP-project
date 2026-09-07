@@ -341,7 +341,7 @@ async function givePlan(matchId: string, botRating: number): Promise<void> {
         round: Number(r.round),
         problemKey: key,
         problemRating: Number(r.problem_rating) || 1200,
-        difficulty: (bankFor(key)?.difficulty || "medium") as "easy" | "medium" | "hard",
+        difficulty: (bankFor(key)?.difficulty || "medium") as "easy" | "medium" | "hard" | "insane",
         // The planner may not schedule more failed attempts than there are
         // distinct wrong programs to send.
         wrongVariants: hasSolution(key) ? solutions[key].wrong.length : 0,

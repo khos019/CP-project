@@ -132,7 +132,7 @@ export function effectiveSolveProbability(
  *  roughly half the base time; one 400 points below takes about double.
  */
 export function expectedThinkingSeconds(
-  botRating: number, problemRating: number, difficulty: "easy" | "medium" | "hard",
+  botRating: number, problemRating: number, difficulty: "easy" | "medium" | "hard" | "insane",
   config = DEFAULT_BOT_CONFIG,
 ): number {
   // Halved from the first cut. The old numbers were defensible on paper —
@@ -140,7 +140,7 @@ export function expectedThinkingSeconds(
   // but a duel is watched, not read about: an opponent who does nothing at all
   // for six minutes is indistinguishable from an opponent that is broken, and
   // that is what the first bot duels actually looked like.
-  const base = { easy: 60, medium: 125, hard: 210 }[difficulty] ?? 125;
+  const base = { easy: 60, medium: 125, hard: 210, insane: 300 }[difficulty] ?? 125;
   const gap = botRating + config.skillBonus - problemRating;
   const stretched = base * Math.exp(-gap / 520) * config.timeScale;
   return Math.min(config.maxDelaySeconds, Math.max(config.minDelaySeconds, stretched));
@@ -148,7 +148,7 @@ export function expectedThinkingSeconds(
 
 /** The whole behaviour for one round, in the shape the brief asked for. */
 export function getBotSubmissionBehavior(
-  botRating: number, problemRating: number, difficulty: "easy" | "medium" | "hard",
+  botRating: number, problemRating: number, difficulty: "easy" | "medium" | "hard" | "insane",
   seed: string, config = DEFAULT_BOT_CONFIG,
 ): { shouldSolve: boolean; solvesLate: boolean; expectedDelay: number; mistakeProbability: number } {
   const random = seeded(`${seed}:outcome`);
@@ -182,7 +182,7 @@ export function planDuel(
   matchId: string, botRating: number,
   rounds: {
     round: number; problemKey: string; problemRating: number;
-    difficulty: "easy" | "medium" | "hard";
+    difficulty: "easy" | "medium" | "hard" | "insane";
     /** How many DISTINCT wrong programs this problem has. The bot may not make
      *  more failed attempts than that, because the alternative is submitting a
      *  byte-identical program twice and collecting the same verdict twice —

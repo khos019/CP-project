@@ -6,7 +6,7 @@ export type MasteryEvent={topic:string;source:MasterySource;sourceId:string;delt
 export type DuelHistoryEntry={matchId:number;opponent:string;opponentRating:number;outcome:"win"|"loss"|"draw";myScore:number;oppScore:number;ratingBefore:number;ratingAfter:number;delta:number;at:number};
 import { readScoped, writeScoped } from "./session";
 
-export type MasteryConfig={unlock:number;complete:number;advanced:number;weights:{quiz:number;lesson:number;problem:{easy:number;medium:number;hard:number};duelMultiplier:number;placementQuestion:number;challenge:number}};
+export type MasteryConfig={unlock:number;complete:number;advanced:number;weights:{quiz:number;lesson:number;problem:{easy:number;medium:number;hard:number;insane:number};duelMultiplier:number;placementQuestion:number;challenge:number}};
 
 /* Every key below is resolved through the active account scope (see session.ts),
    so one browser can hold two learners' work without either seeing the other's. */
@@ -24,7 +24,7 @@ export const DEFAULT_MASTERY_CONFIG:MasteryConfig={
  unlock:450,
  complete:700,
  advanced:850,
- weights:{quiz:40,lesson:60,problem:{easy:20,medium:35,hard:50},duelMultiplier:1.5,placementQuestion:70,challenge:520},
+ weights:{quiz:40,lesson:60,problem:{easy:20,medium:35,hard:50,insane:70},duelMultiplier:1.5,placementQuestion:70,challenge:520},
 };
 
 export function loadMasteryConfig():MasteryConfig{

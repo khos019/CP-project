@@ -441,7 +441,7 @@ const wasDone=!!data.solved[lesson]&&(data.quizScores[lesson]||0)>=70;data.solve
  const openUnitProblem=useCallback((unitId:string)=>{
   const unit=roadmapCatalog.flatMap(r=>r.units).find(u=>u.id===unitId);
   const p=unit?bankProblems.find(x=>x.id===unit.problemId||x.judge===unit.problemId):undefined;
-  if(p)openProblem(p,true);else pushScreen({view:"problem"});
+  if(p)openProblem(p,true);else pushScreen({view:"problems"});
  },[openProblem]);// eslint-disable-line react-hooks/exhaustive-deps
  /* What a verdict says. Short while it is running — the judge streams tests as
     they settle, so "Tekshirilmoqda… 3/5" is a real count rather than a spinner
@@ -644,7 +644,7 @@ function Dashboard({lang,profile,go,openRoadmap,onSelectProblem}:{
      <a className="see-all" href="/problems" onClick={linkTo(()=>go("problems"))}>{tr(lang,"algoYolApp.barchasini_korish")}</a>
     </div>
     {suggestions.length
-     ? <ProblemList lang={lang} items={suggestions} go={go} onSelect={onSelectProblem}/>
+     ? <ProblemList lang={lang} items={suggestions} onSelect={onSelectProblem}/>
      : <EmptyState lang={lang} icon="◎"
         title={tr(lang,"algoYolApp.tavsiya_qoldi_emas")}
         body={tr(lang,"algoYolApp.bankdagi_masalalarni_yechib_boldingiz_duel")}
@@ -784,13 +784,13 @@ function RoadGrid({lang,roads,openRoadmap}:{lang:Lang,roads:typeof allRoads,open
  })}</div>;
 }
 
-function ProblemList({lang,items,go,onSelect}:{lang:Lang;items:BankProblem[];go:(v:View)=>void;onSelect?:(p:BankProblem)=>void}){
+function ProblemList({lang,items,onSelect}:{lang:Lang;items:BankProblem[];onSelect:(p:BankProblem)=>void}){
  const mastery=loadMastery(),statuses=loadProblemStatuses();
  return <div className="problem-list">{items.map(p=>{
   const state=mastery.evidence[`problem:${p.id}`]!==undefined?"solved":(statuses[p.judge||""]||"unsolved");
   const solved=state==="solved";
-  return <a className="problem-row" key={p.id} href={`/problems`}
-   onClick={linkTo(()=>onSelect?onSelect(p):go("problem"))}>
+  return <a className="problem-row" key={p.id} href={`/problem/${p.id}`}
+   onClick={linkTo(()=>onSelect(p))}>
    <span className={`pb-status ${state}`} aria-hidden>{solved?"✓":state==="attempted"?"✕":"○"}</span>
    <span className="num mono">{p.id}</span>
    <span className="problem-name">{lang==="uz"?p.uz:p.en}</span>
@@ -884,7 +884,7 @@ function Problems({lang,filter,setFilter,items,go,onSelect}:{lang:Lang,filter:st
 
     <div className="pb-group">
      <h3>{tr(lang,"algoYolApp.qiyinlik")}</h3>
-     <div className="filters">{["all","easy","medium","hard"].map(f=>
+     <div className="filters">{["all","easy","medium","hard","insane"].map(f=>
       <button key={f} className={filter===f?"active":""} onClick={()=>setFilter(f)}>
        {f==="all"?(tr(lang,"algoYolApp.barchasi")):f}
       </button>)}</div>
@@ -948,7 +948,7 @@ function Problem({lang,item,code,setCode,codeLang,setCodeLang,verdict,submit,onB
  {item.judge&&<ProblemSubmissions lang={lang} problemKey={item.judge} signedIn={signed} reloadKey={settledVerdict}
    onReuse={(source,language)=>{setCodeLang(language);setCode(source);window.scrollTo({top:0,behavior:"smooth"})}}/>}</>
  :<div className="panel" style={{maxWidth:680}}><div className="notice">{tr(lang,"algoYolApp.ushbu_masala_hozircha_korib_chiqish_rejimi")}<b>{item.tag}</b></div></div>}</>}
-type DuelProblem={key:string;code:string;difficulty:"easy"|"medium"|"hard";points:number;uz:string;en:string;stUz:string;stEn:string;inUz:string;inEn:string;outUz:string;outEn:string;sample:string;cpp:string;py:string;bot:[number,number];fail:number};
+type DuelProblem={key:string;code:string;difficulty:"easy"|"medium"|"hard"|"insane";points:number;uz:string;en:string;stUz:string;stEn:string;inUz:string;inEn:string;outUz:string;outEn:string;sample:string;cpp:string;py:string;bot:[number,number];fail:number};
 const duelProblems:DuelProblem[]=[
  {key:"sum-two",code:"A01",difficulty:"easy",points:100,uz:"Ikki son yig‘indisi",en:"Sum of two numbers",
   stUz:"Sizga ikkita butun a va b sonlari beriladi. Ularning yig‘indisini toping.",stEn:"You are given two integers a and b. Print their sum.",
