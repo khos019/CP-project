@@ -252,6 +252,8 @@
   "problem.perTest": "{v} per test",
   "problem.sampleN": "Sample {n}",
   "problem.timeLimit": "Time limit",
+  "profile.duelHistory": "Duel history",
+  "profile.siteFeed": "Site submissions",
   "profilePage.account": "Account",
   "profilePage.activity": "Recent activity",
   "profilePage.admin": "Admin studio",

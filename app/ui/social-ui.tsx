@@ -13,9 +13,9 @@ import { OnlineDot, onlineAmong } from "./presence";
 import { CodeBlock } from "./CodeBlock";
 import { LockIcon } from "./icons";
 import {
-  addFriend, fetchFriends, fetchMySubmissionsFor, fetchSubmissionCode, fetchSubmissions, removeFriend,
-  unlockSubmissionCode,
-  type CodeResult, type FriendRow, type OwnSubmissionRow, type SubmissionRow,
+  addFriend, fetchFriends, fetchMySubmissionsFor, fetchRecentSubmissions, fetchSubmissionCode,
+  fetchSubmissions, removeFriend, unlockSubmissionCode,
+  type CodeResult, type FeedSubmissionRow, type FriendRow, type OwnSubmissionRow, type SubmissionRow,
 } from "./social";
 
 type Lang = "uz" | "en";
@@ -65,6 +65,13 @@ const T = {
     pastReuse: "Muharrirga qo'yish",
     theirSubs: (who: string) => `${who} — yuborilgan yechimlar`,
     openSubs: "Yechimlarini ko‘rish",
+    feedTitle: "Sayt bo‘yicha yuborishlar",
+    feedSub: "Butun AlgoYo‘l bo‘ylab eng so‘nggi yuborishlar. Kod egasiga ochiq — boshqalar uchun masalani o‘zingiz yechsangiz bepul ochiladi.",
+    feedNone: "Hali hech kim yechim yubormagan.",
+    feedMissing: "Sayt bo‘yicha lenta serverda hali yoqilmagan (028-migratsiya).",
+    who: "Kim",
+    meTag: "Siz",
+    refresh: "Yangilash",
     verdicts: {
       ACCEPTED: "Qabul qilindi", WRONG_ANSWER: "Noto‘g‘ri javob", COMPILATION_ERROR: "Kompilyatsiya xatosi",
       RUNTIME_ERROR: "Bajarilish xatosi", TIME_LIMIT_EXCEEDED: "Vaqt chegarasi", MEMORY_LIMIT_EXCEEDED: "Xotira chegarasi",
@@ -115,6 +122,13 @@ const T = {
     pastReuse: "Load into the editor",
     theirSubs: (who: string) => `${who} — submissions`,
     openSubs: "See their submissions",
+    feedTitle: "Site-wide submissions",
+    feedSub: "The most recent submissions from across AlgoYo'l. Code is open to its author — for anyone else it unlocks free once you have solved that problem yourself.",
+    feedNone: "Nobody has submitted anything yet.",
+    feedMissing: "The site-wide feed is not enabled on the server yet (migration 028).",
+    who: "Who",
+    meTag: "You",
+    refresh: "Refresh",
     verdicts: {
       ACCEPTED: "Accepted", WRONG_ANSWER: "Wrong answer", COMPILATION_ERROR: "Compilation error",
       RUNTIME_ERROR: "Runtime error", TIME_LIMIT_EXCEEDED: "Time limit", MEMORY_LIMIT_EXCEEDED: "Memory limit",
@@ -668,5 +682,126 @@ export function PersonSubmissions({
       signedIn={signedIn}
       onBack={onBack}
     />
+  );
+}
+
+/* ------------------------------------------------------ site-wide feed (028)
+ *
+ * The same table as one person's history, with a column for who wrote it.
+ *
+ * The privacy rule does not change here and is worth restating, because a feed
+ * is exactly where it would be easiest to get wrong: the server never sends
+ * source code in this list. Every row carries `readable`, decided per viewer,
+ * and the code itself still comes from submission_code — which charges, or
+ * refuses, on its own terms.
+ */
+export function SiteSubmissions({
+  lang, signedIn, onBack, onOpenPerson,
+}: {
+  lang: Lang;
+  signedIn: boolean;
+  onBack: () => void;
+  onOpenPerson: (username: string) => void;
+}) {
+  const t = T[lang];
+  const [rows, setRows] = useState<FeedSubmissionRow[] | null>(null);
+  const [state, setState] = useState<"loading" | "ready" | "error" | "missing">("loading");
+  const [openRow, setOpenRow] = useState<FeedSubmissionRow | null>(null);
+  const [nonce, setNonce] = useState(0);
+
+  useEffect(() => {
+    let live = true;
+    setState("loading");
+    fetchRecentSubmissions(60).then((list) => {
+      if (!live) return;
+      if (list === "not-migrated") { setState("missing"); return; }
+      if (!list) { setState("error"); return; }
+      setRows(list);
+      setState("ready");
+    });
+    return () => { live = false; };
+  }, [nonce]);
+
+  return (
+    <>
+      <button className="crumb crumb-btn" onClick={onBack}>← {t.back}</button>
+      <div className="page-head">
+        <div>
+          <p className="eyebrow">{t.submissions}</p>
+          <h1 className="page-title">{t.feedTitle}</h1>
+          <p className="muted feed-sub">{t.feedSub}</p>
+        </div>
+        <button className="pill" onClick={() => setNonce((n) => n + 1)}>{t.refresh}</button>
+      </div>
+
+      <section className="panel">
+        {state === "loading" && <p className="muted os-empty">{t.loading}</p>}
+        {state === "error" && <p className="muted os-empty">{t.failed}</p>}
+        {state === "missing" && <p className="muted os-empty">{t.feedMissing}</p>}
+        {state === "ready" && rows && !rows.length && (
+          <div className="os-blank">
+            <span className="os-blank-ic" aria-hidden>⌘</span>
+            <b>{t.feedNone}</b>
+            <p>{t.noneHint}</p>
+          </div>
+        )}
+        {state === "ready" && rows && rows.length > 0 && (
+          <div className="sub-table-wrap">
+            <table className="sub-table">
+              <thead>
+                <tr>
+                  <th>{t.when}</th>
+                  <th>{t.who}</th>
+                  <th>{t.problem}</th>
+                  <th>{t.lang}</th>
+                  <th>{t.verdict}</th>
+                  <th>{t.time}</th>
+                  <th>{t.code}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={row.id} className={row.is_me ? "feed-mine" : undefined}>
+                    <td className="mono sub-when">{when(row.created_at, lang)}</td>
+                    <td>
+                      <button className="link-btn" onClick={() => onOpenPerson(row.author_username)}>
+                        {row.author_name || row.author_username}
+                      </button>
+                      {row.is_me && <span className="tag feed-me-tag">{t.meTag}</span>}
+                    </td>
+                    <td>{row.problem_title || row.problem_key}</td>
+                    <td className="mono">{LANG_LABEL[row.language] || row.language}</td>
+                    <td>
+                      <span className={`sub-verdict ${row.verdict === "ACCEPTED" ? "ok" : "bad"}`}>
+                        {t.verdicts[row.verdict] || row.verdict}
+                        {row.passed !== null && row.total !== null && row.verdict !== "ACCEPTED" && (
+                          <small className="mono"> {row.passed}/{row.total}</small>
+                        )}
+                      </span>
+                    </td>
+                    <td className="mono">{row.runtime_ms === null ? "—" : `${row.runtime_ms} ms`}</td>
+                    <td>
+                      <button className="link-btn" onClick={() => setOpenRow(row)}>
+                        {row.readable ? t.view : <><LockIcon /> {t.locked}</>}
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {state === "ready" && <p className="muted os-empty">{t.whyPaid}</p>}
+        {openRow && (
+          <CodeViewer
+            lang={lang}
+            row={openRow}
+            isMe={openRow.is_me}
+            signedIn={signedIn}
+            onClose={() => setOpenRow(null)}
+          />
+        )}
+      </section>
+    </>
   );
 }

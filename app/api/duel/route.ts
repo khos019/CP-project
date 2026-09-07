@@ -34,7 +34,7 @@ const bankFor = (key: string) => bankProblems.find((p) => p.judge === key);
 type Json = Record<string, unknown>;
 type Action =
   | "state" | "result" | "heartbeat" | "search" | "tick" | "accept" | "decline"
-  | "cancel" | "bot" | "bot_step" | "submit" | "forfeit";
+  | "cancel" | "bot" | "bot_step" | "submit" | "forfeit" | "history";
 
 const bad = (error: string, status = 400) => NextResponse.json({ ok: false, error }, { status });
 
@@ -67,6 +67,15 @@ export async function POST(request: Request) {
       // The duel that just ended. Separate from `state` because finishing a
       // duel is what stops it being the duel you are in.
       const result = await rpcAsUser<Json>(token, "duel_recent_result");
+      return result.ok ? NextResponse.json(result.data) : bad(result.error, result.status);
+    }
+
+    case "history": {
+      // Every finished duel, not just the one that ended in the last half
+      // hour. `result` deliberately expires; a history that expired would not
+      // be a history.
+      const limit = Number(body.limit) || 40;
+      const result = await rpcAsUser<Json>(token, "duel_history", { p_limit: limit });
       return result.ok ? NextResponse.json(result.data) : bad(result.error, result.status);
     }
 

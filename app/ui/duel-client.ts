@@ -88,7 +88,22 @@ export type DuelResult = {
   rounds: { round: number; problem_key: string; points: number; claimed_by_seat: number | null }[];
 };
 
+/** One finished duel, as the history list shows it. */
+export type DuelHistoryRow = {
+  id: string; mode: "human" | "bot"; rounds: number;
+  my_seat: number; my_score: number; opp_score: number;
+  outcome: "win" | "loss" | "draw";
+  delta: number; rating_after: number;
+  opponent: string; opponent_username: string | null;
+  opponent_is_bot: boolean; opponent_rating: number;
+  started_at: string; finished_at: string;
+};
+
 export const duelState = () => post<DuelState>({ action: "state" });
+/** Every finished duel, newest first. `duelRecentResult` only reaches back
+ *  thirty minutes, by design — this is the record that keeps. */
+export const duelHistory = (limit = 40) =>
+  post<DuelHistoryRow[] | { ok: false; error: string }>({ action: "history", limit });
 export const duelRecentResult = () => post<DuelResult | null>({ action: "result" });
 export const duelHeartbeat = (ready = true) => post<{ ok: boolean }>({ action: "heartbeat", ready });
 export const startSearch = () => post<{ ok: boolean; error?: string; resumed?: boolean; state?: DuelState }>({ action: "search" });

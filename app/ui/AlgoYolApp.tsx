@@ -39,7 +39,9 @@ import { emptyProgress, loadProgress, readLocal as readLocalProgress, syncUp } f
 import { can } from "./permissions";
 import { fetchFriends, recordSubmission, type FriendRow } from "./social";
 import { loadProblemStatuses, markAttempt, syncProblemStatuses, type StatusMap } from "./problem-status";
-import { FriendsScreen, PersonSubmissions, ProblemSubmissions, SubmissionsScreen } from "./social-ui";
+import { FriendsScreen, PersonSubmissions, ProblemSubmissions, SiteSubmissions, SubmissionsScreen } from "./social-ui";
+import { DuelHistoryScreen } from "./DuelHistory";
+import { readDraft, writeDraft } from "./drafts";
 import {
  GUEST_SCOPE, adoptGuestInto, adoptLegacyInto, clearSession, dropScopeData, ensureFreshToken, fetchLeaderboard,
  fetchLearnerCount,
@@ -48,7 +50,7 @@ import {
  storeSession, supabaseReady, writeScoped, type LeaderRow, type Profile, type Role,
 } from "./session";
 
-type Lang="uz"|"en"; type View="home"|"roadmaps"|"roadmap"|"problems"|"problem"|"duel"|"leaderboard"|"profile"|"auth"|"admin"|"placement"|"stats"|"users"|"messages"|"person"|"shop"|"friends"|"submissions"|"person-submissions"|"playground"|"notfound";
+type Lang="uz"|"en"; type View="home"|"roadmaps"|"roadmap"|"problems"|"problem"|"duel"|"leaderboard"|"profile"|"auth"|"admin"|"placement"|"stats"|"users"|"messages"|"person"|"shop"|"friends"|"submissions"|"person-submissions"|"site-submissions"|"duel-history"|"playground"|"notfound";
 const copy = catalogue("algoYolApp");
 const allRoads=roadmapCards;
 const roadmapCatalogSize=()=>({tracks:roadmapCards.length,units:roadmapCards.reduce((n,r)=>n+r.units,0)});
@@ -233,7 +235,11 @@ const wasDone=!!data.solved[lesson]&&(data.quizScores[lesson]||0)>=70;data.solve
  /* A screen is a view plus whatever that view is *about*. `person` is a handle
     rather than an id so the address is /u/ozodbek — something worth sending to
     somebody, which is the whole reason the page exists. */
- type Screen={view:View;roadmap:string;unit:string|null;person:string|null};
+ /* `problem` is the bank id rather than an index: /problem/A01 is a link
+    worth sending, and — the reason it exists — a refresh on the problem screen
+    used to drop the learner onto whichever problem happened to be first, with
+    their code replaced by that problem's starter. */
+ type Screen={view:View;roadmap:string;unit:string|null;person:string|null;problem:string|null};
  const screenToPath=(s:Screen):string=>{
   if(s.view==="home")return "/";
   if(s.view==="notfound")return window.location.pathname;
@@ -241,20 +247,39 @@ const wasDone=!!data.solved[lesson]&&(data.quizScores[lesson]||0)>=70;data.solve
   if(s.view==="roadmap")return s.unit?`/roadmaps/${s.roadmap}/${s.unit}`:`/roadmaps/${s.roadmap}`;
   if(s.view==="person")return s.person?`/u/${s.person}`:"/";
   if(s.view==="person-submissions")return s.person?`/u/${s.person}/submissions`:"/";
+  if(s.view==="problem")return s.problem?`/problem/${s.problem}`:"/problems";
   return `/${s.view}`;
  };
  const pathToScreen=(path:string):Screen=>{
   const parts=path.split("/").filter(Boolean);
-  const base={roadmap:"foundations",unit:null,person:null};
+  const base={roadmap:"foundations",unit:null,person:null,problem:null};
   if(parts[0]==="roadmaps"&&parts[1])return {...base,view:"roadmap",roadmap:parts[1],unit:parts[2]||null};
   if(parts[0]==="u"&&parts[1])return {...base,view:parts[2]==="submissions"?"person-submissions":"person",person:decodeURIComponent(parts[1])};
-  const known:View[]=["home","roadmaps","problems","problem","duel","leaderboard","profile","auth","placement","admin","stats","users","messages","friends","submissions","shop","playground"];
+  if(parts[0]==="problem"&&parts[1])return {...base,view:"problem",problem:decodeURIComponent(parts[1])};
+  const known:View[]=["home","roadmaps","problems","problem","duel","leaderboard","profile","auth","placement","admin","stats","users","messages","friends","submissions","site-submissions","duel-history","shop","playground"];
   if(parts.length===0)return {...base,view:"home"};
   const v=known.find(x=>x===parts[0]);
   return {...base,view:v||"notfound"};
  };
- const screenRef=useRef<Screen>(typeof window==="undefined"?{view:"home",roadmap:"foundations",unit:null,person:null}:pathToScreen(window.location.pathname)),navDepth=useRef(0);
- const applyScreen=(s:Screen)=>{screenRef.current=s;setView(s.view);setSelectedRoadmap(s.roadmap);setSelectedUnit(s.unit);setPerson(s.person)};
+ const activeProblemRef=useRef<BankProblem>(problems[0]);const codeLangRef=useRef<"cpp20"|"python3">("cpp20");
+ useEffect(()=>{activeProblemRef.current=activeProblem},[activeProblem]);
+ useEffect(()=>{codeLangRef.current=codeLang},[codeLang]);
+ const screenRef=useRef<Screen>(typeof window==="undefined"?{view:"home",roadmap:"foundations",unit:null,person:null,problem:null}:pathToScreen(window.location.pathname)),navDepth=useRef(0);
+ const applyScreen=(s:Screen)=>{
+  screenRef.current=s;setView(s.view);setSelectedRoadmap(s.roadmap);setSelectedUnit(s.unit);setPerson(s.person);
+  /* The address names the problem, so a reload lands on it with its draft.
+     Without this the problem screen restored to problems[0] and quietly threw
+     away whatever the learner had open. */
+  if(s.view==="problem"&&s.problem){
+   const p=bankProblems.find(x=>x.id===s.problem);
+   if(p&&p.id!==activeProblemRef.current.id){
+    setActiveProblem(p);
+    const starter=starterFor(p,codeLangRef.current==="cpp20"?"cpp":"py");
+    setCode(p.judge?(readDraft(p.judge,codeLangRef.current)??starter):starter);
+    setVerdict("");
+   }
+  }
+ };
  const pushScreen=(patch:Partial<Screen>)=>{const next={...screenRef.current,...patch};applyScreen(next);window.history.pushState(next,"",screenToPath(next));navDepth.current++;window.scrollTo({top:0,behavior:"smooth"})};
  const go=(v:View)=>pushScreen({view:v,unit:null});
  /* Duel presence and realtime.
@@ -390,10 +415,27 @@ const wasDone=!!data.solved[lesson]&&(data.quizScores[lesson]||0)>=70;data.solve
     unit's problem and submitted it against a different one. */
  const openProblem=useCallback((p:BankProblem,push=false)=>{
   setActiveProblem(p);
-  setCode(starterFor(p,codeLang==="cpp20"?"cpp":"py"));
+  // Unsent work outranks the template. Anyone who left mid-solution and came
+  // back — or refreshed — should find what they wrote, not a blank editor.
+  const starter=starterFor(p,codeLang==="cpp20"?"cpp":"py");
+  setCode(p.judge?(readDraft(p.judge,codeLang)??starter):starter);
   setVerdict("");
-  if(push)pushScreen({view:"problem"});else go("problem");
+  if(push)pushScreen({view:"problem",problem:p.id});else pushScreen({view:"problem",problem:p.id});
  },[codeLang]);// eslint-disable-line react-hooks/exhaustive-deps
+
+ /* Every keystroke goes to local storage against this problem and language, so
+    a refresh, a crash or a closed tab all cost nothing. */
+ const editCode=useCallback((next:string)=>{
+  setCode(next);
+  if(activeProblem.judge)writeDraft(activeProblem.judge,codeLang,next,starterFor(activeProblem,codeLang==="cpp20"?"cpp":"py"));
+ },[activeProblem,codeLang]);
+
+ /* Switching language is switching editors: each keeps its own draft. */
+ const switchCodeLang=useCallback((next:"cpp20"|"python3")=>{
+  setCodeLang(next);
+  const starter=starterFor(activeProblem,next==="cpp20"?"cpp":"py");
+  setCode(activeProblem.judge?(readDraft(activeProblem.judge,next)??starter):starter);
+ },[activeProblem]);
  /* The lesson hands over a unit id; the problem it practises is that unit's
     own, wherever the unit lives. */
  const openUnitProblem=useCallback((unitId:string)=>{
@@ -460,7 +502,7 @@ const wasDone=!!data.solved[lesson]&&(data.quizScores[lesson]||0)>=70;data.solve
   <button className="po-close" aria-label={tr(lang,"algoYolApp.yopish")}
    onClick={()=>{writeScoped("algoyol-placement-dismissed","1");setOfferPlacement(false)}}>✕</button>
  </div>}
- <main className="main">{view==="home"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed&&profile?<><Dashboard lang={lang} profile={profile} go={go} openRoadmap={openRoadmap} onSelectProblem={p=>openProblem(p)}/></>:<Home lang={lang} go={go} openRoadmap={openRoadmap}/>)} {view==="roadmaps"&&<RoadmapHub lang={lang} role={role} openRoadmap={openRoadmap}/>} {view==="roadmap"&&<RoadmapExperience slug={selectedRoadmap} lang={lang} role={role} unitId={selectedUnit} onOpenUnit={id=>pushScreen({unit:id})} onBack={back} onPractice={openUnitProblem} onOpenProblem={(id:string)=>{const p=bankProblems.find(x=>x.id===id);if(p)openProblem(p,true)}}/>} {view==="problems"&&<Problems lang={lang} filter={filter} setFilter={setFilter} items={filtered} go={go} onSelect={p=>openProblem(p)}/>} {view==="problem"&&<Problem lang={lang} item={activeProblem} code={code} setCode={setCode} codeLang={codeLang} setCodeLang={setCodeLang} verdict={verdict} submit={judge} onBack={back} go={go} signed={signed}/>} {view==="duel"&&<DuelMatchmaking lang={lang} signed={signed} authLoading={auth.status==="loading"} needAuth={()=>go("auth")}/>} {view==="leaderboard"&&<Leaderboard lang={lang} me={profile} signed={signed} onOpenPerson={openPerson}/>} {view==="profile"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<ProfilePage lang={lang} profile={profile} onProfileChange={next=>setAuth({status:"authenticated",profile:next})} signOut={signOut} goAdmin={()=>go("admin")} goStats={()=>go("stats")} goUsers={()=>go("users")} goMessages={()=>go("messages")} isOwner={can(role,"user.manage_roles")} goRoadmaps={()=>go("roadmaps")} openRoadmap={openRoadmap} isStaff={can(role,"content.view_management")} goFriends={()=>go("friends")} goSubmissions={()=>go("submissions")}/>:<SignInRequired lang={lang} go={go} what="profile"/>)} {view==="auth"&&<AuthPage lang={lang} notice={authNotice} onAuthenticated={(token,remember,isNew,refreshToken)=>{void enterSession(token,remember,isNew,refreshToken)}}/>} {view==="placement"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed?<Placement lang={lang} signed={signed} onFinish={()=>go("roadmaps")} onRoadmap={openRoadmap}/>:<SignInRequired lang={lang} go={go} what="placement"/>)} {view==="admin"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<Admin lang={lang} profile={profile}/>:<SignInRequired lang={lang} go={go} what="admin"/>)} {view==="person"&&(person?<PublicProfile key={person} lang={lang} username={person} meId={profile?.id||null} signedIn={signed} onBack={back} onMessage={id=>{setMessageWith(id);go("messages")}} onMyProfile={()=>go("profile")} onSignIn={()=>go("auth")} onOpenSubmissions={h=>pushScreen({view:"person-submissions",person:h})}/>:<ScreenLoading lang={lang}/>)} {view==="shop"&&<Shop lang={lang} signed={signed} authLoading={auth.status==="loading"}/>} {view==="playground"&&<Playground lang={lang}/>} {view==="notfound"&&<NotFound lang={lang} go={v=>go(v as View)}/>} {view==="friends"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed?<FriendsScreen lang={lang} onBack={()=>go("profile")} onOpenPerson={openPerson}/>:<SignInRequired lang={lang} go={go} what="profile"/>)} {view==="submissions"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<SubmissionsScreen lang={lang} userId={profile.id} who={profile.display_name||profile.username} isMe signedIn onBack={()=>go("profile")}/>:<SignInRequired lang={lang} go={go} what="profile"/>)} {view==="person-submissions"&&(person?<PersonSubmissions key={person} lang={lang} handle={person} meId={profile?.id||null} signedIn={signed} onBack={back}/>:<ScreenLoading lang={lang}/>)} {view==="messages"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<Messages lang={lang} me={profile} openWith={messageWith} onOpened={()=>setMessageWith(null)} onUnreadChange={()=>{void refreshUnread()}} onOpenProfile={openPerson}/>:<SignInRequired lang={lang} go={go} what="messages"/>)} {view==="users"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:!profile?<SignInRequired lang={lang} go={go} what="users"/>:can(role,"user.manage_roles")?<UsersAdmin lang={lang} meId={profile.id} goProfile={()=>go("profile")} onMessage={id=>{setMessageWith(id);go("messages")}} onOpenProfile={openPerson} initialDay={usersDay} onDayConsumed={()=>setUsersDay(null)}/>:<div className="panel"><div className="notice notice-error">{tr(lang,"algoYolApp.bu_sahifa_faqat_ega_owner_roli_uchun")}</div></div>)} {view==="stats"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:!profile?<SignInRequired lang={lang} go={go} what="stats"/>:can(role,"stats.view")?<OwnerStats lang={lang} goProfile={()=>go("profile")} onPickDay={day=>{setUsersDay(day);go("users")}}/>:<div className="panel"><div className="notice notice-error">{tr(lang,"algoYolApp.bu_sahifa_faqat_ega_owner_roli_uchun")}</div></div>)}</main>
+ <main className="main">{view==="home"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed&&profile?<><Dashboard lang={lang} profile={profile} go={go} openRoadmap={openRoadmap} onSelectProblem={p=>openProblem(p)}/></>:<Home lang={lang} go={go} openRoadmap={openRoadmap}/>)} {view==="roadmaps"&&<RoadmapHub lang={lang} role={role} openRoadmap={openRoadmap}/>} {view==="roadmap"&&<RoadmapExperience slug={selectedRoadmap} lang={lang} role={role} unitId={selectedUnit} onOpenUnit={id=>pushScreen({unit:id})} onBack={back} onPractice={openUnitProblem} onOpenProblem={(id:string)=>{const p=bankProblems.find(x=>x.id===id);if(p)openProblem(p,true)}}/>} {view==="problems"&&<Problems lang={lang} filter={filter} setFilter={setFilter} items={filtered} go={go} onSelect={p=>openProblem(p)}/>} {view==="problem"&&<Problem lang={lang} item={activeProblem} code={code} setCode={editCode} codeLang={codeLang} setCodeLang={switchCodeLang} verdict={verdict} submit={judge} onBack={back} go={go} signed={signed}/>} {view==="duel"&&<DuelMatchmaking lang={lang} signed={signed} authLoading={auth.status==="loading"} needAuth={()=>go("auth")}/>} {view==="leaderboard"&&<Leaderboard lang={lang} me={profile} signed={signed} onOpenPerson={openPerson}/>} {view==="profile"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<ProfilePage lang={lang} profile={profile} onProfileChange={next=>setAuth({status:"authenticated",profile:next})} signOut={signOut} goAdmin={()=>go("admin")} goStats={()=>go("stats")} goUsers={()=>go("users")} goMessages={()=>go("messages")} isOwner={can(role,"user.manage_roles")} goRoadmaps={()=>go("roadmaps")} openRoadmap={openRoadmap} isStaff={can(role,"content.view_management")} goFriends={()=>go("friends")} goSubmissions={()=>go("submissions")} goDuelHistory={()=>go("duel-history")} goSiteFeed={()=>go("site-submissions")}/>:<SignInRequired lang={lang} go={go} what="profile"/>)} {view==="auth"&&<AuthPage lang={lang} notice={authNotice} onAuthenticated={(token,remember,isNew,refreshToken)=>{void enterSession(token,remember,isNew,refreshToken)}}/>} {view==="placement"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed?<Placement lang={lang} signed={signed} onFinish={()=>go("roadmaps")} onRoadmap={openRoadmap}/>:<SignInRequired lang={lang} go={go} what="placement"/>)} {view==="admin"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<Admin lang={lang} profile={profile}/>:<SignInRequired lang={lang} go={go} what="admin"/>)} {view==="person"&&(person?<PublicProfile key={person} lang={lang} username={person} meId={profile?.id||null} signedIn={signed} onBack={back} onMessage={id=>{setMessageWith(id);go("messages")}} onMyProfile={()=>go("profile")} onSignIn={()=>go("auth")} onOpenSubmissions={h=>pushScreen({view:"person-submissions",person:h})}/>:<ScreenLoading lang={lang}/>)} {view==="shop"&&<Shop lang={lang} signed={signed} authLoading={auth.status==="loading"}/>} {view==="playground"&&<Playground lang={lang}/>} {view==="notfound"&&<NotFound lang={lang} go={v=>go(v as View)}/>} {view==="friends"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed?<FriendsScreen lang={lang} onBack={()=>go("profile")} onOpenPerson={openPerson}/>:<SignInRequired lang={lang} go={go} what="profile"/>)} {view==="submissions"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<SubmissionsScreen lang={lang} userId={profile.id} who={profile.display_name||profile.username} isMe signedIn onBack={()=>go("profile")}/>:<SignInRequired lang={lang} go={go} what="profile"/>)} {view==="site-submissions"&&<SiteSubmissions lang={lang} signedIn={signed} onBack={()=>go("profile")} onOpenPerson={openPerson}/>} {view==="duel-history"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:signed?<DuelHistoryScreen lang={lang} onBack={()=>go("profile")} onOpenPerson={openPerson}/>:<SignInRequired lang={lang} go={go} what="profile"/>)} {view==="person-submissions"&&(person?<PersonSubmissions key={person} lang={lang} handle={person} meId={profile?.id||null} signedIn={signed} onBack={back}/>:<ScreenLoading lang={lang}/>)} {view==="messages"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:profile?<Messages lang={lang} me={profile} openWith={messageWith} onOpened={()=>setMessageWith(null)} onUnreadChange={()=>{void refreshUnread()}} onOpenProfile={openPerson}/>:<SignInRequired lang={lang} go={go} what="messages"/>)} {view==="users"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:!profile?<SignInRequired lang={lang} go={go} what="users"/>:can(role,"user.manage_roles")?<UsersAdmin lang={lang} meId={profile.id} goProfile={()=>go("profile")} onMessage={id=>{setMessageWith(id);go("messages")}} onOpenProfile={openPerson} initialDay={usersDay} onDayConsumed={()=>setUsersDay(null)}/>:<div className="panel"><div className="notice notice-error">{tr(lang,"algoYolApp.bu_sahifa_faqat_ega_owner_roli_uchun")}</div></div>)} {view==="stats"&&(auth.status==="loading"?<ScreenLoading lang={lang}/>:!profile?<SignInRequired lang={lang} go={go} what="stats"/>:can(role,"stats.view")?<OwnerStats lang={lang} goProfile={()=>go("profile")} onPickDay={day=>{setUsersDay(day);go("users")}}/>:<div className="panel"><div className="notice notice-error">{tr(lang,"algoYolApp.bu_sahifa_faqat_ega_owner_roli_uchun")}</div></div>)}</main>
  <MobileTabBar lang={lang} view={view} go={v=>go(v as View)} /><SiteFooter lang={lang} go={v=>go(v as View)} />
  {/* Above every screen: a challenge can arrive while the learner is halfway
      through a lesson, and five seconds is not long enough to go looking. */}
@@ -902,7 +944,7 @@ function Problem({lang,item,code,setCode,codeLang,setCodeLang,verdict,submit,onB
     one: "3/12 tests" is the same submission still being judged. */
  const settledVerdict=/tekshirilmoqda|navbat|judging|queue/i.test(verdict)?"":verdict;
  return <><button className="crumb crumb-btn" onClick={onBack}>← {tr(lang,"algoYolApp.ortga")}</button><div className="page-head"><div><span className="tag">{item.id}</span> <span className="tag rating-tag" style={{color:ratingColor(item.rating||1200)}}>★ {item.rating||1200}</span> <span className="tag">{item.tag}</span> {solved&&<span className="tag tag-solved">✓ {tr(lang,"algoYolApp.yechilgan")}</span>}<h1 className="page-title" style={{marginTop:12}}>{lang==="uz"?item.uz:item.en}</h1></div><span className="muted mono">1 s · 256 MB</span></div>
- {judgeable?<><div className="workspace"><ProblemStatement item={item} lang={lang} stUz={judgeable.stUz} stEn={judgeable.stEn} inUz={judgeable.inUz} inEn={judgeable.inEn} outUz={judgeable.outUz} outEn={judgeable.outEn} /><CodeEditor code={code} setCode={setCode} lang={codeLang} setLang={v=>{setCodeLang(v);setCode(v==="cpp20"?judgeable.cpp:judgeable.py)}} onSubmit={submit} submitLabel={copy[lang].submit} verdict={verdict}   extraAction={<a className="text-link editor-escape" href="/playground" onClick={linkTo(()=>go("playground"))}>{tr(lang,"algoYolApp.bosh_muhitda_ochish")}</a>}/></div>
+ {judgeable?<><div className="workspace"><ProblemStatement item={item} lang={lang} stUz={judgeable.stUz} stEn={judgeable.stEn} inUz={judgeable.inUz} inEn={judgeable.inEn} outUz={judgeable.outUz} outEn={judgeable.outEn} /><CodeEditor code={code} setCode={setCode} lang={codeLang} setLang={setCodeLang} onSubmit={submit} submitLabel={copy[lang].submit} verdict={verdict}   extraAction={<a className="text-link editor-escape" href="/playground" onClick={linkTo(()=>go("playground"))}>{tr(lang,"algoYolApp.bosh_muhitda_ochish")}</a>}/></div>
  {item.judge&&<ProblemSubmissions lang={lang} problemKey={item.judge} signedIn={signed} reloadKey={settledVerdict}
    onReuse={(source,language)=>{setCodeLang(language);setCode(source);window.scrollTo({top:0,behavior:"smooth"})}}/>}</>
  :<div className="panel" style={{maxWidth:680}}><div className="notice">{tr(lang,"algoYolApp.ushbu_masala_hozircha_korib_chiqish_rejimi")}<b>{item.tag}</b></div></div>}</>}

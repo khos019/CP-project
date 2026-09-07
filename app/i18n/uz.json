@@ -252,6 +252,8 @@
   "problem.perTest": "har bir test uchun {v}",
   "problem.sampleN": "{n}-namuna",
   "problem.timeLimit": "Vaqt cheklovi",
+  "profile.duelHistory": "Duellar tarixi",
+  "profile.siteFeed": "Sayt yuborishlari",
   "profilePage.account": "Hisob",
   "profilePage.activity": "So‘nggi faoliyat",
   "profilePage.admin": "Boshqaruv",

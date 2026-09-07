@@ -284,3 +284,39 @@ const readCode = async (path: string, id: string): Promise<CodeResult> => {
 export const fetchSubmissionCode = (id: string) => readCode("rpc/submission_code", id);
 /** Pays for the source. Free cases are answered, not charged. */
 export const unlockSubmissionCode = (id: string) => readCode("rpc/unlock_submission", id);
+
+// ------------------------------------------------------- site-wide feed (028)
+/** A submission by anybody, as the feed shows it: everything except the source,
+ *  plus who wrote it and whether this viewer may open the code. */
+export type FeedSubmissionRow = SubmissionRow & {
+  author_id: string;
+  author_username: string;
+  author_name: string;
+  author_avatar: string | null;
+  is_me: boolean;
+};
+
+/** The most recent submissions across the whole site, newest first.
+ *
+ *  Readable while signed out — it is the public pulse of the site — in which
+ *  case every row comes back with `readable` false, because nobody is signed in
+ *  to have solved or bought anything. */
+export async function fetchRecentSubmissions(
+  limit = 50,
+): Promise<FeedSubmissionRow[] | "not-migrated" | null> {
+  const r = open("rpc/recent_submissions");
+  if (!r) return null;
+  try {
+    const res = await fetch(r.url, {
+      method: "POST",
+      headers: r.headers,
+      body: JSON.stringify({ p_limit: limit }),
+    });
+    if (res.status === 404) return "not-migrated";
+    if (!res.ok) return null;
+    const rows = await res.json();
+    return Array.isArray(rows) ? (rows as FeedSubmissionRow[]) : null;
+  } catch {
+    return null;
+  }
+}

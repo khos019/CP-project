@@ -3160,3 +3160,17 @@ a.editor-escape:hover{color:var(--ink);border-color:var(--line-strong);backgroun
 .statement .sample-note{margin-top:10px;padding-top:10px;border-top:1px solid #1e2d25}
 .statement .sample-note b{display:block;font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
 .statement .sample-note p{margin:0;font-family:var(--font-sans);font-size:13.5px;line-height:1.6;white-space:normal}
+
+/* ---------------------------------------------------------------------------
+   Duel history and the site-wide submission feed.
+
+   Both reuse .sub-table from the per-person history; only the columns those
+   tables do not have need styling of their own.
+   --------------------------------------------------------------------------- */
+.feed-sub{margin:8px 0 0;max-width:70ch;font-size:13.5px;line-height:1.6}
+.duel-tally{display:flex;gap:14px;align-items:center;font-size:13px;font-weight:750;white-space:nowrap}
+.dh-win{color:#9aef4f}
+.dh-loss{color:#ff875c}
+.dh-elo{font-weight:600}
+.feed-me-tag{margin-left:6px;font-size:10.5px;padding:2px 6px;background:rgba(223,255,116,.1);color:var(--lime);border:1px solid rgba(223,255,116,.24)}
+.feed-mine>td{background:rgba(223,255,116,.035)}

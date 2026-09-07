@@ -793,12 +793,19 @@ function ResultScreen({
   const me = result.players.find((p) => p.seat === result.my_seat);
   const them = result.players.find((p) => p.seat !== result.my_seat);
   const rated = (me?.rating_after ?? null) !== null && (me?.delta ?? 0) !== 0;
+  /* The server reports the outcome by comparing winner_id with the viewer, and
+     the bot has no account — so a loss to the bot arrives with winner_id null,
+     which is exactly how a genuine draw arrives. It rendered as "Draw" above a
+     100:500 scoreline and a -20 rating change. The scores say it without any
+     ambiguity, in every mode, so they decide the heading. */
+  const myScore = me?.score ?? 0, theirScore = them?.score ?? 0;
+  const outcome = myScore > theirScore ? "win" : myScore < theirScore ? "loss" : "draw";
 
   return (
     <div className="duel-result panel">
       <p className="eyebrow" style={{ color: "#637068" }}>{result.mode === "bot" ? "AI duel" : "Reytingli duel"}</p>
-      <h2>{result.outcome === "win" ? t.won : result.outcome === "loss" ? t.lost : t.draw}</h2>
-      <div className="result-score">{me?.score ?? 0} : {them?.score ?? 0}</div>
+      <h2>{outcome === "win" ? t.won : outcome === "loss" ? t.lost : t.draw}</h2>
+      <div className="result-score">{myScore} : {theirScore}</div>
       {note && <p className="notice notice-error result-why">{note}</p>}
       <p className="muted">
         {t.you} {t.vs} {them?.is_bot ? <BotName /> : nameOf(them)} · {them?.rating ?? "—"} Elo

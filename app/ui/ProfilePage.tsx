@@ -63,6 +63,8 @@ export function ProfilePage({
   isStaff,
   goFriends,
   goSubmissions,
+  goDuelHistory,
+  goSiteFeed,
 }: {
   lang: Lang;
   profile: Profile;
@@ -78,6 +80,8 @@ export function ProfilePage({
   isStaff: boolean;
   goFriends: () => void;
   goSubmissions: () => void;
+  goDuelHistory: () => void;
+  goSiteFeed: () => void;
 }) {
   const t = T[lang];
   const [editing, setEditing] = useState(false);
@@ -178,6 +182,12 @@ export function ProfilePage({
           )}
           <button className="secondary" onClick={goSubmissions}>
             {t.submissions}
+          </button>
+          <button className="secondary" onClick={goDuelHistory}>
+            {tr(lang, "profile.duelHistory")}
+          </button>
+          <button className="secondary" onClick={goSiteFeed}>
+            {tr(lang, "profile.siteFeed")}
           </button>
           <button className="secondary" onClick={goFriends}>
             {t.friends}
