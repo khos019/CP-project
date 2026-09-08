@@ -1,0 +1,4 @@
+# Scratch space for the generator: compiled reference solutions and their
+# binaries. Regenerated on every run, never reviewed.
+build/
+*.pool.sql
