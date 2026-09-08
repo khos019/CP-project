@@ -18,6 +18,11 @@ import { MathText } from "./math-text";
  * Older problems have a single `constraints` string and one `noteUz/noteEn`;
  * rewritten ones have `constraintList` and a note per sample. Both render, so
  * the rewrite can land problem by problem instead of in one commit.
+ *
+ * `constraintList` is the English list and `constraintListUz` its Uzbek
+ * counterpart, so the constraints are not the one section left in English on
+ * an otherwise Uzbek page. The Uzbek list falls back to the English one when
+ * it is missing, exactly as the other bilingual fields do.
  */
 export function ProblemStatement({
   item, lang, stUz, stEn, inUz, inEn, outUz, outEn,
@@ -27,8 +32,12 @@ export function ProblemStatement({
 }) {
   const pick = (uz?: string, en?: string) => (lang === "uz" ? uz : en) || "";
   const legend = pick(item.legendUz, item.legendEn) || pick(item.storyUz, item.storyEn);
-  const bounds = item.constraintList?.length
-    ? item.constraintList
+  // Same fallback as `pick`, one list up: the Uzbek constraints when the page
+  // is Uzbek and they exist, the English ones otherwise. A problem whose
+  // bounds are pure formulas needs no Uzbek list at all.
+  const list = (lang === "uz" ? item.constraintListUz : undefined) || item.constraintList;
+  const bounds = list?.length
+    ? list
     : item.constraints ? [item.constraints] : [];
   const samples = item.samples || [];
   const perSample = (lang === "uz" ? item.sampleNotesUz : item.sampleNotesEn) || [];

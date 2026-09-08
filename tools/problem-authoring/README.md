@@ -54,6 +54,9 @@ a reference for the shape of an entry.
    is a hidden test that was not testing anything.
 5. Difficulty and points are derived from the rating, never set by hand, using
    the same boundaries as `difficultyOf` in `app/ui/rating.ts`.
+5b. `constraintListUz` exists and matches `constraintList` entry for entry.
+   Constraints are bilingual like every other prose field; leaving them English
+   only would put one English section in the middle of an Uzbek page.
 6. `run.mjs` refuses to start if a judge key or problem id is already in the
    bank, because the append would otherwise succeed and leave two problems
    answering to one key.

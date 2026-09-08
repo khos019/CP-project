@@ -60,6 +60,24 @@ for (const [key, secs] of stated) {
 }
 console.log("problems judged above the 1s default: " + judged);
 
+/* ---- constraints exist in both languages, entry for entry ---- */
+let untranslated = 0;
+for (const line of bankSrc.split("\n")) {
+  if (!line.startsWith(" {id:")) continue;
+  const id = line.match(/id:"([^"]+)"/)[1];
+  const en = line.match(/,constraintList:(\[(?:[^[\]]|\[[^\]]*\])*?\]),/);
+  const uz = line.match(/,constraintListUz:(\[(?:[^[\]]|\[[^\]]*\])*?\]),/);
+  if (!en) continue;
+  if (!uz) { untranslated++; bad(id + ": constraintList has no Uzbek counterpart"); continue; }
+  let a, b;
+  try { a = JSON.parse(en[1]); b = JSON.parse(uz[1]); } catch { continue; }
+  if (a.length !== b.length) {
+    bad(id + ": constraintList has " + a.length + " entries and constraintListUz has " + b.length +
+        " -- entry i must mean the same thing in both");
+  }
+}
+if (untranslated === 0) console.log("constraints: all 302 carry both languages");
+
 /* ---- reference solutions, parsed exactly as tests/bot-solutions.test.mjs does ---- */
 const entry = /"([a-z0-9-]+)":\s*\{\s*solution:\s*cpp\(`([\s\S]*?)`\),\s*(?:\/\/[^\n]*\n\s*)*wrong:\s*\[([\s\S]*?)\],?\s*\}/g;
 const solKeys = new Set();

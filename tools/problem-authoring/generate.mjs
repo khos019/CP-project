@@ -110,6 +110,15 @@ export function generate(problems) {
       if (!differs) throw new Error(p.judge + ": wrong[" + i + "] passes every hidden test");
     });
 
+    /* Constraints are bilingual like every other prose field. A batch that
+       leaves them English-only would put one English section in the middle of
+       an otherwise Uzbek page -- which is what the whole bank looked like until
+       the lists were translated, and it is not worth letting back in. */
+    if (!p.constraintListUz || p.constraintListUz.length !== p.constraintList.length) {
+      throw new Error(p.judge + ": constraintListUz must exist and match constraintList entry for entry" +
+        " (" + (p.constraintListUz ? p.constraintListUz.length : "missing") + " vs " + p.constraintList.length + ")");
+    }
+
     const difficulty = difficultyOf(p.rating);
     out.push({ ...p, difficulty, points: pointsOf(difficulty), samples, tests });
     process.stdout.write("  ok " + p.judge + " (" + p.rating + " " + difficulty + ")" + NL);
@@ -155,6 +164,7 @@ export function emit(rows) {
       "outputUz:" + j(p.outputUz), "outputEn:" + j(p.outputEn),
       "constraints:" + j(p.constraintList.join("; ")),
       "constraintList:" + j(p.constraintList),
+      "constraintListUz:" + j(p.constraintListUz),
       "sampleNotesUz:" + j(p.sampleNotesUz), "sampleNotesEn:" + j(p.sampleNotesEn),
       "samples:" + j(p.samples),
     ];
