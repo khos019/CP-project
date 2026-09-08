@@ -102,7 +102,9 @@ export const solvedCount = () => ratedSolves().length;
 
 /** Difficulty band label for a problem, used to colour its rating chip. */
 export function difficultyOf(rating: number): "easy" | "medium" | "hard" | "insane" {
-  // Insane starts where the bank's own ceiling begins: 2000 and up is the
-  // advanced-cp end of the ladder, not merely a hard version of the rest.
-  return rating < 1200 ? "easy" : rating < 1800 ? "medium" : rating < 2000 ? "hard" : "insane";
+  // The boundary moved up a step: 2000 is still a hard problem — a strong
+  // Expert clears it — so hard now runs through 2000 and insane begins at
+  // 2100, where the technique stops being "the standard one, done carefully"
+  // and starts being a named algorithm you either know or you do not.
+  return rating < 1200 ? "easy" : rating < 1800 ? "medium" : rating < 2100 ? "hard" : "insane";
 }
