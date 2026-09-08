@@ -956,6 +956,17 @@ function Problems({lang,filter,setFilter,items,go,onSelect}:{lang:Lang,filter:st
  </>;
 }
 
+/* The limits were written into the page as the literal text "1 s · 256 MB".
+   Every problem in the bank happened to allow 1000 ms, so the constant and the
+   data agreed and nothing looked wrong. They no longer do: the heavier
+   problems are given 2 or 3 seconds, and a statement whose constraints argue
+   about what fits in the time limit has to show the real one. */
+const fmtLimits=(p:BankProblem)=>{
+ const ms=p.timeLimitMs??1000;
+ const secs=ms%1000===0?String(ms/1000):(ms/1000).toFixed(1);
+ return `${secs} s · ${p.memoryMb??256} MB`;
+};
+
 function Problem({lang,item,code,setCode,codeLang,setCodeLang,verdict,submit,onBack,go,signed}:{lang:Lang;item:BankProblem;code:string;setCode:(x:string)=>void;codeLang:"cpp20"|"python3";setCodeLang:(x:"cpp20"|"python3")=>void;verdict:string;submit:()=>void;onBack:()=>void;go:(v:View)=>void;signed:boolean}){
  const starter=EMPTY_STARTER;
  // Bank problems carry their own statement; the three duel problems keep theirs.
@@ -965,7 +976,7 @@ function Problem({lang,item,code,setCode,codeLang,setCodeLang,verdict,submit,onB
  /* The history reloads on a verdict, not on the progress lines that lead up to
     one: "3/12 tests" is the same submission still being judged. */
  const settledVerdict=/tekshirilmoqda|navbat|judging|queue/i.test(verdict)?"":verdict;
- return <><button className="crumb crumb-btn" onClick={onBack}>← {tr(lang,"algoYolApp.ortga")}</button><div className="page-head"><div><span className="tag">{item.id}</span> <span className="tag rating-tag" style={{color:ratingColor(item.rating||1200)}}>★ {item.rating||1200}</span> <span className="tag">{item.tag}</span> {solved&&<span className="tag tag-solved">✓ {tr(lang,"algoYolApp.yechilgan")}</span>}<h1 className="page-title" style={{marginTop:12}}>{lang==="uz"?item.uz:item.en}</h1></div><span className="muted mono">1 s · 256 MB</span></div>
+ return <><button className="crumb crumb-btn" onClick={onBack}>← {tr(lang,"algoYolApp.ortga")}</button><div className="page-head"><div><span className="tag">{item.id}</span> <span className="tag rating-tag" style={{color:ratingColor(item.rating||1200)}}>★ {item.rating||1200}</span> <span className="tag">{item.tag}</span> {solved&&<span className="tag tag-solved">✓ {tr(lang,"algoYolApp.yechilgan")}</span>}<h1 className="page-title" style={{marginTop:12}}>{lang==="uz"?item.uz:item.en}</h1></div><span className="muted mono">{fmtLimits(item)}</span></div>
  {judgeable?<><div className="workspace"><ProblemStatement item={item} lang={lang} stUz={judgeable.stUz} stEn={judgeable.stEn} inUz={judgeable.inUz} inEn={judgeable.inEn} outUz={judgeable.outUz} outEn={judgeable.outEn} /><CodeEditor code={code} setCode={setCode} lang={codeLang} setLang={setCodeLang} onSubmit={submit} submitLabel={copy[lang].submit} verdict={verdict}   extraAction={<a className="text-link editor-escape" href="/playground" onClick={linkTo(()=>go("playground"))}>{tr(lang,"algoYolApp.bosh_muhitda_ochish")}</a>}/></div>
  {item.judge&&<ProblemSubmissions lang={lang} problemKey={item.judge} signedIn={signed} reloadKey={settledVerdict}
    onReuse={(source,language)=>{setCodeLang(language);setCode(source);window.scrollTo({top:0,behavior:"smooth"})}}/>}</>

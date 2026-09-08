@@ -17,7 +17,7 @@
  *    runs.
  */
 
-import { tests } from "../judge/tests";
+import { tests, problemCpuSeconds } from "../judge/tests";
 import { serverEnv } from "./env";
 
 export type Language = "cpp20" | "python3";
@@ -232,10 +232,14 @@ export async function judgeSource(
     return { verdict: "JUDGE_ERROR", passed: 0, total: 0, runtimeMs: 0, memoryKb: 0, details: "Unknown problem." };
   }
   const cases = tests[problemId];
+  /* A problem that says "2 s" on its page has to be judged at 2 s. The budget
+     is stated for C++ and scaled from there, so Python keeps the head start it
+     was given rather than losing it on exactly the problems that need it most. */
+  const scale = (problemCpuSeconds[problemId] ?? limits.cpp20.cpu) / limits.cpp20.cpu;
   const submissions: Submission[] = cases.map((test) => ({
     language_id: languageIds[language], source_code: sourceCode,
     stdin: test.stdin, expected_output: test.expected_output,
-    cpu_time_limit: limits[language].cpu, wall_time_limit: limits[language].wall,
+    cpu_time_limit: limits[language].cpu * scale, wall_time_limit: limits[language].wall * scale,
     memory_limit: 262144, max_file_size: 1024,
   }));
 
