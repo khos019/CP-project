@@ -175,7 +175,29 @@ export type Spec =
       l: number; r: number; agg?: string; bad?: boolean;
       best?: [number, number]; note?: string }
   | { kind: "ptrace"; label: string; n: number;
-      steps: { l: number; r: number }[]; note?: string };
+      steps: { l: number; r: number }[]; note?: string }
+  /* The trees track's own vocabulary. The generic "tree" picture draws shape
+     and nothing else, but every technique here is about something the shape
+     does not show: the number a node carries up to its parent, the fact that
+     a subtree is a CONTIGUOUS range once the walk is written down, the
+     powers of two an ancestor jump is assembled from, the pieces a tree
+     falls into when one node is removed, and which of two sets is copied
+     into the other. Each of these draws exactly one of those. */
+  | { kind: "rooted"; label: string;
+      nodes: { id: number; parent: number | null; text: string;
+               tone?: RTone; badge?: string; edge?: string }[];
+      path?: number[]; sub?: number; note?: string }
+  | { kind: "tourline"; label: string; order: (string | number)[];
+      spans?: { from: number; to: number; text: string; tone?: SpanTone }[];
+      ptr?: { at: number; text: string }[]; idx?: boolean; note?: string }
+  | { kind: "jump"; label: string; chain: (string | number)[];
+      arcs?: { from: number; to: number; text: string; on?: boolean }[];
+      depths?: (string | number)[]; note?: string }
+  | { kind: "cutparts"; label: string; removed: string;
+      parts: { size: number; text?: string; over?: boolean }[]; note?: string }
+  | { kind: "s2l"; label: string;
+      sets: { size: number; text?: string; keep?: boolean }[];
+      cost?: string; note?: string };
 
 export type Box4 = [number, number, number, number];
 export type GeoTone = "ink" | "lime" | "cool" | "warm" | "pink";
@@ -194,6 +216,11 @@ export type FrameState = "active" | "waiting" | "returned";
 /** How a bar is taking part in the current step. */
 export type BarState = "cmp" | "swap" | "sorted" | "pivot" | "key";
 export type ZoneTone = "ok" | "warm" | "cool" | "dim";
+/* What a node is doing in a rooted-tree picture: the root it hangs from, a
+   node the query names, the meeting point of two paths, the one the walk is
+   standing on, or a node deliberately faded because this step is not about
+   it. */
+export type RTone = "root" | "mark" | "lca" | "cur" | "dim" | "idle";
 
 const T = (x: number, y: number, s: string, fill = DC.ink, size = 13, anchor: "middle" | "start" | "end" = "middle") => (
   <text x={x} y={y} fill={fill} fontSize={size} textAnchor={anchor} fontFamily="ui-monospace, monospace">{s}</text>
@@ -1830,6 +1857,244 @@ function PTraceView(s: Extract<Spec, { kind: "ptrace" }>) {
   </>;
 }
 
+const R_COLOR: Record<string, string> = {
+  root: DC.lime, mark: DC.cool, lca: DC.pink, cur: DC.warm,
+  dim: DC.mute, idle: DC.line,
+};
+
+/* A rooted tree that can carry a number per node. Almost every tree algorithm
+   is "each node hands one value to its parent", and a picture without those
+   values on it is a picture of the shape, not of the algorithm. The badge
+   hangs BELOW its node rather than beside it: siblings are only ever a column
+   apart horizontally, but the next row down is always a full row away. */
+function RootedView(s: Extract<Spec, { kind: "rooted" }>) {
+  const nodes = s.nodes;
+  const byId = new Map(nodes.map(n => [n.id, n]));
+  const depthOf = (n: typeof nodes[number]): number => {
+    let d = 0, cur = n;
+    while (cur.parent !== null) { const p = byId.get(cur.parent); if (!p) break; cur = p; ++d; }
+    return d;
+  };
+  const kids = (id: number) => nodes.filter(n => n.parent === id);
+  const leaves = nodes.filter(n => kids(n.id).length === 0);
+  const span = Math.min(76, 430 / Math.max(leaves.length, 1));
+  const lx0 = 260 - ((leaves.length - 1) * span) / 2;
+  const leafX = new Map<number, number>();
+  leaves.forEach((n, i) => leafX.set(n.id, lx0 + i * span));
+  const xOf = (id: number): number => {
+    if (leafX.has(id)) return leafX.get(id) as number;
+    const ch = kids(id).map(c => xOf(c.id));
+    return ch.reduce((a, b) => a + b, 0) / Math.max(ch.length, 1);
+  };
+  const maxDepth = Math.max(...nodes.map(depthOf), 0);
+  const anyBadge = nodes.some(n => n.badge !== undefined);
+  const rowH = maxDepth >= 3 ? 30 : 40;
+  const r = maxDepth >= 3 ? 11 : 13;
+  const yOf = (n: typeof nodes[number]) => 24 + depthOf(n) * rowH;
+
+  /* The shaded subtree: the smallest box holding the marked node and every
+     descendant of it. Drawn first so the edges and discs sit on top. */
+  const descend = (id: number): number[] => [id, ...kids(id).flatMap(c => descend(c.id))];
+  const subIds = s.sub !== undefined && byId.has(s.sub) ? descend(s.sub) : [];
+  const subXs = subIds.map(i => xOf(i));
+  const subYs = subIds.map(i => yOf(byId.get(i) as typeof nodes[number]));
+
+  const onPath = new Set(s.path || []);
+  const bottom = 24 + maxDepth * rowH + r + (anyBadge ? 10 : 0) + 14;
+  const noteY = bottom > 150 ? 12 : bottom;
+
+  return <>
+    {subIds.length > 1 && (
+      <rect x={Math.min(...subXs) - r - 6} y={Math.min(...subYs) - r - 5}
+        width={Math.max(...subXs) - Math.min(...subXs) + 2 * r + 12}
+        height={Math.max(...subYs) - Math.min(...subYs) + 2 * r + 10}
+        rx="9" fill="rgba(138,216,255,.09)" stroke={DC.cool} strokeWidth="1"
+        strokeDasharray="5 4" />
+    )}
+    {nodes.map(n => {
+      if (n.parent === null) return null;
+      const p = byId.get(n.parent);
+      if (!p) return null;
+      const x1 = xOf(p.id), y1 = yOf(p), x2 = xOf(n.id), y2 = yOf(n);
+      const hot = onPath.has(n.id) && onPath.has(p.id);
+      return <g key={"e" + n.id}>
+        <line x1={x1} y1={y1 + r} x2={x2} y2={y2 - r}
+          stroke={hot ? DC.lime : DC.dim} strokeWidth={hot ? 2.6 : 1.4} />
+        {n.edge && T((x1 + x2) / 2 + (x2 > x1 ? 11 : -11), (y1 + y2) / 2 + 3, n.edge, DC.mute, 9)}
+      </g>;
+    })}
+    {nodes.map(n => {
+      const tone = n.tone || "idle", col = R_COLOR[tone];
+      const filled = tone !== "idle" && tone !== "dim";
+      const y = yOf(n), x = xOf(n.id);
+      return <g key={"n" + n.id}>
+        {tone === "lca" && <circle cx={x} cy={y} r={r + 3.5} fill="none" stroke={DC.pink} strokeWidth="1.1" />}
+        <circle cx={x} cy={y} r={r} fill={filled ? DC.on : DC.bg} stroke={col}
+          strokeWidth={filled ? 2.2 : 1.4} />
+        {T(x, y + 4, n.text, tone === "idle" ? DC.ink : col, fit(n.text, 2 * r - 4, r > 12 ? 12 : 11))}
+        {n.badge !== undefined &&
+          T(x, y + r + 10, n.badge, DC.lime, fit(n.badge, span - 2 * r - 4, 10))}
+      </g>;
+    })}
+    {s.note && T(260, noteY, s.note, DC.lime, 11)}
+  </>;
+}
+
+/* The same tree after the walk has written it down. This is the one picture a
+   learner needs before Euler tours make sense: the subtree that looked like a
+   fan of branches is a single unbroken block of cells, which is exactly why a
+   Fenwick tree can answer subtree questions at all. */
+function TourLineView(s: Extract<Spec, { kind: "tourline" }>) {
+  const v = s.order, n = Math.max(v.length, 1);
+  const w = Math.min(44, 430 / n), x0 = 260 - (n * w) / 2;
+  const cx = (i: number) => x0 + i * w + (w - 5) / 2;
+  const cellY = 72;
+  /* Overlapping ranges are stacked instead of drawn on top of each other:
+     nested subtrees are the normal case here, and two brackets sharing a line
+     would print their labels through one another. */
+  const spans = s.spans || [];
+  const rows: number[] = [];
+  spans.forEach((a, i) => {
+    let row = 0;
+    for (let j = 0; j < i; ++j) {
+      const b = spans[j];
+      if (!(a.to < b.from || b.to < a.from)) row = Math.max(row, rows[j] + 1);
+    }
+    rows.push(row);
+  });
+  const spanY = (row: number) => cellY - 12 - row * 17;
+  const tone = (t?: SpanTone) => t === "warm" ? DC.warm : t === "cool" ? DC.cool : DC.lime;
+  return <>
+    {v.map((val, i) => <g key={i}>
+      <rect x={x0 + i * w} y={cellY} width={w - 5} height={26} rx="4"
+        fill={DC.bg} stroke={DC.dim} strokeWidth="1.2" />
+      {T(cx(i), cellY + 18, String(val), DC.ink, fit(String(val), w - 11, 12))}
+      {s.idx !== false && T(cx(i), cellY + 42, String(i), DC.mute, 9)}
+    </g>)}
+    {spans.map((sp, i) => {
+      const y = spanY(rows[i]), col = tone(sp.tone);
+      const xa = x0 + sp.from * w, xb = x0 + (sp.to + 1) * w - 5;
+      return <g key={"s" + i}>
+        <path d={"M " + xa + " " + (y + 5) + " L " + xa + " " + y + " L " + xb + " " + y + " L " + xb + " " + (y + 5)}
+          fill="none" stroke={col} strokeWidth="1.5" />
+        {T((xa + xb) / 2, y - 4, sp.text, col, fit(sp.text, Math.max(xb - xa, 26), 10))}
+      </g>;
+    })}
+    {(s.ptr || []).map((p, i) =>
+      <g key={"p" + i}>
+        <path d={"M " + cx(p.at) + " " + (cellY + 46) + " L " + cx(p.at) + " " + (cellY + 30)}
+          stroke={DC.warm} strokeWidth="1.6" />
+        {T(cx(p.at), cellY + 60, p.text, DC.warm, fit(p.text, w + 10, 10))}
+      </g>)}
+    {s.note && T(260, 148, s.note, DC.lime, 11)}
+  </>;
+}
+
+/* An ancestor chain with the powers of two written over it. Binary lifting is
+   taught as a table, and the table is the implementation; the idea is that
+   any climb of k steps is the binary expansion of k, and that is a picture of
+   arcs, not of a two-dimensional array. */
+function JumpView(s: Extract<Spec, { kind: "jump" }>) {
+  const n = Math.max(s.chain.length, 1);
+  const gap = Math.min(58, 420 / Math.max(n - 1, 1));
+  const x0 = 260 - ((n - 1) * gap) / 2, y = 104, r = 12;
+  const cx = (i: number) => x0 + i * gap;
+  return <>
+    <defs><marker id="jm" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto">
+      <path d="M0 0 L6 3 L0 6 z" fill={DC.lime} /></marker>
+      <marker id="jmo" markerWidth="9" markerHeight="9" refX="8" refY="3" orient="auto">
+      <path d="M0 0 L6 3 L0 6 z" fill={DC.line} /></marker></defs>
+    {(s.arcs || []).map((a, i) => {
+      const lo = Math.min(a.from, a.to), hi = Math.max(a.from, a.to);
+      const apex = Math.max(20, y - r - 12 - (hi - lo) * 13);
+      const col = a.on ? DC.lime : DC.line;
+      return <g key={"a" + i}>
+        <path d={"M " + cx(a.from) + " " + (y - r) + " Q " + ((cx(lo) + cx(hi)) / 2) + " " + (apex - 8) + " " + cx(a.to) + " " + (y - r)}
+          fill="none" stroke={col} strokeWidth={a.on ? 2.2 : 1.2}
+          strokeDasharray={a.on ? undefined : "4 3"}
+          markerEnd={a.on ? "url(#jm)" : "url(#jmo)"} />
+        {T((cx(lo) + cx(hi)) / 2, apex - 4, a.text, col, fit(a.text, Math.max((hi - lo) * gap, 30), 10))}
+      </g>;
+    })}
+    {s.chain.map((c, i) => <g key={"c" + i}>
+      <circle cx={cx(i)} cy={y} r={r} fill={DC.bg} stroke={DC.onLine} strokeWidth="1.6" />
+      {T(cx(i), y + 4, String(c), DC.ink, fit(String(c), 2 * r - 4, 11))}
+      {s.depths?.[i] !== undefined &&
+        T(cx(i), y + r + 11, String(s.depths[i]), DC.mute, fit(String(s.depths[i]), gap - 6, 9))}
+    </g>)}
+    {s.note && T(260, 148, s.note, DC.lime, 11)}
+  </>;
+}
+
+/* What is left when one node is deleted. Centroid, articulation points and
+   every "remove an edge, look at the pieces" DP are the same question — how
+   big are the pieces — and the answer is easier to see as discs than as a
+   redrawn forest. */
+function CutPartsView(s: Extract<Spec, { kind: "cutparts" }>) {
+  const parts = s.parts;
+  const rad = (k: number) => Math.max(11, Math.min(27, 8.5 * Math.sqrt(Math.max(k, 1))));
+  const rs = parts.map(p => rad(p.size));
+  const gapX = 16;
+  const total = rs.reduce((a, b) => a + 2 * b, 0) + gapX * Math.max(parts.length - 1, 0);
+  const cy = 76;
+  let x = 302 - total / 2;
+  const xs = rs.map(rr => { const c = x + rr; x += 2 * rr + gapX; return c; });
+  return <>
+    <circle cx={44} cy={cy} r="17" fill={DC.bg} stroke={DC.warm} strokeWidth="1.6"
+      strokeDasharray="4 3" />
+    {T(44, cy + 4, s.removed, DC.warm, fit(s.removed, 28, 12))}
+    {T(44, cy + 30, "olib tashlandi", DC.mute, 8)}
+    <line x1={68} y1={cy} x2={96} y2={cy} stroke={DC.line} strokeWidth="1.4" />
+    <path d={"M 96 " + (cy - 4) + " L 104 " + cy + " L 96 " + (cy + 4) + " z"} fill={DC.line} />
+    {parts.map((pt, i) => {
+      const col = pt.over ? DC.warm : DC.cool;
+      return <g key={i}>
+        <circle cx={xs[i]} cy={cy} r={rs[i]} fill={DC.bg} stroke={col} strokeWidth="1.7" />
+        {T(xs[i], cy + 4, String(pt.size), col, fit(String(pt.size), 2 * rs[i] - 6, 12))}
+        {pt.text && T(xs[i], cy + rs[i] + 13, pt.text, DC.mute, fit(pt.text, 2 * rs[i] + gapX, 9))}
+      </g>;
+    })}
+    {s.note && T(260, 142, s.note, DC.lime, 11)}
+  </>;
+}
+
+/* Small to large. The rule is one line — always copy the smaller set into the
+   bigger one — and the reason it is fast is that the element being copied at
+   least doubles the size of the set it lands in. The picture puts the sizes
+   and the arrow direction side by side so that "smaller into larger" stops
+   being a slogan. */
+function S2LView(s: Extract<Spec, { kind: "s2l" }>) {
+  const sets = s.sets, n = Math.max(sets.length, 1);
+  const w = Math.min(52, 360 / n), x0 = 260 - (n * w) / 2;
+  const mx = Math.max(...sets.map(v => v.size), 1);
+  const baseY = 116;
+  const hOf = (k: number) => Math.max(12, (k / mx) * 62);
+  const cx = (i: number) => x0 + i * w + (w - 8) / 2;
+  const keepAt = sets.findIndex(v => v.keep);
+  return <>
+    <defs><marker id="sm" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto">
+      <path d="M0 0 L6 3 L0 6 z" fill={DC.warm} /></marker></defs>
+    {sets.map((v, i) => {
+      const h = hOf(v.size), col = v.keep ? DC.lime : DC.warm;
+      return <g key={i}>
+        <rect x={x0 + i * w} y={baseY - h} width={w - 8} height={h} rx="4"
+          fill={v.keep ? DC.on : DC.bg} stroke={col} strokeWidth="1.6" />
+        {T(cx(i), baseY - h - 6, String(v.size), col, fit(String(v.size), w - 10, 11))}
+        {v.text && T(cx(i), baseY + 15, v.text, DC.mute, fit(v.text, w + 4, 9))}
+      </g>;
+    })}
+    {keepAt >= 0 && sets.map((v, i) => {
+      if (v.keep) return null;
+      const ya = baseY - hOf(v.size) - 18, yb = baseY - hOf(sets[keepAt].size) - 18;
+      const apex = Math.min(ya, yb) - 16;
+      return <path key={"ar" + i} d={"M " + cx(i) + " " + ya + " Q " + ((cx(i) + cx(keepAt)) / 2) + " " + apex + " " + cx(keepAt) + " " + yb}
+        fill="none" stroke={DC.warm} strokeWidth="1.4" strokeDasharray="4 3" markerEnd="url(#sm)" />;
+    })}
+    {s.cost && T(260, 20, s.cost, DC.cool, 11)}
+    {s.note && T(260, 145, s.note, DC.lime, 11)}
+  </>;
+}
+
 /* The drawing on its own, with no figure or caption around it. The step
    player reuses it: a simulation is the same picture redrawn frame by frame,
    and it needs the caption slot for the step's own explanation. */
@@ -1890,6 +2155,11 @@ export function DiagramBody({ spec }: { spec: Spec }) {
     case "prob": return <ProbView {...spec} />;
     case "window": return <WindowView {...spec} />;
     case "ptrace": return <PTraceView {...spec} />;
+    case "rooted": return <RootedView {...spec} />;
+    case "tourline": return <TourLineView {...spec} />;
+    case "jump": return <JumpView {...spec} />;
+    case "cutparts": return <CutPartsView {...spec} />;
+    case "s2l": return <S2LView {...spec} />;
   }
 }
 
