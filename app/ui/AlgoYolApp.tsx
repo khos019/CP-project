@@ -255,7 +255,16 @@ const wasDone=!!data.solved[lesson]&&(data.quizScores[lesson]||0)>=70;data.solve
   const base={roadmap:"foundations",unit:null,person:null,problem:null};
   if(parts[0]==="roadmaps"&&parts[1])return {...base,view:"roadmap",roadmap:parts[1],unit:parts[2]||null};
   if(parts[0]==="u"&&parts[1])return {...base,view:parts[2]==="submissions"?"person-submissions":"person",person:decodeURIComponent(parts[1])};
-  if(parts[0]==="problem"&&parts[1])return {...base,view:"problem",problem:decodeURIComponent(parts[1])};
+  if(parts[0]==="problem"&&parts[1]){
+   /* A link to a problem that is not in the bank is a 404, not problem number
+      one. Without this the screen showed whichever problem happened to be
+      first while the address still named the missing one — the same confusion
+      that openProblem exists to prevent. Matched case-insensitively so
+      /problem/a01 works, then normalised to the bank's own id. */
+   const asked=decodeURIComponent(parts[1]).toUpperCase();
+   const found=bankProblems.find(p=>p.id.toUpperCase()===asked);
+   return found?{...base,view:"problem",problem:found.id}:{...base,view:"notfound"};
+  }
   const known:View[]=["home","roadmaps","problems","problem","duel","leaderboard","profile","auth","placement","admin","stats","users","messages","friends","submissions","site-submissions","duel-history","shop","playground"];
   if(parts.length===0)return {...base,view:"home"};
   const v=known.find(x=>x===parts[0]);
