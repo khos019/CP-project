@@ -251,6 +251,7 @@
   "problem.memoryLimit": "Xotira cheklovi",
   "problem.perTest": "har bir test uchun {v}",
   "problem.sampleN": "{n}-namuna",
+  "problem.statementFailed": "Masala shartini yuklab bo‘lmadi. Sahifani yangilab ko‘ring.",
   "problem.timeLimit": "Vaqt cheklovi",
   "profile.duelHistory": "Duellar tarixi",
   "profile.siteFeed": "Sayt yuborishlari",

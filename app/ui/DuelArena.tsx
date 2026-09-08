@@ -17,6 +17,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { tr } from "./i18n";
 import { bankProblems } from "./problem-bank";
+import { useProblemDetail } from "./problem-detail";
 import { CodeEditor } from "./CodeEditor";
 import { useTabGuard } from "./duel-guard";
 import { heartbeatMark, recordDuelDone } from "./coins";
@@ -445,6 +446,13 @@ function Arena({
   }, [duel.id, duel.mode, refresh]);
 
   const problem = round ? problemFor(round.problem_key) : undefined;
+  /* The bank index knows the title, rating and difficulty of every problem;
+     the statement itself is fetched one at a time from /api/problem, so a duel
+     no longer costs the reader every other statement in the bank. The round is
+     known before this panel renders, so the request is already in flight by
+     the time the clock starts. */
+  const statement = useProblemDetail(problem?.id ?? null);
+  const prose = statement.detail;
   const over = remaining <= 0;
 
   /* The rule, enforced. A duel is the one screen where looking something up is
@@ -565,12 +573,20 @@ function Arena({
               <div className="duel-problem">
               <span className="tag">{problem.id} · {problem.difficulty.toUpperCase()} · {problem.rating}</span>
               <h2>{lang === "uz" ? problem.uz : problem.en}</h2>
-              <p><MathText text={(lang === "uz" ? problem.statementUz : problem.statementEn) || ""} /></p>
-              <p><b>{tr(lang,"algoYolApp.kirish")}:</b> <MathText text={(lang === "uz" ? problem.inputUz : problem.inputEn) || ""} /></p>
-              <p><b>{tr(lang,"algoYolApp.chiqish")}:</b> <MathText text={(lang === "uz" ? problem.outputUz : problem.outputEn) || ""} /></p>
-              {problem.constraints && <p className="muted"><MathText text={problem.constraints} /></p>}
-              {problem.samples?.[0] && (
-                <pre className="sample">{problem.samples[0].input}{"\n"}{problem.samples[0].output}</pre>
+              {statement.status === "loading" ? (
+                <p className="muted">{tr(lang,"algoYolApp.yuklanmoqda")}</p>
+              ) : statement.status === "failed" ? (
+                <p className="muted">{tr(lang,"problem.statementFailed")}</p>
+              ) : (
+                <>
+                  <p><MathText text={(lang === "uz" ? prose?.statementUz : prose?.statementEn) || ""} /></p>
+                  <p><b>{tr(lang,"algoYolApp.kirish")}:</b> <MathText text={(lang === "uz" ? prose?.inputUz : prose?.inputEn) || ""} /></p>
+                  <p><b>{tr(lang,"algoYolApp.chiqish")}:</b> <MathText text={(lang === "uz" ? prose?.outputUz : prose?.outputEn) || ""} /></p>
+                  {prose?.constraints && <p className="muted"><MathText text={prose.constraints} /></p>}
+                  {prose?.samples?.[0] && (
+                    <pre className="sample">{prose.samples[0].input}{"\n"}{prose.samples[0].output}</pre>
+                  )}
+                </>
               )}
               </div>
 
@@ -580,8 +596,8 @@ function Arena({
                 key={`${roundId}:${codeLang}`}
                 lang={lang} duelId={duel.id} round={roundId} codeLang={codeLang}
                 onCodeLang={setCodeLang} refresh={refresh}
-                sampleIn={problem.samples?.[0]?.input || ""}
-                sampleOut={problem.samples?.[0]?.output || ""}
+                sampleIn={prose?.samples?.[0]?.input || ""}
+                sampleOut={prose?.samples?.[0]?.output || ""}
                 locked={(round?.claimed_by_seat ?? null) !== null || remaining <= 0}
               />
             </div>

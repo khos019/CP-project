@@ -149,30 +149,42 @@ function insertBefore(text, anchor, block, label) {
 }
 
 export function emit(rows) {
-  // 1. problem-bank.ts
+  /* 1. The bank is two files. app/ui/problem-bank.ts is the index the client
+     bundles for every problem; the prose goes to app/api/problem/details.ts,
+     which is server-only and fetched one problem at a time. A problem must
+     land in BOTH or it will list without a statement, so they are written
+     together and the ids are checked against each other afterwards. */
   const bankPath = join(ROOT, "app/ui/problem-bank.ts");
+  const detailPath = join(ROOT, "app/api/problem/details.ts");
   let bank = readFileSync(bankPath, "utf8");
-  const lines = rows.map((p) => {
-    const f = [
-      "id:" + j(p.id), "uz:" + j(p.uz), "en:" + j(p.en),
-      "difficulty:" + j(p.difficulty), "rating:" + p.rating, "tag:" + j(p.tag),
-      "points:" + p.points, "topic:" + j(p.topic), "judge:" + j(p.judge),
-      "timeLimitMs:" + (p.timeLimitMs ?? 1000), "memoryMb:" + (p.memoryMb ?? 256),
-      "legendUz:" + j(p.legendUz), "legendEn:" + j(p.legendEn),
-      "statementUz:" + j(p.statementUz), "statementEn:" + j(p.statementEn),
-      "inputUz:" + j(p.inputUz), "inputEn:" + j(p.inputEn),
-      "outputUz:" + j(p.outputUz), "outputEn:" + j(p.outputEn),
-      "constraints:" + j(p.constraintList.join("; ")),
-      "constraintList:" + j(p.constraintList),
-      "constraintListUz:" + j(p.constraintListUz),
-      "sampleNotesUz:" + j(p.sampleNotesUz), "sampleNotesEn:" + j(p.sampleNotesEn),
-      "samples:" + j(p.samples),
-    ];
-    return " {" + f.join(",") + "},";
-  });
+  let detail = readFileSync(detailPath, "utf8");
+
+  const indexLines = rows.map((p) => " {" + [
+    "id:" + j(p.id), "uz:" + j(p.uz), "en:" + j(p.en),
+    "difficulty:" + j(p.difficulty), "rating:" + p.rating, "tag:" + j(p.tag),
+    "points:" + p.points, "topic:" + j(p.topic), "judge:" + j(p.judge),
+    "timeLimitMs:" + (p.timeLimitMs ?? 1000), "memoryMb:" + (p.memoryMb ?? 256),
+  ].join(",") + "},");
+
+  const detailLines = rows.map((p) => " " + j(p.id) + ":{" + [
+    "legendUz:" + j(p.legendUz), "legendEn:" + j(p.legendEn),
+    "statementUz:" + j(p.statementUz), "statementEn:" + j(p.statementEn),
+    "inputUz:" + j(p.inputUz), "inputEn:" + j(p.inputEn),
+    "outputUz:" + j(p.outputUz), "outputEn:" + j(p.outputEn),
+    "constraints:" + j(p.constraintList.join("; ")),
+    "constraintList:" + j(p.constraintList),
+    "constraintListUz:" + j(p.constraintListUz),
+    "sampleNotesUz:" + j(p.sampleNotesUz), "sampleNotesEn:" + j(p.sampleNotesEn),
+    "samples:" + j(p.samples),
+  ].join(",") + "},");
+
   const bankEol = eolOf(bank);
-  bank = insertBefore(bank, "];" + bankEol, lines.join(bankEol) + bankEol, "problem-bank.ts");
+  bank = insertBefore(bank, "];" + bankEol, indexLines.join(bankEol) + bankEol, "problem-bank.ts");
   writeFileSync(bankPath, bank);
+
+  const detailEol = eolOf(detail);
+  detail = insertBefore(detail, "};" + detailEol, detailLines.join(detailEol) + detailEol, "details.ts");
+  writeFileSync(detailPath, detail);
 
   // 2. app/api/judge/tests.ts
   const testsPath = join(ROOT, "app/api/judge/tests.ts");

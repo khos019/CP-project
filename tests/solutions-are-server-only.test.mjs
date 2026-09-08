@@ -76,3 +76,23 @@ test("hidden judge tests stay server-side too", async () => {
   }
   assert.deepEqual(offenders, [], `hidden expected outputs leaked into the client bundle:\n${offenders.join("\n")}`);
 });
+
+/* The problem statements are not a secret, so this is not about hiding them.
+ * It is about weight: all 302 statements are written twice, in Uzbek and in
+ * English, and they used to sit in the client component graph — every visitor
+ * downloaded the lot to read one of them. app/api/problem/details.ts serves one
+ * at a time instead, and the only thing keeping that true is that nothing under
+ * app/ui imports it. An accidental import would compile, pass every other test,
+ * and quietly put the megabytes back. */
+test("problem statements are fetched, not bundled", async () => {
+  const files = await walk(CLIENT_DIR);
+  const offenders = [];
+  for (const file of files) {
+    const text = await readFile(file, "utf8").catch(() => "");
+    // Sentences that exist only in a legend, in each language.
+    if (text.includes("Bosmaxona naqshni bitta blokni")) offenders.push(`${file}: an Uzbek legend`);
+    if (text.includes("A print shop makes a pattern by stamping")) offenders.push(`${file}: an English legend`);
+    if (text.includes("problemDetails")) offenders.push(`${file}: the details record itself`);
+  }
+  assert.deepEqual(offenders, [], `problem prose is back in the client bundle:\n${offenders.join("\n")}`);
+});

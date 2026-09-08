@@ -8,6 +8,7 @@ import { RoadmapHub, roadmapStatus, unitDone } from "./RoadmapHub";
 import { roadmapCards } from "./roadmap-data";
 import { roadmapCatalog } from "./roadmap-data";
 import { bankProblems, type BankProblem } from "./problem-bank";
+import { useProblemDetail } from "./problem-detail";
 import { MathText } from "./math-text";
 import { LockIcon } from "./icons";
 import { applySolve, ratingColor } from "./rating";
@@ -58,16 +59,16 @@ const roadmapCatalogSize=()=>({tracks:roadmapCards.length,units:roadmapCards.red
 // full statement and real hidden tests. The old inline entries were mostly
 // decorative — they had no judge key, so they could never be solved.
 const problems:BankProblem[]=[...bankProblems];
-/* What the editor starts with. The three duel problems ship their own opening
-   lines; everything else gets the empty skeleton — the same one the editor
+/* What the editor starts with: the empty skeleton — the same one the editor
    loads when you switch language, so the prefill and the switch now agree
    instead of handing out an a+b program for a problem that is not a+b. */
 const EMPTY_STARTER={cpp:"#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // yechimingizni shu yerga yozing\n    return 0;\n}\n",py:"import sys\ninput = sys.stdin.readline\n\n# yechimingizni shu yerga yozing\n"};
-const starterFor=(p:BankProblem,which:"cpp"|"py")=>{
- if(p.statementUz)return EMPTY_STARTER[which];
- const duel=duelProblems.find(d=>d.key===p.judge);
- return duel?(which==="cpp"?duel.cpp:duel.py):EMPTY_STARTER[which];
-};
+/* Every problem in the bank carries its own statement, so the editor always
+   opens on the empty skeleton; the opening lines the three duel problems ship
+   belong to the duel, which is a different screen. The statement itself no
+   longer lives in the bundle -- see ./problem-detail -- so this could not read
+   it here anyway. */
+const starterFor=(which:"cpp"|"py")=>EMPTY_STARTER[which];
 
 /* Session, profile and role handling live in ./session — one module owns the
    difference between a guest and an account. Re-exported so existing imports
@@ -104,7 +105,7 @@ function readAuthReturn():AuthReturn{
 const roleLabel=(role:Role,lang:Lang)=>role==="owner"?(tr(lang,"algoYolApp.ega_owner")):role==="admin"?"ADMIN":(tr(lang,"algoYolApp.foydalanuvchi"));
 
 export function AlgoYolApp(){
- const [lang,setLang]=useState<Lang>("uz"),[view,setView]=useState<View>("home"),[filter,setFilter]=useState("all"),[code,setCode]=useState(()=>starterFor(problems[0],"cpp")),[codeLang,setCodeLang]=useState<"cpp20"|"python3">("cpp20"),[verdict,setVerdict]=useState(""),[selectedRoadmap,setSelectedRoadmap]=useState("foundations"),[selectedUnit,setSelectedUnit]=useState<string|null>(null),[activeProblem,setActiveProblem]=useState<BankProblem>(problems[0]); const t=copy[lang];
+ const [lang,setLang]=useState<Lang>("uz"),[view,setView]=useState<View>("home"),[filter,setFilter]=useState("all"),[code,setCode]=useState(()=>starterFor("cpp")),[codeLang,setCodeLang]=useState<"cpp20"|"python3">("cpp20"),[verdict,setVerdict]=useState(""),[selectedRoadmap,setSelectedRoadmap]=useState("foundations"),[selectedUnit,setSelectedUnit]=useState<string|null>(null),[activeProblem,setActiveProblem]=useState<BankProblem>(problems[0]); const t=copy[lang];
  // A stored token is not proof of an account: it can be expired or revoked.
  // The app stays in "loading" until Supabase confirms it, then commits to
  // exactly one of guest / authenticated. It never renders account-shaped UI
@@ -283,7 +284,7 @@ const wasDone=!!data.solved[lesson]&&(data.quizScores[lesson]||0)>=70;data.solve
    const p=bankProblems.find(x=>x.id===s.problem);
    if(p&&p.id!==activeProblemRef.current.id){
     setActiveProblem(p);
-    const starter=starterFor(p,codeLangRef.current==="cpp20"?"cpp":"py");
+    const starter=starterFor(codeLangRef.current==="cpp20"?"cpp":"py");
     setCode(p.judge?(readDraft(p.judge,codeLangRef.current)??starter):starter);
     setVerdict("");
    }
@@ -434,7 +435,7 @@ const wasDone=!!data.solved[lesson]&&(data.quizScores[lesson]||0)>=70;data.solve
   setActiveProblem(p);
   // Unsent work outranks the template. Anyone who left mid-solution and came
   // back — or refreshed — should find what they wrote, not a blank editor.
-  const starter=starterFor(p,codeLang==="cpp20"?"cpp":"py");
+  const starter=starterFor(codeLang==="cpp20"?"cpp":"py");
   setCode(p.judge?(readDraft(p.judge,codeLang)??starter):starter);
   setVerdict("");
   if(push)pushScreen({view:"problem",problem:p.id});else pushScreen({view:"problem",problem:p.id});
@@ -444,13 +445,13 @@ const wasDone=!!data.solved[lesson]&&(data.quizScores[lesson]||0)>=70;data.solve
     a refresh, a crash or a closed tab all cost nothing. */
  const editCode=useCallback((next:string)=>{
   setCode(next);
-  if(activeProblem.judge)writeDraft(activeProblem.judge,codeLang,next,starterFor(activeProblem,codeLang==="cpp20"?"cpp":"py"));
+  if(activeProblem.judge)writeDraft(activeProblem.judge,codeLang,next,starterFor(codeLang==="cpp20"?"cpp":"py"));
  },[activeProblem,codeLang]);
 
  /* Switching language is switching editors: each keeps its own draft. */
  const switchCodeLang=useCallback((next:"cpp20"|"python3")=>{
   setCodeLang(next);
-  const starter=starterFor(activeProblem,next==="cpp20"?"cpp":"py");
+  const starter=starterFor(next==="cpp20"?"cpp":"py");
   setCode(activeProblem.judge?(readDraft(activeProblem.judge,next)??starter):starter);
  },[activeProblem]);
  /* The lesson hands over a unit id; the problem it practises is that unit's
@@ -968,16 +969,29 @@ const fmtLimits=(p:BankProblem)=>{
 };
 
 function Problem({lang,item,code,setCode,codeLang,setCodeLang,verdict,submit,onBack,go,signed}:{lang:Lang;item:BankProblem;code:string;setCode:(x:string)=>void;codeLang:"cpp20"|"python3";setCodeLang:(x:"cpp20"|"python3")=>void;verdict:string;submit:()=>void;onBack:()=>void;go:(v:View)=>void;signed:boolean}){
- const starter=EMPTY_STARTER;
+ /* The prose is not in the bundle -- it is fetched for this one problem when
+    the screen opens. Everything above the statement panel (id, rating, tag,
+    title, limits) comes from the index, so the page head is there on the first
+    frame and only the panel waits. */
+ const statement=useProblemDetail(item.id);
+ const prose=statement.detail;
  // Bank problems carry their own statement; the three duel problems keep theirs.
  const duel=duelProblems.find(d=>d.key===item.judge);
- const judgeable=item.statementUz?{stUz:item.statementUz,stEn:item.statementEn||"",inUz:item.inputUz||"",inEn:item.inputEn||"",outUz:item.outputUz||"",outEn:item.outputEn||"",sample:(item.samples||[]).map(x=>`${x.input}${x.output}`).join("\n"),cpp:starter.cpp,py:starter.py}:duel;
+ const judgeable=prose?.statementUz?{stUz:prose.statementUz,stEn:prose.statementEn||"",inUz:prose.inputUz||"",inEn:prose.inputEn||"",outUz:prose.outputUz||"",outEn:prose.outputEn||""}:duel;
  const solved=loadMastery().evidence[`problem:${item.id}`]!==undefined||loadProblemStatuses()[item.judge||""]==="solved";
  /* The history reloads on a verdict, not on the progress lines that lead up to
     one: "3/12 tests" is the same submission still being judged. */
  const settledVerdict=/tekshirilmoqda|navbat|judging|queue/i.test(verdict)?"":verdict;
+ /* The editor does not depend on the statement, so it is mounted while the
+    statement is still in flight: a solver who already knows the problem can
+    start typing, and a restored draft does not wait on a fetch. */
+ const editor=<CodeEditor code={code} setCode={setCode} lang={codeLang} setLang={setCodeLang} onSubmit={submit} submitLabel={copy[lang].submit} verdict={verdict} extraAction={<a className="text-link editor-escape" href="/playground" onClick={linkTo(()=>go("playground"))}>{tr(lang,"algoYolApp.bosh_muhitda_ochish")}</a>}/>;
  return <><button className="crumb crumb-btn" onClick={onBack}>← {tr(lang,"algoYolApp.ortga")}</button><div className="page-head"><div><span className="tag">{item.id}</span> <span className="tag rating-tag" style={{color:ratingColor(item.rating||1200)}}>★ {item.rating||1200}</span> <span className="tag">{item.tag}</span> {solved&&<span className="tag tag-solved">✓ {tr(lang,"algoYolApp.yechilgan")}</span>}<h1 className="page-title" style={{marginTop:12}}>{lang==="uz"?item.uz:item.en}</h1></div><span className="muted mono">{fmtLimits(item)}</span></div>
- {judgeable?<><div className="workspace"><ProblemStatement item={item} lang={lang} stUz={judgeable.stUz} stEn={judgeable.stEn} inUz={judgeable.inUz} inEn={judgeable.inEn} outUz={judgeable.outUz} outEn={judgeable.outEn} /><CodeEditor code={code} setCode={setCode} lang={codeLang} setLang={setCodeLang} onSubmit={submit} submitLabel={copy[lang].submit} verdict={verdict}   extraAction={<a className="text-link editor-escape" href="/playground" onClick={linkTo(()=>go("playground"))}>{tr(lang,"algoYolApp.bosh_muhitda_ochish")}</a>}/></div>
+ {statement.status==="loading"
+  ?<div className="workspace"><article className="panel statement" aria-busy="true"><ScreenLoading lang={lang}/></article>{editor}</div>
+  :statement.status==="failed"
+  ?<div className="panel" style={{maxWidth:680}}><div className="notice notice-error">{tr(lang,"problem.statementFailed")}</div></div>
+  :judgeable?<><div className="workspace"><ProblemStatement detail={prose||{}} lang={lang} stUz={judgeable.stUz} stEn={judgeable.stEn} inUz={judgeable.inUz} inEn={judgeable.inEn} outUz={judgeable.outUz} outEn={judgeable.outEn} />{editor}</div>
  {item.judge&&<ProblemSubmissions lang={lang} problemKey={item.judge} signedIn={signed} reloadKey={settledVerdict}
    onReuse={(source,language)=>{setCodeLang(language);setCode(source);window.scrollTo({top:0,behavior:"smooth"})}}/>}</>
  :<div className="panel" style={{maxWidth:680}}><div className="notice">{tr(lang,"algoYolApp.ushbu_masala_hozircha_korib_chiqish_rejimi")}<b>{item.tag}</b></div></div>}</>}

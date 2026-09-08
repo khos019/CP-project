@@ -4,12 +4,18 @@ A problem lives in four places, and they have to agree:
 
 | file | holds |
 | --- | --- |
-| `app/ui/problem-bank.ts` | the statement the learner reads |
-| `app/api/judge/tests.ts` | the hidden tests (server-only) |
+| `app/ui/problem-bank.ts` | the index the client bundles: id, titles, rating, tag, topic, points, judge key, limits |
+| `app/api/problem/details.ts` | the prose the learner reads, served per problem (server-only) |
+| `app/api/judge/tests.ts` | the hidden tests, and the per-problem CPU budget (server-only) |
 | `app/api/_lib/solutions.ts` | the duel bot's reference solution and its near misses (server-only) |
 | `supabase/migrations/*.sql` | the row that lets a duel select the problem |
 
-Writing those by hand means stating the same facts four times and hoping they
+The first two are two halves of one problem: the index is bundled for every
+problem so the list can render, and the prose is fetched only when somebody
+opens that problem. A problem written into one and not the other lists without
+a statement, so the generator writes both and `verify.mjs` checks the ids match.
+
+Writing those by hand means stating the same facts five times and hoping they
 match. They have not always matched: a sample output typed from memory, an
 answer key computed by a different mental model than the statement describes, a
 pool row whose difficulty label disagrees with its own rating — each of those

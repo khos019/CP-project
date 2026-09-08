@@ -251,6 +251,7 @@
   "problem.memoryLimit": "Memory limit",
   "problem.perTest": "{v} per test",
   "problem.sampleN": "Sample {n}",
+  "problem.statementFailed": "The statement could not be loaded. Try refreshing the page.",
   "problem.timeLimit": "Time limit",
   "profile.duelHistory": "Duel history",
   "profile.siteFeed": "Site submissions",

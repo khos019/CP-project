@@ -1,4 +1,4 @@
-import type { BankProblem } from "./problem-bank";
+import type { ProblemDetail } from "./problem-bank";
 import { tr, type Lang } from "./i18n";
 import { MathText } from "./math-text";
 
@@ -15,6 +15,11 @@ import { MathText } from "./math-text";
  * constraints at the bottom -- where they were -- means the reader picks an
  * algorithm before learning that n goes to 10^18.
  *
+ * The prose arrives from /api/problem rather than from the bundle, so `detail`
+ * is what the page fetched for this problem; the caller owns the loading state
+ * and only renders this once it has one. The statement/input/output text stays
+ * a prop because the three duel problems supply their own.
+ *
  * Older problems have a single `constraints` string and one `noteUz/noteEn`;
  * rewritten ones have `constraintList` and a note per sample. Both render, so
  * the rewrite can land problem by problem instead of in one commit.
@@ -25,24 +30,24 @@ import { MathText } from "./math-text";
  * it is missing, exactly as the other bilingual fields do.
  */
 export function ProblemStatement({
-  item, lang, stUz, stEn, inUz, inEn, outUz, outEn,
+  detail, lang, stUz, stEn, inUz, inEn, outUz, outEn,
 }: {
-  item: BankProblem; lang: Lang;
+  detail: ProblemDetail; lang: Lang;
   stUz: string; stEn: string; inUz: string; inEn: string; outUz: string; outEn: string;
 }) {
   const pick = (uz?: string, en?: string) => (lang === "uz" ? uz : en) || "";
-  const legend = pick(item.legendUz, item.legendEn) || pick(item.storyUz, item.storyEn);
+  const legend = pick(detail.legendUz, detail.legendEn) || pick(detail.storyUz, detail.storyEn);
   // Same fallback as `pick`, one list up: the Uzbek constraints when the page
   // is Uzbek and they exist, the English ones otherwise. A problem whose
   // bounds are pure formulas needs no Uzbek list at all.
-  const list = (lang === "uz" ? item.constraintListUz : undefined) || item.constraintList;
+  const list = (lang === "uz" ? detail.constraintListUz : undefined) || detail.constraintList;
   const bounds = list?.length
     ? list
-    : item.constraints ? [item.constraints] : [];
-  const samples = item.samples || [];
-  const perSample = (lang === "uz" ? item.sampleNotesUz : item.sampleNotesEn) || [];
+    : detail.constraints ? [detail.constraints] : [];
+  const samples = detail.samples || [];
+  const perSample = (lang === "uz" ? detail.sampleNotesUz : detail.sampleNotesEn) || [];
   // The legacy single note explains the first sample, so that is where it goes.
-  const legacyNote = pick(item.noteUz, item.noteEn);
+  const legacyNote = pick(detail.noteUz, detail.noteEn);
 
   return (
     <article className="panel statement">

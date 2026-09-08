@@ -15,6 +15,7 @@ const read = (p) => readFileSync(ROOT + "/" + p, "utf8");
 const bankSrc = read("app/ui/problem-bank.ts");
 const testsSrc = read("app/api/judge/tests.ts");
 const solSrc = read("app/api/_lib/solutions.ts");
+const detailSrc = read("app/api/problem/details.ts");
 
 let fail = 0;
 const bad = (m) => { console.log("  FAIL " + m); fail++; };
@@ -60,15 +61,28 @@ for (const [key, secs] of stated) {
 }
 console.log("problems judged above the 1s default: " + judged);
 
-/* ---- constraints exist in both languages, entry for entry ---- */
-let untranslated = 0;
-for (const line of bankSrc.split("\n")) {
-  if (!line.startsWith(" {id:")) continue;
-  const id = line.match(/id:"([^"]+)"/)[1];
-  const en = line.match(/,constraintList:(\[(?:[^[\]]|\[[^\]]*\])*?\]),/);
-  const uz = line.match(/,constraintListUz:(\[(?:[^[\]]|\[[^\]]*\])*?\]),/);
+/* ---- the two halves of the bank describe the same problems ---- */
+const detailLines = detailSrc.split("\n").filter((l) => /^ "[A-Z0-9]+":\{/.test(l));
+const detailIds = detailLines.map((l) => l.match(/^ "([A-Z0-9]+)"/)[1]);
+console.log("statements in details.ts: " + detailIds.length);
+const detailSet = new Set(detailIds);
+for (const b of bank) if (!detailSet.has(b.id)) bad(b.id + ": listed in the index with no statement in details.ts");
+for (const id of detailIds) if (!ids.includes(id)) bad(id + ": a statement in details.ts with no index entry");
+
+/* ---- constraints exist in both languages, entry for entry ----
+   This reads details.ts, which is where the constraints moved when the bank was
+   split. It used to read the index; after the split that loop still ran, found
+   no constraintList on any line, skipped every problem and reported success --
+   a check that passes because it is looking in the wrong file is worse than no
+   check, so it counts what it actually inspected and fails if that is zero. */
+let inspected = 0;
+for (const line of detailLines) {
+  const id = line.match(/^ "([^"]+)"/)[1];
+  const en = line.match(/constraintList:(\[(?:[^[\]]|\[[^\]]*\])*?\]),/);
+  const uz = line.match(/constraintListUz:(\[(?:[^[\]]|\[[^\]]*\])*?\]),/);
   if (!en) continue;
-  if (!uz) { untranslated++; bad(id + ": constraintList has no Uzbek counterpart"); continue; }
+  inspected++;
+  if (!uz) { bad(id + ": constraintList has no Uzbek counterpart"); continue; }
   let a, b;
   try { a = JSON.parse(en[1]); b = JSON.parse(uz[1]); } catch { continue; }
   if (a.length !== b.length) {
@@ -76,7 +90,8 @@ for (const line of bankSrc.split("\n")) {
         " -- entry i must mean the same thing in both");
   }
 }
-if (untranslated === 0) console.log("constraints: all 302 carry both languages");
+if (inspected === 0) bad("no constraint list was inspected at all -- this check is looking in the wrong place");
+else console.log("constraints: all " + inspected + " carry both languages");
 
 /* ---- reference solutions, parsed exactly as tests/bot-solutions.test.mjs does ---- */
 const entry = /"([a-z0-9-]+)":\s*\{\s*solution:\s*cpp\(`([\s\S]*?)`\),\s*(?:\/\/[^\n]*\n\s*)*wrong:\s*\[([\s\S]*?)\],?\s*\}/g;
