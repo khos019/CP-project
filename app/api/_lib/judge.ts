@@ -23,6 +23,30 @@ import { serverEnv } from "./env";
 export type Language = "cpp20" | "python3";
 export const languageIds = { cpp20: 54, python3: 71 } as const;
 
+/* Time limits, per language rather than one number for everybody.
+ *
+ * The judged limit used to be a flat 1 CPU-second, which is the right budget
+ * for C++ and a punishing one for Python: language id 71 is CPython 3.8, and
+ * an interpreted solution runs an order of magnitude slower than the compiled
+ * one it is being measured against. On the easy end nothing came close to the
+ * ceiling, so it never showed; on the 2000-rated problems a correct Python
+ * solution could time out for being written in Python. Most judges give the
+ * interpreted languages a multiplier for exactly this reason, and this is ours.
+ *
+ * C++ deliberately stays at 1s. Raising it across the board would have bought
+ * Python its headroom at the cost of the lesson C++ is there to teach — that a
+ * solution can be correct and still too slow — and would have doubled what an
+ * infinite loop costs the judge, which beginners produce constantly.
+ *
+ * wall is not a second opinion on cpu: it is the ceiling on real elapsed time,
+ * so it has to clear the CPU budget with room for process start-up and I/O, or
+ * a program gets cut off by the wall before the CPU limit it was measured
+ * against can ever apply. */
+const limits = {
+  cpp20:   { cpu: 1, wall: 3 },
+  python3: { cpu: 3, wall: 8 },
+} as const satisfies Record<Language, { cpu: number; wall: number }>;
+
 export type JudgeVerdict =
   | "ACCEPTED" | "WRONG_ANSWER" | "TIME_LIMIT_EXCEEDED" | "COMPILATION_ERROR"
   | "RUNTIME_ERROR" | "MEMORY_LIMIT_EXCEEDED" | "JUDGE_ERROR";
@@ -211,7 +235,8 @@ export async function judgeSource(
   const submissions: Submission[] = cases.map((test) => ({
     language_id: languageIds[language], source_code: sourceCode,
     stdin: test.stdin, expected_output: test.expected_output,
-    cpu_time_limit: 1, wall_time_limit: 3, memory_limit: 262144, max_file_size: 1024,
+    cpu_time_limit: limits[language].cpu, wall_time_limit: limits[language].wall,
+    memory_limit: 262144, max_file_size: 1024,
   }));
 
   try {
