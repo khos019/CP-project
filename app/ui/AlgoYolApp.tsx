@@ -337,7 +337,15 @@ const wasDone=!!data.solved[lesson]&&(data.quizScores[lesson]||0)>=70;data.solve
  // and time is banked in 60s chunks rather than trusted as one large number.
  useEffect(()=>{const tick=()=>{if(document.visibilityState!=="visible")return;recordHeartbeat(60)};const id=window.setInterval(tick,60000);return()=>window.clearInterval(id)},[]);
  // Browser back/forward: each screen change pushes an entry, popstate restores it.
- useEffect(()=>{applyScreen(screenRef.current);window.history.replaceState(screenRef.current,"",screenToPath(screenRef.current));const onPop=(e:PopStateEvent)=>{const st=e.state as Screen|null;applyScreen(st&&typeof st==="object"&&"view" in st?st:pathToScreen(window.location.pathname));navDepth.current=Math.max(0,navDepth.current-1)};window.addEventListener("popstate",onPop);return()=>window.removeEventListener("popstate",onPop)},[]); const applyLang=(n:Lang)=>{setLang(n);localStorage.setItem("algoyol-lang",n)};
+ useEffect(()=>{applyScreen(screenRef.current);
+  /* Keep a query string that belongs to the screen we are already on. The
+     problems list writes its filters into the address bar so a filtered view
+     can be shared, and this replaceState — which runs first, on mount — used
+     to drop them: /problems?difficulty=insane&q=fib arrived as a plain,
+     unfiltered /problems before the list could read either one. */
+  const landing=screenToPath(screenRef.current);
+  window.history.replaceState(screenRef.current,"",
+   landing===window.location.pathname?landing+window.location.search:landing);const onPop=(e:PopStateEvent)=>{const st=e.state as Screen|null;applyScreen(st&&typeof st==="object"&&"view" in st?st:pathToScreen(window.location.pathname));navDepth.current=Math.max(0,navDepth.current-1)};window.addEventListener("popstate",onPop);return()=>window.removeEventListener("popstate",onPop)},[]); const applyLang=(n:Lang)=>{setLang(n);localStorage.setItem("algoyol-lang",n)};
  const swap=()=>applyLang(lang==="uz"?"en":"uz");
  const enterSession=async(token:string,remember:boolean,isNew:boolean,refreshToken?:string)=>{
   setAuth({status:"loading"});
@@ -824,9 +832,14 @@ function Problems({lang,filter,setFilter,items,go,onSelect}:{lang:Lang,filter:st
   /* Deferred to a microtask rather than run in the effect body: this is the
      one place the URL is allowed to overwrite state, and doing it inline makes
      the very first render a discarded one. */
+  /* Read the address NOW, apply it a microtask later. The effect below writes
+     the filter state back into the URL and runs before this microtask does —
+     so reading location.search inside the microtask read a URL that had
+     already been rewritten to a bare /problems from the default state, and
+     every shared or bookmarked filter link arrived unfiltered. */
+  const q=new URLSearchParams(window.location.search);
+  const t=q.get("topic"),d=q.get("difficulty"),st=q.get("status"),k=q.get("q");
   void Promise.resolve().then(()=>{
-   const q=new URLSearchParams(window.location.search);
-   const t=q.get("topic"),d=q.get("difficulty"),st=q.get("status"),k=q.get("q");
    if(t)setTopic(t); if(d)setFilter(d); if(k)setQuery(k);
    if(st==="solved"||st==="unsolved")setSolvedOnly(st);
   });
