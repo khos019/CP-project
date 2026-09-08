@@ -186,9 +186,11 @@ export function ProfilePage({
           <button className="secondary" onClick={goDuelHistory}>
             {tr(lang, "profile.duelHistory")}
           </button>
-          <button className="secondary" onClick={goSiteFeed}>
-            {tr(lang, "profile.siteFeed")}
-          </button>
+          {isOwner && (
+            <button className="secondary" onClick={goSiteFeed}>
+              {tr(lang, "profile.siteFeed")}
+            </button>
+          )}
           <button className="secondary" onClick={goFriends}>
             {t.friends}
           </button>

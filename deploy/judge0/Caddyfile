@@ -1,0 +1,6 @@
+# Replace judge.example.com with your own domain. Caddy gets and renews the
+# certificate on its own; the Worker calls this over https and nothing else
+# reaches Judge0.
+judge.example.com {
+	reverse_proxy server:2358
+}

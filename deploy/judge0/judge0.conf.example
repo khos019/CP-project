@@ -1,0 +1,40 @@
+# Copy to judge0.conf and fill in. judge0.conf is gitignored — it holds three
+# secrets and must never be committed.
+#
+# Generate each secret with:  openssl rand -hex 32
+
+################################################################################
+# The token the site sends. Our Worker puts it in X-Auth-Token, which is what
+# app/api/_lib/judge.ts sends when JUDGE0_API_KEY is set and JUDGE0_API_HOST is
+# not — so leave AUTHN_HEADER exactly as it is below.
+################################################################################
+AUTHN_HEADER=X-Auth-Token
+AUTHN_TOKEN=
+
+################################################################################
+# Postgres
+################################################################################
+POSTGRES_HOST=db
+POSTGRES_DB=judge0
+POSTGRES_USER=judge0
+POSTGRES_PASSWORD=
+
+################################################################################
+# Redis
+################################################################################
+REDIS_HOST=redis
+REDIS_PASSWORD=
+
+################################################################################
+# Limits.
+#
+# These are ceilings the server refuses to exceed, not the values we use — the
+# site sends its own cpu_time_limit, wall_time_limit and memory_limit with every
+# submission (1s / 3s / 256MB for a judged test, 5s / 10s for the playground).
+# The ceilings only have to sit above those.
+################################################################################
+MAX_CPU_TIME_LIMIT=15
+MAX_WALL_TIME_LIMIT=30
+MAX_MEMORY_LIMIT=512000
+MAX_SUBMISSION_BATCH_SIZE=20
+ENABLE_WAIT_RESULT=false
