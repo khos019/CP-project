@@ -91,14 +91,35 @@ function endpoint() {
    are different problems and the learner is the one who has to tell them
    apart. */
 class JudgeTimeout extends Error {
-  constructor(readonly done: number, readonly total: number) {
+  constructor(readonly done: number, readonly total: number, readonly lastError = "") {
     super(
       `The judge did not return a verdict within ${Math.round(BUDGET_MS / 1000)}s ` +
-      `(${done}/${total} tests finished). The shared judge queue is busy — try again in a moment.`,
+      `(${done}/${total} tests finished). ` +
+      // A batch that never settled because every read was refused is a
+      // different problem from a queue that was merely slow, and saying so is
+      // what turns "try again" into something anyone can act on.
+      (lastError
+        ? `The judge kept refusing the read (${lastError}).`
+        : "The shared judge queue is busy — try again in a moment."),
     );
     this.name = "JudgeTimeout";
   }
 }
+
+/* Judge0 returns the text fields base64-encoded (see the note in execute).
+   TextDecoder replaces an undecodable byte with U+FFFD rather than throwing,
+   which is what we want: a mangled character in a compiler message is still a
+   usable compiler message. */
+const decodeField = <T extends string | null | undefined>(value: T): T | string => {
+  if (!value) return value;
+  try {
+    const binary = atob(value);
+    const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+    return new TextDecoder().decode(bytes);
+  } catch {
+    return value;   // already plain text: nothing lost by leaving it alone
+  }
+};
 
 const isFinal = (r: Result) => (r.status?.id || 0) > 2;
 
@@ -115,16 +136,42 @@ async function execute(submissions: Submission[], onProgress?: JudgeProgress): P
   const tokens = ((await created.json()) as Array<{ token?: string }>).map((x) => x.token).filter(Boolean) as string[];
   if (tokens.length !== submissions.length) throw new Error("Judge did not accept every test.");
 
-  const query = `${url}/submissions/batch?tokens=${tokens.join(",")}&base64_encoded=false` +
+  /* base64 on the way back, plain on the way in.
+   *
+   * A compiler's diagnostics are not guaranteed to be valid UTF-8 — gcc quotes
+   * fragments of the source, and a stray byte is enough. Asked for plain text,
+   * Judge0 refuses the WHOLE batch with
+   *   "some attributes for this submission cannot be converted to UTF-8"
+   * and the poll loop below read that as "not ready yet", retried for the full
+   * 45 seconds and reported that the judge queue was busy. Every compilation
+   * error — the single most common thing a beginner submits — came back as
+   * "try again in a moment" instead of the compiler's message.
+   *
+   * The flag is per request, so submissions are still created as plain text
+   * (our own inputs are known-good UTF-8) and only the read asks for base64. */
+  const query = `${url}/submissions/batch?tokens=${tokens.join(",")}&base64_encoded=true` +
     `&fields=token,status,time,memory,stdout,stderr,compile_output,message`;
   const started = Date.now();
   let settled = 0;
+  let lastPollError = "";
   for (let attempt = 0; attempt < MAX_POLLS && Date.now() - started < BUDGET_MS; attempt++) {
     await sleep(pollDelay(attempt));
     const checked = await fetch(query, { headers });
-    if (!checked.ok) continue;
+    if (!checked.ok) {
+      // Remembered rather than swallowed: a batch that never settles because
+      // the judge kept refusing the read should not be reported as a queue
+      // that was merely slow.
+      lastPollError = `HTTP ${checked.status}`;
+      continue;
+    }
     const results = ((await checked.json()) as { submissions: Result[] }).submissions || [];
     if (results.length !== tokens.length) continue;
+    for (const r of results) {
+      r.stdout = decodeField(r.stdout);
+      r.stderr = decodeField(r.stderr);
+      r.compile_output = decodeField(r.compile_output);
+      r.message = decodeField(r.message);
+    }
     settled = results.filter(isFinal).length;
     onProgress?.(settled, tokens.length);
     // Status ids 1 and 2 are "in queue" and "processing"; anything above is final.
@@ -135,7 +182,7 @@ async function execute(submissions: Submission[], onProgress?: JudgeProgress): P
     const failed = results.findIndex((r) => isFinal(r) && r.status!.id !== 3);
     if (failed !== -1 && results.slice(0, failed).every(isFinal)) return results;
   }
-  throw new JudgeTimeout(settled, tokens.length);
+  throw new JudgeTimeout(settled, tokens.length, lastPollError);
 }
 
 export function verdictFor(result: Result): JudgeVerdict {

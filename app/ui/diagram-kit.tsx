@@ -1124,10 +1124,14 @@ function RatioView(s: Extract<Spec, { kind: "ratio" }>) {
   const baseY = 116, totalW = s.items.reduce((t, it) => t + it.w, 0) || 1;
   const scale = 400 / Math.max(totalW, s.cap || 0);
   const maxR = Math.max(...s.items.map(it => it.v / it.w), 1e-9);
-  let x = 56;
+  /* Offsets are derived rather than accumulated in a mutable local: a `let`
+     advanced inside .map is a write that happens during render, which React is
+     free to memoize around — and then the bars stack on top of each other. */
+  const offsets = s.items.reduce<number[]>(
+    (acc, it) => [...acc, acc[acc.length - 1] + it.w * scale], [56]);
   const bars = s.items.map((it, i) => {
     const bw = it.w * scale, h = Math.max(10, (it.v / it.w / maxR) * 80);
-    const topY = baseY - h, bx = x; x += bw;
+    const topY = baseY - h, bx = offsets[i];
     return <g key={i}>
       <rect x={bx} y={topY} width={Math.max(bw - 3, 4)} height={h} rx="3"
         fill={DC.on} stroke={DC.onLine} strokeWidth="1.4" />

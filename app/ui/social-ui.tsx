@@ -711,7 +711,6 @@ export function SiteSubmissions({
 
   useEffect(() => {
     let live = true;
-    setState("loading");
     fetchRecentSubmissions(60).then((list) => {
       if (!live) return;
       if (list === "not-migrated") { setState("missing"); return; }
@@ -731,7 +730,9 @@ export function SiteSubmissions({
           <h1 className="page-title">{t.feedTitle}</h1>
           <p className="muted feed-sub">{t.feedSub}</p>
         </div>
-        <button className="pill" onClick={() => setNonce((n) => n + 1)}>{t.refresh}</button>
+        <button className="pill" onClick={() => { setState("loading"); setNonce((n) => n + 1); }}>
+          {t.refresh}
+        </button>
       </div>
 
       <section className="panel">
