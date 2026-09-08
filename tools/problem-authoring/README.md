@@ -72,7 +72,7 @@ a reference for the shape of an entry.
 - **C++ is stored inside a template literal** in `solutions.ts`, so backslashes
   and backticks are escaped on the way out. In a batch file write ordinary C++:
   `"\\n"` in the batch is the C++ escape `\n`.
-- `baseline-unparseable.json` records the 99 entries that predate this tool and
-  store their near miss as a plain string rather than `cpp(\`...\`)`. The bot
-  test's regex has never matched them, so it passes while covering about half
-  the bank. They are recorded rather than re-reported on every run.
+- Every entry must use the `cpp(\`...\`)` form. 99 older ones stored their near
+  miss as a plain string, which the bot test's regex silently skipped — it
+  passed while checking about half the bank. They have been converted, and
+  `verify.mjs` now fails on any entry the test cannot read.

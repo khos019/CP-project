@@ -107,16 +107,14 @@ for (const block of blocks) {
   }
 }
 console.log("solutions the bot test can parse: " + solKeys.size);
-/* 99 entries predate this work and store their near-miss as a plain string
-   rather than cpp(`...`), so the bot test's regex has never matched them --
-   it passes while covering roughly half the bank. That is a real bug, but it
-   is not one an append introduces, so it is recorded rather than re-reported
-   on every batch. Anything NEW that fails to parse is a failure. */
-const known = new Set(JSON.parse(readFileSync(new URL("./baseline-unparseable.json", import.meta.url), "utf8")));
+/* This used to tolerate a list of 99 entries the bot test's regex could not
+   match, because they stored their near miss as a plain string rather than
+   cpp(`...`) -- the test passed while covering half the bank. They have since
+   been converted, so the allowance is gone and any entry the test cannot read
+   is a failure. */
 for (const b of bank) {
-  if (!solKeys.has(b.judge) && !known.has(b.judge)) bad("bot test cannot parse a solution for " + b.judge);
+  if (!solKeys.has(b.judge)) bad("bot test cannot parse a solution for " + b.judge);
 }
-console.log("pre-existing entries the bot test skips: " + known.size + " (recorded, not counted)");
 
 /* ---- the modules still evaluate ---- */
 for (const [label, src] of [["problem-bank.ts", bankSrc], ["tests.ts", testsSrc]]) {
