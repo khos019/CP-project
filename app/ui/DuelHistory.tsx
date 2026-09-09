@@ -54,6 +54,81 @@ const when = (iso: string, lang: Lang) => {
     { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 };
 
+/* The table itself, without the screen around it.
+ *
+ * A profile page shows the same rows in a tab, and the row is where the
+ * subtleties live — the bot has no handle to link to, a zero delta is not the
+ * same as a win by nothing, a loss reads as a loss rather than as a negative
+ * number. Two copies of that would drift, so there is one, and the screen and
+ * the tab both render it. `rows` is structural on purpose: the private
+ * duel_history row and the public one differ by a field this table does not
+ * read. */
+export type DuelTableRow = {
+  id: string;
+  my_score: number; opp_score: number;
+  outcome: "win" | "loss" | "draw";
+  delta: number; rating_after: number;
+  opponent: string; opponent_username: string | null;
+  opponent_is_bot: boolean; opponent_rating: number;
+  finished_at: string;
+};
+
+export function DuelTable({
+  lang, rows, onOpenPerson,
+}: {
+  lang: Lang;
+  rows: DuelTableRow[];
+  onOpenPerson: (username: string) => void;
+}) {
+  const t = T[lang];
+  return (
+    <div className="sub-table-wrap">
+      <table className="sub-table">
+        <thead>
+          <tr>
+            <th>{t.when}</th>
+            <th>{t.opponent}</th>
+            <th>{t.score}</th>
+            <th>{t.result}</th>
+            <th>{t.change}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.id}>
+              <td className="mono sub-when">{when(row.finished_at, lang)}</td>
+              <td>
+                {row.opponent_is_bot ? (
+                  <span>{t.bot} <span className="tag feed-me-tag">{t.botMode}</span></span>
+                ) : row.opponent_username ? (
+                  <button className="link-btn" onClick={() => onOpenPerson(row.opponent_username!)}>
+                    {row.opponent || row.opponent_username}
+                  </button>
+                ) : (
+                  <span className="muted">{row.opponent || "—"}</span>
+                )}
+                <small className="muted mono dh-elo"> · {row.opponent_rating} Elo</small>
+              </td>
+              <td className="mono">{row.my_score} : {row.opp_score}</td>
+              <td>
+                <span className={`sub-verdict ${row.outcome === "win" ? "ok" : row.outcome === "loss" ? "bad" : ""}`}>
+                  {row.outcome === "win" ? t.won : row.outcome === "loss" ? t.lost : t.draw}
+                </span>
+              </td>
+              <td className="mono">
+                <span className={row.delta > 0 ? "dh-win" : row.delta < 0 ? "dh-loss" : "muted"}>
+                  {row.delta > 0 ? "+" : ""}{row.delta}
+                </span>
+                <small className="muted"> → {row.rating_after}</small>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 export function DuelHistoryScreen({
   lang, onBack, onOpenPerson,
 }: {
@@ -112,50 +187,7 @@ export function DuelHistoryScreen({
           </div>
         )}
         {state === "ready" && rows && rows.length > 0 && (
-          <div className="sub-table-wrap">
-            <table className="sub-table">
-              <thead>
-                <tr>
-                  <th>{t.when}</th>
-                  <th>{t.opponent}</th>
-                  <th>{t.score}</th>
-                  <th>{t.result}</th>
-                  <th>{t.change}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((row) => (
-                  <tr key={row.id}>
-                    <td className="mono sub-when">{when(row.finished_at, lang)}</td>
-                    <td>
-                      {row.opponent_is_bot ? (
-                        <span>{t.bot} <span className="tag feed-me-tag">{t.botMode}</span></span>
-                      ) : row.opponent_username ? (
-                        <button className="link-btn" onClick={() => onOpenPerson(row.opponent_username!)}>
-                          {row.opponent || row.opponent_username}
-                        </button>
-                      ) : (
-                        <span className="muted">{row.opponent || "—"}</span>
-                      )}
-                      <small className="muted mono dh-elo"> · {row.opponent_rating} Elo</small>
-                    </td>
-                    <td className="mono">{row.my_score} : {row.opp_score}</td>
-                    <td>
-                      <span className={`sub-verdict ${row.outcome === "win" ? "ok" : row.outcome === "loss" ? "bad" : ""}`}>
-                        {row.outcome === "win" ? t.won : row.outcome === "loss" ? t.lost : t.draw}
-                      </span>
-                    </td>
-                    <td className="mono">
-                      <span className={row.delta > 0 ? "dh-win" : row.delta < 0 ? "dh-loss" : "muted"}>
-                        {row.delta > 0 ? "+" : ""}{row.delta}
-                      </span>
-                      <small className="muted"> → {row.rating_after}</small>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <DuelTable lang={lang} rows={rows} onOpenPerson={onOpenPerson} />
         )}
       </section>
     </>

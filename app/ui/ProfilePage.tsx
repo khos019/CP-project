@@ -8,6 +8,8 @@ import { emptyProgress, loadProgress, type Progress } from "./progress";
 import { uploadAvatar, avatarStorageReady } from "./avatar";
 import { hasExtendedProfile, updateProfile, type Profile, type Role } from "./session";
 import { AvatarZoom } from "./social-ui";
+import { RatingGraph } from "./RatingGraph";
+import { fetchPublicDuelHistory, type PublicDuelRow } from "./social";
 
 type Lang = "uz" | "en";
 
@@ -111,6 +113,19 @@ export function ProfilePage({
       window.removeEventListener("algoyol-progress", read);
     };
   }, []);
+
+  /* The server's record of finished duels, for the rating curve. `duels`
+     above is the local mastery log — it counts wins for the tiles and knows
+     nothing about ratings, so it cannot draw a curve. A database still on 032
+     answers "not-migrated" and the graph simply does not appear. */
+  const [myDuels, setMyDuels] = useState<PublicDuelRow[] | null>(null);
+  useEffect(() => {
+    let live = true;
+    fetchPublicDuelHistory(profile.id).then((result) => {
+      if (live && Array.isArray(result)) setMyDuels(result);
+    });
+    return () => { live = false; };
+  }, [profile.id]);
 
   /* Every number below is derived from something the learner actually did.
      Nothing here is a placeholder. */
@@ -246,6 +261,17 @@ export function ProfilePage({
         />
         <Stat label={t.streak} value={String(stats.streak)} />
       </div>
+
+      {/* The same graph a visitor sees on somebody else's profile, read
+          through the same public function rather than through duel_history():
+          one query means the curve here and the curve there cannot disagree
+          about the account's own history.
+
+          Rendered as soon as the rows arrive, empty ones included: an account
+          with no duels yet gets the panel saying so, which is the same thing a
+          visitor sees on that profile. A database still on 032 answers
+          "not-migrated", `myDuels` stays null, and no panel appears at all. */}
+      {myDuels && <RatingGraph lang={lang} rows={myDuels} />}
 
       <div className="pf-grid">
         <section className="panel">

@@ -320,3 +320,63 @@ export async function fetchRecentSubmissions(
     return null;
   }
 }
+
+// ------------------------------------------------- somebody else's profile (033)
+/* The two reads a profile page needs about an account that is not yours.
+ *
+ * Both are security-definer RPCs rather than table reads, because both tables
+ * are closed: duel_match_players is the account's own row, and `friends` is
+ * readable only by its owner. The functions decide what leaves the database,
+ * which is why they can be granted to anon — a profile link has to work before
+ * the visitor signs in.
+ *
+ * Only the follow direction is readable: whom this account follows, never who
+ * follows it. 015 made that a rule and 033 keeps it.
+ */
+
+/** One finished duel, as somebody else's profile shows it. `rating_before` is
+ *  the extra field the rating graph needs and the private history does not. */
+export type PublicDuelRow = {
+  id: string; mode: "human" | "bot"; rounds: number;
+  my_seat: number; my_score: number; opp_score: number;
+  outcome: "win" | "loss" | "draw";
+  delta: number; rating_before: number; rating_after: number;
+  opponent: string; opponent_username: string | null;
+  opponent_is_bot: boolean; opponent_rating: number;
+  started_at: string; finished_at: string;
+};
+
+const rpc = async <T>(name: string, body: Record<string, unknown>): Promise<T | "not-migrated" | null> => {
+  const r = open(`rpc/${name}`);
+  if (!r) return null;
+  try {
+    const res = await fetch(r.url, { method: "POST", headers: r.headers, body: JSON.stringify(body) });
+    // PostgREST answers 404/PGRST202 for a function the schema does not have,
+    // which is a database still on 032 rather than a failure to reach it.
+    if (res.status === 404) return "not-migrated";
+    if (!res.ok) return null;
+    return (await res.json()) as T;
+  } catch {
+    return null;
+  }
+};
+
+/** Any account's finished duels, newest first. */
+export async function fetchPublicDuelHistory(
+  userId: string,
+  limit = 60,
+): Promise<PublicDuelRow[] | "not-migrated" | null> {
+  const rows = await rpc<PublicDuelRow[]>("public_duel_history", { p_user: userId, p_limit: limit });
+  if (rows === "not-migrated" || rows === null) return rows;
+  return Array.isArray(rows) ? rows : null;
+}
+
+/** The people any account follows, newest first. */
+export async function fetchPublicFriends(
+  userId: string,
+  limit = 200,
+): Promise<FriendRow[] | "not-migrated" | null> {
+  const rows = await rpc<FriendRow[]>("public_friends", { p_user: userId, p_limit: limit });
+  if (rows === "not-migrated" || rows === null) return rows;
+  return Array.isArray(rows) ? rows : null;
+}
