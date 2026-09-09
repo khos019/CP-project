@@ -30,9 +30,11 @@ import type { ProblemDetail } from "./problem-bank";
    means bumping it. The number is part of the URL, so a new revision is a new
    cache entry and the old one simply expires unused.
 
-   2 -- the legend paragraph was removed from all 302 problems and every
-   statement was rewritten to explain its task on its own. */
-const PROSE_REVISION = 2;
+   2 -- the legend paragraph was removed from all 302 problems and the 188
+   statements that had been leaning on it were rewritten.
+   3 -- the remaining 114 statements went through the same pass, so every
+   problem in the bank now states its task in full. */
+const PROSE_REVISION = 3;
 
 const cache = new Map<string, ProblemDetail>();
 const inFlight = new Map<string, Promise<ProblemDetail | null>>();
