@@ -119,6 +119,23 @@ export function generate(problems) {
         " (" + (p.constraintListUz ? p.constraintListUz.length : "missing") + " vs " + p.constraintList.length + ")");
     }
 
+    /* The statement has to explain the task on its own. There used to be a
+       `legend` above it -- a paragraph of topic framing, read before the task
+       it framed -- and it was removed from all 302 problems because a solver
+       who came to solve had to get past it to find out what to compute. What
+       that leaves is a statement that must name what the input describes, what
+       is being asked and every definition the question leans on, in both
+       languages. A statement short enough to be a single sentence is one that
+       was leaning on the legend. */
+    for (const key of ["statementUz", "statementEn"]) {
+      const text = p[key] || "";
+      if (text.length < 240) {
+        throw new Error(p.judge + ": " + key + " is " + text.length + " characters -- state the task" +
+          " in full (what the input describes, what to compute, and the definitions it uses)." +
+          " There is no legend paragraph to carry it any more.");
+      }
+    }
+
     const difficulty = difficultyOf(p.rating);
     out.push({ ...p, difficulty, points: pointsOf(difficulty), samples, tests });
     process.stdout.write("  ok " + p.judge + " (" + p.rating + " " + difficulty + ")" + NL);
@@ -167,7 +184,6 @@ export function emit(rows) {
   ].join(",") + "},");
 
   const detailLines = rows.map((p) => " " + j(p.id) + ":{" + [
-    "legendUz:" + j(p.legendUz), "legendEn:" + j(p.legendEn),
     "statementUz:" + j(p.statementUz), "statementEn:" + j(p.statementEn),
     "inputUz:" + j(p.inputUz), "inputEn:" + j(p.inputEn),
     "outputUz:" + j(p.outputUz), "outputEn:" + j(p.outputEn),

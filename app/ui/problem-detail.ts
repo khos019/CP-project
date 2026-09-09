@@ -22,6 +22,18 @@
 import { useEffect, useState } from "react";
 import type { ProblemDetail } from "./problem-bank";
 
+/* The statement of a problem is cached by the browser for a day
+   (`cache-control: max-age=86400` on /api/problem), which is right for prose
+   that almost never changes -- and wrong on the day it does: a reader who had
+   opened a problem would keep the old wording for another 24 hours. So the
+   request carries the revision of the prose, and rewriting the statements
+   means bumping it. The number is part of the URL, so a new revision is a new
+   cache entry and the old one simply expires unused.
+
+   2 -- the legend paragraph was removed from all 302 problems and every
+   statement was rewritten to explain its task on its own. */
+const PROSE_REVISION = 2;
+
 const cache = new Map<string, ProblemDetail>();
 const inFlight = new Map<string, Promise<ProblemDetail | null>>();
 
@@ -36,7 +48,7 @@ export function fetchProblemDetail(id: string): Promise<ProblemDetail | null> {
 
   const request = (async () => {
     try {
-      const response = await fetch(`/api/problem?id=${encodeURIComponent(id)}`);
+      const response = await fetch(`/api/problem?id=${encodeURIComponent(id)}&r=${PROSE_REVISION}`);
       if (!response.ok) return null;
       const detail = (await response.json()) as ProblemDetail;
       cache.set(id, detail);

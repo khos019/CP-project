@@ -14,6 +14,11 @@ import { NextResponse } from "next/server";
  * changes, not between requests -- so it is cached hard, both in the browser
  * and at the edge. A rebuilt worker serves new text under the same URL, which
  * is why the cache is a day rather than a year.
+ *
+ * The caller also sends `r`, the revision of the prose (see PROSE_REVISION in
+ * app/ui/problem-detail.ts). Nothing here reads it: it is part of the URL so
+ * that a rewrite of the statements becomes a new cache key instead of waiting
+ * a day behind the old one. Bump it there when the prose changes.
  */
 import { problemDetails } from "./details";
 

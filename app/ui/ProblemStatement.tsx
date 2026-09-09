@@ -10,10 +10,18 @@ import { MathText } from "./math-text";
  * The statements are written with that notation on purpose.
  *
  * The order is not decoration. A solver reads the limits first (they decide
- * which complexity is even allowed), then the legend for the situation, then
- * the formal task, then the exact I/O shape, and only then the samples. Putting
- * constraints at the bottom -- where they were -- means the reader picks an
- * algorithm before learning that n goes to 10^18.
+ * which complexity is even allowed), then the task, then the exact I/O shape,
+ * and only then the samples. Putting constraints at the bottom -- where they
+ * were -- means the reader picks an algorithm before learning that n goes to
+ * 10^18.
+ *
+ * There used to be an italic paragraph above the task: a legend, framing the
+ * topic -- why answers are taken modulo a prime, what a border of a string is
+ * for. It was the first thing read and the last thing needed, and somebody who
+ * opened the problem to solve it had to get past it to find out what to
+ * compute. It is gone, from here and from the data (`node restate.mjs
+ * --strip-legend` removed the field from all 302 entries), and
+ * what it was carrying that belonged to the task belongs in the task.
  *
  * The prose arrives from /api/problem rather than from the bundle, so `detail`
  * is what the page fetched for this problem; the caller owns the loading state
@@ -36,7 +44,6 @@ export function ProblemStatement({
   stUz: string; stEn: string; inUz: string; inEn: string; outUz: string; outEn: string;
 }) {
   const pick = (uz?: string, en?: string) => (lang === "uz" ? uz : en) || "";
-  const legend = pick(detail.legendUz, detail.legendEn) || pick(detail.storyUz, detail.storyEn);
   // Same fallback as `pick`, one list up: the Uzbek constraints when the page
   // is Uzbek and they exist, the English ones otherwise. A problem whose
   // bounds are pure formulas needs no Uzbek list at all.
@@ -54,7 +61,6 @@ export function ProblemStatement({
       <h2>{tr(lang, "algoYolApp.shart")}</h2>
       {/* The limits live in the page header, which already sits above this
           panel -- repeating them here just made the reader check twice. */}
-      {legend && <p className="story"><MathText text={legend} /></p>}
       <p><MathText text={lang === "uz" ? stUz : stEn} /></p>
 
       <h3>{tr(lang, "algoYolApp.kirish")}</h3>

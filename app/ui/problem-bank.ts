@@ -7,7 +7,7 @@
 // the topic, the points, the judge key and the limits. Eleven small fields per
 // problem.
 //
-// The prose -- legend, statement, input, output, constraints, samples and
+// The prose -- statement, input, output, constraints, samples and
 // their notes -- lives in app/api/problem/details.ts and is fetched one problem
 // at a time by app/ui/problem-detail.ts. It used to live here, which meant
 // every visitor downloaded all 302 statements in both languages in order to
@@ -19,8 +19,13 @@
 // A statement is meant to read like a Codeforces one, which means it answers
 // every question a solver would otherwise have to guess at:
 //
-//   legend       the situation, in prose, with the quantities named
-//   statement    the formal task, stated once and unambiguously
+//   statement    the task in full: what the input describes, what is being
+//                asked, and every definition the question leans on. It used to
+//                be preceded by a `legend` -- an italic paragraph of topic
+//                framing above the task -- which was removed from all 302
+//                problems: it was read first and needed last, and the solver
+//                had to get past it to learn what to compute. Whatever belongs
+//                to the task is stated in the task.
 //   input        line by line, in the order the lines actually arrive
 //   output       exactly what to print, including how many lines
 //   limits       time and memory, because they decide which algorithm fits
@@ -53,14 +58,13 @@ export type BankProblem={
  * back over the network, and a problem that has not been rewritten yet is
  * missing most of it.
  *
- * The old single `constraints` string and `storyUz/En` and `noteUz/En` are kept
+ * The old single `constraints` string and `noteUz/En` are kept
  * so nothing that reads them breaks; `constraintList` and `sampleNotes*` are
  * what the problem page renders when a problem has been rewritten.
  * `constraintListUz` is the Uzbek counterpart of `constraintList`, so the
  * constraints are not the one section left in English on an Uzbek page.
  */
 export type ProblemDetail={
- legendUz?:string;legendEn?:string;storyUz?:string;storyEn?:string;
  statementUz?:string;statementEn?:string;inputUz?:string;inputEn?:string;
  outputUz?:string;outputEn?:string;constraints?:string;
  constraintList?:string[];constraintListUz?:string[];

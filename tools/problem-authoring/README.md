@@ -82,3 +82,34 @@ a reference for the shape of an entry.
   miss as a plain string, which the bot test's regex silently skipped — it
   passed while checking about half the bank. They have been converted, and
   `verify.mjs` now fails on any entry the test cannot read.
+
+## Rewriting a problem that has already shipped
+
+`run.mjs` only appends. To change the **words** of a problem already in the
+bank, use `restate.mjs`, which edits `details.ts` in place by id and then runs
+`verify.mjs`:
+
+```bash
+node restate.mjs --strip-legend        # drop legendUz/legendEn from every entry
+node restate.mjs patches/batch-01.mjs  # rewrite statements for the ids it names
+```
+
+A patch module default-exports an array of
+`{ id, statementUz, statementEn }` — the input/output fields may be included
+too. Nothing else about the problem is touched: the samples, answer key and
+reference solution do not depend on the wording, so the judge is not re-run.
+
+### There is no legend any more
+
+Every problem used to open with an italic paragraph — the legend — that framed
+the topic: why answers are taken modulo a prime, what a border of a string is
+for. It was read first and needed last, and somebody who opened the problem to
+solve it had to get past it to reach the question. It is gone from all 302
+problems and from the generator's output.
+
+What that costs is a statement that has to stand alone, so the generator
+refuses a batch whose `statementUz`/`statementEn` is under 240 characters. A
+statement names what the input describes, what is being asked, and every
+definition the question leans on — the *task*, in full. What it still does not
+do is hint at the method: "compute the remainder as you go so nothing overflows"
+is a solution, and it belongs in the sample notes at most.
