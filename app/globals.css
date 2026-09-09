@@ -3195,41 +3195,46 @@ a.editor-escape:hover{color:var(--ink);border-color:var(--line-strong);backgroun
 .feed-mine>td{background:rgba(223,255,116,.035)}
 
 /* ─── Duel reyting grafigi (RatingGraph) ──────────────────────────────── */
-.rg{margin-top:var(--s5)}
-.rg-head{display:flex;align-items:baseline;justify-content:space-between;gap:var(--s4);flex-wrap:wrap;margin-bottom:var(--s4)}
-.rg-title{margin:0;font-size:var(--t-h3)}
-.rg-facts{display:flex;gap:var(--s4);flex-wrap:wrap;align-items:baseline}
-.rg-facts span{display:inline-flex;gap:6px;align-items:baseline}
-.rg-facts small{color:var(--dim);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
-.rg-facts b{font-size:15px}
-.rg-tally{display:inline-flex;gap:6px}
-.rg-tally i{font-style:normal;font-size:12px}
+/* Prefiks `drg`, `rg` emas: `.rg` allaqachon RoadmapGraph'ga tegishli (1439-
+   qatorga qarang) va uning `max-width:520px` i bu panelni yarim kenglikda
+   ushlab turgan edi, mening `.rg-svg` va `.rg-tip` qoidalarim esa aksincha
+   yo'l xaritasi grafigining o'z uslublarini bosib ketgan edi. Ikki grafik —
+   ikki prefiks. */
+.drg{margin-top:var(--s5)}
+.drg-head{display:flex;align-items:baseline;justify-content:space-between;gap:var(--s4);flex-wrap:wrap;margin-bottom:var(--s4)}
+.drg-title{margin:0;font-size:var(--t-h3)}
+.drg-facts{display:flex;gap:var(--s4);flex-wrap:wrap;align-items:baseline}
+.drg-facts span{display:inline-flex;gap:6px;align-items:baseline}
+.drg-facts small{color:var(--dim);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+.drg-facts b{font-size:15px}
+.drg-tally{display:inline-flex;gap:6px}
+.drg-tally i{font-style:normal;font-size:12px}
 /* The box owns the viewBox's aspect ratio so a tooltip placed at a percentage
    of it lands on its own dot at every width. */
-.rg-box{position:relative;width:100%;max-height:340px;background:var(--inset);border:1px solid var(--line-faint);border-radius:var(--r-md);overflow:hidden}
-.rg-svg{display:block;width:100%;height:100%}
-.rg-grid{stroke:var(--line);stroke-width:1;stroke-dasharray:3 4;opacity:.7}
-.rg-frame{fill:none;stroke:var(--line);stroke-width:1}
-.rg-tick{fill:var(--dim);font-size:11px;font-family:var(--font-mono)}
-.rg-line{fill:none;stroke:var(--ink);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
-.rg-dot{stroke:var(--inset);stroke-width:1.5;cursor:pointer;transition:r var(--dur-fast) var(--ease)}
-.rg-dot:focus-visible{outline:2px solid var(--green);outline-offset:2px}
-.rg-tip{
+.drg-box{position:relative;width:100%;max-height:340px;background:var(--inset);border:1px solid var(--line-faint);border-radius:var(--r-md);overflow:hidden}
+.drg-svg{display:block;width:100%;height:100%}
+.drg-grid{stroke:var(--line);stroke-width:1;stroke-dasharray:3 4;opacity:.7}
+.drg-frame{fill:none;stroke:var(--line);stroke-width:1}
+.drg-tick{fill:var(--dim);font-size:11px;font-family:var(--font-mono)}
+.drg-line{fill:none;stroke:var(--ink);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.drg-dot{stroke:var(--inset);stroke-width:1.5;cursor:pointer;transition:r var(--dur-fast) var(--ease)}
+.drg-dot:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+.drg-tip{
  position:absolute;z-index:2;pointer-events:none;
  display:flex;flex-direction:column;gap:2px;min-width:150px;
  padding:8px 10px;border:1px solid var(--line-strong);border-radius:var(--r-md);
  background:var(--surface-2);box-shadow:0 8px 24px rgba(0,0,0,.45);
  font-size:12px;line-height:1.35;
 }
-.rg-tip b{font-size:15px}
-.rg-ranks{display:flex;flex-wrap:wrap;gap:var(--s2) var(--s4);list-style:none;margin:var(--s3) 0 0;padding:0}
-.rg-ranks li{display:inline-flex;align-items:center;gap:6px;font-size:var(--t-xs);color:var(--muted)}
-.rg-ranks i{width:10px;height:10px;border-radius:3px;display:inline-block}
-.rg-ranks small{color:var(--dim)}
+.drg-tip b{font-size:15px}
+.drg-ranks{display:flex;flex-wrap:wrap;gap:var(--s2) var(--s4);list-style:none;margin:var(--s3) 0 0;padding:0}
+.drg-ranks li{display:inline-flex;align-items:center;gap:6px;font-size:var(--t-xs);color:var(--muted)}
+.drg-ranks i{width:10px;height:10px;border-radius:3px;display:inline-block}
+.drg-ranks small{color:var(--dim)}
 @media (max-width:640px){
- .rg-box{max-height:none}
- .rg-facts{gap:var(--s3)}
- .rg-facts small{font-size:11px}
+ .drg-box{max-height:none}
+ .drg-facts{gap:var(--s3)}
+ .drg-facts small{font-size:11px}
 }
 
 /* ─── Boshqa odamning profilidagi bo'limlar ───────────────────────────── */

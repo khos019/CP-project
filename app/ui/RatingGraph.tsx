@@ -126,8 +126,8 @@ export function RatingGraph({
 
   if (!history.length) {
     return (
-      <section className={`panel rg ${className || ""}`}>
-        <h2 className="rg-title">{t.title}</h2>
+      <section className={`panel drg ${className || ""}`}>
+        <h2 className="drg-title">{t.title}</h2>
         <div className="os-blank">
           <span className="os-blank-ic" aria-hidden>📈</span>
           <b>{t.empty}</b>
@@ -190,17 +190,17 @@ export function RatingGraph({
   });
 
   return (
-    <section className={`panel rg ${className || ""}`}>
-      <div className="rg-head">
-        <h2 className="rg-title">{t.title}</h2>
-        <div className="rg-facts">
+    <section className={`panel drg ${className || ""}`}>
+      <div className="drg-head">
+        <h2 className="drg-title">{t.title}</h2>
+        <div className="drg-facts">
           <span><small>{t.current}</small> <b className="mono" style={{ color: rankOf(current).color }}>{current}</b></span>
           <span><small>{t.peak}</small> <b className="mono" style={{ color: rankOf(peak).color }}>{peak}</b></span>
           <span><small>{t.low}</small> <b className="mono">{lowest}</b></span>
           <span>
             <small>{t.duels}</small>{" "}
             <b className="mono">{history.length}</b>{" "}
-            <small className="rg-tally">
+            <small className="drg-tally">
               <i className="dh-win">{tally.win}{lang === "uz" ? "G" : "W"}</i>
               <i className="dh-loss">{tally.loss}{lang === "uz" ? "M" : "L"}</i>
               <i className="muted">{tally.draw}D</i>
@@ -209,8 +209,8 @@ export function RatingGraph({
         </div>
       </div>
 
-      <div className="rg-box" style={{ aspectRatio: `${W} / ${H}` }}>
-        <svg viewBox={`0 0 ${W} ${H}`} className="rg-svg" role="img"
+      <div className="drg-box" style={{ aspectRatio: `${W} / ${H}` }}>
+        <svg viewBox={`0 0 ${W} ${H}`} className="drg-svg" role="img"
              aria-label={`${t.title}: ${lowest}–${peak}`}>
           {/* Rank bands. Each stripe is the slice of its rank that falls inside
               the visible window, so a curve never leaves the colour it is in. */}
@@ -231,19 +231,19 @@ export function RatingGraph({
           {ticks(lo, hi).map((v) => (
             <g key={v}>
               <line x1={PAD.left} x2={PAD.left + innerW} y1={yOf(v)} y2={yOf(v)}
-                    className="rg-grid" />
-              <text x={PAD.left - 8} y={yOf(v) + 4} className="rg-tick" textAnchor="end">{v}</text>
+                    className="drg-grid" />
+              <text x={PAD.left - 8} y={yOf(v) + 4} className="drg-tick" textAnchor="end">{v}</text>
             </g>
           ))}
 
-          <rect x={PAD.left} y={PAD.top} width={innerW} height={innerH} className="rg-frame" />
+          <rect x={PAD.left} y={PAD.top} width={innerW} height={innerH} className="drg-frame" />
 
-          <polyline points={line} className="rg-line" />
+          <polyline points={line} className="drg-line" />
 
           {points.map((p, i) => (
             <circle
               key={i} cx={p.x} cy={p.y} r={hover === i ? 6 : 4}
-              fill={rankOf(p.rating).color} className="rg-dot"
+              fill={rankOf(p.rating).color} className="drg-dot"
               onMouseEnter={() => setHover(i)}
               onMouseLeave={() => setHover((h) => (h === i ? null : h))}
               onFocus={() => setHover(i)}
@@ -253,7 +253,7 @@ export function RatingGraph({
           ))}
 
           {xLabels.map((p, i) => (
-            <text key={i} x={p.x} y={H - 10} className="rg-tick"
+            <text key={i} x={p.x} y={H - 10} className="drg-tick"
                   textAnchor={i === 0 ? "start" : i === xLabels.length - 1 ? "end" : "middle"}>
               {shortDate(p.when, lang)}
             </text>
@@ -264,7 +264,7 @@ export function RatingGraph({
             positioned as a percentage of the same box the viewBox fills. */}
         {active && (
           <div
-            className="rg-tip"
+            className="drg-tip"
             style={{
               left: `${(active.x / W) * 100}%`,
               top: `${(active.y / H) * 100}%`,
@@ -293,7 +293,7 @@ export function RatingGraph({
         )}
       </div>
 
-      <ul className="rg-ranks">
+      <ul className="drg-ranks">
         {shown.map((rank) => (
           <li key={rank.min}>
             <i style={{ background: rank.color }} aria-hidden />
