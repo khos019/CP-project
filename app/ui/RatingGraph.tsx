@@ -77,10 +77,25 @@ const MONTHS = {
   uz: ["Yan", "Fev", "Mar", "Apr", "May", "Iyn", "Iyl", "Avg", "Sen", "Okt", "Noy", "Dek"],
   en: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
 };
-const shortDate = (iso: string, lang: Lang) => {
+/* The scale of the axis labels follows the span of the history, because most
+   of it is short: an account's first four duels are usually minutes apart, and
+   three labels all reading "Sen 2026" say nothing at all. Under two days the
+   labels carry the time, under two months the day, and beyond that the month
+   and the year. */
+type Scale = "time" | "day" | "month";
+const scaleFor = (spanMs: number): Scale =>
+  spanMs < 2 * 86400000 ? "time" : spanMs < 60 * 86400000 ? "day" : "month";
+
+const shortDate = (iso: string, lang: Lang, scale: Scale) => {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
-  return `${MONTHS[lang][d.getUTCMonth()]} ${d.getUTCFullYear()}`;
+  const month = MONTHS[lang][d.getUTCMonth()];
+  if (scale === "month") return `${month} ${d.getUTCFullYear()}`;
+  const day = `${d.getUTCDate()} ${month}`;
+  if (scale === "day") return day;
+  const hh = String(d.getUTCHours()).padStart(2, "0");
+  const mm = String(d.getUTCMinutes()).padStart(2, "0");
+  return `${day} ${hh}:${mm}`;
 };
 const fullDate = (iso: string, lang: Lang) => {
   const d = new Date(iso);
@@ -174,10 +189,18 @@ export function RatingGraph({
   );
 
   /* The x labels are the ends and the middle, not one per duel: a hundred
-     duels in a month would otherwise print a hundred overlapping dates. */
-  const xLabels = points.length > 2
+     duels in a month would otherwise print a hundred overlapping dates. A
+     middle label that reads the same as an end is dropped rather than printed
+     twice -- which is what happens whenever the middle duel falls on the same
+     day as the first or the last. */
+  const scale = scaleFor(spanMs);
+  const ends = points.length > 2
     ? [points[0], points[Math.floor(points.length / 2)], points[points.length - 1]]
     : [points[0], points[points.length - 1]];
+  const xLabels = ends
+    .map((p, i) => ({ p, i, text: shortDate(p.when, lang, scale) }))
+    .filter((l, i, all) => i === 0 || i === all.length - 1
+      || (l.text !== all[0].text && l.text !== all[all.length - 1].text));
 
   const active = hover !== null ? points[hover] : null;
 
@@ -252,10 +275,10 @@ export function RatingGraph({
             />
           ))}
 
-          {xLabels.map((p, i) => (
-            <text key={i} x={p.x} y={H - 10} className="drg-tick"
+          {xLabels.map((l, i) => (
+            <text key={l.i} x={l.p.x} y={H - 10} className="drg-tick"
                   textAnchor={i === 0 ? "start" : i === xLabels.length - 1 ? "end" : "middle"}>
-              {shortDate(p.when, lang)}
+              {l.text}
             </text>
           ))}
         </svg>
