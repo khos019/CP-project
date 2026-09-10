@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { tr } from "./i18n";
 import { roadmapCatalog } from "./roadmap-data";
-import { readLocal } from "./progress";
+import { emptyProgress, readLocal, type Progress } from "./progress";
+import { useMastery, type MasteryStore } from "./mastery";
 import { roadmapStatus, unitDone } from "./RoadmapHub";
 import { LockGlyph } from "./icons";
 
@@ -50,14 +51,30 @@ const COMPACT_PATH = "M40,60 L400,60";
 
 const VIEWBOX = { full: "0 0 400 330", compact: "0 0 440 120" };
 
-export function buildSpine(lang: Lang): GraphNode[] {
-  const progress = readLocal();
+/* The spine as this learner sees it. Progress and mastery live in
+   localStorage, which the server cannot read, so the first render draws the
+   fresh-learner spine — exactly what the server sent — and the learner's own
+   state is filled in after mount and on every "algoyol-progress" event.
+   Computing it during render instead fails hydration for anyone with progress. */
+export function useSpine(lang: Lang): GraphNode[] {
+  const mastery = useMastery();
+  const [progress, setProgress] = useState<Progress>(emptyProgress);
+  useEffect(() => {
+    const read = () => setProgress(readLocal());
+    read();
+    window.addEventListener("algoyol-progress", read);
+    return () => window.removeEventListener("algoyol-progress", read);
+  }, []);
+  return useMemo(() => buildSpine(lang, progress, mastery), [lang, progress, mastery]);
+}
+
+export function buildSpine(lang: Lang, progress: Progress, mastery: MasteryStore): GraphNode[] {
   const nodes: GraphNode[] = [];
   let currentTaken = false;
   for (const slug of SPINE) {
     const road = roadmapCatalog.find(r => r.slug === slug);
     if (!road) continue;
-    const status = roadmapStatus(road, progress);
+    const status = roadmapStatus(road, progress, mastery);
     const done = road.units.filter(u => unitDone(progress, u)).length;
     /* Exactly one node may be "current". It is the first one that is open and
        unfinished — the honest answer to "where am I", which for somebody who

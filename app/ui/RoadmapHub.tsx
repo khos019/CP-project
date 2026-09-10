@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { tr, catalogue } from "./i18n";
 import { LockIcon } from "./icons";
 import { roadmapCatalog, type LessonUnit, type MasteryRoadmap } from "./roadmap-data";
-import { masteryOf, MASTERY_CONFIG } from "./mastery";
+import { MASTERY_CONFIG, useMastery, type MasteryStore } from "./mastery";
 import { readLocal } from "./progress";
 import { can } from "./permissions";
 import type { Role } from "./AlgoYolApp";
@@ -17,10 +17,22 @@ const empty:Progress={quizScores:{},solved:{}};
 
 export const unitDone=(p:Progress,u:LessonUnit)=>(p.quizScores[u.id]||0)>=70&&!!p.solved[u.id];
 const bySlug=(s:string)=>roadmapCatalog.find(r=>r.slug===s);
-export const roadmapStatus=(r:MasteryRoadmap,p:Progress,canReviewAll=false):Status=>{
- if(r.units.every(u=>unitDone(p,u)))return "completed";
- const open=r.prereqs.every(s=>{const pre=bySlug(s);return !pre||pre.units.every(u=>unitDone(p,u))});
- if(!canReviewAll&&!open&&masteryOf(r.slug)<MASTERY_CONFIG.unlock)return "locked";
+/* A section is done either way: every unit walked, or mastery at the
+   completion threshold — from the level check, solved problems or duels. The
+   second is what lets somebody who already knows sorting go straight on to
+   binary search without re-reading eighteen units first. */
+/* Mastery comes in as an argument rather than being read from storage here:
+   these run during render, and a render that reads localStorage disagrees with
+   the server's and fails hydration. Components pass `useMastery()`. */
+type MasteryView=Pick<MasteryStore,"scores"|"validated">;
+export const sectionDone=(r:MasteryRoadmap,p:Progress,m:MasteryView)=>r.units.every(u=>unitDone(p,u))||!!m.validated[r.slug];
+/* Done by mastery, not by walking every unit — labelled differently so the
+   roadmap does not claim lessons the learner never opened. */
+export const sectionValidatedOnly=(r:MasteryRoadmap,p:Progress,m:MasteryView)=>!r.units.every(u=>unitDone(p,u))&&!!m.validated[r.slug];
+export const roadmapStatus=(r:MasteryRoadmap,p:Progress,m:MasteryView,canReviewAll=false):Status=>{
+ if(sectionDone(r,p,m))return "completed";
+ const open=r.prereqs.every(s=>{const pre=bySlug(s);return !pre||sectionDone(pre,p,m)});
+ if(!canReviewAll&&!open&&(m.scores[r.slug]||0)<MASTERY_CONFIG.unlock)return "locked";
  return r.units.some(u=>unitDone(p,u)||(p.quizScores[u.id]||0)>0)?"in-progress":"available";
 };
 
@@ -39,7 +51,9 @@ export function RoadmapHub({lang,role,openRoadmap}:{lang:Lang;role:Role;openRoad
   const rating=Math.min(2400,800+done.length*35);
   return {total:all.length,done:done.length,pct:Math.round(done.length/all.length*100),xp,rating};
  },[progress]);
- const statuses=useMemo(()=>new Map(roadmapCatalog.map(r=>[r.slug,roadmapStatus(r,progress,canReviewAll)])),[progress,canReviewAll]);
+ const mastery=useMastery();
+ const masteryOf=(slug:string)=>mastery.scores[slug]||0;
+ const statuses=useMemo(()=>new Map(roadmapCatalog.map(r=>[r.slug,roadmapStatus(r,progress,mastery,canReviewAll)])),[progress,mastery,canReviewAll]);
  const tiers=useMemo(()=>{
   const depth=(r:MasteryRoadmap):number=>r.prereqs.length?Math.max(...r.prereqs.map(s=>{const pre=bySlug(s);return pre?depth(pre)+1:0})):0;
   const map=new Map<number,MasteryRoadmap[]>();
@@ -80,7 +94,7 @@ export function RoadmapHub({lang,role,openRoadmap}:{lang:Lang;role:Role;openRoad
      const s=statuses.get(r.slug)||"locked",done=doneIn(r),pct=Math.round(done/r.units.length*100);
      const lockedBy=r.prereqs.map(bySlug).filter((p):p is MasteryRoadmap=>!!p&&statuses.get(p.slug)!=="completed");
      return <button key={r.slug} className={`rm-node ${s}`} disabled={s==="locked"} onClick={()=>openRoadmap(r.slug)}>
-      <span className={`rm-badge ${s}`}>{s==="locked"?<LockIcon/>:<i className="rm-badge-ic">{s==="completed"?"✓":s==="in-progress"?"◔":"▶"}</i>} {statusLabel(s,lang)}</span>
+      <span className={`rm-badge ${s}`}>{s==="locked"?<LockIcon/>:<i className="rm-badge-ic">{s==="completed"?"✓":s==="in-progress"?"◔":"▶"}</i>} {s==="completed"&&sectionValidatedOnly(r,progress,mastery)?t.validated:statusLabel(s,lang)}</span>
       <span className="rm-node-top"><span className="rm-node-ic" style={{background:r.color}}>{r.icon}</span><span><b>{lang==="uz"?r.titleUz:r.titleEn}</b><small>{r.level}</small></span></span>
       <span className="rm-node-meta"><span>{done}/{r.units.length} {t.unitsShort}</span><span className="mono">{tr(lang,"roadmapExperience.mahorat")} {masteryOf(r.slug)}</span><span>{pct}%</span></span>
       <span className="progress"><span style={{width:`${pct}%`}}/></span>

@@ -62,7 +62,7 @@ export function ContinueHero({
   }, []);
 
   const view = useMemo(() => {
-    const statuses = new Map(roadmapCatalog.map((r) => [r.slug, roadmapStatus(r, progress, canReviewAll)]));
+    const statuses = new Map(roadmapCatalog.map((r) => [r.slug, roadmapStatus(r, progress, mastery, canReviewAll)]));
     const active =
       roadmapCatalog.find((r) => statuses.get(r.slug) === "in-progress") ||
       roadmapCatalog.find((r) => statuses.get(r.slug) === "available") ||

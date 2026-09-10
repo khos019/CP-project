@@ -28,14 +28,14 @@ import { ContinueHero } from "./ContinueHero";
 import { OwnerStats } from "./OwnerStats";
 import { BrandMark } from "./BrandMark";
 import { MobileTabBar, SiteFooter, SiteHeader, linkTo } from "./Chrome";
-import { RoadmapGraph, buildSpine } from "./RoadmapGraph";
+import { RoadmapGraph, useSpine } from "./RoadmapGraph";
 import { EmptyState, ProgressBar, Skeleton } from "./kit";
 import { NotFound } from "./NotFound";
 import { ProfilePage } from "./ProfilePage";
 import { UsersAdmin } from "./UsersAdmin";
 import { Messages } from "./Messages";
 import { PublicProfile } from "./PublicProfile";
-import { MASTERY_CONFIG, backfillMastery, loadMastery, masteryOf, recordEvidence } from "./mastery";
+import { MASTERY_CONFIG, backfillMastery, loadMastery, masteryOf, recordEvidence, useMastery } from "./mastery";
 import { emptyProgress, loadProgress, readLocal as readLocalProgress, syncUp } from "./progress";
 import { can } from "./permissions";
 import { fetchFriends, recordSubmission, type FriendRow } from "./social";
@@ -635,13 +635,7 @@ function Dashboard({lang,profile,go,openRoadmap,onSelectProblem}:{
  onSelectProblem:(p:BankProblem)=>void;
 }){
  const uz=lang==="uz";
- const [nodes,setNodes]=useState<ReturnType<typeof buildSpine>>([]);
- useEffect(()=>{
-  const read=()=>setNodes(buildSpine(lang));
-  read();
-  window.addEventListener("algoyol-progress",read);
-  return()=>window.removeEventListener("algoyol-progress",read);
- },[lang]);
+ const nodes=useSpine(lang);
 
  /* Practice is suggested from the weakest topics rather than from the top of
     the bank: a recommendation that ignores what you are bad at is just a list. */
@@ -732,7 +726,7 @@ function LandingCta({lang,go,signed}:{lang:Lang;go:(v:View)=>void;signed:boolean
 
 function Home({lang,go,openRoadmap}:{lang:Lang,go:(v:View)=>void,openRoadmap:(slug:string)=>void}){
  const t=copy[lang],L=LAND[lang];
- const nodes=useMemo(()=>buildSpine(lang),[lang]);
+ const nodes=useSpine(lang);
  return <>
   <section className="hero">
    <div className="hero-copy">
@@ -779,6 +773,7 @@ function PlatformStats({lang}:{lang:Lang}){
    the old card said everything except that. */
 function RoadGrid({lang,roads,openRoadmap}:{lang:Lang,roads:typeof allRoads,openRoadmap:(slug:string)=>void}){
  const [progress,setProgress]=useState(emptyProgress);
+ const mastery=useMastery();
  useEffect(()=>{
   const read=()=>setProgress(readLocalProgress());
   read();window.addEventListener("algoyol-progress",read);
@@ -788,7 +783,7 @@ function RoadGrid({lang,roads,openRoadmap}:{lang:Lang,roads:typeof allRoads,open
   const road=roadmapCatalog.find(x=>x.slug===r.slug);
   const total=road?road.units.length:r.units;
   const done=road?road.units.filter(u=>unitDone(progress,u)).length:0;
-  const status=road?roadmapStatus(road,progress):"available";
+  const status=road?roadmapStatus(road,progress,mastery):"available";
   return <a className={`road-card road-${status}`} key={r.slug} href={`/roadmaps/${r.slug}`}
    onClick={linkTo(()=>openRoadmap(r.slug))}>
    <span className="road-top">

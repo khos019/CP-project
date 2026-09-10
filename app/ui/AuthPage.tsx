@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BrandMark } from "./BrandMark";
-import { RoadmapGraph, buildSpine } from "./RoadmapGraph";
+import { RoadmapGraph, useSpine } from "./RoadmapGraph";
 import { fetchAuthProviders, supabaseConfig, type AuthProviders } from "./session";
 
 type Lang = "uz" | "en";
@@ -293,7 +293,7 @@ export function AuthPage({
     setErrors({});
   };
 
-  const spine = useMemo(() => buildSpine(lang), [lang]);
+  const spine = useSpine(lang);
 
   return (
     <div className="auth">

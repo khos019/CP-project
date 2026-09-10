@@ -1116,6 +1116,87 @@ body{background:var(--bg);min-height:100vh}
 .pl-probed{font-style:normal;color:var(--lime)}
 .pl-track-pct{font-weight:800;color:var(--muted);font-size:13px}
 
+/* Level check, per section: the rule card, the section picker, the mastery
+   meter that carries the two thresholds, and the per-section result rows. */
+.pl-intro-eyebrow{margin-top:22px}
+.pl-rules{margin:24px 0 8px;padding:18px 18px 14px;border:1px solid #22302a;border-radius:16px;background:#0b120e}
+.pl-rules .eyebrow{margin:0 0 12px}
+.pl-tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px}
+.pl-tier-card{display:grid;gap:6px;align-content:start;padding:12px 13px;border:1px solid #22302a;border-radius:12px;background:#0e1712}
+.pl-tier-card b{font-size:22px;letter-spacing:-.02em}
+.pl-tier-card small{color:var(--muted);font-size:12.5px;line-height:1.45}
+.pl-tier{justify-self:start;display:inline-block;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
+ padding:4px 9px;border-radius:999px;border:1px solid currentColor}
+.pl-tier.basic{color:var(--green)}
+.pl-tier.core{color:var(--warn)}
+.pl-tier.deep{color:var(--orange)}
+.pl-rule-list{margin:14px 0 0;padding-left:18px;display:grid;gap:7px;color:#c3d1c8;font-size:14px;line-height:1.55}
+.pl-rule-list b{color:var(--lime)}
+
+/* Mastery on the 0–1000 scale. Two ticks: the thin one opens a section, the
+   bright one completes it — the same two numbers the roadmap gates on. */
+.pl-meter{position:relative;display:block;height:8px;border-radius:99px;background:#1b2620;overflow:visible}
+.pl-meter-fill{position:absolute;left:0;top:0;bottom:0;border-radius:99px;background:var(--green);transition:width var(--dur-slow) var(--ease)}
+.pl-meter-tick{position:absolute;top:-3px;bottom:-3px;width:2px;margin-left:-1px;background:#4a5d52;border-radius:2px}
+.pl-meter-tick.key{background:var(--lime)}
+.pl-meter-legend{position:relative;height:16px;font-size:11.5px;margin:6px 0 2px}
+.pl-meter-legend span{position:absolute;top:0;transform:translateX(-50%);white-space:nowrap}
+.pl-meter-legend span.key{color:var(--lime)}
+
+.pl-pick{margin:22px 0 18px}
+.pl-pick-head{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.pl-pick-head .eyebrow{margin:0}
+.pl-pick-hint{font-size:13.5px;line-height:1.5;margin:6px 0 12px}
+.pl-pick-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:7px}
+.pl-pick-item{display:grid;grid-template-columns:28px 1fr 16px;align-items:center;gap:10px;text-align:left;padding:8px 11px;
+ border:1px solid #22302a;border-radius:11px;background:#0b110e;color:#7d8d84;font-size:13.5px;font-weight:650;transition:border-color var(--dur-fast),color var(--dur-fast)}
+.pl-pick-item .pl-track-ic{opacity:.45}
+.pl-pick-item.on{border-color:#3d5c2c;background:#101a0c;color:var(--ink)}
+.pl-pick-item.on .pl-track-ic{opacity:1}
+.pl-pick-item i{font-style:normal;color:var(--lime);font-weight:900}
+.pl-pick-count{font-size:13px;margin:12px 0 4px}
+.pl-track-ic.sm{width:28px;height:28px;border-radius:8px;font-size:11px}
+
+.pl-quiz-top{margin-bottom:14px}
+.pl-section{display:flex;align-items:center;gap:11px;min-width:0}
+.pl-section>span:last-child{display:grid;gap:2px}
+.pl-section b{font-size:15px}
+.pl-section small{font-size:12px}
+.pl-score{font-size:22px;font-weight:800;color:var(--ink)}
+.pl-score small{font-size:12px;color:var(--muted);font-weight:600}
+.pl-steps{display:flex;gap:6px;margin:14px 0 20px}
+.pl-steps i{flex:1;height:4px;border-radius:99px;background:#1b2620}
+.pl-steps i.now{background:#4a5d52}
+.pl-steps i.ok{background:var(--green)}
+.pl-steps i.bad{background:var(--orange)}
+.pl-quiz .pl-tier{margin-bottom:12px}
+.pl-code{margin:-6px 0 18px;padding:14px 16px;border-radius:12px;background:var(--inset);border:1px solid #1f2b25;
+ font-family:var(--font-mono);font-size:13.5px;line-height:1.6;color:#dfe9e2;overflow-x:auto;white-space:pre}
+.pl-inline{font-family:var(--font-mono);font-size:.9em;padding:1px 5px;border-radius:5px;background:#16201b;color:#e4f2e8}
+.pl-options button em{font-style:normal}
+/* The shared option style is a two-column grid; the ✓/✕ mark needs a third
+   column or it drops onto a line of its own. */
+.quiz-options.pl-options button{grid-template-columns:20px 1fr auto}
+.pl-section-end{margin-top:12px;padding:13px 16px;border-radius:14px;border:1px solid #2b3d33;background:#0e1712;display:grid;gap:4px}
+.pl-section-end b{font-size:14.5px}
+.pl-section-end small{color:var(--muted);font-size:13px;line-height:1.5}
+.pl-section-end.complete{border-color:#4f8c3a;background:#12200e}
+.pl-section-end.complete b{color:var(--lime)}
+.pl-section-end.open b{color:var(--warn)}
+.pl-exits{display:flex;justify-content:center;flex-wrap:wrap;gap:4px 14px;margin-top:8px}
+.pl-exits .lang{font-size:13px}
+
+.pl-note{line-height:1.6}
+.pl-page .pl-list-head{margin:26px 0 0}
+.pl-track-line{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.pl-state{font-size:11.5px;font-weight:800;white-space:nowrap;color:var(--muted)}
+.pl-state.complete{color:var(--lime)}
+.pl-state.open{color:var(--warn)}
+.pl-state.started{color:#c3d1c8}
+.pl-track.complete{border-color:#3d5c2c}
+.pl-track.untested{opacity:.62}
+.pl-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:24px}
+
 /* A unit the placement cleared: open, but visibly not the same as earned. */
 .cloud-step.placed .cloud-unit{background:#16211b;opacity:.92}
 .cloud-step.placed .cloud-node{background:#243a2a;color:#9ccf8a}
@@ -1125,6 +1206,8 @@ body{background:var(--bg);min-height:100vh}
  .pl-summary{grid-template-columns:1fr;gap:8px}
  .pl-intro,.pl-quiz{padding:24px 20px}
  .pl-question{font-size:18px}
+ .pl-tiers,.pl-pick-grid{grid-template-columns:1fr}
+ .pl-code{font-size:12.5px}
 }
 
 /* The level-check offer. A strip, not a modal: it is an invitation, and a

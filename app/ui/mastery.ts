@@ -4,6 +4,7 @@ export type MasterySource="lesson"|"quiz"|"problem"|"duel"|"placement"|"challeng
 export type MasteryStore={scores:Record<string,number>;evidence:Record<string,number>;unlocks:Record<string,boolean>;validated:Record<string,boolean>};
 export type MasteryEvent={topic:string;source:MasterySource;sourceId:string;delta:number;at:number};
 export type DuelHistoryEntry={matchId:number;opponent:string;opponentRating:number;outcome:"win"|"loss"|"draw";myScore:number;oppScore:number;ratingBefore:number;ratingAfter:number;delta:number;at:number};
+import { useEffect, useState } from "react";
 import { readScoped, writeScoped } from "./session";
 
 export type MasteryConfig={unlock:number;complete:number;advanced:number;weights:{quiz:number;lesson:number;problem:{easy:number;medium:number;hard:number;insane:number};duelMultiplier:number;placementQuestion:number;challenge:number}};
@@ -78,6 +79,22 @@ export function recordEvidence(topic:string,source:MasterySource,sourceId:string
  const newlyUnlocked=!wasOpen&&!!store.unlocks[topic];
  if(newlyUnlocked)window.dispatchEvent(new CustomEvent("algoyol-unlock",{detail:{topic,score:next,threshold:config.unlock}}));
  return {delta:next-prev,score:next,newlyUnlocked};
+}
+
+/* Mastery for a component that renders from it. The server has no storage and
+   renders every learner as mastery-free, so the first client render must do the
+   same or hydration fails; the stored values arrive after mount, and again on
+   every "algoyol-progress" event. Read mastery in render only through this. */
+export const EMPTY_MASTERY:MasteryStore=empty;
+export function useMastery():MasteryStore{
+ const [store,setStore]=useState<MasteryStore>(empty);
+ useEffect(()=>{
+  const read=()=>setStore(loadMastery());
+  read();
+  window.addEventListener("algoyol-progress",read);
+  return()=>window.removeEventListener("algoyol-progress",read);
+ },[]);
+ return store;
 }
 
 export const masteryOf=(topic:string)=>loadMastery().scores[topic]||0;
@@ -172,6 +189,9 @@ export type PlacementRecord={
  scores:Record<string,number>;
  answered:number;
  at:number;
+ /* Question ids this learner has been shown, across every attempt, so a
+    retake draws questions they have not already seen explained. */
+ seen?:string[];
 };
 
 export function loadPlacement():PlacementRecord|null{
@@ -180,12 +200,22 @@ export function loadPlacement():PlacementRecord|null{
   const raw=readScoped(PLACEMENT);
   if(!raw)return null;
   const p=JSON.parse(raw) as PlacementRecord;
-  return p&&typeof p.level==="number"?{...p,cleared:p.cleared||{},scores:p.scores||{}}:null;
+  return p&&typeof p.level==="number"?{...p,cleared:p.cleared||{},scores:p.scores||{},seen:p.seen||[]}:null;
  }catch{return null}
 }
 
 export function savePlacement(record:PlacementRecord){
  if(typeof window==="undefined")return;
+ /* A retake adds to what an earlier attempt opened; it never closes units the
+    learner was already let into, for the same reason it never lowers mastery. */
+ const prev=loadPlacement();
+ if(prev){
+  const cleared={...prev.cleared};
+  Object.entries(record.cleared).forEach(([slug,n])=>{cleared[slug]=Math.max(cleared[slug]||0,n)});
+  const scores={...prev.scores};
+  Object.entries(record.scores).forEach(([slug,n])=>{scores[slug]=Math.max(scores[slug]||0,n)});
+  record={...record,cleared,scores,seen:[...new Set([...(prev.seen||[]),...(record.seen||[])])]};
+ }
  writeScoped(PLACEMENT,JSON.stringify(record));
  /* Placement raises mastery the same way any other evidence does — never
     lowers it, because a bad day on a quiz should not erase completed work. */
