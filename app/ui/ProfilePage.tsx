@@ -148,6 +148,23 @@ export function ProfilePage({
   };
 
 
+  /* A <details> stays open until its own summary is clicked again. A menu is
+     expected to close on a click anywhere else, or on Escape. */
+  const moreRef = useRef<HTMLDetailsElement>(null);
+  useEffect(() => {
+    const close = (e: Event) => {
+      const el = moreRef.current;
+      if (!el?.open) return;
+      if (e instanceof KeyboardEvent ? e.key === "Escape" : !el.contains(e.target as Node)) el.open = false;
+    };
+    document.addEventListener("pointerdown", close);
+    document.addEventListener("keydown", close);
+    return () => {
+      document.removeEventListener("pointerdown", close);
+      document.removeEventListener("keydown", close);
+    };
+  }, []);
+
   /* The staff links used to be a row of nine buttons across the top of the
      page, ahead of the person the page is about. They are one menu now; the
      things everybody uses -- edit, messages -- stay buttons. */
@@ -157,7 +174,7 @@ export function ProfilePage({
         {editing ? t.cancel : t.edit}
       </button>
       <button className="secondary" onClick={goMessages}>{t.messages}</button>
-      <details className="pv-more">
+      <details className="pv-more" ref={moreRef}>
         <summary className="secondary" aria-label={t.menu} title={t.menu}>⋯</summary>
         <div className="pv-menu" role="menu">
           {profile.role === "owner" && <button role="menuitem" onClick={goStats}>{t.stats}</button>}
