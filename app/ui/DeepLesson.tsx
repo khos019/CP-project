@@ -4,7 +4,7 @@
    commentary tied to its own lines. See deep-lesson.ts for why this exists. */
 
 import { useEffect, useState } from "react";
-import { DiagramBody, DiagramFromSpec, type Spec } from "./diagram-kit";
+import { DiagramFromSpec, DiagramSvg, noteBand, type Spec } from "./diagram-kit";
 import { tokenize } from "./highlight";
 import { CodeBlock } from "./CodeBlock";
 import type { Block, CodeNote, DeepLesson } from "./deep-lesson";
@@ -38,6 +38,8 @@ function StepPlayer({ lang, titleUz, titleEn, frames }: {
   }, [playing, i, frames.length]);
 
   const frame = frames[i];
+  // The same height on every frame, so stepping never makes the picture jump.
+  const band = Math.max(...frames.map((f) => noteBand(f.spec)));
   const at = (n: number) => { setPlaying(false); setI(Math.max(0, Math.min(frames.length - 1, n))); };
   const uz = lang === "uz";
 
@@ -47,7 +49,7 @@ function StepPlayer({ lang, titleUz, titleEn, frames }: {
         <b>{pick(lang, titleUz, titleEn)}</b>
         <span className="mono sim-count">{i + 1} / {frames.length}</span>
       </figcaption>
-      <svg viewBox="0 0 520 152" role="img" aria-label={frame.spec.label}><DiagramBody spec={frame.spec} /></svg>
+      <DiagramSvg spec={frame.spec} band={band} />
       <p className="sim-step"><span className="sim-step-no mono">{i + 1}</span>{pick(lang, frame.uz, frame.en)}</p>
       <div className="sim-bar">
         <button onClick={() => at(i - 1)} disabled={i === 0} aria-label={uz ? "Orqaga" : "Back"}>←</button>
