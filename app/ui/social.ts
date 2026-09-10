@@ -380,3 +380,27 @@ export async function fetchPublicFriends(
   if (rows === "not-migrated" || rows === null) return rows;
   return Array.isArray(rows) ? rows : null;
 }
+
+// ---------------------------------------------------- profile header (034)
+/** The figures a profile header shows. Every one of them is computed from the
+ *  records themselves rather than from a counter column: profiles.solved_count
+ *  has not been maintained since 001, and the owner's profile said "0 solved"
+ *  above a list of accepted submissions. */
+export type ProfileSummary = {
+  solved_keys: string[];
+  submissions: number;
+  accepted: number;
+  place: number;
+  members: number;
+  friends: number;
+  duels: number;
+  max_rating: number;
+};
+
+export async function fetchProfileSummary(
+  userId: string,
+): Promise<ProfileSummary | "not-migrated" | null> {
+  const row = await rpc<ProfileSummary | null>("public_profile_summary", { p_user: userId });
+  if (row === "not-migrated" || row === null) return row;
+  return typeof row === "object" && Array.isArray(row.solved_keys) ? row : null;
+}

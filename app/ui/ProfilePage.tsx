@@ -6,17 +6,12 @@ import { roadmapCatalog } from "./roadmap-data";
 import { loadMastery, loadMasteryLog, loadDuelHistory, masteryLabel, MASTERY_CONFIG } from "./mastery";
 import { emptyProgress, loadProgress, type Progress } from "./progress";
 import { uploadAvatar, avatarStorageReady } from "./avatar";
-import { hasExtendedProfile, updateProfile, type Profile, type Role } from "./session";
-import { AvatarZoom } from "./social-ui";
-import { RatingGraph } from "./RatingGraph";
-import { fetchPublicDuelHistory, type PublicDuelRow } from "./social";
+import { hasExtendedProfile, updateProfile, type Profile } from "./session";
+import { PublicProfile, type ProfileSection } from "./PublicProfile";
 
 type Lang = "uz" | "en";
 
 const T = catalogue("profilePage");
-
-const roleLabel = (role: Role, lang: Lang) =>
-  role === "owner" ? (tr(lang,"profilePage.ega")) : role === "admin" ? "ADMIN" : tr(lang,"profilePage.oquvchi");
 
 const initialsOf = (name: string) =>
   name
@@ -27,20 +22,13 @@ const initialsOf = (name: string) =>
     .join("")
     .toUpperCase() || "AY";
 
-/* Formatted from an explicit table rather than toLocaleDateString: the server
-   and the browser resolve locale data differently, which produced a hydration
-   mismatch, and the uz-UZ fallback rendered months as "M03". */
+/* Month names from a table rather than toLocaleDateString: the server and the
+   browser resolve locale data differently, which produced a hydration mismatch,
+   and the uz-UZ fallback rendered months as "M03". */
 const MONTHS = {
   uz: ["yanvar","fevral","mart","aprel","may","iyun","iyul","avgust","sentabr","oktabr","noyabr","dekabr"],
   en: ["January","February","March","April","May","June","July","August","September","October","November","December"],
 };
-const formatDate = (iso: string, lang: Lang) => {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return "—";
-  const month = MONTHS[lang][date.getUTCMonth()];
-  return lang === "uz" ? `${date.getUTCFullYear()}-yil ${month}` : `${month} ${date.getUTCFullYear()}`;
-};
-
 const shortDate = (at: number, lang: Lang) => {
   const d = new Date(at);
   return `${String(d.getDate()).padStart(2, "0")} ${MONTHS[lang][d.getMonth()].slice(0, 3)}`;
@@ -63,10 +51,10 @@ export function ProfilePage({
   goRoadmaps,
   openRoadmap,
   isStaff,
-  goFriends,
-  goSubmissions,
-  goDuelHistory,
   goSiteFeed,
+  onSection,
+  onOpenPerson,
+  onOpenProblem,
 }: {
   lang: Lang;
   profile: Profile;
@@ -80,10 +68,12 @@ export function ProfilePage({
   goRoadmaps: () => void;
   openRoadmap: (slug: string) => void;
   isStaff: boolean;
-  goFriends: () => void;
-  goSubmissions: () => void;
-  goDuelHistory: () => void;
   goSiteFeed: () => void;
+  /** The profile's other sections live at /u/<handle>/..., shared with every
+      visitor's view of this account. */
+  onSection: (section: ProfileSection) => void;
+  onOpenPerson: (handle: string) => void;
+  onOpenProblem: (problemId: string) => void;
 }) {
   const t = T[lang];
   const [editing, setEditing] = useState(false);
@@ -114,18 +104,6 @@ export function ProfilePage({
     };
   }, []);
 
-  /* The server's record of finished duels, for the rating curve. `duels`
-     above is the local mastery log — it counts wins for the tiles and knows
-     nothing about ratings, so it cannot draw a curve. A database still on 032
-     answers "not-migrated" and the graph simply does not appear. */
-  const [myDuels, setMyDuels] = useState<PublicDuelRow[] | null>(null);
-  useEffect(() => {
-    let live = true;
-    fetchPublicDuelHistory(profile.id).then((result) => {
-      if (live && Array.isArray(result)) setMyDuels(result);
-    });
-    return () => { live = false; };
-  }, [profile.id]);
 
   /* Every number below is derived from something the learner actually did.
      Nothing here is a placeholder. */
@@ -169,110 +147,45 @@ export function ProfilePage({
     return r ? (lang === "uz" ? r.titleUz : r.titleEn) : slug;
   };
 
-  const name = profile.display_name?.trim() || profile.username;
-  const totalDuels = stats.record.win + stats.record.loss + stats.record.draw;
 
-  return (
+  /* The staff links used to be a row of nine buttons across the top of the
+     page, ahead of the person the page is about. They are one menu now; the
+     things everybody uses -- edit, messages -- stay buttons. */
+  const actions = (
     <>
-      <div className="page-head">
-        <div>
-          <p className="eyebrow">{t.title}</p>
-          <h1 className="page-title">{name}</h1>
+      <button className="primary" onClick={() => setEditing((v) => !v)} aria-expanded={editing}>
+        {editing ? t.cancel : t.edit}
+      </button>
+      <button className="secondary" onClick={goMessages}>{t.messages}</button>
+      <details className="pv-more">
+        <summary className="secondary" aria-label={t.menu} title={t.menu}>⋯</summary>
+        <div className="pv-menu" role="menu">
+          {profile.role === "owner" && <button role="menuitem" onClick={goStats}>{t.stats}</button>}
+          {isStaff && <button role="menuitem" onClick={goAdmin}>{t.admin}</button>}
+          {isOwner && <button role="menuitem" onClick={goUsers}>{t.users}</button>}
+          {isOwner && <button role="menuitem" onClick={goSiteFeed}>{tr(lang, "profile.siteFeed")}</button>}
+          <button role="menuitem" className="danger" onClick={signOut}>{t.signOut}</button>
         </div>
-        <div className="actions">
-          {profile.role === "owner" && (
-            <button className="secondary" onClick={goStats}>
-              {t.stats}
-            </button>
-          )}
-          {isStaff && (
-            <button className="secondary" onClick={goAdmin}>
-              {t.admin}
-            </button>
-          )}
-          {isOwner && (
-            <button className="secondary" onClick={goUsers}>
-              {t.users}
-            </button>
-          )}
-          <button className="secondary" onClick={goSubmissions}>
-            {t.submissions}
-          </button>
-          <button className="secondary" onClick={goDuelHistory}>
-            {tr(lang, "profile.duelHistory")}
-          </button>
-          {isOwner && (
-            <button className="secondary" onClick={goSiteFeed}>
-              {tr(lang, "profile.siteFeed")}
-            </button>
-          )}
-          <button className="secondary" onClick={goFriends}>
-            {t.friends}
-          </button>
-          <button className="secondary" onClick={goMessages}>
-            {t.messages}
-          </button>
-          <button className="pill danger" onClick={signOut}>
-            {t.signOut}
-          </button>
-        </div>
-      </div>
+      </details>
+    </>
+  );
 
-      <section className="pf-header panel">
-        <AvatarZoom lang={lang} src={profile.avatar_url} name={name}>
-          <Avatar profile={profile} name={name} />
-        </AvatarZoom>
-        <div className="pf-identity">
-          <h2>{name}</h2>
-          <p className="pf-handle">@{profile.username}</p>
-          <div className="pf-badges">
-            <span className={`tag role-${profile.role}`}>{roleLabel(profile.role, lang)}</span>
-            {profile.country ? <span className="tag">{profile.country}</span> : null}
-            <span className="tag">
-              {t.joined} {formatDate(profile.created_at, lang)}
-            </span>
-          </div>
-          {profile.bio ? <p className="pf-bio">{profile.bio}</p> : null}
-        </div>
-        <button className="primary pf-edit" onClick={() => setEditing((v) => !v)} aria-expanded={editing}>
-          {editing ? t.cancel : t.edit}
-        </button>
-      </section>
-
-      {editing && (
-        <ProfileEditor
-          lang={lang}
-          profile={profile}
-          onProfileChange={onProfileChange}
-          onDone={() => setEditing(false)}
-        />
-      )}
-
-      <div className="pf-stats">
-        <Stat label={t.rating} value={String(profile.duel_rating)} />
+  /* What only the owner of the account can see: the learning record kept on
+     this device. It is appended to the shared overview rather than being a
+     page of its own, so your profile is the page everybody else sees plus
+     this. */
+  const learning = (
+    <section className="pv-learning">
+      <header className="pv-learning-head">
+        <h2>{t.learning}</h2>
+        <span className="muted">{t.onlyYou}</span>
+      </header>
+      <div className="pv-learn-stats">
         <Stat label={t.units} value={`${stats.unitsDone}`} sub={`/ ${stats.totalUnits}`} />
-        <Stat label={t.solved} value={String(stats.solved)} />
         <Stat label={t.topics} value={String(stats.started)} sub={`/ ${roadmapCatalog.length}`} />
         <Stat label={t.mastered} value={String(stats.masteredTopics)} />
-        <Stat
-          label={t.duels}
-          value={String(totalDuels)}
-          sub={totalDuels ? `${stats.record.win}${tr(lang,"profilePage.g")} · ${stats.record.loss}${tr(lang,"profilePage.m")} · ${stats.record.draw}D` : undefined}
-        />
         <Stat label={t.streak} value={String(stats.streak)} />
       </div>
-
-      {/* The same graph a visitor sees on somebody else's profile, read
-          through the same public function rather than through duel_history():
-          one query means the curve here and the curve there cannot disagree
-          about the account's own history.
-
-          Rendered as soon as the rows arrive, empty ones included: an account
-          with no duels yet gets the panel saying so, which is the same thing a
-          visitor sees on that profile. A database still on 032 answers
-          "not-migrated", `myDuels` stays null, and no panel appears at all. */}
-      {myDuels && <RatingGraph lang={lang} rows={myDuels} />}
-
       <div className="pf-grid">
         <section className="panel">
           <div className="pf-section-head">
@@ -338,8 +251,31 @@ export function ProfilePage({
           )}
         </section>
       </div>
+    </section>
+  );
 
-    </>
+  return (
+    <PublicProfile
+      lang={lang}
+      username={profile.username}
+      section="overview"
+      meId={profile.id}
+      signedIn
+      override={profile}
+      actions={actions}
+      belowHero={editing ? (
+        <ProfileEditor
+          lang={lang}
+          profile={profile}
+          onProfileChange={onProfileChange}
+          onDone={() => setEditing(false)}
+        />
+      ) : null}
+      overviewExtra={learning}
+      onSection={(section) => { if (section !== "overview") onSection(section); }}
+      onOpenPerson={onOpenPerson}
+      onOpenProblem={onOpenProblem}
+    />
   );
 }
 
@@ -349,29 +285,6 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
       <b>{value}</b>
       {sub ? <small className="pf-stat-sub">{sub}</small> : null}
       <small>{label}</small>
-    </div>
-  );
-}
-
-function Avatar({ profile, name }: { profile: Profile; name: string }) {
-  // Keyed on the URL so a new upload resets the "broken" flag without an effect.
-  const [broken, setBroken] = useState("");
-  if (profile.avatar_url && broken !== profile.avatar_url)
-    return (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        className="pf-avatar"
-        src={profile.avatar_url}
-        alt={name}
-        key={profile.avatar_url}
-        onError={() => setBroken(profile.avatar_url || "")}
-        width={112}
-        height={112}
-      />
-    );
-  return (
-    <div className="pf-avatar pf-avatar-fallback" aria-hidden>
-      {initialsOf(name)}
     </div>
   );
 }

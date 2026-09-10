@@ -7,7 +7,6 @@
    how the two sides end up disagreeing about who may read what. */
 
 import { useEffect, useState } from "react";
-import { fetchPersonByUsername } from "./session";
 import { OnlineDot, onlineAmong } from "./presence";
 import { CodeBlock } from "./CodeBlock";
 import { LockIcon } from "./icons";
@@ -138,6 +137,9 @@ const T = {
 };
 
 const when = (iso: string, lang: Lang) => shortDateTime(iso, lang);
+/** A verdict in the reader's language -- one table for every list that shows
+    one, so a profile and the submission table cannot word it differently. */
+export const verdictLabel = (verdict: string, lang: Lang) => T[lang].verdicts[verdict] || verdict;
 const LANG_LABEL: Record<string, string> = { cpp20: "C++20", python3: "Python 3" };
 
 /* Codeforces puts a star beside the handle and fills it in when the person is
@@ -619,63 +621,6 @@ export function SubmissionsScreen({
       </div>
       <SubmissionHistory lang={lang} userId={userId} isMe={isMe} signedIn={signedIn} />
     </>
-  );
-}
-
-/* /u/<handle>/submissions is a link somebody can be sent, so it has to work
-   without having been to the profile first: the handle is resolved here rather
-   than being handed down from a screen that may never have rendered. */
-export function PersonSubmissions({
-  lang, handle, meId, signedIn, onBack,
-}: {
-  lang: Lang;
-  handle: string;
-  meId: string | null;
-  signedIn: boolean;
-  onBack: () => void;
-}) {
-  const t = T[lang];
-  const [person, setPerson] = useState<{ id: string; name: string } | null>(null);
-  const [state, setState] = useState<"loading" | "ready" | "missing">("loading");
-
-  useEffect(() => {
-    let live = true;
-    fetchPersonByUsername(handle).then((result) => {
-      if (!live) return;
-      if (!result.ok) {
-        setState("missing");
-        return;
-      }
-      setPerson({ id: result.person.id, name: result.person.display_name || result.person.username });
-      setState("ready");
-    });
-    return () => {
-      live = false;
-    };
-  }, [handle]);
-
-  if (state === "loading")
-    return (
-      <div className="screen-state" role="status">
-        <span className="spinner" aria-hidden />
-        <p className="muted">{t.loading}</p>
-      </div>
-    );
-  if (state === "missing" || !person)
-    return (
-      <div className="panel">
-        <div className="notice notice-error">{t.failed}</div>
-      </div>
-    );
-  return (
-    <SubmissionsScreen
-      lang={lang}
-      userId={person.id}
-      who={person.name}
-      isMe={!!meId && meId === person.id}
-      signedIn={signedIn}
-      onBack={onBack}
-    />
   );
 }
 

@@ -24,16 +24,23 @@ export type Rank = {
 
 // Familiar competitive-programming tiers, with our own palette tuned for the
 // dark theme rather than lifting another site's exact colours.
+//
+// The names are Codeforces' own, in English on the Uzbek page too. They were
+// translated once ("Shogird", "Mutaxassis", "Nomzod usta"), and the result was
+// a green curve labelled "Shogird" that nobody recognised: these words are
+// titles in a shared vocabulary, not descriptions, and robocontest.uz and
+// kep.uz print them untranslated for the same reason. `nameUz` stays a field so
+// a later translation needs no caller to change.
 export const RANKS: Rank[] = [
-  { min: 0,    nameUz: "Yangi boshlovchi", nameEn: "Newbie",              color: "#9aa5a0" },
-  { min: 1200, nameUz: "Shogird",          nameEn: "Pupil",               color: "#6fd17a" },
-  { min: 1400, nameUz: "Mutaxassis",       nameEn: "Specialist",          color: "#4fd4c4" },
-  { min: 1600, nameUz: "Ekspert",          nameEn: "Expert",              color: "#6f9bff" },
-  { min: 1900, nameUz: "Nomzod usta",      nameEn: "Candidate Master",    color: "#c07bff" },
-  { min: 2100, nameUz: "Usta",             nameEn: "Master",              color: "#ffb347" },
-  { min: 2300, nameUz: "Xalqaro usta",     nameEn: "International Master",color: "#ff9147" },
-  { min: 2400, nameUz: "Grandmaster",      nameEn: "Grandmaster",         color: "#ff5f5f" },
-  { min: 2900, nameUz: "Afsonaviy",        nameEn: "Legendary Grandmaster", color: "#ff2d2d" },
+  { min: 0,    nameUz: "Newbie",                nameEn: "Newbie",                color: "#9aa5a0" },
+  { min: 1200, nameUz: "Pupil",                 nameEn: "Pupil",                 color: "#6fd17a" },
+  { min: 1400, nameUz: "Specialist",            nameEn: "Specialist",            color: "#4fd4c4" },
+  { min: 1600, nameUz: "Expert",                nameEn: "Expert",                color: "#6f9bff" },
+  { min: 1900, nameUz: "Candidate Master",      nameEn: "Candidate Master",      color: "#c07bff" },
+  { min: 2100, nameUz: "Master",                nameEn: "Master",                color: "#ffb347" },
+  { min: 2300, nameUz: "International Master",  nameEn: "International Master",  color: "#ff9147" },
+  { min: 2400, nameUz: "Grandmaster",           nameEn: "Grandmaster",           color: "#ff5f5f" },
+  { min: 2900, nameUz: "Legendary Grandmaster", nameEn: "Legendary Grandmaster", color: "#ff2d2d" },
 ];
 
 export const rankOf = (rating: number): Rank =>
@@ -43,6 +50,13 @@ export const rankName = (rating: number, lang: "uz" | "en") =>
   lang === "uz" ? rankOf(rating).nameUz : rankOf(rating).nameEn;
 
 export const ratingColor = (rating: number) => rankOf(rating).color;
+
+/** The rank above this rating and how far away it is -- AtCoder's "+171 to
+    promote". Null at the top of the table. */
+export const nextRank = (rating: number): { rank: Rank; gap: number } | null => {
+  const up = RANKS.find(r => r.min > rating);
+  return up ? { rank: up, gap: up.min - rating } : null;
+};
 
 const KEY = "algoyol-algo-rating";
 export const START_RATING = 800;

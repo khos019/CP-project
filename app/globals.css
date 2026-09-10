@@ -715,19 +715,6 @@ body{background:var(--bg);min-height:100vh}
 }
 
 /* --- Somebody else's account (/u/<handle>) --------------------------------- */
-.pp-card{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:26px;align-items:center;padding:30px}
-.pp-avatar{width:104px;height:104px;border-radius:30px;display:grid;place-items:center;background:var(--green);color:#07130a;font-size:36px;font-weight:900;overflow:hidden;flex-shrink:0}
-.pp-avatar img{width:100%;height:100%;object-fit:cover;display:block}
-.pp-identity{display:grid;gap:5px;min-width:0}
-.pp-identity h1{display:flex;align-items:center;gap:11px;flex-wrap:wrap;font-size:clamp(26px,3.4vw,38px);letter-spacing:-.04em;margin:2px 0 0}
-.pp-role{font-style:normal;font-size:11px;font-weight:850;letter-spacing:.08em;padding:5px 9px;border-radius:7px;background:#17301c;color:#a5f181}
-.pp-handle{margin:0;font-size:14px;color:var(--muted)}
-.pp-bio{margin:8px 0 0;font-size:15px;line-height:1.6;color:#aab8b0;max-width:56ch}
-.pp-meta{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:8px 0 0;font-size:13px}
-.pp-dot{opacity:.55}
-.pp-actions{display:grid;gap:9px;justify-items:end;text-align:right}
-.pp-self{margin:0;font-size:12.5px;max-width:22ch}
-.pp-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:11px;margin-top:14px}
 
 /* The name at the top of a conversation is the way into the account. */
 .msg-who{display:grid;grid-template-columns:44px minmax(0,1fr);align-items:center;gap:11px;padding:6px 9px 6px 6px;margin:-6px 0 -6px -6px;border:0;border-radius:13px;background:transparent;color:var(--ink);text-align:left;min-width:0}
@@ -736,11 +723,6 @@ body{background:var(--bg);min-height:100vh}
 .msg-who-copy b{display:flex;align-items:center;gap:8px;font-size:17px}
 .msg-who-copy small{font-size:12.5px}
 
-@media(max-width:760px){
-  .pp-card{grid-template-columns:auto minmax(0,1fr);gap:18px;padding:22px}
-  .pp-actions{grid-column:1/-1;justify-items:stretch;text-align:left}
-  .pp-avatar{width:76px;height:76px;border-radius:22px;font-size:27px}
-}
 /* Shop centre — coins, the streak ladder and gift cards. */
 .coin-balance{display:flex;align-items:center;gap:9px;padding:12px 18px;border-radius:12px;background:#141d17;border:1px solid #2a3a31;font-size:26px;font-weight:800;color:var(--lime);font-family:var(--font-mono)}
 .coin-balance small{font-size:12px;color:var(--muted);font-weight:600}
@@ -860,9 +842,6 @@ body{background:var(--bg);min-height:100vh}
    with no air between them read as one broken block. It is an action, so it
    gets the spacing of an action and the arrow is pushed to the far edge where
    the eye expects to find it. */
-.pp-subs{width:100%;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:14px;text-align:left}
-.pp-subs::after{content:"→";color:var(--muted);font-weight:800}
-.pp-subs:hover::after{color:var(--lime)}
 /* Advanced roadmap nodes: progress ring, six states, detail popover. */
 .cloud-wrap{position:relative;display:flex;flex-direction:column;align-items:inherit;width:100%}
 .cloud-unit{position:relative;z-index:1}
@@ -3200,53 +3179,198 @@ a.editor-escape:hover{color:var(--ink);border-color:var(--line-strong);backgroun
    ushlab turgan edi, mening `.rg-svg` va `.rg-tip` qoidalarim esa aksincha
    yo'l xaritasi grafigining o'z uslublarini bosib ketgan edi. Ikki grafik —
    ikki prefiks. */
-.drg{margin-top:var(--s5)}
-.drg-head{display:flex;align-items:baseline;justify-content:space-between;gap:var(--s4);flex-wrap:wrap;margin-bottom:var(--s4)}
+.drg{margin-top:0;padding:var(--s5)}
+.drg-head{display:flex;align-items:center;justify-content:space-between;gap:var(--s4);margin-bottom:var(--s3)}
 .drg-title{margin:0;font-size:var(--t-h3)}
-.drg-facts{display:flex;gap:var(--s4);flex-wrap:wrap;align-items:baseline}
-.drg-facts span{display:inline-flex;gap:6px;align-items:baseline}
-.drg-facts small{color:var(--dim);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
-.drg-facts b{font-size:15px}
-.drg-tally{display:inline-flex;gap:6px}
-.drg-tally i{font-style:normal;font-size:12px}
 /* The box owns the viewBox's aspect ratio so a tooltip placed at a percentage
    of it lands on its own dot at every width. */
-.drg-box{position:relative;width:100%;max-height:340px;background:var(--inset);border:1px solid var(--line-faint);border-radius:var(--r-md);overflow:hidden}
-.drg-svg{display:block;width:100%;height:100%}
-.drg-grid{stroke:var(--line);stroke-width:1;stroke-dasharray:3 4;opacity:.7}
+.drg-box{position:relative;width:100%;background:var(--inset);border:1px solid var(--line-faint);border-radius:var(--r-md);overflow:hidden}
+.drg-svg{display:block;width:100%;height:100%;cursor:crosshair}
+.drg-grid{stroke:var(--line);stroke-width:1;stroke-dasharray:2 4;opacity:.8}
+.drg-vgrid{opacity:.45}
 .drg-frame{fill:none;stroke:var(--line);stroke-width:1}
 .drg-tick{fill:var(--dim);font-size:11px;font-family:var(--font-mono)}
-.drg-line{fill:none;stroke:var(--ink);stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
-.drg-dot{stroke:var(--inset);stroke-width:1.5;cursor:pointer;transition:r var(--dur-fast) var(--ease)}
-.drg-dot:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+.drg-band{font-size:10.5px;font-weight:600;letter-spacing:.02em;opacity:.85}
+.drg-line{fill:none;stroke:#e8efe9;stroke-opacity:.85;stroke-width:1.75;stroke-linejoin:round;stroke-linecap:round}
+.drg-cursor{stroke:var(--ink);stroke-opacity:.25;stroke-width:1}
+.drg-peak{fill:none;stroke:var(--orange);stroke-width:1.75}
+.drg-dot{stroke:var(--inset);stroke-width:2;cursor:pointer;transition:r var(--dur-fast) var(--ease)}
+.drg-dot:focus-visible{outline:none;stroke:var(--ink)}
 .drg-tip{
  position:absolute;z-index:2;pointer-events:none;
- display:flex;flex-direction:column;gap:2px;min-width:150px;
- padding:8px 10px;border:1px solid var(--line-strong);border-radius:var(--r-md);
- background:var(--surface-2);box-shadow:0 8px 24px rgba(0,0,0,.45);
- font-size:12px;line-height:1.35;
+ display:flex;flex-direction:column;gap:2px;min-width:160px;
+ padding:9px 11px;border:1px solid var(--line-strong);border-radius:var(--r-md);
+ background:var(--surface-2);box-shadow:0 10px 28px rgba(0,0,0,.5);
+ font-size:12px;line-height:1.4;
 }
-.drg-tip b{font-size:15px}
-.drg-ranks{display:flex;flex-wrap:wrap;gap:var(--s2) var(--s4);list-style:none;margin:var(--s3) 0 0;padding:0}
-.drg-ranks li{display:inline-flex;align-items:center;gap:6px;font-size:var(--t-xs);color:var(--muted)}
-.drg-ranks i{width:10px;height:10px;border-radius:3px;display:inline-block}
-.drg-ranks small{color:var(--dim)}
+.drg-tip-top{display:flex;align-items:baseline;gap:8px}
+.drg-tip-top b{font-size:17px}
+.drg-tip-rank{font-weight:600}
+.drg-narrow .drg-tick{font-size:13px}
+.drg-narrow .drg-band{font-size:12.5px}
 @media (max-width:640px){
- .drg-box{max-height:none}
- .drg-facts{gap:var(--s3)}
- .drg-facts small{font-size:11px}
+ .drg{padding:var(--s4)}
 }
 
-/* ─── Boshqa odamning profilidagi bo'limlar ───────────────────────────── */
-.pp-tabs{display:flex;gap:var(--s2);flex-wrap:wrap;margin:var(--s5) 0 var(--s4)}
-.pp-tabs button{
- display:inline-flex;align-items:center;gap:7px;
- border:1px solid var(--line);background:var(--surface);
- border-radius:var(--r-full);padding:8px 15px;
- font-weight:500;font-size:var(--t-sm);color:var(--muted);
- transition:color var(--dur-fast) var(--ease),border-color var(--dur-fast) var(--ease),background var(--dur-fast) var(--ease);
+
+/* ─── Profil (PublicProfile) ──────────────────────────────────────────── */
+/* Bitta dizayn — har kimning profili ham, o‘zingizniki ham. `--rank` joriy
+   darajaning rangi: avatar halqasi, daraja nomi, qopqoq tusi va reyting
+   raqami shundan oladi, shuning uchun Pupil yashil, Expert ko‘k ko‘rinadi. */
+.pv{--rank:var(--green)}
+.pv-hero{position:relative;overflow:hidden;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg)}
+.pv-cover{
+ height:96px;
+ background:
+  radial-gradient(120% 160% at 8% 0%,color-mix(in srgb,var(--rank) 34%,transparent),transparent 58%),
+  radial-gradient(80% 140% at 100% 0%,color-mix(in srgb,var(--rank) 14%,transparent),transparent 60%),
+  repeating-linear-gradient(135deg,rgba(255,255,255,.025) 0 1px,transparent 1px 14px),
+  var(--surface-2);
+ border-bottom:1px solid var(--line-faint);
 }
-.pp-tabs button:hover{color:var(--ink);border-color:var(--line-strong)}
-.pp-tabs button.on{color:var(--bg);background:var(--green);border-color:var(--green);font-weight:600}
-.pp-count{font-style:normal;font-family:var(--font-mono);font-size:12px;opacity:.75}
-.pp-subs{margin-top:var(--s3)}
+.pv-hero-body{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:var(--s5);align-items:end;padding:0 var(--s5) var(--s5);margin-top:-52px}
+.pv-hero .avatar-zoom-trigger{padding:0;border:0;background:transparent;border-radius:24px}
+.pv-avatar{
+ width:112px;height:112px;border-radius:24px;display:grid;place-items:center;overflow:hidden;
+ background:linear-gradient(145deg,var(--surface-3),var(--surface-2));color:var(--rank);
+ font-family:var(--font-display);font-size:38px;font-weight:700;
+ border:3px solid var(--rank);box-shadow:0 0 0 5px var(--surface),0 12px 30px rgba(0,0,0,.45);
+}
+.pv-avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.pv-id{min-width:0;display:grid;gap:3px;padding-top:56px}
+.pv-rank{margin:0;color:var(--rank);font-size:12px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}
+.pv-id h1{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0;font-family:var(--font-display);font-size:clamp(24px,2.6vw,32px);letter-spacing:-.02em;line-height:1.15}
+.pv-name{min-width:0;overflow-wrap:anywhere}
+.pv-role{font-style:normal;font-size:10.5px;font-weight:800;letter-spacing:.1em;padding:4px 8px;border-radius:6px;background:var(--green-wash);color:var(--green);border:1px solid rgba(154,239,79,.25)}
+.pv-meta{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px;margin:2px 0 0;color:var(--muted);font-size:13.5px}
+.pv-meta span[aria-hidden]{opacity:.5}
+.pv-bio{margin:8px 0 0;color:#b9c7bf;font-size:14.5px;line-height:1.55;max-width:62ch}
+.pv-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+.pv-actions .primary,.pv-actions .secondary{padding:9px 14px;border-radius:10px;font-size:14px}
+
+/* „Yana" menyusi: xodimlar havolalari bir joyda. */
+.pv-more{position:relative}
+.pv-more>summary{list-style:none;display:grid;place-items:center;width:40px;height:40px;padding:0;border-radius:10px;font-size:18px;line-height:1;cursor:pointer;user-select:none}
+.pv-more>summary::-webkit-details-marker{display:none}
+.pv-menu{position:absolute;right:0;top:calc(100% + 6px);z-index:20;min-width:200px;display:grid;padding:6px;background:var(--surface-2);border:1px solid var(--line-strong);border-radius:var(--r-md);box-shadow:0 18px 40px rgba(0,0,0,.5)}
+.pv-menu button{text-align:left;border:0;background:transparent;color:var(--ink);padding:9px 11px;border-radius:8px;font-size:14px}
+.pv-menu button:hover{background:var(--surface-3)}
+.pv-menu button.danger{color:var(--bad)}
+
+/* Raqamlar qatori. */
+.pv-stats{display:grid;grid-template-columns:1.35fr repeat(4,1fr);gap:10px;margin-top:12px}
+.pv-stat{display:grid;align-content:start;gap:3px;min-width:0;padding:14px 16px;background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md)}
+.pv-stat>small{color:var(--dim);font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase}
+.pv-stat>b{font-size:26px;line-height:1.15;letter-spacing:-.02em}
+.pv-sub{color:var(--muted);font-size:12.5px;min-height:1.2em}
+.pv-sub b{font-size:12.5px}
+.pv-wl{display:flex;gap:8px}
+.pv-wl i{font-style:normal;font-family:var(--font-mono)}
+.pv-stat-rating{background:linear-gradient(160deg,color-mix(in srgb,var(--rank) 9%,var(--surface)),var(--surface) 70%);border-color:color-mix(in srgb,var(--rank) 28%,var(--line))}
+.pv-next{display:grid;gap:5px;margin-top:6px}
+.pv-next-bar{display:block;height:5px;border-radius:99px;background:var(--line);overflow:hidden}
+.pv-next-bar i{display:block;height:100%;border-radius:inherit;background:var(--rank)}
+.pv-next small{color:var(--muted);font-size:12px}
+
+/* Bo‘limlar menyusi — Codeforces’dagi kabi, har biri o‘z manzili. */
+.pv-nav{display:flex;gap:2px;margin:18px 0 16px;border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+.pv-nav::-webkit-scrollbar{display:none}
+.pv-nav a{display:inline-flex;align-items:center;gap:7px;white-space:nowrap;padding:11px 14px;margin-bottom:-1px;color:var(--muted);font-weight:600;font-size:14.5px;border-bottom:2px solid transparent;transition:color var(--dur-fast) var(--ease),border-color var(--dur-fast) var(--ease)}
+.pv-nav a:hover{color:var(--ink)}
+.pv-nav a.on{color:var(--ink);border-bottom-color:var(--rank)}
+.pv-nav a i{font-style:normal;font-family:var(--font-mono);font-size:11.5px;padding:2px 7px;border-radius:99px;background:var(--surface-2);color:var(--muted)}
+.pv-nav a.on i{background:color-mix(in srgb,var(--rank) 18%,var(--surface-2));color:var(--ink)}
+
+.pv-body{display:grid;gap:14px}
+.pv-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.pv-card{padding:18px 20px}
+.pv-card-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:12px}
+.pv-card-head h2{margin:0;font-size:var(--t-h3)}
+.pv-all{color:var(--muted);font-size:13.5px;font-weight:600}
+.pv-all:hover{color:var(--green)}
+.pv-none{margin:6px 0;font-size:14px}
+.pv-note{margin:10px 2px 0;font-size:13px}
+
+/* Masalalar kartasi. */
+.pv-total{font-size:22px;font-weight:700}
+.pv-total small{font-size:13px;color:var(--dim);font-weight:500}
+.pv-stack{display:flex;gap:3px;height:10px;border-radius:99px;overflow:hidden;background:var(--line-faint);margin-bottom:14px}
+.pv-stack i{display:block;min-width:6px}
+.pv-stack-easy{background:var(--diff-easy)}.pv-stack-medium{background:var(--diff-medium)}
+.pv-stack-hard{background:var(--diff-hard)}.pv-stack-insane{background:var(--diff-insane)}
+.pv-stack-empty{background:transparent}
+.pv-diffs{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.pv-diff{display:grid;gap:1px;padding:10px 12px;border-radius:10px;background:var(--surface-2);border:1px solid var(--line-faint)}
+.pv-diff b{font-size:22px;line-height:1.1}
+.pv-diff span{font-size:13px;font-weight:600}
+.pv-diff small{font-size:11.5px}
+.pv-diff-easy b,.pv-diff-easy span{color:var(--diff-easy)}
+.pv-diff-medium b,.pv-diff-medium span{color:var(--diff-medium)}
+.pv-diff-hard b,.pv-diff-hard span{color:var(--diff-hard)}
+.pv-diff-insane b,.pv-diff-insane span{color:var(--diff-insane)}
+.pv-hardest{margin:14px 0 0;font-size:14px}
+
+/* Ixcham ro‘yxatlar: so‘nggi duellar va yechimlar. */
+.pv-list{list-style:none;margin:0;padding:0;display:grid}
+.pv-list li{display:grid;grid-template-columns:auto minmax(0,1fr) auto auto;align-items:center;gap:12px;padding:9px 2px;border-top:1px solid var(--line-faint)}
+.pv-list li:first-child{border-top:0}
+.pv-list-main{display:grid;gap:1px;min-width:0}
+.pv-list-main b,.pv-list-main .link-btn{font-size:14px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;justify-self:start;max-width:100%}
+.pv-list-main small{font-size:12px}
+.pv-res{width:26px;height:26px;display:grid;place-items:center;border-radius:7px;font-family:var(--font-mono);font-size:12.5px;font-weight:700}
+.pv-res-win{background:var(--green-wash);color:var(--green)}
+.pv-res-loss{background:rgba(255,107,107,.12);color:var(--bad)}
+.pv-res-draw{background:var(--surface-2);color:var(--muted)}
+.pv-score{color:var(--muted);font-size:13px}
+.pv-delta{font-size:13.5px;font-weight:700;min-width:3ch;text-align:right}
+.pv-verdict{width:22px;height:22px;display:grid;place-items:center;border-radius:99px;font-size:12px;font-weight:800}
+.pv-verdict.ok{background:var(--green-wash);color:var(--green)}
+.pv-verdict.bad{background:rgba(255,107,107,.12);color:var(--bad)}
+.pv-prob-rating{font-size:12.5px;font-weight:700}
+.pv-verdict-text{font-size:12.5px;min-width:9ch;text-align:right}
+
+/* Do‘stlar sahifasi: kartalar to‘ri. */
+.pv-friends{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:10px}
+.pv-friends li{position:relative}
+.pv-friend{width:100%;display:grid;grid-template-columns:48px minmax(0,1fr) auto;align-items:center;gap:12px;padding:12px 14px;text-align:left;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);transition:border-color var(--dur-fast) var(--ease),transform var(--dur-fast) var(--ease)}
+.pv-friend:hover{border-color:color-mix(in srgb,var(--rank) 45%,var(--line));transform:translateY(-1px)}
+.pv-friend-face{width:48px;height:48px;border-radius:13px;display:grid;place-items:center;overflow:hidden;background:var(--surface-2);color:var(--rank);font-weight:700;font-size:18px;border:2px solid var(--rank)}
+.pv-friend-face img{width:100%;height:100%;object-fit:cover}
+.pv-friend-who{display:grid;gap:1px;min-width:0}
+.pv-friend-who b{font-size:14.5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pv-friend-who small{font-size:12px}
+.pv-friend-rank{color:var(--rank);font-weight:600}
+.pv-friend-rating{font-weight:800;color:var(--rank);font-size:15px}
+.pv-friend-drop{position:absolute;top:6px;right:6px;width:26px;height:26px;border:0;border-radius:7px;background:transparent;color:var(--warn);font-size:14px;opacity:.75}
+.pv-friend-drop:hover{opacity:1;background:var(--surface-2)}
+
+/* Faqat egasiga ko‘rinadigan o‘rganish qismi. */
+.pv-learning{display:grid;gap:12px;margin-top:6px}
+.pv-learning-head{display:flex;align-items:baseline;gap:10px}
+.pv-learning-head h2{margin:0;font-size:var(--t-h3)}
+.pv-learning-head span{font-size:13px}
+.pv-learn-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.pv-learning .pf-grid{margin-top:0}
+
+@media (max-width:1000px){
+ .pv-stats{grid-template-columns:repeat(3,1fr)}
+ .pv-stat-rating{grid-column:1/-1}
+}
+@media (max-width:760px){
+ .pv-hero-body{grid-template-columns:auto minmax(0,1fr);gap:var(--s4);padding:0 var(--s4) var(--s4);margin-top:-44px}
+ .pv-avatar{width:88px;height:88px;border-radius:20px;font-size:30px}
+ .pv-id{padding-top:48px}
+ .pv-actions{grid-column:1/-1;justify-content:flex-start}
+ .pv-grid{grid-template-columns:1fr}
+ .pv-learn-stats{grid-template-columns:repeat(2,1fr)}
+}
+@media (max-width:560px){
+ .pv-cover{height:76px}
+ .pv-hero-body{grid-template-columns:1fr;margin-top:-48px}
+ .pv-id{padding-top:0}
+ .pv-stats{grid-template-columns:repeat(2,1fr)}
+ .pv-diffs{grid-template-columns:repeat(2,1fr)}
+ .pv-list li{grid-template-columns:auto minmax(0,1fr) auto;gap:10px}
+ .pv-list .pv-score,.pv-list .pv-prob-rating{display:none}
+ .pv-nav a{padding:10px 11px;font-size:14px}
+}
