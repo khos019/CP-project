@@ -11,22 +11,19 @@
  * names with, and each band carries its name, so a curve inside the green
  * stripe is visibly "Pupil".
  *
- * The x axis is time, as on Codeforces, with three corrections that a duel
- * history needs and a contest history does not:
+ * The x axis is the order of the duels, not the clock. The first duel sits at
+ * the left edge and every later one a step to its right, the whole history
+ * spread across the width. A time axis was tried first and failed twice on
+ * real accounts: at a month's scale a first-week history was a clump in the
+ * middle of an empty chart, and at its own scale three duels a minute apart
+ * sat at one edge with the fourth, played the next day, far away at the
+ * other. Duels come in bursts, which contests do not, and it is the sequence
+ * of results that a rating curve is for reading.
  *
- *   1. The window is padded and never narrower than a month. A first-week
- *      account otherwise has its dots pinned to both edges, and two duels
- *      played an hour apart look like the whole history.
- *   2. Consecutive dots are kept at least MIN_GAP apart. Duels come in bursts
- *      -- five in an evening is normal -- and at a month's scale a burst would
- *      stack into one dot with the others hidden underneath it. The spacing is
- *      applied as a monotone warp of the time axis, and the month ticks go
- *      through the same warp, so a label never disagrees with the dots around
- *      it.
- *   3. The labels are months ("Sen 2026"), at a step of one, two, three, six
- *      or twelve months chosen so they never crowd each other -- the bottom of
- *      the Codeforces graph, which is what the labels below used to fail at
- *      when they carried times and printed on top of one another.
+ * Time is still on the axis where it helps: each month is named ("Sen 2026")
+ * under the first duel played in it, with a faint vertical line there, and a
+ * label that would crowd the one before it is skipped -- the bottom of the
+ * Codeforces graph, without its empty stretches.
  *
  * There is no leading point for "the rating before the first duel". Codeforces
  * draws none, and here it read as an extra duel that had never been played.
@@ -72,9 +69,8 @@ const T = {
 const WIDE = { W: 760, H: 300 };
 const NARROW = { W: 440, H: 320 };
 const PAD = { top: 12, right: 14, bottom: 28, left: 44 };
-const MIN_GAP = 11;
-const DAY = 86400000;
-const MIN_WINDOW = 30 * DAY;
+/* Room kept between the frame and the first and last dots. */
+const EDGE = 18;
 
 type Point = { x: number; y: number; t: number; row: PublicDuelRow };
 
@@ -99,22 +95,6 @@ function yTicks(lo: number, hi: number): number[] {
   const out: number[] = [];
   for (let v = Math.ceil(lo / step) * step; v <= hi; v += step) out.push(v);
   return out.length > 5 ? out.filter((_, i) => i % 2 === 0) : out;
-}
-
-/** First-of-month timestamps between a and b, every `step` months. */
-function monthTicks(a: number, b: number, step: number): number[] {
-  const d = new Date(a);
-  const y = d.getFullYear();
-  let m = d.getMonth() + 1; // the first boundary after a
-  m = Math.ceil(m / step) * step;
-  const out: number[] = [];
-  for (;;) {
-    const t = new Date(y + Math.floor(m / 12), m % 12, 1).getTime();
-    if (t > b) break;
-    if (t >= a) out.push(t);
-    m += step;
-  }
-  return out;
 }
 
 export function RatingGraph({
@@ -162,46 +142,12 @@ export function RatingGraph({
   const x0 = PAD.left;
   const x1 = PAD.left + innerW;
 
-  /* 1. The time window: the history, padded by a tenth on each side, and
-        widened symmetrically to at least a month. */
+  /* One step per duel. A single duel stands at the left edge like the first
+     of many; there is no "middle" to put it in. */
   const times = history.map((r) => +new Date(r.finished_at));
-  const first = times[0];
-  const last = times[times.length - 1];
-  const span = last - first;
-  const pad = Math.max(span * 0.08, 2 * DAY);
-  let ta = first - pad;
-  let tb = last + pad;
-  if (tb - ta < MIN_WINDOW) {
-    const mid = (first + last) / 2;
-    ta = mid - MIN_WINDOW / 2;
-    tb = mid + MIN_WINDOW / 2;
-  }
-  const linear = (ms: number) => x0 + ((ms - ta) / (tb - ta)) * innerW;
-
-  /* 2. Spread the bursts. Each dot sits at its time, or MIN_GAP right of the
-        one before, whichever is further right; if that runs past the edge,
-        the dots are squeezed back between the first dot and the edge. */
-  const raw = times.map(linear);
-  const xs: number[] = [];
-  raw.forEach((x, i) => xs.push(i === 0 ? x : Math.max(x, xs[i - 1] + MIN_GAP)));
-  const limit = x1 - 6;
-  if (xs[xs.length - 1] > limit && xs.length > 1) {
-    // The first dot keeps its place unless the rest cannot fit after it.
-    const from = Math.max(x0 + 6, Math.min(xs[0], limit - (xs.length - 1) * MIN_GAP));
-    const k = (limit - from) / (xs[xs.length - 1] - xs[0]);
-    for (let i = 0; i < xs.length; i++) xs[i] = from + (xs[i] - xs[0]) * k;
-  }
-
-  /* The warp, as a function of time: piecewise linear through every dot,
-     and plain linear time in the padding either side. Ticks use it too. */
-  const warp = (ms: number) => {
-    if (ms <= times[0]) return linear(ms) - (raw[0] - xs[0]);
-    if (ms >= last) return linear(ms) - (raw[raw.length - 1] - xs[xs.length - 1]);
-    let i = 1;
-    while (times[i] < ms) i++;
-    const f = (ms - times[i - 1]) / Math.max(1, times[i] - times[i - 1]);
-    return xs[i - 1] + f * (xs[i] - xs[i - 1]);
-  };
+  const n = history.length;
+  const step = n > 1 ? (innerW - 2 * EDGE) / (n - 1) : 0;
+  const xs = history.map((_, i) => x0 + EDGE + i * step);
 
   const [lo, hi] = domain(history.flatMap((r) => [r.rating_after, r.rating_before]));
   const yOf = (rating: number) => PAD.top + innerH - ((rating - lo) / (hi - lo)) * innerH;
@@ -214,24 +160,18 @@ export function RatingGraph({
   let peakIndex = 0;
   points.forEach((p, i) => { if (p.row.rating_after >= points[peakIndex].row.rating_after) peakIndex = i; });
 
-  /* 3. Month labels, at the smallest step that leaves 70 units between them. */
-  const steps = [1, 2, 3, 6, 12, 24];
-  let ticksX: number[] = [];
-  for (const step of steps) {
-    ticksX = monthTicks(ta, tb, step);
-    const xsT = ticksX.map(warp);
-    const tight = xsT.some((x, i) => i > 0 && x - xsT[i - 1] < (narrow ? 90 : 70));
-    if (!tight) break;
-  }
-  // Inside a single month there is no boundary to mark; the month is named once.
-  const labels = ticksX.length
-    ? ticksX.map((ms) => {
-        const x = warp(ms);
-        // Kept inside the frame: a boundary near an edge is labelled inward.
-        const anchor = x < x0 + 30 ? "start" as const : x > x1 - 30 ? "end" as const : "middle" as const;
-        return { x, ms, anchor };
-      })
-    : [{ x: x0 + innerW / 2, ms: (ta + tb) / 2, anchor: "middle" as const }];
+  /* Month labels: under the first duel of each month, skipping any that
+     would land closer than this to the label before it. */
+  const minApart = narrow ? 90 : 76;
+  const monthOf = (ms: number) => { const d = new Date(ms); return d.getFullYear() * 12 + d.getMonth(); };
+  const labels: { x: number; ms: number; anchor: "start" | "middle" | "end" }[] = [];
+  times.forEach((ms, i) => {
+    if (i > 0 && monthOf(ms) === monthOf(times[i - 1])) return;
+    const x = xs[i];
+    if (labels.length && x - labels[labels.length - 1].x < minApart) return;
+    // Kept inside the frame: a label near an edge is anchored inward.
+    labels.push({ x, ms, anchor: x < x0 + 40 ? "start" : x > x1 - 40 ? "end" : "middle" });
+  });
   const monthName = (ms: number) => {
     const d = new Date(ms);
     return `${MONTHS_SHORT[lang][d.getMonth()]} ${d.getFullYear()}`;
@@ -296,7 +236,7 @@ export function RatingGraph({
           {/* Month boundaries: a faint vertical line and the month below it. */}
           {labels.map((l) => (
             <g key={l.ms}>
-              {ticksX.length > 0 && (
+              {l.x > x0 + EDGE && (
                 <line x1={l.x} x2={l.x} y1={PAD.top} y2={PAD.top + innerH} className="drg-grid drg-vgrid" />
               )}
               <text x={l.x} y={H - 9} className="drg-tick" textAnchor={l.anchor}>{monthName(l.ms)}</text>

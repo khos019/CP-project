@@ -325,7 +325,6 @@ export function PublicProfile({
   const name = person.display_name?.trim() || person.username;
   const rating = person.duel_rating;
   const rank = rankOf(rating);
-  const rankName = lang === "uz" ? rank.nameUz : rank.nameEn;
   const next = nextRank(rating);
   const sum = summary && summary !== "missing" ? summary : null;
   const peak = Math.max(rating, sum?.max_rating ?? 0, ...(duels || []).map((d) => d.rating_after));
@@ -374,7 +373,6 @@ export function PublicProfile({
             </span>
           </AvatarZoom>
           <div className="pv-id">
-            <p className="pv-rank">{rankName}</p>
             <h1>
               <span className="pv-name">{name}</span>
               <OnlineDot online={online} lang={lang} label={name} />
