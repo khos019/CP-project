@@ -15,6 +15,7 @@
 import { useEffect, useState } from "react";
 import { duelHistory, type DuelHistoryRow } from "./duel-client";
 import { tr, type Lang } from "./i18n";
+import { shortDateTime } from "./dates";
 
 const T = {
   uz: {
@@ -47,12 +48,6 @@ const T = {
   },
 } as const;
 
-const when = (iso: string, lang: Lang) => {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleString(lang === "uz" ? "uz-UZ" : "en-GB",
-    { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
-};
 
 /* The table itself, without the screen around it.
  *
@@ -96,7 +91,7 @@ export function DuelTable({
         <tbody>
           {rows.map((row) => (
             <tr key={row.id}>
-              <td className="mono sub-when">{when(row.finished_at, lang)}</td>
+              <td className="mono sub-when">{shortDateTime(row.finished_at, lang)}</td>
               <td>
                 {row.opponent_is_bot ? (
                   <span>{t.bot} <span className="tag feed-me-tag">{t.botMode}</span></span>

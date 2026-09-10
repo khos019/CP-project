@@ -7,11 +7,11 @@
    how the two sides end up disagreeing about who may read what. */
 
 import { useEffect, useState } from "react";
-import { tr } from "./i18n";
 import { fetchPersonByUsername } from "./session";
 import { OnlineDot, onlineAmong } from "./presence";
 import { CodeBlock } from "./CodeBlock";
 import { LockIcon } from "./icons";
+import { shortDateTime } from "./dates";
 import {
   addFriend, fetchFriends, fetchMySubmissionsFor, fetchRecentSubmissions, fetchSubmissionCode,
   fetchSubmissions, removeFriend, unlockSubmissionCode,
@@ -137,13 +137,7 @@ const T = {
   },
 };
 
-const when = (iso: string, lang: Lang) => {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  const date = d.toLocaleDateString(tr(lang,"socialui.uz_uz"), { day: "2-digit", month: "short" });
-  const time = d.toLocaleTimeString(tr(lang,"socialui.uz_uz"), { hour: "2-digit", minute: "2-digit" });
-  return `${date} ${time}`;
-};
+const when = (iso: string, lang: Lang) => shortDateTime(iso, lang);
 const LANG_LABEL: Record<string, string> = { cpp20: "C++20", python3: "Python 3" };
 
 /* Codeforces puts a star beside the handle and fills it in when the person is

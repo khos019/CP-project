@@ -24,6 +24,7 @@
 
 import { useState } from "react";
 import { RANKS, rankOf } from "./rating";
+import { MONTHS_SHORT, fullDateTime } from "./dates";
 import type { PublicDuelRow } from "./social";
 
 type Lang = "uz" | "en";
@@ -73,10 +74,6 @@ type Point = {
   row: PublicDuelRow | null;
 };
 
-const MONTHS = {
-  uz: ["Yan", "Fev", "Mar", "Apr", "May", "Iyn", "Iyl", "Avg", "Sen", "Okt", "Noy", "Dek"],
-  en: ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"],
-};
 /* The scale of the axis labels follows the span of the history, because most
    of it is short: an account's first four duels are usually minutes apart, and
    three labels all reading "Sen 2026" say nothing at all. Under two days the
@@ -89,19 +86,13 @@ const scaleFor = (spanMs: number): Scale =>
 const shortDate = (iso: string, lang: Lang, scale: Scale) => {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "—";
-  const month = MONTHS[lang][d.getUTCMonth()];
-  if (scale === "month") return `${month} ${d.getUTCFullYear()}`;
-  const day = `${d.getUTCDate()} ${month}`;
+  const month = MONTHS_SHORT[lang][d.getMonth()];
+  if (scale === "month") return `${month} ${d.getFullYear()}`;
+  const day = `${d.getDate()} ${month}`;
   if (scale === "day") return day;
-  const hh = String(d.getUTCHours()).padStart(2, "0");
-  const mm = String(d.getUTCMinutes()).padStart(2, "0");
+  const hh = String(d.getHours()).padStart(2, "0");
+  const mm = String(d.getMinutes()).padStart(2, "0");
   return `${day} ${hh}:${mm}`;
-};
-const fullDate = (iso: string, lang: Lang) => {
-  const d = new Date(iso);
-  if (Number.isNaN(d.getTime())) return "—";
-  return d.toLocaleString(lang === "uz" ? "uz-UZ" : "en-GB",
-    { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" });
 };
 
 /* A y-axis that starts and ends on a round number and always spans at least
@@ -311,7 +302,7 @@ export function RatingGraph({
                 </small>
               </>
             ) : null}
-            <small className="muted">{fullDate(active.when, lang)}</small>
+            <small className="muted">{fullDateTime(active.when, lang)}</small>
           </div>
         )}
       </div>
