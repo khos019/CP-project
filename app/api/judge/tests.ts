@@ -331,6 +331,16 @@ export const tests={
   "bs-min-days-bouquets":[{"stdin":"5 2 2\n1 10 3 10 2\n","expected_output":"10\n"},{"stdin":"5 3 2\n1 1 1 1 1\n","expected_output":"-1\n"},{"stdin":"1 1 1\n7\n","expected_output":"7\n"},{"stdin":"6 2 3\n1 2 3 4 5 6\n","expected_output":"6\n"},{"stdin":"4 2 2\n5 5 5 5\n","expected_output":"5\n"},{"stdin":"8 2 2\n7 7 7 7 1 1 1 1\n","expected_output":"1\n"}],
   "stack-remove-adjacent-equal":[{"stdin":"abbaca\n","expected_output":"2\n"},{"stdin":"abc\n","expected_output":"3\n"},{"stdin":"aa\n","expected_output":"0\n"},{"stdin":"a\n","expected_output":"1\n"},{"stdin":"abccba\n","expected_output":"0\n"},{"stdin":"aabbccddee\n","expected_output":"0\n"}],
   "tree-count-depth-k":[{"stdin":"5 1\n1 2\n1 3\n2 4\n2 5\n","expected_output":"2\n"},{"stdin":"3 5\n1 2\n2 3\n","expected_output":"0\n"},{"stdin":"1 0\n","expected_output":"1\n"},{"stdin":"4 3\n1 2\n2 3\n3 4\n","expected_output":"1\n"},{"stdin":"5 0\n1 2\n1 3\n1 4\n1 5\n","expected_output":"1\n"},{"stdin":"6 2\n1 2\n1 3\n2 4\n2 5\n3 6\n","expected_output":"3\n"}],
+  "dp-count-lis":[{"stdin":"5\n1 3 5 4 7\n","expected_output":"2\n"},{"stdin":"5\n2 2 2 2 2\n","expected_output":"5\n"},{"stdin":"1\n7\n","expected_output":"1\n"},{"stdin":"4\n1 2 3 4\n","expected_output":"1\n"},{"stdin":"6\n1 1 2 2 3 3\n","expected_output":"8\n"},{"stdin":"5\n5 4 3 2 1\n","expected_output":"5\n"}],
+  "graph-eulerian-path":[{"stdin":"4 4\n1 2\n2 3\n3 4\n4 2\n","expected_output":"YES\n"},{"stdin":"6 6\n1 2\n2 3\n1 3\n4 5\n5 6\n4 6\n","expected_output":"NO\n"},{"stdin":"1 0\n","expected_output":"YES\n"},{"stdin":"4 2\n1 2\n3 4\n","expected_output":"NO\n"},{"stdin":"3 3\n1 2\n2 3\n1 3\n","expected_output":"YES\n"},{"stdin":"5 4\n1 2\n2 3\n3 4\n4 5\n","expected_output":"YES\n"},{"stdin":"4 3\n1 2\n3 4\n1 3\n","expected_output":"YES\n"},{"stdin":"5 2\n1 2\n2 3\n","expected_output":"YES\n"}],
+  "count-trailing-zeros-factorial":[{"stdin":"25\n","expected_output":"6\n"},{"stdin":"4\n","expected_output":"0\n"},{"stdin":"1\n","expected_output":"0\n"},{"stdin":"5\n","expected_output":"1\n"},{"stdin":"1000000000000000000\n","expected_output":"249999999999999995\n"},{"stdin":"125\n","expected_output":"31\n"}],
+  "dp-partition-min-diff":[{"stdin":"4\n1 6 11 5\n","expected_output":"1\n"},{"stdin":"1\n7\n","expected_output":"7\n"},{"stdin":"2\n10 10\n","expected_output":"0\n"},{"stdin":"3\n1 1 1\n","expected_output":"1\n"},{"stdin":"5\n3 1 4 2 2\n","expected_output":"0\n"},{"stdin":"4\n1000 1000 1000 1000\n","expected_output":"0\n"},{"stdin":"2\n3 8\n","expected_output":"5\n"},{"stdin":"3\n2 2 9\n","expected_output":"5\n"}],
+  "knapsack-bounded":[{"stdin":"2 10\n3 4 2\n5 6 1\n","expected_output":"10\n"},{"stdin":"1 1\n2 10 5\n","expected_output":"0\n"},{"stdin":"1 10\n1 1 100\n","expected_output":"10\n"},{"stdin":"3 7\n1 1 1\n2 5 2\n3 7 1\n","expected_output":"17\n"},{"stdin":"2 0\n1 1 1\n2 2 2\n","expected_output":"0\n"},{"stdin":"1 10000\n1 1 100\n","expected_output":"100\n"}],
+  "graph-count-components-size-k":[{"stdin":"6 3 2\n1 2\n3 4\n5 6\n","expected_output":"3\n"},{"stdin":"5 2 1\n1 2\n2 3\n","expected_output":"2\n"},{"stdin":"1 0 1\n","expected_output":"1\n"},{"stdin":"4 4 4\n1 2\n2 3\n3 4\n4 1\n","expected_output":"1\n"},{"stdin":"3 3 1\n1 1\n2 2\n3 3\n","expected_output":"3\n"},{"stdin":"5 1 5\n1 2\n","expected_output":"0\n"}],
+  "dp-longest-zigzag":[{"stdin":"6\n1 7 4 9 2 5\n","expected_output":"6\n"},{"stdin":"5\n3 3 3 3 3\n","expected_output":"1\n"},{"stdin":"1\n5\n","expected_output":"1\n"},{"stdin":"5\n1 2 3 4 5\n","expected_output":"2\n"},{"stdin":"7\n1 1 2 2 3 3 1\n","expected_output":"3\n"},{"stdin":"4\n-5 -1 -5 -1\n","expected_output":"4\n"}],
+  "count-inversions-pairs-far":[{"stdin":"5\n5 4 3 2 1\n","expected_output":"10\n"},{"stdin":"4\n2 2 2 2\n","expected_output":"0\n"},{"stdin":"1\n7\n","expected_output":"0\n"},{"stdin":"5\n1 2 3 4 5\n","expected_output":"0\n"},{"stdin":"6\n3 1 4 1 5 9\n","expected_output":"3\n"},{"stdin":"4\n-1 -2 -3 -4\n","expected_output":"6\n"}],
+  "greedy-min-rooms-lectures":[{"stdin":"3\n0 30\n5 10\n15 20\n","expected_output":"2\n"},{"stdin":"3\n0 10\n10 20\n20 30\n","expected_output":"1\n"},{"stdin":"1\n0 1\n","expected_output":"1\n"},{"stdin":"4\n1 5\n2 6\n3 7\n4 8\n","expected_output":"4\n"},{"stdin":"2\n0 1000000000\n0 1000000000\n","expected_output":"2\n"},{"stdin":"5\n1 2\n2 3\n1 3\n3 4\n2 4\n","expected_output":"3\n"}],
+  "string-count-distinct-rotations":[{"stdin":"abab\n","expected_output":"2\n"},{"stdin":"abcd\n","expected_output":"4\n"},{"stdin":"aaaa\n","expected_output":"1\n"},{"stdin":"a\n","expected_output":"1\n"},{"stdin":"abcabcabc\n","expected_output":"3\n"},{"stdin":"aabaab\n","expected_output":"3\n"},{"stdin":"aabaa\n","expected_output":"5\n"},{"stdin":"abcabca\n","expected_output":"7\n"}],
 } as const;
 
 
@@ -419,6 +429,10 @@ export const problemCpuSeconds: Record<string, number> = {
   "set-union-intersection":2,
   "sort-min-abs-difference":2,
   "queue-from-two-stacks":2,
+  "dp-count-lis":2,
+  "dp-partition-min-diff":2,
+  "knapsack-bounded":2,
+  "count-inversions-pairs-far":2,
 };
 
 export type ProblemKey=keyof typeof tests;
