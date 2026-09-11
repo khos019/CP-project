@@ -139,7 +139,7 @@ P.push({
   constraintList: ["1 ≤ n ≤ 2·10^5", "1 ≤ q ≤ 2·10^5", "1 ≤ l ≤ r ≤ n", "−10^9 ≤ a_i ≤ 10^9", "the array is never modified"],
   constraintListUz: ["1 ≤ n ≤ 2·10^5", "1 ≤ q ≤ 2·10^5", "1 ≤ l ≤ r ≤ n", "−10^9 ≤ a_i ≤ 10^9", "massiv hech qachon o‘zgarmaydi"],
   sampleInputs: ["5 3\n3 1 4 1 5\n2 4\n1 5\n5 5\n", "1 1\n-7\n1 1\n"],
-  expect: ["4\n5\n-7\n", "-7\n"],
+  expect: ["4\n5\n5\n", "-7\n"],
   sampleNotesUz: [
     "2..4 oralig‘i 1, 4 va 1 ni saqlaydi, maksimumi 4. Butun massivning maksimumi 5, 5..5 oralig‘i esa faqat bitta elementdan iborat va uning o‘zi javob bo‘ladi — oxirgi qatorda 5 turadi.",
     "Bitta elementli massivda har qanday so‘rov o‘sha elementni qaytaradi. Manfiy qiymat maksimumni -10^9 dan boshlab qo‘yish kerakligini eslatadi: 0 dan boshlansa, javob noto‘g‘ri 0 bo‘lib qolardi.",
@@ -215,16 +215,17 @@ for(int i=(int)order.size()-1;i>=0;--i){int v=order[i];
  for(int u:g[v])if(u!=par[v])gain=max(gain,1+fre[u]-max(fre[u],usd[u]));
  fre[v]=sum;usd[v]=sum+gain;}
 cout<<max(fre[1],usd[1])<<"\\n";`,
-  wrongNote: "Matching a node to its first available child is greedy from the top and not optimal; halving the node count ignores the shape entirely.",
+  wrongNote: "Matching every node to its parent without marking the parent taken lets one parent be used many times; halving the node count ignores the shape entirely.",
   wrong: [
     `int n;cin>>n;vector<vector<int>>g(n+1);
 for(int i=0;i<n-1;++i){int a,b;cin>>a>>b;g[a].push_back(b);g[b].push_back(a);}
-vector<char>used(n+1,0);vector<int>par(n+1,0),order;vector<char>seen(n+1,0);
+vector<int>par(n+1,0),order;vector<char>seen(n+1,0);
 vector<int>st{1};seen[1]=1;
 while(!st.empty()){int v=st.back();st.pop_back();order.push_back(v);
  for(int u:g[v])if(!seen[u]){seen[u]=1;par[u]=v;st.push_back(u);}}
-long long c=0;
-for(int v:order)if(!used[v])for(int u:g[v])if(u!=par[v]&&!used[u]){used[v]=1;used[u]=1;++c;break;}
+vector<char>used(n+1,0);long long c=0;
+for(int i=(int)order.size()-1;i>=0;--i){int v=order[i];
+ if(!used[v]&&par[v]!=0){used[v]=1;++c;}}
 cout<<c<<"\\n";`,
     `int n;cin>>n;for(int i=0;i<n-1;++i){int a,b;cin>>a>>b;}
 cout<<n/2<<"\\n";`,
@@ -507,7 +508,7 @@ P.push({
   uz: "Ketma-ket k ta birsiz satrlar",
   en: "Binary strings without k ones in a row",
   statementUz: "Sizga n va k butun sonlari berilgan. Uzunligi n bo‘lgan, ichida ketma-ket k ta bir uchramaydigan ikkilik satrlar nechta ekanini sanang. Boshqacha aytganda, satrda 1 lardan tuzilgan uzunligi k yoki undan katta blok bo‘lmasligi kerak. Javob tez o‘sadi, shuning uchun uni 10^9 + 7 ga bo‘lgan qoldiq shaklida chiqaring.",
-  statementEn: "You are given integers n and k. Count the binary strings of length n that never contain k ones in a row. In other words, the string must have no block of 1s of length k or more. The count grows quickly, so print it modulo 10^9 + 7.",
+  statementEn: "You are given integers n and k. Count the binary strings of length n — strings of n characters, each of which is 0 or 1 — that never contain k ones in a row. In other words, the string must hold no block of consecutive 1s whose length is k or more; blocks shorter than k are allowed and there may be any number of them. The count grows quickly, so print it modulo 10^9 + 7.",
   inputUz: "Yagona qatorda ikkita n va k butun soni beriladi.",
   inputEn: "The only line contains two integers n and k.",
   outputUz: "Yagona butun sonni chiqaring — shartni qanoatlantiruvchi satrlar soni, 10^9 + 7 modul bo‘yicha.",
