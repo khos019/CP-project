@@ -27,6 +27,7 @@ import { join } from "node:path";
 
 const HERE = import.meta.dirname;
 const WORK = join(HERE, "build");
+const COMPAT = join(HERE, "compat");
 mkdirSync(WORK, { recursive: true });
 
 const NL = String.fromCharCode(10);
@@ -52,7 +53,10 @@ function build(body, label) {
   const exe = join(WORK, label + ".exe");
   writeFileSync(src, wrap(body));
   try {
-    execSync('g++ -O2 -std=c++20 -o "' + exe + '" "' + src + '"', { stdio: "pipe" });
+    // -I compat: "g++" on macOS is Apple clang, whose libc++ has no
+    // <bits/stdc++.h>. The vendored shim there provides it so the generator can
+    // run at all; on Linux the real header wins and the flag changes nothing.
+    execSync('g++ -O2 -std=c++20 -I "' + COMPAT + '" -o "' + exe + '" "' + src + '"', { stdio: "pipe" });
   } catch (e) {
     throw new Error("compile failed for " + label + ":" + NL + (e.stderr ? e.stderr.toString() : e.message));
   }
