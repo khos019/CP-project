@@ -3616,6 +3616,10 @@ a.editor-escape:hover{color:var(--ink);border-color:var(--line-strong);backgroun
 /* The circular reveal is driven from ThemeToggle.tsx; the browser's default
    cross-fade would fight it. */
 ::view-transition-old(root),::view-transition-new(root){animation:none;mix-blend-mode:normal}
+/* Held by ThemeToggle for the length of a switch: component transitions would
+   otherwise keep fading out of the old palette after the reveal. The icon keeps its turn. */
+.theme-switching *,.theme-switching *::before,.theme-switching *::after{transition:none!important}
+.theme-switching .theme-toggle svg{transition:transform 380ms var(--ease),opacity 240ms var(--ease)!important}
 /* Fallback where view transitions are missing: colours ease across instead of
    jumping. Only present for the ~360ms of the switch. */
 .theme-fade,.theme-fade *,.theme-fade *::before,.theme-fade *::after{
