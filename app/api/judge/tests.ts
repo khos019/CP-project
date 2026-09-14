@@ -381,6 +381,26 @@ export const tests={
   "dp-min-deletions-palindrome":[{"stdin":"abcda\n","expected_output":"2\n"},{"stdin":"aba\n","expected_output":"0\n"},{"stdin":"a\n","expected_output":"0\n"},{"stdin":"abcde\n","expected_output":"4\n"},{"stdin":"aaaa\n","expected_output":"0\n"},{"stdin":"abacdfgdcaba\n","expected_output":"1\n"}],
   "dp-min-palindrome-cuts":[{"stdin":"aab\n","expected_output":"1\n"},{"stdin":"abba\n","expected_output":"0\n"},{"stdin":"a\n","expected_output":"0\n"},{"stdin":"abcde\n","expected_output":"4\n"},{"stdin":"aaaa\n","expected_output":"0\n"},{"stdin":"banana\n","expected_output":"1\n"},{"stdin":"aaba\n","expected_output":"1\n"}],
   "graph-count-triangles":[{"stdin":"4 5\n1 2\n2 3\n1 3\n3 4\n2 4\n","expected_output":"2\n"},{"stdin":"3 2\n1 2\n2 3\n","expected_output":"0\n"},{"stdin":"1 0\n","expected_output":"0\n"},{"stdin":"3 3\n1 2\n2 3\n1 3\n","expected_output":"1\n"},{"stdin":"4 6\n1 2\n1 3\n1 4\n2 3\n2 4\n3 4\n","expected_output":"4\n"},{"stdin":"5 4\n1 2\n2 3\n3 4\n4 5\n","expected_output":"0\n"}],
+  "graph-count-connected-pairs":[{"stdin":"5 3\n1 2\n2 3\n4 5\n","expected_output":"4\n"},{"stdin":"3 0\n","expected_output":"0\n"},{"stdin":"1 0\n","expected_output":"0\n"},{"stdin":"4 6\n1 2\n1 3\n1 4\n2 3\n2 4\n3 4\n","expected_output":"6\n"},{"stdin":"2 2\n1 2\n1 2\n","expected_output":"1\n"},{"stdin":"6 3\n1 2\n3 4\n5 6\n","expected_output":"3\n"}],
+  "dp-knapsack-count-ways":[{"stdin":"4 5\n1 2 3 4\n","expected_output":"2\n"},{"stdin":"3 0\n1 2 3\n","expected_output":"1\n"},{"stdin":"1 1\n1\n","expected_output":"1\n"},{"stdin":"4 4\n1 1 1 1\n","expected_output":"1\n"},{"stdin":"3 10\n1 2 3\n","expected_output":"0\n"},{"stdin":"5 5\n5 5 5 5 5\n","expected_output":"5\n"}],
+  "dp-longest-arith-subseq":[{"stdin":"6\n3 6 9 12 1 2\n","expected_output":"4\n"},{"stdin":"4\n1 5 2 8\n","expected_output":"2\n"},{"stdin":"1\n7\n","expected_output":"1\n"},{"stdin":"5\n1 1 1 1 1\n","expected_output":"5\n"},{"stdin":"5\n10 7 4 1 -2\n","expected_output":"5\n"},{"stdin":"6\n1 2 4 8 16 32\n","expected_output":"2\n"},{"stdin":"5\n1 7 2 9 3\n","expected_output":"3\n"}],
+  "math-count-lattice-in-circle":[{"stdin":"1\n","expected_output":"5\n"},{"stdin":"0\n","expected_output":"1\n"},{"stdin":"2\n","expected_output":"13\n"},{"stdin":"5\n","expected_output":"81\n"},{"stdin":"1000\n","expected_output":"3141549\n"},{"stdin":"1000000\n","expected_output":"3141592649625\n"}],
+  "tree-count-centroids":[{"stdin":"4\n1 2\n2 3\n3 4\n","expected_output":"2\n"},{"stdin":"3\n1 2\n2 3\n","expected_output":"1\n"},{"stdin":"1\n","expected_output":"1\n"},{"stdin":"2\n1 2\n","expected_output":"2\n"},{"stdin":"5\n1 2\n1 3\n1 4\n1 5\n","expected_output":"1\n"},{"stdin":"6\n1 2\n2 3\n3 4\n4 5\n5 6\n","expected_output":"2\n"}],
+  "dp-lcs-three-strings":[{"stdin":"abcd\nacbd\nacd\n","expected_output":"3\n"},{"stdin":"abc\ndef\nghi\n","expected_output":"0\n"},{"stdin":"a\na\na\n","expected_output":"1\n"},{"stdin":"aaaa\naaa\naa\n","expected_output":"2\n"},{"stdin":"abcde\nabcde\nabcde\n","expected_output":"5\n"},{"stdin":"xyz\nxz\nz\n","expected_output":"1\n"}],
+  "geo-convex-hull-area2":[{"stdin":"4\n0 0\n4 0\n4 4\n0 4\n","expected_output":"32\n"},{"stdin":"3\n0 0\n1 1\n2 2\n","expected_output":"0\n"},{"stdin":"1\n5 5\n","expected_output":"0\n"},{"stdin":"3\n0 0\n1 0\n0 1\n","expected_output":"1\n"},{"stdin":"5\n0 0\n4 0\n4 4\n0 4\n2 2\n","expected_output":"32\n"},{"stdin":"2\n0 0\n10 10\n","expected_output":"0\n"}],
+  "bt-count-hamiltonian-paths":[{"stdin":"3 2\n1 2\n2 3\n","expected_output":"2\n"},{"stdin":"3 3\n1 2\n2 3\n1 3\n","expected_output":"6\n"},{"stdin":"1 0\n","expected_output":"1\n"},{"stdin":"2 1\n1 2\n","expected_output":"2\n"},{"stdin":"4 3\n1 2\n2 3\n3 4\n","expected_output":"2\n"},{"stdin":"4 0\n","expected_output":"0\n"}],
+  "string-smallest-rotation":[{"stdin":"bbaa\n","expected_output":"3\n"},{"stdin":"aaaa\n","expected_output":"1\n"},{"stdin":"a\n","expected_output":"1\n"},{"stdin":"cba\n","expected_output":"3\n"},{"stdin":"abab\n","expected_output":"1\n"},{"stdin":"zzzab\n","expected_output":"4\n"},{"stdin":"abaa\n","expected_output":"4\n"}],
+  "sqrt-decomp-range-sum":[{"stdin":"5 3\n1 2 3 4 5\n2 1 5\n1 3 10\n2 2 4\n","expected_output":"15\n16\n"},{"stdin":"1 2\n7\n2 1 1\n1 1 -7\n","expected_output":"7\n"},{"stdin":"3 2\n1 1 1\n1 2 5\n2 1 3\n","expected_output":"7\n"},{"stdin":"4 1\n-1000000000 -1000000000 -1000000000 -1000000000\n2 1 4\n","expected_output":"-4000000000\n"},{"stdin":"5 2\n1 2 3 4 5\n2 3 3\n2 1 1\n","expected_output":"3\n1\n"},{"stdin":"6 3\n1 2 3 4 5 6\n1 6 0\n2 4 6\n2 1 6\n","expected_output":"9\n15\n"}],
+  "array-sum-abs-steps":[{"stdin":"4\n1 5 2 8\n","expected_output":"13\n"},{"stdin":"1\n7\n","expected_output":"0\n"},{"stdin":"2\n-1000000000 1000000000\n","expected_output":"2000000000\n"},{"stdin":"5\n1 2 3 4 5\n","expected_output":"4\n"},{"stdin":"5\n5 4 3 2 1\n","expected_output":"4\n"},{"stdin":"3\n0 0 0\n","expected_output":"0\n"}],
+  "is-perfect-square":[{"stdin":"49\n","expected_output":"YES\n"},{"stdin":"50\n","expected_output":"NO\n"},{"stdin":"0\n","expected_output":"YES\n"},{"stdin":"1\n","expected_output":"YES\n"},{"stdin":"999999999999999999\n","expected_output":"NO\n"},{"stdin":"1000000000000000000\n","expected_output":"YES\n"}],
+  "str-count-adjacent-equal":[{"stdin":"aabbbc\n","expected_output":"3\n"},{"stdin":"abc\n","expected_output":"0\n"},{"stdin":"a\n","expected_output":"0\n"},{"stdin":"aaaa\n","expected_output":"3\n"},{"stdin":"abab\n","expected_output":"0\n"},{"stdin":"zz\n","expected_output":"1\n"}],
+  "sort-by-digit-sum":[{"stdin":"5\n91 19 5 23 100\n","expected_output":"100 5 23 19 91\n"},{"stdin":"3\n10 100 1000\n","expected_output":"10 100 1000\n"},{"stdin":"1\n7\n","expected_output":"7\n"},{"stdin":"4\n1 2 3 4\n","expected_output":"1 2 3 4\n"},{"stdin":"4\n999999999 1 10 100\n","expected_output":"1 10 100 999999999\n"},{"stdin":"3\n12 21 3\n","expected_output":"3 12 21\n"}],
+  "two-pointers-count-common":[{"stdin":"5 4\n1 2 2 3 5\n2 3 4 5\n","expected_output":"3\n"},{"stdin":"3 3\n1 1 1\n2 2 2\n","expected_output":"0\n"},{"stdin":"1 1\n5\n5\n","expected_output":"1\n"},{"stdin":"4 4\n1 1 2 2\n1 1 2 2\n","expected_output":"2\n"},{"stdin":"3 2\n-5 0 5\n-5 5\n","expected_output":"2\n"},{"stdin":"2 3\n1 2\n3 4 5\n","expected_output":"0\n"}],
+  "bt-ways-climb-k-steps":[{"stdin":"4 2\n","expected_output":"5\n"},{"stdin":"4 1\n","expected_output":"1\n"},{"stdin":"1 100\n","expected_output":"1\n"},{"stdin":"10 3\n","expected_output":"274\n"},{"stdin":"100000 2\n","expected_output":"967618232\n"},{"stdin":"5 5\n","expected_output":"16\n"}],
+  "geo-two-rect-union-area":[{"stdin":"0 0 4 4\n2 2 6 6\n","expected_output":"28\n"},{"stdin":"0 0 1 1\n5 5 6 6\n","expected_output":"2\n"},{"stdin":"0 0 2 2\n0 0 2 2\n","expected_output":"4\n"},{"stdin":"0 0 4 4\n1 1 2 2\n","expected_output":"16\n"},{"stdin":"0 0 1 1\n1 0 2 1\n","expected_output":"2\n"},{"stdin":"-1000000000 -1000000000 0 0\n0 0 1000000000 1000000000\n","expected_output":"2000000000000000000\n"}],
+  "greedy-min-groups-within-k":[{"stdin":"5 2\n1 3 5 7 2\n","expected_output":"2\n"},{"stdin":"3 0\n4 4 4\n","expected_output":"1\n"},{"stdin":"1 5\n7\n","expected_output":"1\n"},{"stdin":"4 0\n1 2 3 4\n","expected_output":"4\n"},{"stdin":"5 1000000000\n-1000000000 0 1000000000 5 6\n","expected_output":"2\n"},{"stdin":"6 3\n1 2 3 4 5 6\n","expected_output":"2\n"}],
+  "bs-min-speed-finish":[{"stdin":"4 8\n3 6 7 11\n","expected_output":"4\n"},{"stdin":"1 1\n5\n","expected_output":"5\n"},{"stdin":"3 3\n1 1 1\n","expected_output":"1\n"},{"stdin":"2 1000000000\n1000000000 1000000000\n","expected_output":"2\n"},{"stdin":"5 5\n1 2 3 4 5\n","expected_output":"5\n"},{"stdin":"4 5\n30 11 23 4\n","expected_output":"23\n"}],
+  "tree-max-path-sum-any":[{"stdin":"5\n1 2 3 4 5\n1 2\n1 3\n3 4\n3 5\n","expected_output":"12\n"},{"stdin":"3\n-5 -2 -9\n1 2\n2 3\n","expected_output":"-2\n"},{"stdin":"1\n7\n","expected_output":"7\n"},{"stdin":"2\n-1 -2\n1 2\n","expected_output":"-1\n"},{"stdin":"4\n10 -100 10 10\n1 2\n2 3\n3 4\n","expected_output":"20\n"},{"stdin":"5\n1 1 1 1 1\n1 2\n2 3\n3 4\n4 5\n","expected_output":"5\n"}],
 } as const;
 
 
@@ -488,6 +508,16 @@ export const problemCpuSeconds: Record<string, number> = {
   "dp-min-deletions-palindrome":2,
   "dp-min-palindrome-cuts":2,
   "graph-count-triangles":2,
+  "dp-knapsack-count-ways":2,
+  "dp-longest-arith-subseq":2,
+  "math-count-lattice-in-circle":2,
+  "tree-count-centroids":2,
+  "dp-lcs-three-strings":2,
+  "geo-convex-hull-area2":2,
+  "bt-count-hamiltonian-paths":2,
+  "string-smallest-rotation":2,
+  "sqrt-decomp-range-sum":2,
+  "tree-max-path-sum-any":2,
 };
 
 export type ProblemKey=keyof typeof tests;
