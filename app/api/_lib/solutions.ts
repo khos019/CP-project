@@ -4435,6 +4435,348 @@ for(char c:s){mask^=(1<<(c-'a'));++cnt[mask];}
 long long ans=0;for(long long v:cnt)if(v>0)++ans;
 cout<<ans<<"\\n";`)],
   },
+  "count-even-digits": {
+    solution: cpp(`string s;cin>>s;long long c=0;
+for(char ch:s)if((ch-'0')%2==0)++c;
+cout<<c<<"\\n";`),
+    // Treating 0 as odd loses a digit; counting the odd ones answers the opposite question.
+    wrong: [cpp(`string s;cin>>s;long long c=0;
+for(char ch:s){int d=ch-'0';if(d!=0&&d%2==0)++c;}
+cout<<c<<"\\n";`), cpp(`string s;cin>>s;long long c=0;
+for(char ch:s)if((ch-'0')%2==1)++c;
+cout<<c<<"\\n";`)],
+  },
+  "array-max-index": {
+    solution: cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+int best=0;
+for(int i=1;i<n;++i)if(a[i]>a[best])best=i;
+cout<<best+1<<"\\n";`),
+    // Comparing with >= moves to the rightmost of the tied positions; starting the maximum at 0 fails on an all-negative array.
+    wrong: [cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+int best=0;
+for(int i=1;i<n;++i)if(a[i]>=a[best])best=i;
+cout<<best+1<<"\\n";`), cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+long long mx=0;int best=0;
+for(int i=0;i<n;++i)if(a[i]>mx){mx=a[i];best=i;}
+cout<<best+1<<"\\n";`)],
+  },
+  "array-all-equal": {
+    solution: cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+bool same=true;
+for(int i=1;i<n;++i)if(a[i]!=a[0]){same=false;break;}
+cout<<(same?"YES":"NO")<<"\\n";`),
+    // Comparing only the first and last elements misses a difference in the middle; comparing only the first pair misses everything after it.
+    wrong: [cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+cout<<((a[0]==a[n-1])?"YES":"NO")<<"\\n";`), cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+bool same=(n<2)||(a[0]==a[1]);
+cout<<(same?"YES":"NO")<<"\\n";`)],
+  },
+  "digital-root-repeat": {
+    solution: cpp(`string s;cin>>s;long long v=0;
+for(char c:s)v+=c-'0';
+while(v>9){long long t=0;while(v){t+=v%10;v/=10;}v=t;}
+cout<<v<<"\\n";`),
+    // Summing the digits only once stops short on a large number; the mod-9 shortcut gives 0 instead of 9 for a multiple of nine.
+    wrong: [cpp(`string s;cin>>s;long long v=0;
+for(char c:s)v+=c-'0';
+cout<<v<<"\\n";`), cpp(`string s;cin>>s;long long v=0;
+for(char c:s)v+=c-'0';
+cout<<(v%9)<<"\\n";`)],
+  },
+  "geo-triangle-type": {
+    solution: cpp(`long long a,b,c;cin>>a>>b>>c;
+if(a+b<=c||a+c<=b||b+c<=a){cout<<"NONE\\n";return 0;}
+if(a==b&&b==c)cout<<"EQUILATERAL\\n";
+else if(a==b||b==c||a==c)cout<<"ISOSCELES\\n";
+else cout<<"SCALENE\\n";`),
+    // A non-strict inequality accepts the degenerate case where the sides lie flat; classifying before checking reports a type for something that is not a triangle.
+    wrong: [cpp(`long long a,b,c;cin>>a>>b>>c;
+if(a+b<c||a+c<b||b+c<a){cout<<"NONE\\n";return 0;}
+if(a==b&&b==c)cout<<"EQUILATERAL\\n";
+else if(a==b||b==c||a==c)cout<<"ISOSCELES\\n";
+else cout<<"SCALENE\\n";`), cpp(`long long a,b,c;cin>>a>>b>>c;
+if(a==b&&b==c){cout<<"EQUILATERAL\\n";return 0;}
+if(a==b||b==c||a==c){cout<<"ISOSCELES\\n";return 0;}
+if(a+b<=c||a+c<=b||b+c<=a){cout<<"NONE\\n";return 0;}
+cout<<"SCALENE\\n";`)],
+  },
+  "count-pairs-sum-even": {
+    solution: cpp(`int n;cin>>n;long long ev=0,od=0,x;
+for(int i=0;i<n;++i){cin>>x;if(((x%2)+2)%2==0)++ev;else ++od;}
+cout<<(ev*(ev-1)/2+od*(od-1)/2)<<"\\n";`),
+    // Testing x % 2 == 1 misses negative odd numbers, whose remainder is -1; counting only the even group forgets that two odds also sum to an even number.
+    wrong: [cpp(`int n;cin>>n;long long ev=0,od=0,x;
+for(int i=0;i<n;++i){cin>>x;if(x%2==1)++od;else ++ev;}
+cout<<(ev*(ev-1)/2+od*(od-1)/2)<<"\\n";`), cpp(`int n;cin>>n;long long ev=0,x;
+for(int i=0;i<n;++i){cin>>x;if(((x%2)+2)%2==0)++ev;}
+cout<<(ev*(ev-1)/2)<<"\\n";`)],
+  },
+  "min-moves-level-up": {
+    solution: cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+long long mx=*max_element(a.begin(),a.end()),total=0;
+for(long long x:a)total+=mx-x;
+cout<<total<<"\\n";`),
+    // Levelling to the minimum answers a question nobody asked; an int accumulator overflows once the differences pile up.
+    wrong: [cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+long long mn=*min_element(a.begin(),a.end()),total=0;
+for(long long x:a)total+=x-mn;
+cout<<total<<"\\n";`), cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+long long mx=*max_element(a.begin(),a.end());int total=0;
+for(long long x:a)total+=(int)(mx-x);
+cout<<total<<"\\n";`)],
+  },
+  "sort-parity-then-value": {
+    solution: cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+auto even=[](long long v){return ((v%2)+2)%2==0;};
+stable_sort(a.begin(),a.end(),[&](long long x,long long y){
+ if(even(x)!=even(y))return even(x);
+ return x<y;});
+for(int i=0;i<n;++i)cout<<a[i]<<(i+1<n?" ":"\\n");`),
+    // Deciding oddness with v % 2 == 1 calls every negative odd number even, because -3 % 2 is -1; sorting by value alone ignores the grouping entirely.
+    wrong: [cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+auto even=[](long long v){return v%2!=1;};
+stable_sort(a.begin(),a.end(),[&](long long x,long long y){
+ if(even(x)!=even(y))return even(x);
+ return x<y;});
+for(int i=0;i<n;++i)cout<<a[i]<<(i+1<n?" ":"\\n");`), cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+sort(a.begin(),a.end());
+for(int i=0;i<n;++i)cout<<a[i]<<(i+1<n?" ":"\\n");`)],
+  },
+  "geo-manhattan-farthest": {
+    solution: cpp(`int n;cin>>n;
+const long long INF=(long long)4e18;
+long long mxs=-INF,mns=INF,mxd=-INF,mnd=INF;
+for(int i=0;i<n;++i){long long x,y;cin>>x>>y;
+ mxs=max(mxs,x+y);mns=min(mns,x+y);
+ mxd=max(mxd,x-y);mnd=min(mnd,x-y);}
+long long ans=max(mxs-mns,mxd-mnd);
+cout<<(n<2?0:ans)<<"\\n";`),
+    // Taking only the spread of x + y misses the pairs whose distance shows up in x - y; the Euclidean formula answers a different distance.
+    wrong: [cpp(`int n;cin>>n;
+const long long INF=(long long)4e18;
+long long mxs=-INF,mns=INF;
+for(int i=0;i<n;++i){long long x,y;cin>>x>>y;
+ mxs=max(mxs,x+y);mns=min(mns,x+y);}
+cout<<(n<2?0:(mxs-mns))<<"\\n";`), cpp(`int n;cin>>n;vector<long long>xs(n),ys(n);
+for(int i=0;i<n;++i)cin>>xs[i]>>ys[i];
+long long best=0;
+for(int i=0;i<n;++i)for(int j=i+1;j<n;++j){
+ long long dx=xs[i]-xs[j],dy=ys[i]-ys[j];
+ best=max(best,dx*dx+dy*dy);}
+cout<<best<<"\\n";`)],
+  },
+  "str-count-words-length-k": {
+    solution: cpp(`long long k;cin>>k;string w;long long c=0;
+while(cin>>w)if((long long)w.size()==k)++c;
+cout<<c<<"\\n";`),
+    // Counting words at least k long, and counting words at most k long — both answer a question with an inequality where the task asks for equality.
+    wrong: [cpp(`long long k;cin>>k;string w;long long c=0;
+while(cin>>w)if((long long)w.size()>=k)++c;
+cout<<c<<"\\n";`), cpp(`long long k;cin>>k;string w;long long c=0;
+while(cin>>w)if((long long)w.size()<=k)++c;
+cout<<c<<"\\n";`)],
+  },
+  "greedy-max-profit-one-trade": {
+    solution: cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+long long best=0,lo=(long long)4e18;
+for(int i=0;i<n;++i){if(i>0&&a[i]-lo>best)best=a[i]-lo;if(a[i]<lo)lo=a[i];}
+cout<<best<<"\\n";`),
+    // The difference between the global maximum and minimum ignores which came first; forcing a trade to happen reports a loss on a market that only falls, where the right answer is to stay out.
+    wrong: [cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+long long mx=*max_element(a.begin(),a.end()),mn=*min_element(a.begin(),a.end());
+cout<<max(0LL,mx-mn)<<"\\n";`), cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+long long best=(long long)-4e18,lo=a[0];
+for(int i=1;i<n;++i){if(a[i]-lo>best)best=a[i]-lo;if(a[i]<lo)lo=a[i];}
+cout<<best<<"\\n";`)],
+  },
+  "two-pointers-min-subarray-atleast": {
+    solution: cpp(`long long n,S;cin>>n>>S;vector<long long>a(n);for(auto&x:a)cin>>x;
+long long sum=0,best=n+1,l=0;
+for(long long r=0;r<n;++r){sum+=a[r];
+ while(sum-a[l]>=S){sum-=a[l];++l;}
+ if(sum>=S)best=min(best,r-l+1);}
+cout<<(best==n+1?0:best)<<"\\n";`),
+    // A strict comparison rejects a window that lands exactly on S; reporting n + 1 when nothing qualifies prints a length that does not exist.
+    wrong: [cpp(`long long n,S;cin>>n>>S;vector<long long>a(n);for(auto&x:a)cin>>x;
+long long sum=0,best=n+1,l=0;
+for(long long r=0;r<n;++r){sum+=a[r];
+ while(sum-a[l]>S){sum-=a[l];++l;}
+ if(sum>S)best=min(best,r-l+1);}
+cout<<(best==n+1?0:best)<<"\\n";`), cpp(`long long n,S;cin>>n>>S;vector<long long>a(n);for(auto&x:a)cin>>x;
+long long sum=0,best=n+1,l=0;
+for(long long r=0;r<n;++r){sum+=a[r];
+ while(sum-a[l]>=S){sum-=a[l];++l;}
+ if(sum>=S)best=min(best,r-l+1);}
+cout<<best<<"\\n";`)],
+  },
+  "count-pairs-diff-k": {
+    solution: cpp(`long long n,k;cin>>n>>k;vector<long long>a(n);for(auto&x:a)cin>>x;
+sort(a.begin(),a.end());long long c=0;
+for(long long i=0;i<n;++i){
+ auto lo=lower_bound(a.begin()+i+1,a.end(),a[i]+k);
+ auto hi=upper_bound(a.begin()+i+1,a.end(),a[i]+k);
+ c+=hi-lo;}
+cout<<c<<"\\n";`),
+    // Counting distinct values rather than positions loses every repeat; searching the whole array instead of the part after i counts each pair twice when k is 0.
+    wrong: [cpp(`long long n,k;cin>>n>>k;vector<long long>a(n);for(auto&x:a)cin>>x;
+sort(a.begin(),a.end());a.erase(unique(a.begin(),a.end()),a.end());
+long long c=0;
+for(size_t i=0;i<a.size();++i)
+ if(binary_search(a.begin()+i+1,a.end(),a[i]+k))++c;
+cout<<c<<"\\n";`), cpp(`long long n,k;cin>>n>>k;vector<long long>a(n);for(auto&x:a)cin>>x;
+sort(a.begin(),a.end());long long c=0;
+for(long long i=0;i<n;++i){
+ auto lo=lower_bound(a.begin(),a.end(),a[i]+k);
+ auto hi=upper_bound(a.begin(),a.end(),a[i]+k);
+ c+=hi-lo;}
+cout<<c/2<<"\\n";`)],
+  },
+  "bt-count-subsets-sum-exact": {
+    solution: cpp(`long long n,k;cin>>n>>k;vector<long long>a(n);for(auto&x:a)cin>>x;
+long long c=0;
+for(long long m=0;m<(1LL<<n);++m){long long s=0;
+ for(long long b=0;b<n;++b)if(m>>b&1)s+=a[b];
+ if(s==k)++c;}
+cout<<c<<"\\n";`),
+    // Skipping the empty mask loses the only subset that sums to zero; counting sums at most k answers a different question.
+    wrong: [cpp(`long long n,k;cin>>n>>k;vector<long long>a(n);for(auto&x:a)cin>>x;
+long long c=0;
+for(long long m=1;m<(1LL<<n);++m){long long s=0;
+ for(long long b=0;b<n;++b)if(m>>b&1)s+=a[b];
+ if(s==k)++c;}
+cout<<c<<"\\n";`), cpp(`long long n,k;cin>>n>>k;vector<long long>a(n);for(auto&x:a)cin>>x;
+long long c=0;
+for(long long m=0;m<(1LL<<n);++m){long long s=0;
+ for(long long b=0;b<n;++b)if(m>>b&1)s+=a[b];
+ if(s<=k)++c;}
+cout<<c<<"\\n";`)],
+  },
+  "tree-count-even-subtrees": {
+    solution: cpp(`int n;cin>>n;vector<vector<int>>g(n+1);
+for(int i=0;i<n-1;++i){int a,b;cin>>a>>b;g[a].push_back(b);g[b].push_back(a);}
+vector<int>par(n+1,0),order;vector<char>seen(n+1,0);vector<long long>sz(n+1,1);
+vector<int>st{1};seen[1]=1;
+while(!st.empty()){int v=st.back();st.pop_back();order.push_back(v);
+ for(int u:g[v])if(!seen[u]){seen[u]=1;par[u]=v;st.push_back(u);}}
+for(int i=(int)order.size()-1;i>=1;--i){int v=order[i];sz[par[v]]+=sz[v];}
+long long c=0;for(int v=1;v<=n;++v)if(sz[v]%2==0)++c;
+cout<<c<<"\\n";`),
+    // Leaving the root out of the count drops the whole tree from consideration; counting odd subtrees answers the opposite question.
+    wrong: [cpp(`int n;cin>>n;vector<vector<int>>g(n+1);
+for(int i=0;i<n-1;++i){int a,b;cin>>a>>b;g[a].push_back(b);g[b].push_back(a);}
+vector<int>par(n+1,0),order;vector<char>seen(n+1,0);vector<long long>sz(n+1,1);
+vector<int>st{1};seen[1]=1;
+while(!st.empty()){int v=st.back();st.pop_back();order.push_back(v);
+ for(int u:g[v])if(!seen[u]){seen[u]=1;par[u]=v;st.push_back(u);}}
+for(int i=(int)order.size()-1;i>=1;--i){int v=order[i];sz[par[v]]+=sz[v];}
+long long c=0;for(int v=2;v<=n;++v)if(sz[v]%2==0)++c;
+cout<<c<<"\\n";`), cpp(`int n;cin>>n;vector<vector<int>>g(n+1);
+for(int i=0;i<n-1;++i){int a,b;cin>>a>>b;g[a].push_back(b);g[b].push_back(a);}
+vector<int>par(n+1,0),order;vector<char>seen(n+1,0);vector<long long>sz(n+1,1);
+vector<int>st{1};seen[1]=1;
+while(!st.empty()){int v=st.back();st.pop_back();order.push_back(v);
+ for(int u:g[v])if(!seen[u]){seen[u]=1;par[u]=v;st.push_back(u);}}
+for(int i=(int)order.size()-1;i>=1;--i){int v=order[i];sz[par[v]]+=sz[v];}
+long long c=0;for(int v=1;v<=n;++v)if(sz[v]%2==1)++c;
+cout<<c<<"\\n";`)],
+  },
+  "bt-gray-code-nth": {
+    solution: cpp(`long long n,k;cin>>n>>k;
+cout<<(k^(k>>1))<<"\\n";`),
+    // Shifting the other way builds a different sequence; returning k itself is the identity ordering, in which consecutive entries differ in more than one bit.
+    wrong: [cpp(`long long n,k;cin>>n>>k;
+cout<<(k^(k<<1))<<"\\n";`), cpp(`long long n,k;cin>>n>>k;
+cout<<k<<"\\n";`)],
+  },
+  "bs-max-square-side-ones": {
+    solution: cpp(`int r,c;cin>>r>>c;vector<string>g(r);for(auto&s:g)cin>>s;
+vector<vector<int>>dp(r,vector<int>(c,0));int best=0;
+for(int i=0;i<r;++i)for(int j=0;j<c;++j){
+ if(g[i][j]!='1')continue;
+ dp[i][j]=(i==0||j==0)?1:1+min(dp[i-1][j],min(dp[i][j-1],dp[i-1][j-1]));
+ best=max(best,dp[i][j]);}
+cout<<best<<"\\n";`),
+    // Taking the minimum of only the two neighbours above and to the left allows a square with a hole at its corner; counting the longest run of ones in a row measures a rectangle, not a square.
+    wrong: [cpp(`int r,c;cin>>r>>c;vector<string>g(r);for(auto&s:g)cin>>s;
+vector<vector<int>>dp(r,vector<int>(c,0));int best=0;
+for(int i=0;i<r;++i)for(int j=0;j<c;++j){
+ if(g[i][j]!='1')continue;
+ dp[i][j]=(i==0||j==0)?1:1+min(dp[i-1][j],dp[i][j-1]);
+ best=max(best,dp[i][j]);}
+cout<<best<<"\\n";`), cpp(`int r,c;cin>>r>>c;vector<string>g(r);for(auto&s:g)cin>>s;
+int best=0;
+for(int i=0;i<r;++i){int run=0;
+ for(int j=0;j<c;++j){if(g[i][j]=='1')++run;else run=0;best=max(best,run);}}
+cout<<best<<"\\n";`)],
+  },
+  "dp-min-deletions-palindrome": {
+    solution: cpp(`string s;cin>>s;int n=s.size();
+vector<vector<int>>dp(n,vector<int>(n,0));
+for(int i=n-1;i>=0;--i){dp[i][i]=1;
+ for(int j=i+1;j<n;++j)
+  dp[i][j]=(s[i]==s[j])?dp[i+1][j-1]+2:max(dp[i+1][j],dp[i][j-1]);}
+cout<<(n-dp[0][n-1])<<"\\n";`),
+    // Reporting the palindrome's length answers what is kept rather than what is removed; using the longest palindromic substring instead of subsequence deletes more than necessary.
+    wrong: [cpp(`string s;cin>>s;int n=s.size();
+vector<vector<int>>dp(n,vector<int>(n,0));
+for(int i=n-1;i>=0;--i){dp[i][i]=1;
+ for(int j=i+1;j<n;++j)
+  dp[i][j]=(s[i]==s[j])?dp[i+1][j-1]+2:max(dp[i+1][j],dp[i][j-1]);}
+cout<<dp[0][n-1]<<"\\n";`), cpp(`string s;cin>>s;int n=s.size();int best=0;
+for(int i=0;i<n;++i)for(int j=i;j<n;++j){
+ bool pal=true;
+ for(int a=i,b=j;a<b;++a,--b)if(s[a]!=s[b]){pal=false;break;}
+ if(pal)best=max(best,j-i+1);}
+cout<<(n-best)<<"\\n";`)],
+  },
+  "dp-min-palindrome-cuts": {
+    solution: cpp(`string s;cin>>s;int n=s.size();
+vector<vector<char>>pal(n,vector<char>(n,0));
+for(int i=n-1;i>=0;--i)for(int j=i;j<n;++j)
+ pal[i][j]=(s[i]==s[j])&&(j-i<2||pal[i+1][j-1]);
+vector<int>dp(n+1,n);dp[0]=0;
+for(int j=1;j<=n;++j)for(int i=1;i<=j;++i)
+ if(pal[i-1][j-1])dp[j]=min(dp[j],dp[i-1]+1);
+cout<<(dp[n]-1)<<"\\n";`),
+    // Reporting the number of pieces instead of the cuts is off by one everywhere; a greedy that takes the longest palindrome it can see from the left is not optimal.
+    wrong: [cpp(`string s;cin>>s;int n=s.size();
+vector<vector<char>>pal(n,vector<char>(n,0));
+for(int i=n-1;i>=0;--i)for(int j=i;j<n;++j)
+ pal[i][j]=(s[i]==s[j])&&(j-i<2||pal[i+1][j-1]);
+vector<int>dp(n+1,n);dp[0]=0;
+for(int j=1;j<=n;++j)for(int i=1;i<=j;++i)
+ if(pal[i-1][j-1])dp[j]=min(dp[j],dp[i-1]+1);
+cout<<dp[n]<<"\\n";`), cpp(`string s;cin>>s;int n=s.size();
+auto isPal=[&](int i,int j){while(i<j){if(s[i]!=s[j])return false;++i;--j;}return true;};
+int cuts=0,i=0;
+while(i<n){int best=i;
+ for(int j=n-1;j>=i;--j)if(isPal(i,j)){best=j;break;}
+ i=best+1;if(i<n)++cuts;}
+cout<<cuts<<"\\n";`)],
+  },
+  "graph-count-triangles": {
+    solution: cpp(`int n,m;cin>>n>>m;
+vector<vector<char>>adj(n+1,vector<char>(n+1,0));
+for(int i=0;i<m;++i){int a,b;cin>>a>>b;adj[a][b]=1;adj[b][a]=1;}
+long long c=0;
+for(int i=1;i<=n;++i)for(int j=i+1;j<=n;++j){if(!adj[i][j])continue;
+ for(int k=j+1;k<=n;++k)if(adj[i][k]&&adj[j][k])++c;}
+cout<<c<<"\\n";`),
+    // Letting the three indices range freely counts each triangle once per ordering; counting closed walks of length three over the whole matrix counts every direction as well.
+    wrong: [cpp(`int n,m;cin>>n>>m;
+vector<vector<char>>adj(n+1,vector<char>(n+1,0));
+for(int i=0;i<m;++i){int a,b;cin>>a>>b;adj[a][b]=1;adj[b][a]=1;}
+long long c=0;
+for(int i=1;i<=n;++i)for(int j=1;j<=n;++j){if(i==j||!adj[i][j])continue;
+ for(int k=j+1;k<=n;++k)if(k!=i&&adj[i][k]&&adj[j][k])++c;}
+cout<<c<<"\\n";`), cpp(`int n,m;cin>>n>>m;
+vector<vector<char>>adj(n+1,vector<char>(n+1,0));
+for(int i=0;i<m;++i){int a,b;cin>>a>>b;adj[a][b]=1;adj[b][a]=1;}
+long long c=0;
+for(int i=1;i<=n;++i)for(int j=1;j<=n;++j)for(int k=1;k<=n;++k)
+ if(adj[i][j]&&adj[j][k]&&adj[i][k])++c;
+cout<<c<<"\\n";`)],
+  },
 };
 
 /** The problems the bot can actually play. Everything else falls back to
