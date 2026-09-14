@@ -943,7 +943,8 @@ body{background:var(--bg);min-height:100vh}
 .avatar-zoom-trigger{border:0;background:transparent;padding:0;display:block;line-height:0;border-radius:inherit}
 .avatar-zoom-trigger:hover{filter:brightness(1.08)}
 .lightbox{position:fixed;inset:0;z-index:60;background:color-mix(in srgb,var(--inset) 86%,transparent);backdrop-filter:blur(6px);display:grid;place-items:center;padding:24px}
-.lightbox>img{max-width:min(92vw,720px);max-height:86vh;border-radius:22px;border:1px solid color-mix(in srgb,var(--line) 44%,var(--line-strong));box-shadow:0 30px 80px color-mix(in srgb,var(--shadow-c) 60%,transparent);cursor:default}
+/* A definite width, not just a ceiling: with max-width alone a picture opened at its own pixel size, so a small upload "zoomed" to smaller than the avatar it came from. Small files now scale up; contain keeps a tall picture unstretched when max-height takes over. */
+.lightbox>img{width:min(88vw,520px);height:auto;max-height:80vh;object-fit:contain;border-radius:22px;border:1px solid color-mix(in srgb,var(--line) 44%,var(--line-strong));box-shadow:0 30px 80px color-mix(in srgb,var(--shadow-c) 60%,transparent);cursor:default}
 .lightbox-close{position:absolute;top:18px;right:20px;border:1px solid color-mix(in srgb,var(--line) 44%,var(--line-strong));background:color-mix(in srgb,var(--inset) 60%,var(--surface-2));color:color-mix(in srgb,var(--dim) 12%,var(--ink));border-radius:12px;width:40px;height:40px;font-size:16px}
 .lightbox-close.static{position:static;width:auto;height:auto;padding:8px 12px}
 

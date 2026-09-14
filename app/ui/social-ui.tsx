@@ -189,6 +189,19 @@ export function FriendStar({
   );
 }
 
+/* A Google account picture arrives as ...=s96-c: Google's own 96px thumbnail.
+   Opened as-is it "zoomed" to smaller than the avatar it came from, while
+   uploaded pictures (full files in our bucket) looked right. The same URL
+   serves any size, so the viewer asks for a large one. */
+function fullSize(src: string) {
+  try {
+    if (!new URL(src).hostname.endsWith("googleusercontent.com")) return src;
+  } catch {
+    return src;
+  }
+  return src.replace(/=s\d+(-c)?$/, "=s512-c");
+}
+
 /* People do want to see the face full size — and the picture is already public
    at its own URL, so opening it is not a disclosure, just a convenience. */
 export function AvatarZoom({ lang, src, name, children }: { lang: Lang; src: string | null; name: string; children: React.ReactNode }) {
@@ -214,7 +227,7 @@ export function AvatarZoom({ lang, src, name, children }: { lang: Lang; src: str
         // Clicking anywhere closes it: there is one thing on screen, so every
         // click that is not on the picture means "I am done looking".
         <div className="lightbox" role="dialog" aria-modal="true" aria-label={name} onClick={() => setOpen(false)}>
-          <img src={src} alt={name} onClick={(e) => e.stopPropagation()} />
+          <img src={fullSize(src)} alt={name} onClick={(e) => e.stopPropagation()} />
           <button type="button" className="lightbox-close" onClick={() => setOpen(false)} aria-label={t.close}>
             ✕
           </button>
