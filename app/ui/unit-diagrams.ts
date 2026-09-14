@@ -25,7 +25,7 @@ const RULES: Rule[] = [
       kind: "curve", label: "Murakkablik sinflari yonma-yon" }) },
   { any: ["inversiya"], spec: () => ({
       kind: "array", label: "Inversiya: chapdagi o‘ngdagidan katta",
-      values: [2, 4, 1, 3, 5], hi: [0, 2], ptr: [{ at: 0, text: "i" }, { at: 2, text: "j", color: "#8ad8ff" }],
+      values: [2, 4, 1, 3, 5], hi: [0, 2], ptr: [{ at: 0, text: "i" }, { at: 2, text: "j", color: "var(--dg-cool)" }],
       note: "a[i] > a[j] va i < j" }) },
   { any: ["pastki chegara", "barqarorlik", "stability", "komparator", "ko‘p kalitli"], spec: () => ({
       kind: "tworow", label: "Barqaror saralash teng elementlar tartibini saqlaydi",
@@ -86,7 +86,7 @@ const RULES: Rule[] = [
       edges: [[0, 1], [2, 3]], note: "cross ishoralari har xil → kesishadi" }) },
   { any: ["qarama-qarshi", "aynan k", "aralash"], spec: () => ({
       kind: "array", label: "«Aynan K» = «ko‘pi bilan K» − «ko‘pi bilan K−1»",
-      values: [1, 2, 1, 2, 3], hi: [1, 2, 3], ptr: [{ at: 1, text: "l" }, { at: 3, text: "r", color: "#8ad8ff" }] }) },
+      values: [1, 2, 1, 2, 3], hi: [1, 2, 3], ptr: [{ at: 1, text: "l" }, { at: 3, text: "r", color: "var(--dg-cool)" }] }) },
   { any: ["overlapping", "optimal substructure", "holatni aniqlash", "o‘tishlarni qurish"], spec: () => ({
       kind: "graph", label: "Bir xil qism-masala qayta-qayta uchraydi",
       nodes: [[260, 26, "f(5)"], [170, 80, "f(4)"], [350, 80, "f(3)"], [110, 132, "f(3)"], [240, 132, "f(2)"]],
@@ -151,17 +151,17 @@ const RULES: Rule[] = [
   { any: ["ikkilik qidiruv", "binary search", "javob bo‘yicha"], spec: () => ({
       kind: "array", label: "Binary search: har qadamda yarmi tashlanadi",
       values: [3, 6, 9, 12, 15, 18, 21, 24], hi: [4, 5, 6, 7],
-      ptr: [{ at: 0, text: "lo" }, { at: 3, text: "mid", color: "#c8ff76" }, { at: 7, text: "hi" }],
+      ptr: [{ at: 0, text: "lo" }, { at: 3, text: "mid", color: "var(--dg-lime)" }, { at: 7, text: "hi" }],
       note: "a[mid] < x → chap yarmi kerak emas" }) },
   { any: ["ikki ko‘rsatkich", "two pointer"], spec: () => ({
       kind: "array", label: "Ikki ko‘rsatkich chetlardan markazga yuradi",
       values: [1, 3, 4, 6, 8, 9, 12], hi: [1, 5],
-      ptr: [{ at: 1, text: "l →" }, { at: 5, text: "← r", color: "#8ad8ff" }],
+      ptr: [{ at: 1, text: "l →" }, { at: 5, text: "← r", color: "var(--dg-cool)" }],
       note: "yig‘indi kichik bo‘lsa l siljiydi" }) },
   { any: ["oyna", "sliding"], spec: () => ({
       kind: "array", label: "Sirg‘aluvchi oyna: biri kiradi, biri chiqadi",
       values: [2, 7, 1, 8, 2, 8, 1], hi: [2, 3, 4],
-      ptr: [{ at: 2, text: "−" }, { at: 4, text: "+", color: "#c8ff76" }], note: "k = 3" }) },
+      ptr: [{ at: 2, text: "−" }, { at: 4, text: "+", color: "var(--dg-lime)" }], note: "k = 3" }) },
   { any: ["prefiks", "prefix"], spec: () => ({
       kind: "tworow", label: "Prefiks yig‘indi: [l,r] = pre[r] − pre[l−1]",
       top: [3, 1, 4, 1, 5, 9], bottom: [3, 4, 8, 9, 14, 23], topName: "a", bottomName: "pre",
@@ -171,7 +171,7 @@ const RULES: Rule[] = [
       note: "yopuvchi belgi eng yuqoridagiga mos kelishi kerak" }) },
   { any: ["navbat", "queue", "deque"], spec: () => ({
       kind: "array", label: "Navbat: birinchi kirgan birinchi chiqadi",
-      values: [5, 7, 9, 2], hi: [0], ptr: [{ at: 0, text: "front" }, { at: 3, text: "back", color: "#8ad8ff" }] }) },
+      values: [5, 7, 9, 2], hi: [0], ptr: [{ at: 0, text: "front" }, { at: 3, text: "back", color: "var(--dg-cool)" }] }) },
   { any: ["heap", "uyum", "ustuvor"], spec: () => ({
       kind: "graph", label: "Uyum: ota bolasidan katta (yoki kichik)",
       nodes: [[260, 30, "9"], [180, 84, "7"], [340, 84, "8"], [120, 132, "3"], [240, 132, "5"]],

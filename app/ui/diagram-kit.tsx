@@ -10,9 +10,12 @@ export type PickState = "pick" | "drop" | "idle";
 export type LayerState = "src" | "seen" | "frontier" | "far";
 export type SpanTone = "ok" | "warm" | "cool";
 
+/* Tokens, not literals: every colour resolves through the --dg-* palette in
+   globals.css, so a diagram follows the light/dark theme like the page does. */
 export const DC = {
-  dim: "#2b3f34", line: "#4a6b58", ink: "#cfe0d6", lime: "#c8ff76",
-  warm: "#ffbd8f", cool: "#8ad8ff", pink: "#f5a6ff", mute: "#7d8f85", bg: "#0d1310", on: "#12261a", onLine: "#3f7a44",
+  dim: "var(--dg-dim)", line: "var(--dg-line)", ink: "var(--dg-ink)", lime: "var(--dg-lime)",
+  warm: "var(--dg-warm)", cool: "var(--dg-cool)", pink: "var(--dg-pink)", mute: "var(--dg-mute)",
+  bg: "var(--dg-bg)", on: "var(--dg-on)", onLine: "var(--dg-on-line)",
 };
 
 export type Spec =
@@ -227,7 +230,7 @@ export type RTone = "root" | "mark" | "lca" | "cur" | "dim" | "idle";
    node -- all of them sit on or next to lines, and without the halo the line
    runs straight through the letters. Inside a box the halo is the box's own
    dark fill and cannot be seen. */
-const HALO = "#080d0a";
+const HALO = "var(--dg-halo)";
 const T = (x: number, y: number, s: string, fill = DC.ink, size = 13, anchor: "middle" | "start" | "end" = "middle") => (
   <text x={x} y={y} fill={fill} fontSize={size} textAnchor={anchor} fontFamily="ui-monospace, monospace"
     stroke={HALO} strokeWidth={Math.max(2, size * 0.24)} strokeLinejoin="round" paintOrder="stroke">{s}</text>
@@ -272,7 +275,7 @@ function TwoRow(s: Extract<Spec, { kind: "tworow" }>) {
 function GridView(s: Extract<Spec, { kind: "grid" }>) {
   const r = s.rows.length, c = s.rows[0].length, cell = Math.min(30, 300 / Math.max(r, c), 136 / r);
   const x0 = 260 - (c * cell) / 2, y0 = (152 - r * cell) / 2 + 1.5;
-  const col = (ch: string) => ch === "#" ? "#1c2320" : ch === "*" ? DC.on : DC.bg;
+  const col = (ch: string) => ch === "#" ? "var(--dg-wall)" : ch === "*" ? DC.on : DC.bg;
   return <>
     {s.rows.map((row, y) => row.split("").map((ch, x) => <g key={`${y}-${x}`}>
       <rect x={x0 + x * cell} y={y0 + y * cell} width={cell - 3} height={cell - 3} rx="3"
@@ -348,10 +351,10 @@ function CurveView(s: Extract<Spec, { kind: "curve" }>) {
   return <>
     <line x1="50" y1="124" x2="410" y2="124" stroke={DC.dim} strokeWidth="1.5" />
     <line x1="50" y1="124" x2="50" y2="14" stroke={DC.dim} strokeWidth="1.5" />
-    <path d="M50 122 L400 116" stroke="#6fd17a" strokeWidth="2.5" fill="none" />
+    <path d="M50 122 L400 116" stroke="var(--dg-ok)" strokeWidth="2.5" fill="none" />
     <path d="M50 122 Q250 104 400 70" stroke={DC.cool} strokeWidth="2.5" fill="none" />
     <path d="M50 122 Q310 120 400 20" stroke={DC.warm} strokeWidth="2.5" fill="none" />
-    {T(410, 120, "O(1)", "#6fd17a", 11, "start")}
+    {T(410, 120, "O(1)", "var(--dg-ok)", 11, "start")}
     {T(410, 74, "O(n log n)", DC.cool, 11, "start")}
     {T(410, 24, "O(n²)", DC.warm, 11, "start")}
     {T(230, 142, "n →", DC.mute, 11)}
@@ -391,10 +394,10 @@ function TableView(s: Extract<Spec, { kind: "table" }>) {
 }
 
 const BAR_FILL: Record<BarState, string> = {
-  cmp: DC.cool, swap: DC.warm, sorted: "#6fd17a", pivot: DC.pink, key: DC.lime,
+  cmp: DC.cool, swap: DC.warm, sorted: "var(--dg-ok)", pivot: DC.pink, key: DC.lime,
 };
 const ZONE_COLOR: Record<ZoneTone, string> = {
-  ok: "#6fd17a", warm: DC.warm, cool: DC.cool, dim: DC.mute,
+  ok: "var(--dg-ok)", warm: DC.warm, cool: DC.cool, dim: DC.mute,
 };
 
 /* Heights, not numbers in boxes. The point of a sorting picture is that you
@@ -408,7 +411,7 @@ function BarsView(s: Extract<Spec, { kind: "bars" }>) {
       const st = s.state?.[i], col = st ? BAR_FILL[st] : DC.dim;
       return <g key={i}>
         <rect x={x0 + i * w} y={base - h} width={Math.max(6, w - 7)} height={h} rx="3"
-          fill={st ? col : "#18241e"} stroke={col} strokeWidth="1.4" opacity={st === "sorted" ? 0.85 : 1} />
+          fill={st ? col : "var(--dg-cell)"} stroke={col} strokeWidth="1.4" opacity={st === "sorted" ? 0.85 : 1} />
         {T(x0 + i * w + (w - 7) / 2, base - h - 5, String(v), st ? col : DC.mute, 10)}
         {T(x0 + i * w + (w - 7) / 2, base + 14, String(i), DC.mute, 9)}
       </g>;
@@ -519,7 +522,7 @@ function BucketsView(s: Extract<Spec, { kind: "buckets" }>) {
       return <g key={i}>
         <rect x={x0 + i * w} y={top} width={w - 8} height={box} rx="4" fill={DC.bg} stroke={col} strokeWidth="1.4" />
         {s.counts[i] > 0 && <rect x={x0 + i * w + 3} y={top + box - fillH - 3} width={w - 14} height={fillH} rx="3"
-          fill={on ? "rgba(200,255,118,.22)" : "rgba(122,145,132,.16)"} stroke={col} strokeWidth="1" />}
+          fill={on ? "color-mix(in srgb,var(--dg-lime) 22%,transparent)" : "color-mix(in srgb,var(--dg-mute) 16%,transparent)"} stroke={col} strokeWidth="1" />}
         {T(x0 + i * w + (w - 8) / 2, top + box - 8, String(s.counts[i]), on ? DC.lime : DC.ink, 12)}
         {T(x0 + i * w + (w - 8) / 2, top + box + 19, String(k), DC.mute, fit(String(k), w - 8, 11))}
       </g>;
@@ -529,10 +532,10 @@ function BucketsView(s: Extract<Spec, { kind: "buckets" }>) {
 }
 
 const TREE_COLOR: Record<TreeState, string> = {
-  active: DC.lime, done: "#6fd17a", pruned: "#7a5a5a", solution: DC.warm, idle: DC.line,
+  active: DC.lime, done: "var(--dg-ok)", pruned: "var(--dg-pruned)", solution: DC.warm, idle: DC.line,
 };
 const FRAME_COLOR: Record<FrameState, string> = {
-  active: DC.lime, waiting: DC.line, returned: "#6fd17a",
+  active: DC.lime, waiting: DC.line, returned: "var(--dg-ok)",
 };
 
 /* The search tree, laid out automatically from parent links. Backtracking is
@@ -609,21 +612,21 @@ function BoardView(s: Extract<Spec, { kind: "board" }>) {
   const cell = Math.min(30, 136 / Math.max(rows, cols));
   const x0 = 260 - (cols * cell) / 2, y0 = (152 - rows * cell) / 2;
   const bg = (ch: string, r: number, c: number) =>
-    ch === "!" ? "rgba(255,107,107,.20)" :
-    ch === "Q" ? "rgba(200,255,118,.18)" :
-    ch === "x" ? "rgba(122,145,132,.13)" :
-    ch === "*" ? "rgba(138,216,255,.14)" :
-    (r + c) % 2 ? "#0f1713" : DC.bg;
+    ch === "!" ? "color-mix(in srgb,var(--dg-bad) 20%,transparent)" :
+    ch === "Q" ? "color-mix(in srgb,var(--dg-lime) 18%,transparent)" :
+    ch === "x" ? "color-mix(in srgb,var(--dg-mute) 13%,transparent)" :
+    ch === "*" ? "color-mix(in srgb,var(--dg-cool) 14%,transparent)" :
+    (r + c) % 2 ? "var(--dg-cell-alt)" : DC.bg;
   return <>
     {s.cells.map((row, r) => row.split("").map((ch, c) => <g key={r + "-" + c}>
       <rect x={x0 + c * cell} y={y0 + r * cell} width={cell - 1.5} height={cell - 1.5} rx="2"
-        fill={bg(ch, r, c)} stroke={ch === "Q" ? DC.lime : ch === "!" ? "#ff6b6b" : DC.dim}
+        fill={bg(ch, r, c)} stroke={ch === "Q" ? DC.lime : ch === "!" ? "var(--dg-bad)" : DC.dim}
         strokeWidth={ch === "Q" || ch === "!" ? 1.6 : 1} />
       {/* Glyphs sit on a baseline scaled to the cell, so they stay centred at
           any board size; an attacked square is a dot drawn as a dot. */}
       {ch === "Q" && T(x0 + c * cell + cell / 2 - 0.75, y0 + r * cell + cell / 2 + cell * 0.2, "♛", DC.lime, cell * 0.62)}
       {ch === "x" && <circle cx={x0 + c * cell + cell / 2 - 0.75} cy={y0 + r * cell + cell / 2 - 0.75} r={Math.max(1.6, cell * 0.07)} fill={DC.mute} />}
-      {ch === "!" && T(x0 + c * cell + cell / 2 - 0.75, y0 + r * cell + cell / 2 + cell * 0.17, "✗", "#ff6b6b", cell * 0.5)}
+      {ch === "!" && T(x0 + c * cell + cell / 2 - 0.75, y0 + r * cell + cell / 2 + cell * 0.17, "✗", "var(--dg-bad)", cell * 0.5)}
       {ch === "*" && T(x0 + c * cell + cell / 2 - 0.75, y0 + r * cell + cell / 2 + cell * 0.17, "?", DC.cool, cell * 0.5)}
     </g>))}
   </>;
@@ -645,13 +648,13 @@ function CallStackView(s: Extract<Spec, { kind: "callstack" }>) {
         <rect x={150 + indent} y={y} width={Math.max(90, 250 - indent)} height={h} rx="4"
           fill={st === "active" ? DC.on : DC.bg} stroke={col} strokeWidth={st === "active" ? 2 : 1.3} />
         {T(160 + indent, y + h / 2 + 4, f.text, st === "waiting" ? DC.ink : col, 11, "start")}
-        {st === "returned" && T(150 + indent + Math.max(90, 250 - indent) + 10, y + h / 2 + 4, "↩", "#6fd17a", 11, "start")}
+        {st === "returned" && T(150 + indent + Math.max(90, 250 - indent) + 10, y + h / 2 + 4, "↩", "var(--dg-ok)", 11, "start")}
       </g>;
     })}
     <line x1="140" y1={baseY + 4} x2="440" y2={baseY + 4} stroke={DC.dim} strokeWidth="1.4" />
     {/* "main" names the floor the frames stand on, so it sits beside it. */}
     {T(132, baseY + 8, "main", DC.mute, 10, "end")}
-    {s.ret && T(400, 20, "qaytadi: " + s.ret, "#6fd17a", 11)}
+    {s.ret && T(400, 20, "qaytadi: " + s.ret, "var(--dg-ok)", 11)}
   </>;
 }
 
@@ -679,7 +682,7 @@ function BitsView(s: Extract<Spec, { kind: "bits" }>) {
 }
 
 const NUM_COLOR: Record<NumState, string> = {
-  prime: "#6fd17a", composite: DC.mute, current: DC.lime, marked: DC.warm, picked: DC.cool,
+  prime: "var(--dg-ok)", composite: DC.mute, current: DC.lime, marked: DC.warm, picked: DC.cool,
 };
 
 /* Arithmetic modulo m is not a line, it is a circle — and every confusing
@@ -836,7 +839,7 @@ function SquaresView(s: Extract<Spec, { kind: "squares" }>) {
       const isLast = pt.side === last;
       return <g key={pt.i}>
         <rect x={x0 + pt.x * scale} y={y0 + pt.y * scale} width={pt.side * scale} height={pt.side * scale}
-          fill={isLast ? "rgba(200,255,118,.12)" : DC.bg} stroke={isLast ? DC.lime : DC.line} strokeWidth="1.4" />
+          fill={isLast ? "color-mix(in srgb,var(--dg-lime) 12%,transparent)" : DC.bg} stroke={isLast ? DC.lime : DC.line} strokeWidth="1.4" />
         {pt.side * scale > 20 && T(x0 + (pt.x + pt.side / 2) * scale, y0 + (pt.y + pt.side / 2) * scale + 4,
           String(pt.side), isLast ? DC.lime : DC.mute, 10)}
       </g>;
@@ -1025,7 +1028,7 @@ function QueueView(s: Extract<Spec, { kind: "queue" }>) {
 }
 
 const MARK_COLOR: Record<string, string> = {
-  lo: DC.cool, hi: DC.warm, mid: DC.lime, hit: "#6fd17a",
+  lo: DC.cool, hi: DC.warm, mid: DC.lime, hit: "var(--dg-ok)",
 };
 
 /* A continuous axis. Searching over real numbers or over an unbounded range
@@ -1054,7 +1057,7 @@ function NumberLineView(s: Extract<Spec, { kind: "numberline" }>) {
   return <>
     {s.span && (
       <rect x={at(s.span[0])} y={y - 13} width={Math.max(2, at(s.span[1]) - at(s.span[0]))} height={26}
-        rx="3" fill="rgba(200,255,118,.10)" stroke={DC.onLine} strokeWidth="1.2" />
+        rx="3" fill="color-mix(in srgb,var(--dg-lime) 10%,transparent)" stroke={DC.onLine} strokeWidth="1.2" />
     )}
     <line x1={x0} y1={y} x2={x1} y2={y} stroke={DC.line} strokeWidth="1.6" />
     {/* Ticks on round numbers -- 20, 40, 60, not 20.8, 40.6, 60.4 -- plus the
@@ -1092,7 +1095,7 @@ function PlotView(s: Extract<Spec, { kind: "plot" }>) {
   return <>
     {s.drop && (
       <rect x={xAt(s.drop[0])} y={baseY - h - 8} width={Math.max(2, xAt(s.drop[1]) - xAt(s.drop[0]))}
-        height={h + 16} rx="3" fill="rgba(255,107,107,.08)" stroke="#5a3a3a" strokeWidth="1" strokeDasharray="3 3" />
+        height={h + 16} rx="3" fill="color-mix(in srgb,var(--dg-bad) 8%,transparent)" stroke="var(--dg-pruned)" strokeWidth="1" strokeDasharray="3 3" />
     )}
     <line x1={x0 - 6} y1={baseY} x2={x1 + 6} y2={baseY} stroke={DC.dim} strokeWidth="1.3" />
     <path d={path} fill="none" stroke={DC.cool} strokeWidth="2.2" />
@@ -1118,18 +1121,18 @@ function MatrixView(s: Extract<Spec, { kind: "matrix" }>) {
   return <>
     {s.rows.map((row, r) => row.map((v, c) => {
       const on = isHi(r, c), off = isDim(r, c);
-      const col = on ? DC.lime : off ? "#3a4a42" : DC.dim;
+      const col = on ? DC.lime : off ? "var(--dg-off)" : DC.dim;
       return <g key={r + "-" + c}>
         <rect x={x0 + c * cw} y={y0 + r * chh} width={cw - 4} height={chh - 4} rx="3"
           fill={on ? DC.on : DC.bg} stroke={col} strokeWidth={on ? 2 : 1.1} opacity={off ? 0.45 : 1} />
         {T(x0 + c * cw + (cw - 4) / 2, y0 + r * chh + chh / 2 + 3, String(v),
-          on ? DC.lime : off ? "#5a6a62" : DC.ink, fit(String(v), cw - 10, 11))}
+          on ? DC.lime : off ? "var(--dg-off-ink)" : DC.ink, fit(String(v), cw - 10, 11))}
       </g>;
     }))}
   </>;
 }
 
-const PICK_COLOR: Record<string, string> = { pick: DC.lime, drop: "#8a5a5a", idle: DC.line };
+const PICK_COLOR: Record<string, string> = { pick: DC.lime, drop: "var(--dg-pruned)", idle: DC.line };
 
 /* Intervals on a real time axis. Activity selection, interval merging and
    deadline scheduling all argue about WHEN things sit next to each other,
@@ -1154,7 +1157,7 @@ function TimelineView(s: Extract<Spec, { kind: "timeline" }>) {
           fill={picked ? DC.on : DC.bg} stroke={col} strokeWidth={picked ? 2 : 1.2}
           opacity={it.state === "drop" ? 0.6 : 1} strokeDasharray={it.state === "drop" ? "3 3" : undefined} />
         {it.text && T((xa + xb) / 2, y + (rowH - 5) / 2 + 3, it.text,
-          picked ? DC.lime : it.state === "drop" ? "#a97b7b" : DC.ink,
+          picked ? DC.lime : it.state === "drop" ? "var(--dg-pruned-ink)" : DC.ink,
           fit(it.text, xb - xa - 4, 10))}
       </g>;
     })}
@@ -1265,13 +1268,13 @@ function MStackView(s: Extract<Spec, { kind: "mstack" }>) {
   const x0 = 260 - (total * w) / 2;
   const box = (v: string | number, i: number, tone: "kept" | "pop" | "in") => {
     const x = x0 + i * w;
-    const col = tone === "kept" ? DC.onLine : tone === "pop" ? "#8a5a5a" : DC.cool;
+    const col = tone === "kept" ? DC.onLine : tone === "pop" ? "var(--dg-pruned)" : DC.cool;
     return <g key={tone + i}>
       <rect x={x} y={y} width={w - 5} height={28} rx="4" fill={tone === "kept" ? DC.on : DC.bg}
         stroke={col} strokeWidth={tone === "kept" ? 1.8 : 1.3}
         strokeDasharray={tone === "pop" ? "3 3" : undefined} opacity={tone === "pop" ? 0.65 : 1} />
       {T(x + (w - 5) / 2, y + 19, String(v),
-        tone === "kept" ? DC.lime : tone === "pop" ? "#a97b7b" : DC.cool, fit(String(v), w - 11, 13))}
+        tone === "kept" ? DC.lime : tone === "pop" ? "var(--dg-pruned-ink)" : DC.cool, fit(String(v), w - 11, 13))}
     </g>;
   };
   const mid = (from: number, count: number) => x0 + from * w + (count * w - 5) / 2;
@@ -1282,7 +1285,7 @@ function MStackView(s: Extract<Spec, { kind: "mstack" }>) {
     {kept.length > 0 && T(mid(0, kept.length), y - 12, "stek", DC.lime, fit("stek", kept.length * w, 10))}
     {/* The word may overhang one popped box: fitted to a single box it came
         out at 7 points, which nobody reads. */}
-    {popped.length > 0 && T(mid(kept.length, popped.length), y - 12, "chiqarildi", "#c98f8f",
+    {popped.length > 0 && T(mid(kept.length, popped.length), y - 12, "chiqarildi", "var(--dg-pruned-ink)",
       fit("chiqarildi", Math.max(popped.length * w, 72), 10, 9))}
     {s.incoming && T(mid(total - 1, 1), y + 48, "kelmoqda", DC.cool, fit("kelmoqda", w + 12, 10))}
   </>;
@@ -1331,7 +1334,7 @@ function LayersView(s: Extract<Spec, { kind: "layers" }>) {
 }
 
 const CELL_COLOR: Record<string, [string, string]> = {
-  "#": ["#161c19", "#243029"], ".": [DC.bg, DC.dim], S: [DC.on, DC.pink],
+  "#": ["var(--dg-wall)", "var(--dg-wall-line)"], ".": [DC.bg, DC.dim], S: [DC.on, DC.pink],
   T: [DC.on, DC.warm], o: [DC.on, DC.onLine], f: [DC.bg, DC.cool], "*": [DC.on, DC.lime],
 };
 
@@ -1733,7 +1736,7 @@ function PlaneView(s: Extract<Spec, { kind: "plane" }>) {
   return <>
     {s.poly && s.poly.length > 1 && (
       <polygon points={s.poly.map(([x, y]) => m.X(x) + "," + m.Y(y)).join(" ")}
-        fill={s.fill ? "rgba(200,255,118,.10)" : "none"} stroke={DC.onLine} strokeWidth="1.8" />
+        fill={s.fill ? "color-mix(in srgb,var(--dg-lime) 10%,transparent)" : "none"} stroke={DC.onLine} strokeWidth="1.8" />
     )}
     {geoDraw(m, s.segs, s.pts, s.poly)}
   </>;
@@ -1784,7 +1787,7 @@ function SweepView(s: Extract<Spec, { kind: "sweep" }>) {
     {s.rects.map((r, i) => (
       <rect key={i} x={m.X(Math.min(r.x1, r.x2))} y={m.Y(Math.max(r.y1, r.y2))}
         width={Math.abs(m.X(r.x2) - m.X(r.x1))} height={Math.abs(m.Y(r.y1) - m.Y(r.y2))}
-        rx="2" fill={r.on ? "rgba(200,255,118,.13)" : "rgba(120,140,130,.07)"}
+        rx="2" fill={r.on ? "color-mix(in srgb,var(--dg-lime) 13%,transparent)" : "color-mix(in srgb,var(--dg-mute) 7%,transparent)"}
         stroke={r.on ? DC.onLine : DC.dim} strokeWidth={r.on ? 1.8 : 1.1} />
     ))}
     {s.at !== undefined && <>
@@ -1828,7 +1831,7 @@ function LatticeView(s: Extract<Spec, { kind: "lattice" }>) {
     }
   return <>
     <polygon points={s.poly.map(([x, y]) => m.X(x) + "," + m.Y(y)).join(" ")}
-      fill="rgba(200,255,118,.09)" stroke={DC.onLine} strokeWidth="1.8" />
+      fill="color-mix(in srgb,var(--dg-lime) 9%,transparent)" stroke={DC.onLine} strokeWidth="1.8" />
     {dots}
   </>;
 }
@@ -2002,7 +2005,7 @@ function WindowView(s: Extract<Spec, { kind: "window" }>) {
     )}
     {!empty && (
       <rect x={x0 + s.l * w - 2} y={30} width={(s.r - s.l + 1) * w} height={30} rx="4"
-        fill={s.bad ? "rgba(255,189,143,.10)" : "rgba(200,255,118,.10)"} stroke={col} strokeWidth="1.8" />
+        fill={s.bad ? "color-mix(in srgb,var(--dg-warm) 10%,transparent)" : "color-mix(in srgb,var(--dg-lime) 10%,transparent)"} stroke={col} strokeWidth="1.8" />
     )}
     {v.map((val, i) => (
       <g key={i}>
@@ -2104,7 +2107,7 @@ function RootedView(s: Extract<Spec, { kind: "rooted" }>) {
         width={Math.max(...subXs) - Math.min(...subXs) + 2 * r + 12}
         height={Math.max(...subYs) - Math.min(...subYs) + 2 * r + 10
           + (subIds.some(i => byId.get(i)?.badge !== undefined && isLeaf(i)) ? 12 : 0)}
-        rx="9" fill="rgba(138,216,255,.09)" stroke={DC.cool} strokeWidth="1"
+        rx="9" fill="color-mix(in srgb,var(--dg-cool) 9%,transparent)" stroke={DC.cool} strokeWidth="1"
         strokeDasharray="5 4" />
     )}
     {nodes.map(n => {

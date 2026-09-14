@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { THEME_INIT_SCRIPT } from "./ui/theme-script";
 
 // next/font/google emitted absolute build-machine paths
 // (file:///C:/.../.vinext/fonts/...) into the deployed stylesheet, so every
@@ -18,7 +19,13 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="uz">
+    // data-theme is rewritten by the head script before first paint when a dark
+    // choice is stored, so the server's "light" may differ from the attribute
+    // React hydrates against — hence suppressHydrationWarning on <html> only.
+    <html lang="uz" data-theme="light" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
       <body>{children}</body>
     </html>
   );

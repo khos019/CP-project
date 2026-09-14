@@ -9,6 +9,7 @@
 import { useEffect, useRef, useState } from "react";
 import { tr } from "./i18n";
 import { BrandMark } from "./BrandMark";
+import { ThemeToggle } from "./ThemeToggle";
 import { fetchBalance, fetchStreak, localBalance, localStreak } from "./coins";
 
 /* The chrome around every screen: header, mobile tab bar, footer.
@@ -135,9 +136,14 @@ export function SiteHeader({
 
   return (
     <header className="topbar">
-      <a className="brand" href="/" onClick={linkTo(() => go("home"))}>
-        <BrandMark className="brandmark" />AlgoYo‘l
-      </a>
+      {/* The theme switch sits with the brand, top-left: it changes the whole
+          site rather than anything in the navigation beside it. */}
+      <div className="topbar-start">
+        <a className="brand" href="/" onClick={linkTo(() => go("home"))}>
+          <BrandMark className="brandmark" />AlgoYo‘l
+        </a>
+        <ThemeToggle lang={lang} />
+      </div>
 
       <nav className="nav" aria-label={tr(lang,"chrome.asosiy_bolimlar")}>
         {PRIMARY.map(link => (

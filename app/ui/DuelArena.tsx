@@ -189,7 +189,7 @@ export function ChallengeOverlay({
   return (
     <div className="challenge-backdrop" role="dialog" aria-modal="true" aria-label={t.challenge}>
       <div className="challenge-card">
-        <p className="eyebrow" style={{ color: "#9aef4f" }}>⚔️ {t.challenge}</p>
+        <p className="eyebrow" style={{ color: "var(--green)" }}>⚔️ {t.challenge}</p>
         <div className="challenge-who">
           <span className="avatar" aria-hidden>
             {(challenge.from.display_name || challenge.from.username || "?").slice(0, 1).toUpperCase()}
@@ -200,14 +200,14 @@ export function ChallengeOverlay({
             <span className="muted">@{challenge.from.username} · {challenge.from.duel_rating} Elo</span>
           </span>
           <svg className="challenge-ring" viewBox="0 0 60 60" aria-hidden>
-            <circle cx="30" cy="30" r="26" fill="none" stroke="#22302a" strokeWidth="5" />
+            <circle cx="30" cy="30" r="26" fill="none" stroke="var(--line)" strokeWidth="5" />
             <circle
-              cx="30" cy="30" r="26" fill="none" stroke="#9aef4f" strokeWidth="5" strokeLinecap="round"
+              cx="30" cy="30" r="26" fill="none" stroke="var(--green)" strokeWidth="5" strokeLinecap="round"
               strokeDasharray={circumference}
               strokeDashoffset={circumference * (1 - fraction)}
               transform="rotate(-90 30 30)"
             />
-            <text x="30" y="36" textAnchor="middle" fontSize="20" fontWeight="800" fill="#f2f7f3">
+            <text x="30" y="36" textAnchor="middle" fontSize="20" fontWeight="800" fill="var(--ink)">
               {Math.ceil(seconds)}
             </text>
           </svg>
@@ -348,7 +348,7 @@ export function DuelMatchmaking({
     <>
       <div className="page-head">
         <div>
-          <p className="eyebrow" style={{ color: "#637068" }}>{t.eyebrow}</p>
+          <p className="eyebrow" style={{ color: "var(--dim)" }}>{t.eyebrow}</p>
           <h1 className="page-title">{t.title}</h1>
           <p className="muted">{t.sub}</p>
         </div>
@@ -617,7 +617,7 @@ function Arena({
                 <div className="status-line" key={`${a.created_at}-${i}`}>
                   <span className="feed-time">#{a.round + 1}</span>{" "}
                   {a.mine ? t.you : nameOf(them)} ·{" "}
-                  <b style={{ color: a.verdict === "ACCEPTED" ? "#9aef4f" : "#ff875c" }}>{a.verdict}</b>
+                  <b style={{ color: a.verdict === "ACCEPTED" ? "var(--green)" : "var(--orange)" }}>{a.verdict}</b>
                 </div>
               ))}
             {!duel.opponent_activity.length && !duel.my_submissions.length && (
@@ -819,7 +819,7 @@ function ResultScreen({
 
   return (
     <div className="duel-result panel">
-      <p className="eyebrow" style={{ color: "#637068" }}>{result.mode === "bot" ? "AI duel" : "Reytingli duel"}</p>
+      <p className="eyebrow" style={{ color: "var(--dim)" }}>{result.mode === "bot" ? "AI duel" : "Reytingli duel"}</p>
       <h2>{outcome === "win" ? t.won : outcome === "loss" ? t.lost : t.draw}</h2>
       <div className="result-score">{myScore} : {theirScore}</div>
       {note && <p className="notice notice-error result-why">{note}</p>}
@@ -831,7 +831,7 @@ function ResultScreen({
         <div><b>{me?.score ?? 0}</b><small>{t.you}</small></div>
         <div><b>{them?.score ?? 0}</b><small>{them?.is_bot ? t.bot : nameOf(them)}</small></div>
         <div>
-          <b style={{ color: (me?.delta ?? 0) >= 0 ? "#9aef4f" : "#ff875c" }}>
+          <b style={{ color: (me?.delta ?? 0) >= 0 ? "var(--green)" : "var(--orange)" }}>
             {rated ? `${(me?.delta ?? 0) > 0 ? "+" : ""}${me?.delta ?? 0}` : "—"}
           </b>
           <small>{t.ratingChange}</small>

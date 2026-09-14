@@ -638,10 +638,10 @@ export const programmingBasicsLessons: Record<string, DeepLesson> = {
     uz: "«String palindrommi?» — eng mashhur mashq. Uni yechishning eng tabiiy usuli: ikkita ko‘rsatkich, biri boshda, ikkinchisi oxirda. Ular bir-biriga qarab yuradi va har qadamda belgilarni solishtiradi. Farq topilsa — palindrom emas; uchrashguncha yetib borsa — palindrom.",
     en: "“Is this string a palindrome?” is the classic exercise. The natural way to solve it: two pointers, one at the start and one at the end. They walk toward each other, comparing characters at every step. A mismatch means no; meeting in the middle means yes." },
   { t: "sim", titleUz: "«kapak» so‘zini tekshirish", titleEn: "Checking the word “kapak”", frames: [
-    { spec: { kind: "array", label: "boshlanish", values: ["k", "a", "p", "a", "k"], hi: [0, 4], ptr: [{ at: 0, text: "l" }, { at: 4, text: "r", color: "#8ad8ff" }], note: "s[0] = 'k', s[4] = 'k'" },
+    { spec: { kind: "array", label: "boshlanish", values: ["k", "a", "p", "a", "k"], hi: [0, 4], ptr: [{ at: 0, text: "l" }, { at: 4, text: "r", color: "var(--dg-cool)" }], note: "s[0] = 'k', s[4] = 'k'" },
       uz: "l = 0, r = 4. Ikkala belgi ham 'k' — teng, davom etamiz.",
       en: "l = 0, r = 4. Both characters are 'k' — equal, so we continue." },
-    { spec: { kind: "array", label: "ichkariga", values: ["k", "a", "p", "a", "k"], hi: [1, 3], ptr: [{ at: 1, text: "l" }, { at: 3, text: "r", color: "#8ad8ff" }], note: "s[1] = 'a', s[3] = 'a'" },
+    { spec: { kind: "array", label: "ichkariga", values: ["k", "a", "p", "a", "k"], hi: [1, 3], ptr: [{ at: 1, text: "l" }, { at: 3, text: "r", color: "var(--dg-cool)" }], note: "s[1] = 'a', s[3] = 'a'" },
       uz: "l bittaga o‘ngga, r bittaga chapga siljidi. Yana teng — 'a' va 'a'.",
       en: "l moved one step right, r one step left. Equal again — 'a' and 'a'." },
     { spec: { kind: "array", label: "uchrashuv", values: ["k", "a", "p", "a", "k"], hi: [2], ptr: [{ at: 2, text: "l = r" }], note: "l >= r → tekshiruv tugadi" },

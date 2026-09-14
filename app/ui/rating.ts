@@ -32,15 +32,15 @@ export type Rank = {
 // kep.uz print them untranslated for the same reason. `nameUz` stays a field so
 // a later translation needs no caller to change.
 export const RANKS: Rank[] = [
-  { min: 0,    nameUz: "Newbie",                nameEn: "Newbie",                color: "#9aa5a0" },
-  { min: 1200, nameUz: "Pupil",                 nameEn: "Pupil",                 color: "#6fd17a" },
-  { min: 1400, nameUz: "Specialist",            nameEn: "Specialist",            color: "#4fd4c4" },
-  { min: 1600, nameUz: "Expert",                nameEn: "Expert",                color: "#6f9bff" },
-  { min: 1900, nameUz: "Candidate Master",      nameEn: "Candidate Master",      color: "#c07bff" },
-  { min: 2100, nameUz: "Master",                nameEn: "Master",                color: "#ffb347" },
-  { min: 2300, nameUz: "International Master",  nameEn: "International Master",  color: "#ff9147" },
-  { min: 2400, nameUz: "Grandmaster",           nameEn: "Grandmaster",           color: "#ff5f5f" },
-  { min: 2900, nameUz: "Legendary Grandmaster", nameEn: "Legendary Grandmaster", color: "#ff2d2d" },
+  { min: 0,    nameUz: "Newbie",                nameEn: "Newbie",                color: "color-mix(in srgb,#9aa5a0 var(--tier-tone),var(--ink))" },
+  { min: 1200, nameUz: "Pupil",                 nameEn: "Pupil",                 color: "color-mix(in srgb,#6fd17a var(--tier-tone),var(--ink))" },
+  { min: 1400, nameUz: "Specialist",            nameEn: "Specialist",            color: "color-mix(in srgb,#4fd4c4 var(--tier-tone),var(--ink))" },
+  { min: 1600, nameUz: "Expert",                nameEn: "Expert",                color: "color-mix(in srgb,#6f9bff var(--tier-tone),var(--ink))" },
+  { min: 1900, nameUz: "Candidate Master",      nameEn: "Candidate Master",      color: "color-mix(in srgb,#c07bff var(--tier-tone),var(--ink))" },
+  { min: 2100, nameUz: "Master",                nameEn: "Master",                color: "color-mix(in srgb,#ffb347 var(--tier-tone),var(--ink))" },
+  { min: 2300, nameUz: "International Master",  nameEn: "International Master",  color: "color-mix(in srgb,#ff9147 var(--tier-tone),var(--ink))" },
+  { min: 2400, nameUz: "Grandmaster",           nameEn: "Grandmaster",           color: "color-mix(in srgb,#ff5f5f var(--tier-tone),var(--ink))" },
+  { min: 2900, nameUz: "Legendary Grandmaster", nameEn: "Legendary Grandmaster", color: "color-mix(in srgb,#ff2d2d var(--tier-tone),var(--ink))" },
 ];
 
 export const rankOf = (rating: number): Rank =>
