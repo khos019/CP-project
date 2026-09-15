@@ -7327,6 +7327,781 @@ for(size_t i=0;i<s.size();++i){
  total=nv;pre.push_back(total);}
 cout<<total<<"\\n";`)],
   },
+  "array-count-sign-changes": {
+    solution: cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+long long c=0;
+for(int i=1;i<n;++i)if((a[i]>0)!=(a[i-1]>0))++c;
+cout<<c<<"\\n";`),
+    // Counting the negative elements says how many there are, not how often the sign turns over; counting only the drops from positive to negative leaves out every crossing in the other direction.
+    wrong: [cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+long long c=0;
+for(int i=0;i<n;++i)if(a[i]<0)++c;
+cout<<c<<"\\n";`), cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+long long c=0;
+for(int i=1;i<n;++i)if(a[i-1]>0&&a[i]<0)++c;
+cout<<c<<"\\n";`)],
+  },
+  "sort-second-smallest-distinct": {
+    solution: cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+sort(a.begin(),a.end());
+a.erase(unique(a.begin(),a.end()),a.end());
+if(a.size()<2){cout<<"NONE\\n";return 0;}
+cout<<a[1]<<"\\n";`),
+    // Taking the element at position two of the sorted array without removing the repeats returns the smallest value again whenever it occurs twice; comparing the array's own length against two ignores that the repeats were the problem.
+    wrong: [cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+sort(a.begin(),a.end());
+if(n<2){cout<<"NONE\\n";return 0;}
+cout<<a[1]<<"\\n";`), cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+sort(a.begin(),a.end());
+if(n<2){cout<<"NONE\\n";return 0;}
+a.erase(unique(a.begin(),a.end()),a.end());
+if(a.size()<2){cout<<a[0]<<"\\n";return 0;}
+cout<<a[1]<<"\\n";`)],
+  },
+  "math-count-primes-in-range": {
+    solution: cpp(`long long L,R;cin>>L>>R;
+vector<char>comp(R+1,0);
+if(R>=0)comp[0]=1;
+if(R>=1)comp[1]=1;
+for(long long i=2;i*i<=R;++i){
+ if(comp[i])continue;
+ for(long long j=i*i;j<=R;j+=i)comp[j]=1;}
+long long c=0;
+for(long long v=L;v<=R;++v)if(!comp[v])++c;
+cout<<c<<"\\n";`),
+    // Leaving 1 unmarked lets it slip into the count as a prime; starting the crossing-out at twice the prime rather than its square is still correct, but starting it at the prime itself strikes the prime out too.
+    wrong: [cpp(`long long L,R;cin>>L>>R;
+vector<char>comp(R+1,0);
+if(R>=0)comp[0]=1;
+for(long long i=2;i*i<=R;++i){
+ if(comp[i])continue;
+ for(long long j=i*i;j<=R;j+=i)comp[j]=1;}
+long long c=0;
+for(long long v=L;v<=R;++v)if(!comp[v])++c;
+cout<<c<<"\\n";`), cpp(`long long L,R;cin>>L>>R;
+vector<char>comp(R+1,0);
+if(R>=0)comp[0]=1;
+if(R>=1)comp[1]=1;
+for(long long i=2;i*i<=R;++i){
+ if(comp[i])continue;
+ for(long long j=i;j<=R;j+=i)comp[j]=1;}
+long long c=0;
+for(long long v=L;v<=R;++v)if(!comp[v])++c;
+cout<<c<<"\\n";`)],
+  },
+  "str-longest-word-chain-prefix": {
+    solution: cpp(`int n;cin>>n;vector<string>w(n);for(auto&x:w)cin>>x;
+string p;cin>>p;
+string best="";bool found=false;
+for(const string&s:w){
+ if(s.size()<p.size())continue;
+ if(s.compare(0,p.size(),p)!=0)continue;
+ if(!found||s<best){best=s;found=true;}}
+cout<<(found?best:"NONE")<<"\\n";`),
+    // Looking for the prefix anywhere inside the word accepts one where it starts in the middle; taking the first match in input order rather than the alphabetically smallest depends on how the words happen to be listed.
+    wrong: [cpp(`int n;cin>>n;vector<string>w(n);for(auto&x:w)cin>>x;
+string p;cin>>p;
+string best="";bool found=false;
+for(const string&s:w){
+ if(s.find(p)==string::npos)continue;
+ if(!found||s<best){best=s;found=true;}}
+cout<<(found?best:"NONE")<<"\\n";`), cpp(`int n;cin>>n;vector<string>w(n);for(auto&x:w)cin>>x;
+string p;cin>>p;
+for(const string&s:w){
+ if(s.size()<p.size())continue;
+ if(s.compare(0,p.size(),p)!=0)continue;
+ cout<<s<<"\\n";return 0;}
+cout<<"NONE\\n";`)],
+  },
+  "two-pointers-longest-sum-at-most": {
+    solution: cpp(`long long n,s;cin>>n>>s;vector<long long>a(n);for(auto&x:a)cin>>x;
+long long l=0,cur=0,best=0;
+for(long long r=0;r<n;++r){
+ cur+=a[r];
+ while(cur>s){cur-=a[l];++l;}
+ if(r-l+1>best)best=r-l+1;}
+cout<<best<<"\\n";`),
+    // Shrinking while the sum merely reaches s rejects a stretch that fills the bound exactly; restarting the window at the offending element throws away the tail of it that was still usable.
+    wrong: [cpp(`long long n,s;cin>>n>>s;vector<long long>a(n);for(auto&x:a)cin>>x;
+long long l=0,cur=0,best=0;
+for(long long r=0;r<n;++r){
+ cur+=a[r];
+ while(cur>=s&&l<=r){cur-=a[l];++l;}
+ if(r-l+1>best)best=r-l+1;}
+cout<<best<<"\\n";`), cpp(`long long n,s;cin>>n>>s;vector<long long>a(n);for(auto&x:a)cin>>x;
+long long cur=0,len=0,best=0;
+for(long long r=0;r<n;++r){
+ if(cur+a[r]>s){cur=a[r];len=1;}
+ else{cur+=a[r];++len;}
+ if(cur>s){cur=0;len=0;}
+ if(len>best)best=len;}
+cout<<best<<"\\n";`)],
+  },
+  "dp-count-tilings-2xn": {
+    solution: cpp(`long long n;cin>>n;const long long M=1000000007;
+long long a=1,b=1;
+for(long long i=2;i<=n;++i){long long c=(a+b)%M;a=b;b=c;}
+cout<<b<<"\\n";`),
+    // Counting the tilings as two to the power of the width treats every column as independent, which the flat tiles are not; starting the recurrence one step along shifts every answer to the next term of the sequence.
+    wrong: [cpp(`long long n;cin>>n;const long long M=1000000007;
+long long r=1;
+for(long long i=0;i<n;++i)r=r*2%M;
+cout<<r<<"\\n";`), cpp(`long long n;cin>>n;const long long M=1000000007;
+long long a=1,b=2;
+for(long long i=2;i<=n;++i){long long c=(a+b)%M;a=b;b=c;}
+cout<<b<<"\\n";`)],
+  },
+  "grid-shortest-with-one-wall-break": {
+    solution: cpp(`int n,m;cin>>n>>m;vector<vector<int>>a(n,vector<int>(m));
+for(int i=0;i<n;++i)for(int j=0;j<m;++j)cin>>a[i][j];
+vector<vector<array<int,2>>>d(n,vector<array<int,2>>(m));
+for(int i=0;i<n;++i)for(int j=0;j<m;++j){d[i][j][0]=-1;d[i][j][1]=-1;}
+deque<array<int,3>>q;
+int startBroke=a[0][0];
+d[0][0][startBroke]=0;q.push_back({0,0,startBroke});
+int dx[4]={1,-1,0,0},dy[4]={0,0,1,-1};
+while(!q.empty()){
+ array<int,3>c=q.front();q.pop_front();
+ int x=c[0],y=c[1],b=c[2];
+ for(int t=0;t<4;++t){
+  int nx=x+dx[t],ny=y+dy[t];
+  if(nx<0||ny<0||nx>=n||ny>=m)continue;
+  int nb=b+a[nx][ny];
+  if(nb>1)continue;
+  if(d[nx][ny][nb]>=0)continue;
+  d[nx][ny][nb]=d[x][y][b]+1;
+  q.push_back({nx,ny,nb});}}
+int best=-1;
+for(int b=0;b<2;++b){
+ if(d[n-1][m-1][b]<0)continue;
+ if(best<0||d[n-1][m-1][b]<best)best=d[n-1][m-1][b];}
+cout<<best<<"\\n";`),
+    // Walking the maze without the wall budget refuses every route that needs the one break the statement grants; treating the walls as ordinary cells lets the route pass through as many of them as it likes.
+    wrong: [cpp(`int n,m;cin>>n>>m;vector<vector<int>>a(n,vector<int>(m));
+for(int i=0;i<n;++i)for(int j=0;j<m;++j)cin>>a[i][j];
+vector<vector<int>>d(n,vector<int>(m,-1));
+if(a[0][0]){cout<<"-1\\n";return 0;}
+deque<pair<int,int>>q;d[0][0]=0;q.push_back(make_pair(0,0));
+int dx[4]={1,-1,0,0},dy[4]={0,0,1,-1};
+while(!q.empty()){
+ pair<int,int>c=q.front();q.pop_front();
+ for(int t=0;t<4;++t){
+  int nx=c.first+dx[t],ny=c.second+dy[t];
+  if(nx<0||ny<0||nx>=n||ny>=m)continue;
+  if(a[nx][ny])continue;
+  if(d[nx][ny]>=0)continue;
+  d[nx][ny]=d[c.first][c.second]+1;q.push_back(make_pair(nx,ny));}}
+cout<<d[n-1][m-1]<<"\\n";`), cpp(`int n,m;cin>>n>>m;vector<vector<int>>a(n,vector<int>(m));
+for(int i=0;i<n;++i)for(int j=0;j<m;++j)cin>>a[i][j];
+cout<<((n-1)+(m-1))<<"\\n";`)],
+  },
+  "segtree-range-min-queries": {
+    solution: cpp(`int n,q;cin>>n>>q;
+int sz=1;while(sz<n)sz*=2;
+const long long INF=(long long)4e18;
+vector<long long>t(2*sz,INF);
+for(int i=0;i<n;++i)cin>>t[sz+i];
+for(int i=sz-1;i>=1;--i)t[i]=min(t[2*i],t[2*i+1]);
+string out;
+for(int k=0;k<q;++k){int type;cin>>type;
+ if(type==1){int i;long long x;cin>>i>>x;--i;
+  int p=sz+i;t[p]=x;
+  for(p/=2;p>=1;p/=2)t[p]=min(t[2*p],t[2*p+1]);}
+ else{int l,r;cin>>l>>r;--l;--r;
+  long long res=INF;
+  int a=sz+l,b=sz+r+1;
+  while(a<b){
+   if(a&1)res=min(res,t[a++]);
+   if(b&1)res=min(res,t[--b]);
+   a/=2;b/=2;}
+  out+=to_string(res);out+="\\n";}}
+cout<<out;`),
+    // Writing the new value into the leaf without carrying the change up the tree leaves every range above it answering with the old one; treating the right end as exclusive drops the last element of every range.
+    wrong: [cpp(`int n,q;cin>>n>>q;
+int sz=1;while(sz<n)sz*=2;
+const long long INF=(long long)4e18;
+vector<long long>t(2*sz,INF);
+for(int i=0;i<n;++i)cin>>t[sz+i];
+for(int i=sz-1;i>=1;--i)t[i]=min(t[2*i],t[2*i+1]);
+string out;
+for(int k=0;k<q;++k){int type;cin>>type;
+ if(type==1){int i;long long x;cin>>i>>x;--i;t[sz+i]=x;}
+ else{int l,r;cin>>l>>r;--l;--r;
+  long long res=INF;
+  int a=sz+l,b=sz+r+1;
+  while(a<b){
+   if(a&1)res=min(res,t[a++]);
+   if(b&1)res=min(res,t[--b]);
+   a/=2;b/=2;}
+  out+=to_string(res);out+="\\n";}}
+cout<<out;`), cpp(`int n,q;cin>>n>>q;
+int sz=1;while(sz<n)sz*=2;
+const long long INF=(long long)4e18;
+vector<long long>t(2*sz,INF);
+for(int i=0;i<n;++i)cin>>t[sz+i];
+for(int i=sz-1;i>=1;--i)t[i]=min(t[2*i],t[2*i+1]);
+string out;
+for(int k=0;k<q;++k){int type;cin>>type;
+ if(type==1){int i;long long x;cin>>i>>x;--i;
+  int p=sz+i;t[p]=x;
+  for(p/=2;p>=1;p/=2)t[p]=min(t[2*p],t[2*p+1]);}
+ else{int l,r;cin>>l>>r;--l;--r;
+  long long res=INF;
+  int a=sz+l,b=sz+r;
+  while(a<b){
+   if(a&1)res=min(res,t[a++]);
+   if(b&1)res=min(res,t[--b]);
+   a/=2;b/=2;}
+  if(res>=INF)res=t[sz+l];
+  out+=to_string(res);out+="\\n";}}
+cout<<out;`)],
+  },
+  "adv-min-cost-assign-two-groups": {
+    solution: cpp(`long long n;cin>>n;long long m=2*n;
+vector<long long>a(m),b(m);
+long long total=0;
+for(long long i=0;i<m;++i){cin>>a[i]>>b[i];total+=a[i];}
+vector<long long>gain(m);
+for(long long i=0;i<m;++i)gain[i]=b[i]-a[i];
+sort(gain.begin(),gain.end());
+for(long long i=0;i<n;++i)total+=gain[i];
+cout<<total<<"\\n";`),
+    // Choosing the cheaper city for each candidate on its own ignores that each city must take exactly half of them; sorting by the second city's price rather than by what switching saves compares the wrong quantity.
+    wrong: [cpp(`long long n;cin>>n;long long m=2*n;
+long long total=0;
+for(long long i=0;i<m;++i){long long x,y;cin>>x>>y;total+=min(x,y);}
+cout<<total<<"\\n";`), cpp(`long long n;cin>>n;long long m=2*n;
+vector<pair<long long,long long>>v(m);
+for(long long i=0;i<m;++i)cin>>v[i].second>>v[i].first;
+sort(v.begin(),v.end());
+long long total=0;
+for(long long i=0;i<m;++i)total+=(i<n)?v[i].first:v[i].second;
+cout<<total<<"\\n";`)],
+  },
+  "adv-longest-repeated-substring-hash": {
+    solution: cpp(`string s;cin>>s;long long n=(long long)s.size();
+const unsigned long long B=131;
+vector<unsigned long long>h(n+1,0),pw(n+1,1);
+for(long long i=0;i<n;++i){
+ h[i+1]=h[i]*B+(unsigned long long)(s[i]-'a'+1);
+ pw[i+1]=pw[i]*B;}
+auto sub=[&](long long l,long long len){return h[l+len]-h[l]*pw[len];};
+auto ok=[&](long long len){
+ if(len==0)return true;
+ unordered_set<unsigned long long>seen;
+ seen.reserve((size_t)(n*2));
+ for(long long l=0;l+len<=n;++l){
+  unsigned long long v=sub(l,len);
+  if(seen.count(v))return true;
+  seen.insert(v);}
+ return false;};
+long long lo=0,hi=n-1;
+while(lo<hi){long long mid=lo+(hi-lo+1)/2;
+ if(ok(mid))lo=mid;else hi=mid-1;}
+cout<<lo<<"\\n";`),
+    // Requiring the two occurrences to stand apart rejects the overlapping pair the statement allows; comparing only the neighbouring stretches of each length misses a repeat that sits far away.
+    wrong: [cpp(`string s;cin>>s;long long n=(long long)s.size();
+const unsigned long long B=131;
+vector<unsigned long long>h(n+1,0),pw(n+1,1);
+for(long long i=0;i<n;++i){
+ h[i+1]=h[i]*B+(unsigned long long)(s[i]-'a'+1);
+ pw[i+1]=pw[i]*B;}
+auto sub=[&](long long l,long long len){return h[l+len]-h[l]*pw[len];};
+auto ok=[&](long long len){
+ if(len==0)return true;
+ map<unsigned long long,long long>first;
+ for(long long l=0;l+len<=n;++l){
+  unsigned long long v=sub(l,len);
+  map<unsigned long long,long long>::iterator it=first.find(v);
+  if(it!=first.end()){if(l-it->second>=len)return true;}
+  else first[v]=l;}
+ return false;};
+long long lo=0,hi=n-1;
+while(lo<hi){long long mid=lo+(hi-lo+1)/2;
+ if(ok(mid))lo=mid;else hi=mid-1;}
+cout<<lo<<"\\n";`), cpp(`string s;cin>>s;long long n=(long long)s.size();
+long long best=0;
+for(long long len=1;len<n;++len){
+ bool found=false;
+ for(long long l=0;l+2*len<=n;++l)
+  if(s.compare(l,len,s,l+len,len)==0){found=true;break;}
+ if(found)best=len;}
+cout<<best<<"\\n";`)],
+  },
+  "num-round-to-nearest-ten": {
+    solution: cpp(`long long n;cin>>n;
+long long r=n%10;
+cout<<((r<5)?(n-r):(n-r+10))<<"\\n";`),
+    // Rounding a last digit of exactly 5 downwards contradicts the rule the statement gives; dividing and multiplying by ten always rounds towards zero and never up.
+    wrong: [cpp(`long long n;cin>>n;
+long long r=n%10;
+cout<<((r<=5)?(n-r):(n-r+10))<<"\\n";`), cpp(`long long n;cin>>n;
+cout<<(n/10*10)<<"\\n";`)],
+  },
+  "array-count-distinct-pairs-equal": {
+    solution: cpp(`int n;cin>>n;map<long long,long long>cnt;
+for(int i=0;i<n;++i){long long x;cin>>x;++cnt[x];}
+long long t=0;
+for(map<long long,long long>::iterator it=cnt.begin();it!=cnt.end();++it)
+ t+=it->second*(it->second-1)/2;
+cout<<t<<"\\n";`),
+    // Counting each value's occurrences squared counts a position paired with itself and every pair twice over; counting only the equal neighbours misses the pairs standing apart.
+    wrong: [cpp(`int n;cin>>n;map<long long,long long>cnt;
+for(int i=0;i<n;++i){long long x;cin>>x;++cnt[x];}
+long long t=0;
+for(map<long long,long long>::iterator it=cnt.begin();it!=cnt.end();++it)
+ t+=it->second*it->second/2;
+cout<<t<<"\\n";`), cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+long long t=0;
+for(int i=1;i<n;++i)if(a[i]==a[i-1])++t;
+cout<<t<<"\\n";`)],
+  },
+  "str-int-to-roman": {
+    solution: cpp(`int n;cin>>n;
+int val[13]={1000,900,500,400,100,90,50,40,10,9,5,4,1};
+string sym[13]={"M","CM","D","CD","C","XC","L","XL","X","IX","V","IV","I"};
+string r;
+for(int i=0;i<13;++i)
+ while(n>=val[i]){r+=sym[i];n-=val[i];}
+cout<<r<<"\\n";`),
+    // Leaving the subtractive forms out of the table writes four as IIII and nine hundred as DCCCC; stopping after one use of each value cannot write a number that needs the same symbol twice.
+    wrong: [cpp(`int n;cin>>n;
+int val[7]={1000,500,100,50,10,5,1};
+string sym[7]={"M","D","C","L","X","V","I"};
+string r;
+for(int i=0;i<7;++i)
+ while(n>=val[i]){r+=sym[i];n-=val[i];}
+cout<<r<<"\\n";`), cpp(`int n;cin>>n;
+int val[13]={1000,900,500,400,100,90,50,40,10,9,5,4,1};
+string sym[13]={"M","CM","D","CD","C","XC","L","XL","X","IX","V","IV","I"};
+string r;
+for(int i=0;i<13;++i)
+ if(n>=val[i]){r+=sym[i];n-=val[i];}
+cout<<r<<"\\n";`)],
+  },
+  "greedy-min-platforms-meetings": {
+    solution: cpp(`int n;cin>>n;vector<pair<long long,int>>ev;ev.reserve(2*n);
+for(int i=0;i<n;++i){long long s,e;cin>>s>>e;
+ ev.push_back(make_pair(e,0));
+ ev.push_back(make_pair(s,1));}
+sort(ev.begin(),ev.end());
+long long cur=0,best=0;
+for(size_t i=0;i<ev.size();++i){
+ if(ev[i].second==1){++cur;if(cur>best)best=cur;}
+ else --cur;}
+cout<<best<<"\\n";`),
+    // Putting the starts ahead of the ends at the same moment treats a handover as an overlap and asks for a room that is already free; the number of meetings is an upper bound rather than the answer.
+    wrong: [cpp(`int n;cin>>n;vector<pair<long long,int>>ev;ev.reserve(2*n);
+for(int i=0;i<n;++i){long long s,e;cin>>s>>e;
+ ev.push_back(make_pair(s,0));
+ ev.push_back(make_pair(e,1));}
+sort(ev.begin(),ev.end());
+long long cur=0,best=0;
+for(size_t i=0;i<ev.size();++i){
+ if(ev[i].second==0){++cur;if(cur>best)best=cur;}
+ else --cur;}
+cout<<best<<"\\n";`), cpp(`int n;cin>>n;
+for(int i=0;i<n;++i){long long s,e;cin>>s>>e;}
+cout<<n<<"\\n";`)],
+  },
+  "bit-subset-xor-basis-size": {
+    solution: cpp(`int n;cin>>n;const long long M=1000000007;
+vector<unsigned long long>basis;
+for(int i=0;i<n;++i){unsigned long long x;cin>>x;
+ for(size_t j=0;j<basis.size();++j)x=min(x,x^basis[j]);
+ if(x){basis.push_back(x);sort(basis.rbegin(),basis.rend());}}
+long long r=1;
+for(size_t i=0;i<basis.size();++i)r=r*2%M;
+cout<<r<<"\\n";`),
+    // Raising two to the number of elements assumes every subset reaches a different value, which repeats and dependencies break; counting the distinct input values still confuses a dependent element with an independent one.
+    wrong: [cpp(`int n;cin>>n;const long long M=1000000007;
+for(int i=0;i<n;++i){unsigned long long x;cin>>x;}
+long long r=1;
+for(int i=0;i<n;++i)r=r*2%M;
+cout<<r<<"\\n";`), cpp(`int n;cin>>n;const long long M=1000000007;
+set<unsigned long long>s;
+for(int i=0;i<n;++i){unsigned long long x;cin>>x;if(x)s.insert(x);}
+long long r=1;
+for(size_t i=0;i<s.size();++i)r=r*2%M;
+cout<<r<<"\\n";`)],
+  },
+  "dp-longest-chain-of-pairs": {
+    solution: cpp(`int n;cin>>n;vector<pair<long long,long long>>p(n);
+for(int i=0;i<n;++i)cin>>p[i].second>>p[i].first;
+sort(p.begin(),p.end());
+long long c=0,last=(long long)-4e18;
+for(int i=0;i<n;++i){
+ if(p[i].second>last){++c;last=p[i].first;}}
+cout<<c<<"\\n";`),
+    // Sorting by where each pair begins rather than where it ends lets a long pair be taken first and block everything behind it; allowing the next pair to start exactly where the last one ended ignores that the rise must be strict.
+    wrong: [cpp(`int n;cin>>n;vector<pair<long long,long long>>p(n);
+for(int i=0;i<n;++i)cin>>p[i].first>>p[i].second;
+sort(p.begin(),p.end());
+long long c=0,last=(long long)-4e18;
+for(int i=0;i<n;++i){
+ if(p[i].first>last){++c;last=p[i].second;}}
+cout<<c<<"\\n";`), cpp(`int n;cin>>n;vector<pair<long long,long long>>p(n);
+for(int i=0;i<n;++i)cin>>p[i].second>>p[i].first;
+sort(p.begin(),p.end());
+long long c=0,last=(long long)-4e18;
+for(int i=0;i<n;++i){
+ if(p[i].second>=last){++c;last=p[i].first;}}
+cout<<c<<"\\n";`)],
+  },
+  "graph-count-paths-fixed-length-dag": {
+    solution: cpp(`long long n,m,k;cin>>n>>m>>k;const long long M=1000000007;
+vector<vector<int>>g(n);vector<int>indeg(n,0);
+for(long long i=0;i<m;++i){int a,b;cin>>a>>b;--a;--b;g[a].push_back(b);++indeg[b];}
+vector<int>order;order.reserve((size_t)n);vector<int>st;
+for(int v=0;v<n;++v)if(indeg[v]==0)st.push_back(v);
+while(!st.empty()){int v=st.back();st.pop_back();order.push_back(v);
+ for(int u:g[v])if(--indeg[u]==0)st.push_back(u);}
+vector<vector<long long>>dp((size_t)n,vector<long long>((size_t)k+1,0));
+for(int v=0;v<n;++v)dp[v][0]=1;
+for(size_t i=0;i<order.size();++i){int v=order[i];
+ for(long long len=0;len<k;++len){
+  if(!dp[v][len])continue;
+  for(int u:g[v])dp[u][len+1]=(dp[u][len+1]+dp[v][len])%M;}}
+long long total=0;
+for(int v=0;v<n;++v)total=(total+dp[v][k])%M;
+cout<<total<<"\\n";`),
+    // Counting only the paths that start at the first vertex ignores that a path may begin anywhere; adding up every length rather than the one asked for counts the shorter paths as well.
+    wrong: [cpp(`long long n,m,k;cin>>n>>m>>k;const long long M=1000000007;
+vector<vector<int>>g(n);vector<int>indeg(n,0);
+for(long long i=0;i<m;++i){int a,b;cin>>a>>b;--a;--b;g[a].push_back(b);++indeg[b];}
+vector<int>order;order.reserve((size_t)n);vector<int>st;
+for(int v=0;v<n;++v)if(indeg[v]==0)st.push_back(v);
+while(!st.empty()){int v=st.back();st.pop_back();order.push_back(v);
+ for(int u:g[v])if(--indeg[u]==0)st.push_back(u);}
+vector<vector<long long>>dp((size_t)n,vector<long long>((size_t)k+1,0));
+dp[0][0]=1;
+for(size_t i=0;i<order.size();++i){int v=order[i];
+ for(long long len=0;len<k;++len){
+  if(!dp[v][len])continue;
+  for(int u:g[v])dp[u][len+1]=(dp[u][len+1]+dp[v][len])%M;}}
+long long total=0;
+for(int v=0;v<n;++v)total=(total+dp[v][k])%M;
+cout<<total<<"\\n";`), cpp(`long long n,m,k;cin>>n>>m>>k;const long long M=1000000007;
+vector<vector<int>>g(n);vector<int>indeg(n,0);
+for(long long i=0;i<m;++i){int a,b;cin>>a>>b;--a;--b;g[a].push_back(b);++indeg[b];}
+vector<int>order;order.reserve((size_t)n);vector<int>st;
+for(int v=0;v<n;++v)if(indeg[v]==0)st.push_back(v);
+while(!st.empty()){int v=st.back();st.pop_back();order.push_back(v);
+ for(int u:g[v])if(--indeg[u]==0)st.push_back(u);}
+vector<vector<long long>>dp((size_t)n,vector<long long>((size_t)k+1,0));
+for(int v=0;v<n;++v)dp[v][0]=1;
+for(size_t i=0;i<order.size();++i){int v=order[i];
+ for(long long len=0;len<k;++len){
+  if(!dp[v][len])continue;
+  for(int u:g[v])dp[u][len+1]=(dp[u][len+1]+dp[v][len])%M;}}
+long long total=0;
+for(int v=0;v<n;++v)for(long long len=0;len<=k;++len)total=(total+dp[v][len])%M;
+cout<<total<<"\\n";`)],
+  },
+  "dp-weighted-interval-schedule": {
+    solution: cpp(`int n;cin>>n;vector<array<long long,3>>j(n);
+for(int i=0;i<n;++i)cin>>j[i][1]>>j[i][0]>>j[i][2];
+sort(j.begin(),j.end());
+vector<long long>ends(n);
+for(int i=0;i<n;++i)ends[i]=j[i][0];
+vector<long long>dp(n+1,0);
+for(int i=0;i<n;++i){
+ long long start=j[i][1];
+ int idx=(int)(upper_bound(ends.begin(),ends.begin()+i,start)-ends.begin());
+ dp[i+1]=max(dp[i],dp[idx]+j[i][2]);}
+cout<<dp[n]<<"\\n";`),
+    // Taking the jobs by falling pay and skipping whatever clashes fixes each choice before the rest is known; counting as many jobs as will fit ignores that a single long job can pay more than several short ones.
+    wrong: [cpp(`int n;cin>>n;vector<array<long long,3>>j(n);
+for(int i=0;i<n;++i)cin>>j[i][1]>>j[i][2]>>j[i][0];
+sort(j.rbegin(),j.rend());
+vector<pair<long long,long long>>taken;
+long long total=0;
+for(int i=0;i<n;++i){
+ long long s=j[i][1],e=j[i][2];
+ bool ok=true;
+ for(size_t t=0;t<taken.size();++t)
+  if(s<taken[t].second&&taken[t].first<e)ok=false;
+ if(!ok)continue;
+ taken.push_back(make_pair(s,e));total+=j[i][0];}
+cout<<total<<"\\n";`), cpp(`int n;cin>>n;vector<array<long long,3>>j(n);
+for(int i=0;i<n;++i)cin>>j[i][1]>>j[i][0]>>j[i][2];
+sort(j.begin(),j.end());
+long long total=0,last=(long long)-4e18;
+for(int i=0;i<n;++i){
+ if(j[i][1]>=last){total+=j[i][2];last=j[i][0];}}
+cout<<total<<"\\n";`)],
+  },
+  "adv-bitmask-min-cover-sets": {
+    solution: cpp(`int n,m;cin>>n>>m;
+vector<int>book(n,0);
+for(int i=0;i<n;++i){int c;cin>>c;
+ for(int t=0;t<c;++t){int x;cin>>x;book[i]|=1<<(x-1);}}
+int full=(1<<m)-1;
+const int INF=1000000000;
+vector<int>dp(1<<m,INF);dp[0]=0;
+for(int mask=0;mask<=full;++mask){
+ if(dp[mask]>=INF)continue;
+ for(int i=0;i<n;++i){
+  int nm=mask|book[i];
+  if(dp[mask]+1<dp[nm])dp[nm]=dp[mask]+1;}}
+cout<<((dp[full]>=INF)?-1:dp[full])<<"\\n";`),
+    // Repeatedly grabbing the book that adds the most uncovered topics is the classic greedy for this problem and is not always optimal; counting the books that cover anything new at all ignores that one book can replace several.
+    wrong: [cpp(`int n,m;cin>>n>>m;
+vector<int>book(n,0);
+for(int i=0;i<n;++i){int c;cin>>c;
+ for(int t=0;t<c;++t){int x;cin>>x;book[i]|=1<<(x-1);}}
+int full=(1<<m)-1,mask=0,c=0;
+while(mask!=full){
+ int best=-1,gain=0;
+ for(int i=0;i<n;++i){
+  int g=__builtin_popcount(book[i]&~mask);
+  if(g>gain){gain=g;best=i;}}
+ if(best<0){cout<<"-1\\n";return 0;}
+ mask|=book[best];++c;}
+cout<<c<<"\\n";`), cpp(`int n,m;cin>>n>>m;
+vector<int>book(n,0);
+for(int i=0;i<n;++i){int c;cin>>c;
+ for(int t=0;t<c;++t){int x;cin>>x;book[i]|=1<<(x-1);}}
+int full=(1<<m)-1,mask=0,c=0;
+for(int i=0;i<n;++i){
+ if((book[i]&~mask)==0)continue;
+ mask|=book[i];++c;}
+cout<<((mask==full)?c:-1)<<"\\n";`)],
+  },
+  "adv-count-subarrays-sum-divisible": {
+    solution: cpp(`long long n,k;cin>>n>>k;
+vector<long long>cnt(k,0);
+cnt[0]=1;long long pre=0,ans=0;
+for(long long i=0;i<n;++i){long long x;cin>>x;
+ pre=((pre+x)%k+k)%k;
+ ans+=cnt[pre];++cnt[pre];}
+cout<<ans<<"\\n";`),
+    // Counting the elements that divide by k on their own misses every longer stretch that only adds up to a multiple; leaving out the empty prefix loses every stretch that starts at the first element.
+    wrong: [cpp(`long long n,k;cin>>n>>k;
+long long ans=0;
+for(long long i=0;i<n;++i){long long x;cin>>x;
+ if(((x%k)+k)%k==0)++ans;}
+cout<<ans<<"\\n";`), cpp(`long long n,k;cin>>n>>k;
+vector<long long>cnt(k,0);
+long long pre=0,ans=0;
+for(long long i=0;i<n;++i){long long x;cin>>x;
+ pre=((pre+x)%k+k)%k;
+ ans+=cnt[pre];++cnt[pre];}
+cout<<ans<<"\\n";`)],
+  },
+  "array-running-max-differences": {
+    solution: cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+long long best=a[0],c=1;
+for(int i=1;i<n;++i)if(a[i]>best){best=a[i];++c;}
+cout<<c<<"\\n";`),
+    // Comparing each element only with the one just before it calls a small rise a record even when a larger value already stood earlier; allowing an equal value to count contradicts the strict rise the statement asks for.
+    wrong: [cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+long long c=1;
+for(int i=1;i<n;++i)if(a[i]>a[i-1])++c;
+cout<<c<<"\\n";`), cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+long long best=a[0],c=1;
+for(int i=1;i<n;++i)if(a[i]>=best){best=a[i];++c;}
+cout<<c<<"\\n";`)],
+  },
+  "math-count-trailing-zeros-power": {
+    solution: cpp(`long long n;cin>>n;long long c=0;
+while(n%2==0){n/=2;++c;}
+cout<<c<<"\\n";`),
+    // Counting the zeros in the whole binary writing counts the ones sitting between the digits as well; halving while the number merely stays above one keeps going past the last even step.
+    wrong: [cpp(`long long n;cin>>n;long long c=0;
+while(n>0){if(n%2==0)++c;n/=2;}
+cout<<c<<"\\n";`), cpp(`long long n;cin>>n;long long c=0;
+while(n>1){n/=2;++c;}
+cout<<c<<"\\n";`)],
+  },
+  "str-most-frequent-word": {
+    solution: cpp(`int n;cin>>n;map<string,long long>cnt;
+for(int i=0;i<n;++i){string w;cin>>w;++cnt[w];}
+string best;long long bc=-1;
+for(map<string,long long>::iterator it=cnt.begin();it!=cnt.end();++it){
+ if(it->second>bc){bc=it->second;best=it->first;}}
+cout<<best<<"\\n";`),
+    // Replacing the best word whenever a count merely ties keeps the last one seen instead of the alphabetically smaller; taking the first word to reach the highest count in input order depends on how the words happen to be listed.
+    wrong: [cpp(`int n;cin>>n;map<string,long long>cnt;
+for(int i=0;i<n;++i){string w;cin>>w;++cnt[w];}
+string best;long long bc=-1;
+for(map<string,long long>::iterator it=cnt.begin();it!=cnt.end();++it){
+ if(it->second>=bc){bc=it->second;best=it->first;}}
+cout<<best<<"\\n";`), cpp(`int n;cin>>n;vector<string>w(n);map<string,long long>cnt;
+for(int i=0;i<n;++i){cin>>w[i];++cnt[w[i]];}
+string best=w[0];long long bc=cnt[w[0]];
+for(int i=1;i<n;++i)if(cnt[w[i]]>bc){bc=cnt[w[i]];best=w[i];}
+cout<<best<<"\\n";`)],
+  },
+  "greedy-min-refills-to-reach": {
+    solution: cpp(`long long n,d,k;cin>>n>>d>>k;
+vector<long long>x(n);for(auto&v:x)cin>>v;
+long long pos=0,stops=0;long long i=0;
+while(pos+k<d){
+ long long best=-1;
+ while(i<n&&x[i]<=pos+k){best=x[i];++i;}
+ if(best<0||best<=pos){cout<<"-1\\n";return 0;}
+ pos=best;++stops;}
+cout<<stops<<"\\n";`),
+    // Filling up at the first station within range wastes the reach that a farther one would have given; counting how many stations lie on the road says nothing about how many of them must be used.
+    wrong: [cpp(`long long n,d,k;cin>>n>>d>>k;
+vector<long long>x(n);for(auto&v:x)cin>>v;
+long long pos=0,stops=0;long long i=0;
+while(pos+k<d){
+ if(i>=n||x[i]>pos+k||x[i]<=pos){cout<<"-1\\n";return 0;}
+ pos=x[i];++i;++stops;}
+cout<<stops<<"\\n";`), cpp(`long long n,d,k;cin>>n>>d>>k;
+vector<long long>x(n);for(auto&v:x)cin>>v;
+if(k>=d){cout<<"0\\n";return 0;}
+cout<<n<<"\\n";`)],
+  },
+  "two-pointers-count-triangles": {
+    solution: cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+sort(a.begin(),a.end());
+long long total=0;
+for(int k=n-1;k>=2;--k){
+ int i=0,j=k-1;
+ while(i<j){
+  if(a[i]+a[j]>a[k]){total+=j-i;--j;}
+  else ++i;}}
+cout<<total<<"\\n";`),
+    // Allowing the two smaller sides to merely equal the largest admits the flat triple the statement rules out; counting only the triples of neighbouring positions in the sorted array ignores every other combination.
+    wrong: [cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+sort(a.begin(),a.end());
+long long total=0;
+for(int k=n-1;k>=2;--k){
+ int i=0,j=k-1;
+ while(i<j){
+  if(a[i]+a[j]>=a[k]){total+=j-i;--j;}
+  else ++i;}}
+cout<<total<<"\\n";`), cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+sort(a.begin(),a.end());
+long long total=0;
+for(int i=0;i+2<n;++i)if(a[i]+a[i+1]>a[i+2])++total;
+cout<<total<<"\\n";`)],
+  },
+  "tree-count-leaves-per-depth-max": {
+    solution: cpp(`int n;cin>>n;vector<vector<int>>g(n);
+for(int i=0;i+1<n;++i){int a,b;cin>>a>>b;--a;--b;g[a].push_back(b);g[b].push_back(a);}
+vector<int>dep(n,0);vector<char>seen(n,0);
+vector<int>q;q.push_back(0);seen[0]=1;
+for(size_t i=0;i<q.size();++i){int v=q[i];
+ for(int u:g[v])if(!seen[u]){seen[u]=1;dep[u]=dep[v]+1;q.push_back(u);}}
+vector<long long>cnt(n,0);
+for(int v=0;v<n;++v)++cnt[dep[v]];
+long long best=0;
+for(int d=0;d<n;++d)if(cnt[d]>best)best=cnt[d];
+cout<<best<<"\\n";`),
+    // Reporting how many levels the tree has answers a different question than how crowded the busiest one is; counting the neighbours of the root is only the size of level 1 and misses every level below it.
+    wrong: [cpp(`int n;cin>>n;vector<vector<int>>g(n);
+for(int i=0;i+1<n;++i){int a,b;cin>>a>>b;--a;--b;g[a].push_back(b);g[b].push_back(a);}
+vector<int>dep(n,0);vector<char>seen(n,0);
+vector<int>q;q.push_back(0);seen[0]=1;
+for(size_t i=0;i<q.size();++i){int v=q[i];
+ for(int u:g[v])if(!seen[u]){seen[u]=1;dep[u]=dep[v]+1;q.push_back(u);}}
+int mx=0;
+for(int v=0;v<n;++v)mx=max(mx,dep[v]);
+cout<<(mx+1)<<"\\n";`), cpp(`int n;cin>>n;vector<vector<int>>g(n);
+for(int i=0;i+1<n;++i){int a,b;cin>>a>>b;--a;--b;g[a].push_back(b);g[b].push_back(a);}
+cout<<(long long)g[0].size()<<"\\n";`)],
+  },
+  "adv-min-adjacent-swaps-to-sort": {
+    solution: cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+vector<long long>s=a;sort(s.begin(),s.end());
+s.erase(unique(s.begin(),s.end()),s.end());
+int m=(int)s.size();
+vector<long long>bit(m+2,0);
+auto add=[&](int i){for(;i<=m;i+=i&(-i))++bit[i];};
+auto sum=[&](int i){long long t=0;for(;i>0;i-=i&(-i))t+=bit[i];return t;};
+long long inv=0,done=0;
+for(int i=0;i<n;++i){
+ int r=(int)(lower_bound(s.begin(),s.end(),a[i])-s.begin())+1;
+ inv+=done-sum(r);
+ add(r);++done;}
+cout<<inv<<"\\n";`),
+    // Counting the places where a value drops below its neighbour measures how often the order breaks, not how many swaps repair it; counting the pairs that are merely out of order without insisting on a strict drop charges for equal values that never need swapping.
+    wrong: [cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+long long c=0;
+for(int i=1;i<n;++i)if(a[i]<a[i-1])++c;
+cout<<c<<"\\n";`), cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+vector<long long>s=a;sort(s.begin(),s.end());
+s.erase(unique(s.begin(),s.end()),s.end());
+int m=(int)s.size();
+vector<long long>bit(m+2,0);
+auto add=[&](int i){for(;i<=m;i+=i&(-i))++bit[i];};
+auto sum=[&](int i){long long t=0;for(;i>0;i-=i&(-i))t+=bit[i];return t;};
+long long inv=0,done=0;
+for(int i=0;i<n;++i){
+ int r=(int)(lower_bound(s.begin(),s.end(),a[i])-s.begin())+1;
+ inv+=done-sum(r-1);
+ add(r);++done;}
+cout<<inv<<"\\n";`)],
+  },
+  "adv-digit-dp-count-no-repeat": {
+    solution: cpp(`auto count=[](long long N){
+ if(N<=0)return 0LL;
+ string s=to_string(N);int L=(int)s.size();
+ vector<vector<array<long long,2>>>memo(L+1,vector<array<long long,2>>(11));
+ vector<vector<array<char,2>>>vis(L+1,vector<array<char,2>>(11));
+ for(int i=0;i<=L;++i)for(int p=0;p<11;++p){vis[i][p][0]=0;vis[i][p][1]=0;}
+ function<long long(int,int,int,int)>go=[&](int pos,int prev,int tight,int started)->long long{
+  if(pos==L)return started?1LL:0LL;
+  if(!tight&&vis[pos][prev][started])return memo[pos][prev][started];
+  int hi=tight?(s[pos]-'0'):9;
+  long long total=0;
+  for(int d=0;d<=hi;++d){
+   int ns=started||(d>0);
+   if(started&&d==prev)continue;
+   int np=ns?d:10;
+   total+=go(pos+1,np,(tight&&d==hi)?1:0,ns);}
+  if(!tight){vis[pos][prev][started]=1;memo[pos][prev][started]=total;}
+  return total;};
+ return go(0,10,1,0);};
+long long L,R;cin>>L>>R;
+cout<<(count(R)-count(L-1))<<"\\n";`),
+    // Counting up to R without removing the values below L answers a range that starts at one; subtracting the count up to L rather than up to the value below it drops the lower bound itself when it qualifies.
+    wrong: [cpp(`auto count=[](long long N){
+ if(N<=0)return 0LL;
+ string s=to_string(N);int L=(int)s.size();
+ vector<vector<array<long long,2>>>memo(L+1,vector<array<long long,2>>(11));
+ vector<vector<array<char,2>>>vis(L+1,vector<array<char,2>>(11));
+ for(int i=0;i<=L;++i)for(int p=0;p<11;++p){vis[i][p][0]=0;vis[i][p][1]=0;}
+ function<long long(int,int,int,int)>go=[&](int pos,int prev,int tight,int started)->long long{
+  if(pos==L)return started?1LL:0LL;
+  if(!tight&&vis[pos][prev][started])return memo[pos][prev][started];
+  int hi=tight?(s[pos]-'0'):9;
+  long long total=0;
+  for(int d=0;d<=hi;++d){
+   int ns=started||(d>0);
+   if(started&&d==prev)continue;
+   int np=ns?d:10;
+   total+=go(pos+1,np,(tight&&d==hi)?1:0,ns);}
+  if(!tight){vis[pos][prev][started]=1;memo[pos][prev][started]=total;}
+  return total;};
+ return go(0,10,1,0);};
+long long L,R;cin>>L>>R;
+cout<<count(R)<<"\\n";`), cpp(`auto count=[](long long N){
+ if(N<=0)return 0LL;
+ string s=to_string(N);int L=(int)s.size();
+ vector<vector<array<long long,2>>>memo(L+1,vector<array<long long,2>>(11));
+ vector<vector<array<char,2>>>vis(L+1,vector<array<char,2>>(11));
+ for(int i=0;i<=L;++i)for(int p=0;p<11;++p){vis[i][p][0]=0;vis[i][p][1]=0;}
+ function<long long(int,int,int,int)>go=[&](int pos,int prev,int tight,int started)->long long{
+  if(pos==L)return started?1LL:0LL;
+  if(!tight&&vis[pos][prev][started])return memo[pos][prev][started];
+  int hi=tight?(s[pos]-'0'):9;
+  long long total=0;
+  for(int d=0;d<=hi;++d){
+   int ns=started||(d>0);
+   if(started&&d==prev)continue;
+   int np=ns?d:10;
+   total+=go(pos+1,np,(tight&&d==hi)?1:0,ns);}
+  if(!tight){vis[pos][prev][started]=1;memo[pos][prev][started]=total;}
+  return total;};
+ return go(0,10,1,0);};
+long long L,R;cin>>L>>R;
+cout<<(count(R)-count(L))<<"\\n";`)],
+  },
 };
 
 /** The problems the bot can actually play. Everything else falls back to
