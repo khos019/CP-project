@@ -5274,6 +5274,482 @@ for(int i=(int)order.size()-1;i>=0;--i){int v=order[i];
  best=max(best,val[v]+b1+b2);}
 cout<<best<<"\\n";`)],
   },
+  "array-swap-ends": {
+    solution: cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+swap(a[0],a[n-1]);
+for(int i=0;i<n;++i)cout<<a[i]<<(i+1<n?" ":"\\n");`),
+    // Reversing the whole array moves every element, not just the ends; assigning one end to the other without a temporary loses the value being overwritten.
+    wrong: [cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+reverse(a.begin(),a.end());
+for(int i=0;i<n;++i)cout<<a[i]<<(i+1<n?" ":"\\n");`), cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+a[0]=a[n-1];a[n-1]=a[0];
+for(int i=0;i<n;++i)cout<<a[i]<<(i+1<n?" ":"\\n");`)],
+  },
+  "sum-of-cubes-mod": {
+    solution: cpp(`long long n;cin>>n;const long long M=1000000007;
+long long a=n%M,b=(n+1)%M;
+long long inv2=(M+1)/2;
+long long t=a%M*(b%M)%M*inv2%M;
+cout<<(t*t%M)<<"\\n";`),
+    // The formula gives the square of the sum of the first n numbers, not that sum itself; halving after the squaring divides by two rather than by four.
+    wrong: [cpp(`long long n;cin>>n;const long long M=1000000007;
+long long inv2=(M+1)/2;
+long long t=(n%M)*((n+1)%M)%M*inv2%M;
+cout<<t<<"\\n";`), cpp(`long long n;cin>>n;const long long M=1000000007;
+long long inv2=(M+1)/2;
+long long t=(n%M)*((n+1)%M)%M;
+cout<<(t*t%M*inv2%M)<<"\\n";`)],
+  },
+  "str-can-form-palindrome": {
+    solution: cpp(`string s;cin>>s;vector<int>cnt(26,0);
+for(char c:s)++cnt[c-'a'];
+int odd=0;for(int v:cnt)if(v%2)++odd;
+cout<<((odd<=1)?"YES":"NO")<<"\\n";`),
+    // Demanding that every count be even rejects an odd-length palindrome, which is allowed one letter in the middle; testing whether the string is already a palindrome answers a different question.
+    wrong: [cpp(`string s;cin>>s;vector<int>cnt(26,0);
+for(char c:s)++cnt[c-'a'];
+int odd=0;for(int v:cnt)if(v%2)++odd;
+cout<<((odd==0)?"YES":"NO")<<"\\n";`), cpp(`string s;cin>>s;string r=s;reverse(r.begin(),r.end());
+cout<<((s==r)?"YES":"NO")<<"\\n";`)],
+  },
+  "sort-wiggle-check": {
+    solution: cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+if(n<2){cout<<"YES\\n";return 0;}
+bool up=true,down=true;
+for(int i=1;i<n;++i){
+ bool rise=a[i]>a[i-1],fall=a[i]<a[i-1];
+ if(i%2==1){if(!rise)up=false;if(!fall)down=false;}
+ else{if(!fall)up=false;if(!rise)down=false;}}
+cout<<((up||down)?"YES":"NO")<<"\\n";`),
+    // Checking only the pattern that starts by rising rejects a zigzag that starts by falling; a non-strict comparison lets two equal neighbours pass.
+    wrong: [cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+if(n<2){cout<<"YES\\n";return 0;}
+bool ok=true;
+for(int i=1;i<n;++i){
+ if(i%2==1&&!(a[i]>a[i-1]))ok=false;
+ if(i%2==0&&!(a[i]<a[i-1]))ok=false;}
+cout<<(ok?"YES":"NO")<<"\\n";`), cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+if(n<2){cout<<"YES\\n";return 0;}
+bool up=true,down=true;
+for(int i=1;i<n;++i){
+ bool rise=a[i]>=a[i-1],fall=a[i]<=a[i-1];
+ if(i%2==1){if(!rise)up=false;if(!fall)down=false;}
+ else{if(!fall)up=false;if(!rise)down=false;}}
+cout<<((up||down)?"YES":"NO")<<"\\n";`)],
+  },
+  "array-is-rotated-sorted": {
+    solution: cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+int drops=0;
+for(int i=1;i<n;++i)if(a[i]<a[i-1])++drops;
+if(drops==0){cout<<"YES\\n";return 0;}
+cout<<((drops==1&&a[n-1]<=a[0])?"YES":"NO")<<"\\n";`),
+    // Counting the drops without checking that the wrap closes accepts an array whose end is larger than its start; sorting a copy and comparing tests whether it is sorted, not whether it is rotated.
+    wrong: [cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+int drops=0;
+for(int i=1;i<n;++i)if(a[i]<a[i-1])++drops;
+cout<<((drops<=1)?"YES":"NO")<<"\\n";`), cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+vector<long long>b=a;sort(b.begin(),b.end());
+cout<<((a==b)?"YES":"NO")<<"\\n";`)],
+  },
+  "two-pointers-three-sum-closest": {
+    solution: cpp(`long long n,t;cin>>n>>t;vector<long long>a(n);for(auto&x:a)cin>>x;
+sort(a.begin(),a.end());
+const long long INF=(long long)4e18;long long best=INF,bd=INF;
+for(long long i=0;i+2<n;++i){long long l=i+1,r=n-1;
+ while(l<r){long long s=a[i]+a[l]+a[r];long long d=llabs(s-t);
+  if(d<bd||(d==bd&&s<best)){bd=d;best=s;}
+  if(s<t)++l;else if(s>t)--r;else{l=r;}}}
+cout<<best<<"\\n";`),
+    // Ignoring the tie rule keeps whichever equally close sum was met first; moving both pointers on every step skips over pairs the sweep was meant to consider.
+    wrong: [cpp(`long long n,t;cin>>n>>t;vector<long long>a(n);for(auto&x:a)cin>>x;
+sort(a.begin(),a.end());
+const long long INF=(long long)4e18;long long best=INF,bd=INF;
+for(long long i=0;i+2<n;++i){long long l=i+1,r=n-1;
+ while(l<r){long long s=a[i]+a[l]+a[r];long long d=llabs(s-t);
+  if(d<bd){bd=d;best=s;}
+  if(s<t)++l;else if(s>t)--r;else{l=r;}}}
+cout<<best<<"\\n";`), cpp(`long long n,t;cin>>n>>t;vector<long long>a(n);for(auto&x:a)cin>>x;
+sort(a.begin(),a.end());
+const long long INF=(long long)4e18;long long best=INF,bd=INF;
+for(long long i=0;i+2<n;++i){long long l=i+1,r=n-1;
+ while(l<r){long long s=a[i]+a[l]+a[r];long long d=llabs(s-t);
+  if(d<bd||(d==bd&&s<best)){bd=d;best=s;}
+  ++l;--r;}}
+cout<<best<<"\\n";`)],
+  },
+  "bs-median-two-sorted": {
+    solution: cpp(`int n,m;cin>>n>>m;vector<long long>a(n),b(m);
+for(auto&x:a)cin>>x;for(auto&x:b)cin>>x;
+vector<long long>c;c.reserve(n+m);
+merge(a.begin(),a.end(),b.begin(),b.end(),back_inserter(c));
+cout<<c[(c.size()-1)/2]<<"\\n";`),
+    // Taking the upper of the two middles contradicts the rule the statement sets; averaging them is the usual definition of a median but not the one asked for here.
+    wrong: [cpp(`int n,m;cin>>n>>m;vector<long long>a(n),b(m);
+for(auto&x:a)cin>>x;for(auto&x:b)cin>>x;
+vector<long long>c;c.reserve(n+m);
+merge(a.begin(),a.end(),b.begin(),b.end(),back_inserter(c));
+cout<<c[c.size()/2]<<"\\n";`), cpp(`int n,m;cin>>n>>m;vector<long long>a(n),b(m);
+for(auto&x:a)cin>>x;for(auto&x:b)cin>>x;
+vector<long long>c;c.reserve(n+m);
+merge(a.begin(),a.end(),b.begin(),b.end(),back_inserter(c));
+long long k=c.size();
+if(k%2)cout<<c[k/2]<<"\\n";
+else cout<<((c[k/2-1]+c[k/2])/2)<<"\\n";`)],
+  },
+  "geo-point-in-polygon": {
+    solution: cpp(`int n;cin>>n;vector<long long>x(n),y(n);
+for(int i=0;i<n;++i)cin>>x[i]>>y[i];
+long long px,py;cin>>px>>py;
+for(int i=0;i<n;++i){int j=(i+1)%n;
+ long long cr=(x[j]-x[i])*(py-y[i])-(y[j]-y[i])*(px-x[i]);
+ if(cr==0&&px>=min(x[i],x[j])&&px<=max(x[i],x[j])
+   &&py>=min(y[i],y[j])&&py<=max(y[i],y[j])){cout<<"ON\\n";return 0;}}
+bool in=false;
+for(int i=0;i<n;++i){int j=(i+1)%n;
+ if((y[i]>py)!=(y[j]>py)){
+  long double t=(long double)(py-y[i])/(long double)(y[j]-y[i]);
+  long double cx=(long double)x[i]+t*(long double)(x[j]-x[i]);
+  if((long double)px<cx)in=!in;}}
+cout<<(in?"IN":"OUT")<<"\\n";`),
+    // Skipping the boundary test reports a point on an edge as inside or outside depending on which way the ray happens to fall; comparing against the bounding box answers whether the point is near the polygon, not in it.
+    wrong: [cpp(`int n;cin>>n;vector<long long>x(n),y(n);
+for(int i=0;i<n;++i)cin>>x[i]>>y[i];
+long long px,py;cin>>px>>py;
+bool in=false;
+for(int i=0;i<n;++i){int j=(i+1)%n;
+ if((y[i]>py)!=(y[j]>py)){
+  long double t=(long double)(py-y[i])/(long double)(y[j]-y[i]);
+  long double cx=(long double)x[i]+t*(long double)(x[j]-x[i]);
+  if((long double)px<cx)in=!in;}}
+cout<<(in?"IN":"OUT")<<"\\n";`), cpp(`int n;cin>>n;vector<long long>x(n),y(n);
+for(int i=0;i<n;++i)cin>>x[i]>>y[i];
+long long px,py;cin>>px>>py;
+long long x1=*min_element(x.begin(),x.end()),x2=*max_element(x.begin(),x.end());
+long long y1=*min_element(y.begin(),y.end()),y2=*max_element(y.begin(),y.end());
+if(px==x1||px==x2||py==y1||py==y2){cout<<"ON\\n";return 0;}
+cout<<((px>x1&&px<x2&&py>y1&&py<y2)?"IN":"OUT")<<"\\n";`)],
+  },
+  "stack-largest-rectangle-hist": {
+    solution: cpp(`int n;cin>>n;vector<long long>h(n);for(auto&x:h)cin>>x;
+vector<int>st;long long best=0;
+for(int i=0;i<=n;++i){
+ long long cur=(i==n)?-1:h[i];
+ while(!st.empty()&&h[st.back()]>=cur){
+  long long ht=h[st.back()];st.pop_back();
+  long long left=st.empty()?-1:st.back();
+  best=max(best,ht*(long long)(i-left-1));}
+ st.push_back(i);}
+cout<<best<<"\\n";`),
+    // The tallest single bar is only the widest rectangle when every run of bars is worse; the shortest bar times the whole width considers just the one rectangle that spans everything.
+    wrong: [cpp(`int n;cin>>n;vector<long long>h(n);for(auto&x:h)cin>>x;
+long long best=0;
+for(int i=0;i<n;++i)best=max(best,h[i]);
+cout<<best<<"\\n";`), cpp(`int n;cin>>n;vector<long long>h(n);for(auto&x:h)cin>>x;
+long long mn=*min_element(h.begin(),h.end());
+cout<<(mn*(long long)n)<<"\\n";`)],
+  },
+  "bt-count-graph-colorings": {
+    solution: cpp(`int n,m,k;cin>>n>>m>>k;
+vector<int>adj(n,0);
+for(int i=0;i<m;++i){int a,b;cin>>a>>b;--a;--b;adj[a]|=1<<b;adj[b]|=1<<a;}
+vector<int>col(n,-1);long long total=0;
+function<void(int)>go=[&](int v){
+ if(v==n){++total;return;}
+ for(int c=0;c<k;++c){
+  bool ok=true;
+  for(int u=0;u<v;++u)if((adj[v]>>u&1)&&col[u]==c){ok=false;break;}
+  if(!ok)continue;
+  col[v]=c;go(v+1);col[v]=-1;}};
+go(0);
+cout<<total<<"\\n";`),
+    // Checking only the vertex coloured immediately before misses a clash with anything earlier; dividing by the number of colour orderings treats two colourings that differ only by a swap as one, which the statement says are different.
+    wrong: [cpp(`int n,m,k;cin>>n>>m>>k;
+vector<int>adj(n,0);
+for(int i=0;i<m;++i){int a,b;cin>>a>>b;--a;--b;adj[a]|=1<<b;adj[b]|=1<<a;}
+vector<int>col(n,-1);long long total=0;
+function<void(int)>go=[&](int v){
+ if(v==n){++total;return;}
+ for(int c=0;c<k;++c){
+  if(v>0&&(adj[v]>>(v-1)&1)&&col[v-1]==c)continue;
+  col[v]=c;go(v+1);col[v]=-1;}};
+go(0);
+cout<<total<<"\\n";`), cpp(`int n,m,k;cin>>n>>m>>k;
+vector<int>adj(n,0);
+for(int i=0;i<m;++i){int a,b;cin>>a>>b;--a;--b;adj[a]|=1<<b;adj[b]|=1<<a;}
+vector<int>col(n,-1);long long total=0;
+function<void(int)>go=[&](int v){
+ if(v==n){++total;return;}
+ for(int c=0;c<k;++c){
+  bool ok=true;
+  for(int u=0;u<v;++u)if((adj[v]>>u&1)&&col[u]==c){ok=false;break;}
+  if(!ok)continue;
+  col[v]=c;go(v+1);col[v]=-1;}};
+go(0);
+long long f=1;for(int i=2;i<=k;++i)f*=i;
+cout<<(total/f)<<"\\n";`)],
+  },
+  "array-count-in-range": {
+    solution: cpp(`long long n,L,R;cin>>n>>L>>R;long long c=0;
+for(long long i=0;i<n;++i){long long x;cin>>x;if(x>=L&&x<=R)++c;}
+cout<<c<<"\\n";`),
+    // Comparing strictly against both bounds drops the elements that sit exactly on them; checking only the lower bound counts everything above the range as well.
+    wrong: [cpp(`long long n,L,R;cin>>n>>L>>R;long long c=0;
+for(long long i=0;i<n;++i){long long x;cin>>x;if(x>L&&x<R)++c;}
+cout<<c<<"\\n";`), cpp(`long long n,L,R;cin>>n>>L>>R;long long c=0;
+for(long long i=0;i<n;++i){long long x;cin>>x;if(x>=L)++c;}
+cout<<c<<"\\n";`)],
+  },
+  "math-nearest-multiple": {
+    solution: cpp(`long long n,k;cin>>n>>k;
+long long q=n/k;
+if(n%k!=0&&n<0)--q;
+long long lo=q*k,hi=lo+k;
+cout<<(((n-lo)<(hi-n))?lo:hi)<<"\\n";`),
+    // Integer division rounds towards zero, so on a negative n the lower candidate it produces is really the upper one; breaking the tie towards the smaller multiple inverts the rule the statement gives.
+    wrong: [cpp(`long long n,k;cin>>n>>k;
+long long lo=n/k*k,hi=lo+k;
+cout<<(((n-lo)<(hi-n))?lo:hi)<<"\\n";`), cpp(`long long n,k;cin>>n>>k;
+long long q=n/k;
+if(n%k!=0&&n<0)--q;
+long long lo=q*k,hi=lo+k;
+cout<<(((n-lo)<=(hi-n))?lo:hi)<<"\\n";`)],
+  },
+  "str-compare-versions": {
+    solution: cpp(`auto parse=[](const string&s){vector<long long>v;long long cur=0;bool any=false;
+ for(char c:s){if(c=='.'){v.push_back(cur);cur=0;any=false;}
+  else{cur=cur*10+(c-'0');any=true;}}
+ (void)any;v.push_back(cur);return v;};
+string a,b;cin>>a>>b;
+vector<long long>x=parse(a),y=parse(b);
+size_t m=max(x.size(),y.size());
+x.resize(m,0);y.resize(m,0);
+for(size_t i=0;i<m;++i){
+ if(x[i]<y[i]){cout<<"<\\n";return 0;}
+ if(x[i]>y[i]){cout<<">\\n";return 0;}}
+cout<<"=\\n";`),
+    // Comparing the two lines as plain text orders the parts by their digits rather than their values; stopping at the shorter version never looks at the parts only the longer one has.
+    wrong: [cpp(`string a,b;cin>>a>>b;
+if(a<b)cout<<"<\\n";
+else if(a>b)cout<<">\\n";
+else cout<<"=\\n";`), cpp(`auto parse=[](const string&s){vector<long long>v;long long cur=0;
+ for(char c:s){if(c=='.'){v.push_back(cur);cur=0;}
+  else cur=cur*10+(c-'0');}
+ v.push_back(cur);return v;};
+string a,b;cin>>a>>b;
+vector<long long>x=parse(a),y=parse(b);
+size_t m=min(x.size(),y.size());
+for(size_t i=0;i<m;++i){
+ if(x[i]<y[i]){cout<<"<\\n";return 0;}
+ if(x[i]>y[i]){cout<<">\\n";return 0;}}
+cout<<"=\\n";`)],
+  },
+  "sort-min-swaps": {
+    solution: cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+vector<int>idx(n);for(int i=0;i<n;++i)idx[i]=i;
+sort(idx.begin(),idx.end(),[&](int p,int q){return a[p]<a[q];});
+vector<char>seen(n,0);long long swaps=0;
+for(int i=0;i<n;++i){
+ if(seen[i]||idx[i]==i)continue;
+ int len=0,j=i;
+ while(!seen[j]){seen[j]=1;j=idx[j];++len;}
+ swaps+=len-1;}
+cout<<swaps<<"\\n";`),
+    // Counting inversions measures how many neighbour exchanges are needed, which is a different and much larger number; counting the positions holding the wrong value overcounts, since one swap can fix two of them at once.
+    wrong: [cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+long long inv=0;
+for(int i=0;i<n;++i)for(int j=i+1;j<n;++j)if(a[i]>a[j])++inv;
+cout<<inv<<"\\n";`), cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+vector<long long>b=a;sort(b.begin(),b.end());
+long long c=0;
+for(int i=0;i<n;++i)if(a[i]!=b[i])++c;
+cout<<c<<"\\n";`)],
+  },
+  "graph-longest-path-dag": {
+    solution: cpp(`int n,m;cin>>n>>m;vector<vector<int>>g(n);vector<int>indeg(n,0);
+for(int i=0;i<m;++i){int a,b;cin>>a>>b;--a;--b;g[a].push_back(b);++indeg[b];}
+vector<int>order;order.reserve(n);vector<int>st;
+for(int v=0;v<n;++v)if(indeg[v]==0)st.push_back(v);
+while(!st.empty()){int v=st.back();st.pop_back();order.push_back(v);
+ for(int u:g[v])if(--indeg[u]==0)st.push_back(u);}
+vector<long long>dp(n,0);long long best=0;
+for(int v:order)for(int u:g[v]){
+ if(dp[v]+1>dp[u])dp[u]=dp[v]+1;
+ if(dp[u]>best)best=dp[u];}
+cout<<best<<"\\n";`),
+    // Reporting the number of vertices on the path is one more than the number of edges it crosses; measuring only from vertex 1 misses a longer path that starts somewhere vertex 1 cannot reach.
+    wrong: [cpp(`int n,m;cin>>n>>m;vector<vector<int>>g(n);vector<int>indeg(n,0);
+for(int i=0;i<m;++i){int a,b;cin>>a>>b;--a;--b;g[a].push_back(b);++indeg[b];}
+vector<int>order;order.reserve(n);vector<int>st;
+for(int v=0;v<n;++v)if(indeg[v]==0)st.push_back(v);
+while(!st.empty()){int v=st.back();st.pop_back();order.push_back(v);
+ for(int u:g[v])if(--indeg[u]==0)st.push_back(u);}
+vector<long long>dp(n,1);long long best=1;
+for(int v:order)for(int u:g[v]){
+ if(dp[v]+1>dp[u])dp[u]=dp[v]+1;
+ if(dp[u]>best)best=dp[u];}
+cout<<best<<"\\n";`), cpp(`int n,m;cin>>n>>m;vector<vector<int>>g(n);vector<int>indeg(n,0);
+for(int i=0;i<m;++i){int a,b;cin>>a>>b;--a;--b;g[a].push_back(b);++indeg[b];}
+vector<int>order;order.reserve(n);vector<int>st;
+for(int v=0;v<n;++v)if(indeg[v]==0)st.push_back(v);
+while(!st.empty()){int v=st.back();st.pop_back();order.push_back(v);
+ for(int u:g[v])if(--indeg[u]==0)st.push_back(u);}
+const long long NEG=-1000000000;
+vector<long long>dp(n,NEG);dp[0]=0;long long best=0;
+for(int v:order){
+ if(dp[v]<0)continue;
+ for(int u:g[v]){
+  if(dp[v]+1>dp[u])dp[u]=dp[v]+1;
+  if(dp[u]>best)best=dp[u];}}
+cout<<best<<"\\n";`)],
+  },
+  "two-pointers-shortest-unsorted": {
+    solution: cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+vector<long long>b=a;sort(b.begin(),b.end());
+int l=0,r=n-1;
+while(l<n&&a[l]==b[l])++l;
+if(l==n){cout<<"0\\n";return 0;}
+while(r>l&&a[r]==b[r])--r;
+cout<<(r-l+1)<<"\\n";`),
+    // Marking the stretch by the first and last place where a neighbour drops covers the inversions but not the elements in front of them that the stretch must swallow; sorting the whole array whenever it is out of order is valid but never the shortest such stretch.
+    wrong: [cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+int first=-1,last=-1;
+for(int i=0;i+1<n;++i)if(a[i]>a[i+1]){if(first<0)first=i;last=i+1;}
+if(first<0){cout<<"0\\n";return 0;}
+cout<<(last-first+1)<<"\\n";`), cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;
+bool sorted=true;
+for(int i=0;i+1<n;++i)if(a[i]>a[i+1])sorted=false;
+cout<<(sorted?0:n)<<"\\n";`)],
+  },
+  "dp-count-decodings": {
+    solution: cpp(`string s;cin>>s;const long long M=1000000007;int n=(int)s.size();
+vector<long long>dp(n+1,0);dp[0]=1;
+for(int i=1;i<=n;++i){
+ if(s[i-1]!='0')dp[i]=dp[i-1];
+ if(i>=2&&s[i-2]!='0'){
+  int v=(s[i-2]-'0')*10+(s[i-1]-'0');
+  if(v>=10&&v<=26)dp[i]=(dp[i]+dp[i-2])%M;}}
+cout<<dp[n]<<"\\n";`),
+    // Letting a single digit always stand for a letter turns a lone 0 into one; accepting any two-digit value up to 26 without checking its first digit reads 06 as the sixth letter.
+    wrong: [cpp(`string s;cin>>s;const long long M=1000000007;int n=(int)s.size();
+vector<long long>dp(n+1,0);dp[0]=1;
+for(int i=1;i<=n;++i){
+ dp[i]=dp[i-1];
+ if(i>=2&&s[i-2]!='0'){
+  int v=(s[i-2]-'0')*10+(s[i-1]-'0');
+  if(v>=10&&v<=26)dp[i]=(dp[i]+dp[i-2])%M;}}
+cout<<dp[n]<<"\\n";`), cpp(`string s;cin>>s;const long long M=1000000007;int n=(int)s.size();
+vector<long long>dp(n+1,0);dp[0]=1;
+for(int i=1;i<=n;++i){
+ if(s[i-1]!='0')dp[i]=dp[i-1];
+ if(i>=2){
+  int v=(s[i-2]-'0')*10+(s[i-1]-'0');
+  if(v<=26)dp[i]=(dp[i]+dp[i-2])%M;}}
+cout<<dp[n]<<"\\n";`)],
+  },
+  "bs-min-time-produce": {
+    solution: cpp(`long long n,m;cin>>n>>m;vector<long long>t(m);for(auto&x:t)cin>>x;
+long long mn=*min_element(t.begin(),t.end());
+long long lo=0,hi=mn*n;
+auto ok=[&](long long T){long long made=0;
+ for(long long x:t){made+=T/x;if(made>=n)return true;}
+ return made>=n;};
+while(lo<hi){long long mid=lo+(hi-lo)/2;
+ if(ok(mid))hi=mid;else lo=mid+1;}
+cout<<lo<<"\\n";`),
+    // Demanding strictly more than n items overshoots the order by one; dividing the order by the combined rate ignores that each machine's output only steps up at whole multiples of its own time.
+    wrong: [cpp(`long long n,m;cin>>n>>m;vector<long long>t(m);for(auto&x:t)cin>>x;
+long long mn=*min_element(t.begin(),t.end());
+long long lo=0,hi=mn*n+mn;
+auto ok=[&](long long T){long long made=0;
+ for(long long x:t){made+=T/x;if(made>n)return true;}
+ return made>n;};
+while(lo<hi){long long mid=lo+(hi-lo)/2;
+ if(ok(mid))hi=mid;else lo=mid+1;}
+cout<<lo<<"\\n";`), cpp(`long long n,m;cin>>n>>m;vector<long long>t(m);for(auto&x:t)cin>>x;
+long double rate=0;
+for(long long x:t)rate+=1.0L/(long double)x;
+long double need=(long double)n/rate;
+long long ans=(long long)ceill(need-1e-9L);
+cout<<ans<<"\\n";`)],
+  },
+  "geo-max-points-line": {
+    solution: cpp(`int n;cin>>n;vector<long long>x(n),y(n);
+for(int i=0;i<n;++i)cin>>x[i]>>y[i];
+int best=1;
+for(int i=0;i<n;++i){
+ map<pair<long long,long long>,int>dir;
+ for(int j=0;j<n;++j){
+  if(i==j)continue;
+  long long dx=x[j]-x[i],dy=y[j]-y[i];
+  long long g=std::gcd(llabs(dx),llabs(dy));
+  if(g)  {dx/=g;dy/=g;}
+  if(dx<0||(dx==0&&dy<0)){dx=-dx;dy=-dy;}
+  best=max(best,1+(++dir[make_pair(dx,dy)]));}}
+cout<<best<<"\\n";`),
+    // Reducing a direction by integer division of the rise by the run collapses unrelated slopes onto the same key; skipping the pairs that share an x coordinate never counts a vertical line at all.
+    wrong: [cpp(`int n;cin>>n;vector<long long>x(n),y(n);
+for(int i=0;i<n;++i)cin>>x[i]>>y[i];
+int best=1;
+for(int i=0;i<n;++i){
+ map<long long,int>dir;int vert=0;
+ for(int j=0;j<n;++j){
+  if(i==j)continue;
+  long long dx=x[j]-x[i],dy=y[j]-y[i];
+  if(dx==0){best=max(best,1+(++vert));continue;}
+  best=max(best,1+(++dir[dy/dx]));}}
+cout<<best<<"\\n";`), cpp(`int n;cin>>n;vector<long long>x(n),y(n);
+for(int i=0;i<n;++i)cin>>x[i]>>y[i];
+int best=1;
+for(int i=0;i<n;++i){
+ map<pair<long long,long long>,int>dir;
+ for(int j=0;j<n;++j){
+  if(i==j)continue;
+  long long dx=x[j]-x[i],dy=y[j]-y[i];
+  if(dx==0)continue;
+  long long g=std::gcd(llabs(dx),llabs(dy));
+  if(g)  {dx/=g;dy/=g;}
+  if(dx<0){dx=-dx;dy=-dy;}
+  best=max(best,1+(++dir[make_pair(dx,dy)]));}}
+cout<<best<<"\\n";`)],
+  },
+  "dp-bitmask-count-matchings": {
+    solution: cpp(`int n;cin>>n;const long long M=1000000007;
+vector<int>row(n,0);
+for(int i=0;i<n;++i)for(int j=0;j<n;++j){int v;cin>>v;if(v)row[i]|=1<<j;}
+vector<long long>dp(1<<n,0);dp[0]=1;
+for(int mask=0;mask<(1<<n);++mask){
+ if(dp[mask]==0)continue;
+ int i=__builtin_popcount(mask);
+ if(i==n)continue;
+ for(int j=0;j<n;++j){
+  if((mask>>j)&1)continue;
+  if(!((row[i]>>j)&1))continue;
+  int nm=mask|(1<<j);
+  dp[nm]=(dp[nm]+dp[mask])%M;}}
+cout<<dp[(1<<n)-1]<<"\\n";`),
+    // Multiplying each worker's number of choices lets two workers take the same task; adding up every state counts the partial assignments alongside the complete ones.
+    wrong: [cpp(`int n;cin>>n;const long long M=1000000007;
+vector<int>row(n,0);
+for(int i=0;i<n;++i)for(int j=0;j<n;++j){int v;cin>>v;if(v)row[i]|=1<<j;}
+long long ans=1;
+for(int i=0;i<n;++i)ans=ans*(long long)__builtin_popcount(row[i])%M;
+cout<<ans<<"\\n";`), cpp(`int n;cin>>n;const long long M=1000000007;
+vector<int>row(n,0);
+for(int i=0;i<n;++i)for(int j=0;j<n;++j){int v;cin>>v;if(v)row[i]|=1<<j;}
+vector<long long>dp(1<<n,0);dp[0]=1;
+for(int mask=0;mask<(1<<n);++mask){
+ if(dp[mask]==0)continue;
+ int i=__builtin_popcount(mask);
+ if(i==n)continue;
+ for(int j=0;j<n;++j){
+  if((mask>>j)&1)continue;
+  if(!((row[i]>>j)&1))continue;
+  int nm=mask|(1<<j);
+  dp[nm]=(dp[nm]+dp[mask])%M;}}
+long long ans=0;
+for(int mask=0;mask<(1<<n);++mask)ans=(ans+dp[mask])%M;
+cout<<ans<<"\\n";`)],
+  },
 };
 
 /** The problems the bot can actually play. Everything else falls back to
