@@ -19,6 +19,7 @@
 
 import { tests, problemCpuSeconds } from "../judge/tests";
 import { serverEnv } from "./env";
+import { buildBatchSubmission, newBatchKey, parseBatchOutput } from "./judge-batch";
 
 export type Language = "cpp20" | "python3";
 export const languageIds = { cpp20: 54, python3: 71 } as const;
@@ -69,7 +70,7 @@ type Result = {
   compile_output?: string | null; message?: string | null;
 };
 type Submission = {
-  language_id: number; source_code: string; stdin: string; expected_output?: string;
+  language_id: number; source_code?: string; additional_files?: string; stdin: string; expected_output?: string;
   cpu_time_limit: number; wall_time_limit: number; memory_limit: number; max_file_size: number;
   enable_per_process_and_thread_time_limit?: boolean;
   enable_per_process_and_thread_memory_limit?: boolean;
@@ -263,16 +264,17 @@ export async function judgeSource(
   }));
 
   try {
-    const results = await execute(submissions, onProgress);
-    const runtimeMs = Math.ceil(Math.max(...results.map((r) => Number(r.time || 0))) * 1000);
-    const memoryKb = Math.max(...results.map((r) => r.memory || 0));
+    const results = await judgeTests(language, sourceCode, cases, submissions, scale, onProgress);
+    const total = submissions.length;
+    const runtimeMs = Math.ceil(Math.max(0, ...results.map((r) => Number(r.time || 0))) * 1000);
+    const memoryKb = Math.max(0, ...results.map((r) => r.memory || 0));
     const failedIndex = results.findIndex((r) => r.status?.id !== 3);
     if (failedIndex === -1) {
-      return { verdict: "ACCEPTED", passed: results.length, total: results.length, runtimeMs, memoryKb };
+      return { verdict: "ACCEPTED", passed: total, total, runtimeMs, memoryKb };
     }
     const failed = results[failedIndex];
     return {
-      verdict: verdictFor(failed), test: failedIndex + 1, passed: failedIndex, total: results.length,
+      verdict: verdictFor(failed), test: failedIndex + 1, passed: failedIndex, total,
       runtimeMs, memoryKb,
       details: failed.compile_output || failed.stderr || failed.message || failed.status?.description || undefined,
     };
@@ -282,6 +284,48 @@ export async function judgeSource(
       details: error instanceof Error ? error.message : "Judge service unavailable",
     };
   }
+}
+
+/* The whole submission as one Judge0 job first (see judge-batch.ts: one
+ * compile instead of one per test), and test by test for whatever that job
+ * could not settle.
+ *
+ * The fallback is for a job Judge0 refused -- an install without multi-file
+ * programs, limits it will not accept -- or one that ended before every test
+ * had a trustworthy result. It is NOT for a job that is merely still queued
+ * when the poll budget runs out: that judge is busy, and handing it five more
+ * jobs would make it busier, so the timeout is reported as it always was. */
+async function judgeTests(
+  language: Language, sourceCode: string, cases: ReadonlyArray<{ stdin: string; expected_output: string }>,
+  submissions: Submission[], scale: number, onProgress?: JudgeProgress,
+): Promise<Result[]> {
+  const total = submissions.length;
+  let settled: Result[] = [];
+  const key = newBatchKey();
+  try {
+    onProgress?.(0, total);
+    const job = buildBatchSubmission(language, sourceCode, cases, {
+      cpu: limits[language].cpu * scale, wall: limits[language].wall * scale, memoryKb: 262144, outputKb: 1024,
+    }, key);
+    const [result] = await execute([job]);
+    if (result.status?.id === 6) {
+      // A compile error is the verdict for every test; there is nothing to fall back to.
+      return [{ ...result, status: { id: 6, description: "Compilation Error" } }];
+    }
+    settled = (await parseBatchOutput(result.stdout, total, key)).map((r) => ({ token: result.token, ...r }));
+    const last = settled[settled.length - 1];
+    if (settled.length === total || (last && last.status?.id !== 3)) {
+      onProgress?.(total, total);
+      return settled;
+    }
+    console.warn(`judge: batched job settled ${settled.length}/${total} (status ${result.status?.id} ${result.status?.description}); judging the rest per test`);
+  } catch (error) {
+    if (error instanceof JudgeTimeout) throw error;
+    console.warn(`judge: batched job failed (${error instanceof Error ? error.message : error}); judging per test`);
+  }
+  const offset = settled.length;
+  const rest = await execute(submissions.slice(offset), onProgress && ((done, n) => onProgress(offset + done, offset + n)));
+  return settled.concat(rest);
 }
 
 /** Playground mode: the learner's own stdin, no expected output, no verdict.
