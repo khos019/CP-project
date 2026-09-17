@@ -22,6 +22,7 @@ import { CodeEditor } from "./CodeEditor";
 import { useTabGuard } from "./duel-guard";
 import { heartbeatMark, recordDuelDone } from "./coins";
 import { MathText } from "./math-text";
+import { verdictLabel } from "./social-ui";
 import {
   // Accept and decline are the shell's job, not this screen's: the card can
   // appear anywhere in the app, so the handlers live where it is rendered.
@@ -38,7 +39,10 @@ type CodeLang = "cpp20" | "python3";
 export const DUEL_EVENT = "algoyol-duel";
 
 const STARTER: Record<CodeLang, string> = {
-  cpp20: "#include <bits/stdc++.h>\nusing namespace std;\n\nint main(){\n  ios::sync_with_stdio(false);\n  cin.tie(nullptr);\n  // yechimingizni shu yerga yozing\n  return 0;\n}\n",
+  // Four spaces, like the editor's own Tab and every other starter on the
+  // site. This one was the last at two, so the first line a player indented
+  // by pressing Tab sat at a different depth from the lines above it.
+  cpp20: "#include <bits/stdc++.h>\nusing namespace std;\n\nint main() {\n    ios::sync_with_stdio(false);\n    cin.tie(nullptr);\n    // yechimingizni shu yerga yozing\n    return 0;\n}\n",
   python3: "import sys\ninput = sys.stdin.readline\n\n# yechimingizni shu yerga yozing\n",
 };
 
@@ -94,6 +98,8 @@ const T = {
     strayCount: (n: number) => `${n} marta chiqdingiz`,
     awayNow: "Duelga qayting",
     lostByLeaving: "Duel tabini tashlab ketganingiz uchun mag‘lub bo‘ldingiz.",
+    modeBot: "AI bilan duel", modeHuman: "Reytingli duel", test: "test",
+    diff: { easy: "OSON", medium: "O‘RTA", hard: "QIYIN", insane: "JUDA QIYIN" } as Record<string, string>,
   },
   en: {
     eyebrow: "Rated matchmaking", title: "Find a duel opponent",
@@ -125,6 +131,8 @@ const T = {
     strayCount: (n: number) => `left ${n} times`,
     awayNow: "Come back to the duel",
     lostByLeaving: "You lost because you left the duel tab.",
+    modeBot: "AI duel", modeHuman: "Rated duel", test: "test",
+    diff: { easy: "EASY", medium: "MEDIUM", hard: "HARD", insane: "INSANE" } as Record<string, string>,
   },
 };
 
@@ -288,6 +296,22 @@ export function DuelMatchmaking({
   }, [refresh]);
 
   const status = state?.status || "idle";
+
+  /* Each duel has its own address: /duel/<match id> while it is played and
+     while its result is on screen, /duel again once the player leaves it. The
+     address follows the server's answer rather than leading it, so it is only
+     rewritten once state has been read -- a refresh on /duel/<id> must not be
+     flattened to /duel before we know whether that duel is still running.
+     replaceState, not pushState: moving into a duel is the same screen
+     changing, and Back should leave the duel page, not step through its ids. */
+  const shownId = state?.duel?.id || result?.id || null;
+  useEffect(() => {
+    if (!state || typeof window === "undefined") return;
+    const path = window.location.pathname;
+    if (path !== "/duel" && !path.startsWith("/duel/")) return;
+    const want = shownId ? `/duel/${shownId}` : "/duel";
+    if (path !== want) window.history.replaceState(window.history.state, "", want + window.location.search);
+  }, [state, shownId]);
 
   // The search tick. Every value it acts on is recomputed server-side, so a
   // faster interval here buys nothing but its own traffic.
@@ -488,7 +512,7 @@ function Arena({
             {clock(remaining)}
           </span>
           <span className="duel-mode">
-            {duel.mode === "bot" ? "AI duel" : "Reytingli duel"} · #{duel.id.slice(0, 8)}
+            {duel.mode === "bot" ? t.modeBot : t.modeHuman} · #{duel.id.slice(0, 8)}
           </span>
         </div>
 
@@ -543,7 +567,7 @@ function Arena({
                   {/* A locked step says its number and what it is worth and
                       nothing else — the difficulty is a fact about a problem
                       that has not been handed out yet. */}
-                  <b>{String(r.round + 1).padStart(2, "0")}{open ? ` · ${(p?.difficulty || "").toUpperCase()}` : ""}</b>
+                  <b>{String(r.round + 1).padStart(2, "0")}{open ? ` · ${t.diff[p?.difficulty || ""] || (p?.difficulty || "").toUpperCase()}` : ""}</b>
                   <span>{r.points} {t.points}</span>
                   {/* Both players on every round, not just whoever got there
                       first. Knowing the opponent has already taken round two
@@ -571,7 +595,7 @@ function Arena({
                of what solving one of these actually is. */
             <div className="duel-work">
               <div className="duel-problem">
-              <span className="tag">{problem.id} · {problem.difficulty.toUpperCase()} · {problem.rating}</span>
+              <span className="tag">{problem.id} · {t.diff[problem.difficulty] || problem.difficulty.toUpperCase()} · {problem.rating}</span>
               <h2>{lang === "uz" ? problem.uz : problem.en}</h2>
               {statement.status === "loading" ? (
                 <p className="muted">{tr(lang,"algoYolApp.yuklanmoqda")}</p>
@@ -582,7 +606,18 @@ function Arena({
                   <p><MathText text={(lang === "uz" ? prose?.statementUz : prose?.statementEn) || ""} /></p>
                   <p><b>{tr(lang,"algoYolApp.kirish")}:</b> <MathText text={(lang === "uz" ? prose?.inputUz : prose?.inputEn) || ""} /></p>
                   <p><b>{tr(lang,"algoYolApp.chiqish")}:</b> <MathText text={(lang === "uz" ? prose?.outputUz : prose?.outputEn) || ""} /></p>
-                  {prose?.constraints && <p className="muted"><MathText text={prose.constraints} /></p>}
+                  {/* The Uzbek list first, as the problem page does. This used
+                      to print the single `constraints` string, which is the
+                      English one, into an otherwise Uzbek statement. */}
+                  {(() => {
+                    const bounds = (lang === "uz" ? prose?.constraintListUz : undefined) || prose?.constraintList
+                      || (prose?.constraints ? [prose.constraints] : []);
+                    return bounds.length > 0 && (
+                      <p className="muted">{bounds.map((b, i) => (
+                        <span key={i}>{i > 0 && "; "}<MathText text={b} /></span>
+                      ))}</p>
+                    );
+                  })()}
                   {prose?.samples?.[0] && (
                     <pre className="sample">{prose.samples[0].input}{"\n"}{prose.samples[0].output}</pre>
                   )}
@@ -617,7 +652,7 @@ function Arena({
                 <div className="status-line" key={`${a.created_at}-${i}`}>
                   <span className="feed-time">#{a.round + 1}</span>{" "}
                   {a.mine ? t.you : nameOf(them)} ·{" "}
-                  <b style={{ color: a.verdict === "ACCEPTED" ? "var(--green)" : "var(--orange)" }}>{a.verdict}</b>
+                  <b style={{ color: a.verdict === "ACCEPTED" ? "var(--green)" : "var(--orange)" }}>{verdictLabel(a.verdict, lang)}</b>
                 </div>
               ))}
             {!duel.opponent_activity.length && !duel.my_submissions.length && (
@@ -710,8 +745,8 @@ function RoundEditor({
     }
     setVerdict(
       outcome.verdict === "ACCEPTED"
-        ? `✅ ${outcome.verdict} · ${outcome.passed}/${outcome.total}`
-        : `❌ ${outcome.verdict}${outcome.test ? ` · test ${outcome.test}` : ""}`,
+        ? `✅ ${verdictLabel(outcome.verdict, lang)} · ${outcome.passed}/${outcome.total}`
+        : `❌ ${verdictLabel(outcome.verdict, lang)}${outcome.test ? ` · ${t.test} ${outcome.test}` : ""}`,
     );
     await refresh();
   };

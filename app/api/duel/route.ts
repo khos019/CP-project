@@ -60,7 +60,32 @@ export async function POST(request: Request) {
     // ---------------------------------------------------------------- reads
     case "state": {
       const result = await rpcAsUser<Json>(token, "duel_state");
-      return result.ok ? NextResponse.json(result.data) : bad(result.error, result.status);
+      if (!result.ok) return bad(result.error, result.status);
+
+      /* A duel whose clock has run out is over, whether or not anyone
+         submitted at the end. Nothing used to say so: duel_finish ran only
+         from duel_record_submission, so a round nobody touched after the
+         deadline left the match 'active' forever -- the arena sat at 00:00
+         with no result, and the players stayed "in a duel" for weeks (twelve
+         such matches were found on 2026-09-17).
+
+         The deadline and the clock are both the database's own (ends_at and
+         the `now` duel_state returns), and duel_finish is idempotent, so two
+         tabs asking at once finish it once. */
+      const duel = result.data.duel as Json | null;
+      const now = Date.parse(asString(result.data.now));
+      if (duel && duel.status === "active" && Number.isFinite(now) && now >= Date.parse(asString(duel.ends_at))) {
+        const matchId = asString(duel.id);
+        const finished = await rpcAsService<Json>("duel_finish", { p_match: matchId, p_reason: "time" });
+        if (finished.ok && finished.data.ok && !finished.data.already_finished) {
+          await broadcast([toMatch(matchId, "duel_finished", {
+            duel_id: matchId, winner_id: finished.data.winner_id, reason: "time",
+          })]);
+        }
+        const after = await rpcAsUser<Json>(token, "duel_state");
+        if (after.ok) return NextResponse.json(after.data);
+      }
+      return NextResponse.json(result.data);
     }
 
     case "result": {
