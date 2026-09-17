@@ -71,7 +71,25 @@ type Result = {
 type Submission = {
   language_id: number; source_code: string; stdin: string; expected_output?: string;
   cpu_time_limit: number; wall_time_limit: number; memory_limit: number; max_file_size: number;
+  enable_per_process_and_thread_time_limit?: boolean;
+  enable_per_process_and_thread_memory_limit?: boolean;
 };
+
+/* Measure C++ per process, not per cgroup.
+ *
+ * Judge0 1.13.1 compiles and runs in the same isolate box, and by default it
+ * reads time and memory off that box's cgroup (--cg-timing, cg-mem). When
+ * the judge is busy, the compiler's share leaks into the run: on the
+ * self-hosted VPS, a dozen simultaneous submissions that included
+ * <bits/stdc++.h> came back TIME_LIMIT_EXCEEDED at 3-4 s and ~137 MB. A
+ * trivial program cannot use that much, but cc1plus parsing bits/stdc++.h
+ * does. The same code on an idle judge ran in 130 ms at under 1 MB, and the
+ * same burst with <iostream> (a light compile) was accepted every time.
+ *
+ * With both flags on, isolate runs without cgroups and measures the process
+ * itself, so compile work cannot count against the program. Python has no
+ * compile step to leak and keeps the cgroup accounting. */
+const perProcess = { enable_per_process_and_thread_time_limit: true, enable_per_process_and_thread_memory_limit: true };
 
 /* Worst case per judged submission: 1 create + MAX_POLLS checks. Kept well
    under the Worker's subrequest ceiling with room for the caller's own reads.
@@ -241,6 +259,7 @@ export async function judgeSource(
     stdin: test.stdin, expected_output: test.expected_output,
     cpu_time_limit: limits[language].cpu * scale, wall_time_limit: limits[language].wall * scale,
     memory_limit: 262144, max_file_size: 1024,
+    ...(language === "cpp20" ? perProcess : {}),
   }));
 
   try {
@@ -271,6 +290,7 @@ export async function runSource(language: Language, sourceCode: string, stdin: s
   const result = (await execute([{
     language_id: languageIds[language], source_code: sourceCode, stdin: stdin || "",
     cpu_time_limit: 5, wall_time_limit: 10, memory_limit: 262144, max_file_size: 1024,
+    ...(language === "cpp20" ? perProcess : {}),
   }]))[0];
   return {
     stdout: result.stdout || "",
