@@ -46,8 +46,8 @@ const STARTER: Record<CodeLang, string> = {
   python3: "import sys\ninput = sys.stdin.readline\n\n# yechimingizni shu yerga yozing\n",
 };
 
-/* How long an absence is forgiven. See app/ui/duel-guard.ts for why this is
-   not zero: browsers raise blur and visibility events for notifications, the
+/* How much absence a whole duel forgives, summed over every trip away. See
+   app/ui/duel-guard.ts for why this is not zero: browsers raise blur and visibility events for notifications, the
    address bar and OS popups, and none of those are somebody reading an
    editorial. Ten seconds is far shorter than looking anything up. */
 const AWAY_GRACE_MS = 10_000;
@@ -90,12 +90,12 @@ const T = {
     shortcuts: "Ctrl+Enter — ishga tushirish · Ctrl+Shift+Enter — yuborish",
     ruleTitle: "Duel shu tabda o‘tadi",
     ruleBody: "Kodni faqat shu yerda yozing. Boshqa tabga yoki boshqa dasturga o‘tsangiz, duel avtomatik yutqaziladi.",
-    ruleGrace: (s: number) => `${s} soniyadan uzoq g‘oyib bo‘lsangiz — mag‘lubiyat.`,
+    ruleGrace: (s: number) => `Chiqib ketishlaringiz jami ${s} soniyaga yetsa — mag‘lubiyat.`,
     strayTitle: "Duel tabidan chiqdingiz",
-    strayBody: (s: number, n: number, g: number) =>
-      `${s} soniya g‘oyib bo‘ldingiz — bu ${n}-marta. ${g} soniyadan oshsa duel avtomatik yutqaziladi.`,
+    strayBody: (s: number, n: number, g: number, used: number) =>
+      `${s} soniya g‘oyib bo‘ldingiz — bu ${n}-marta. Jami ${used} / ${g} soniya ishlatildi; ${g} soniyaga yetsa duel avtomatik yutqaziladi.`,
     strayOk: "Tushunarli, davom etaman",
-    strayCount: (n: number) => `${n} marta chiqdingiz`,
+    strayCount: (n: number, used: number, g: number) => `${n} marta chiqdingiz · ${used}/${g} s`,
     awayNow: "Duelga qayting",
     lostByLeaving: "Duel tabini tashlab ketganingiz uchun mag‘lub bo‘ldingiz.",
     modeBot: "AI bilan duel", modeHuman: "Reytingli duel", test: "test",
@@ -123,12 +123,12 @@ const T = {
     shortcuts: "Ctrl+Enter to run · Ctrl+Shift+Enter to submit",
     ruleTitle: "The duel happens in this tab",
     ruleBody: "Write your code here and nowhere else. Switching to another tab or another application forfeits the duel.",
-    ruleGrace: (s: number) => `Away for more than ${s} seconds and you lose.`,
+    ruleGrace: (s: number) => `${s} seconds away in total and you lose.`,
     strayTitle: "You left the duel tab",
-    strayBody: (s: number, n: number, g: number) =>
-      `You were away ${s}s — that is time ${n}. Longer than ${g}s and the duel is forfeited automatically.`,
+    strayBody: (s: number, n: number, g: number, used: number) =>
+      `You were away ${s}s — that is time ${n}. ${used} of ${g} seconds used in total; reach ${g} and the duel is forfeited automatically.`,
     strayOk: "Understood, carry on",
-    strayCount: (n: number) => `left ${n} times`,
+    strayCount: (n: number, used: number, g: number) => `left ${n} times · ${used}/${g} s`,
     awayNow: "Come back to the duel",
     lostByLeaving: "You lost because you left the duel tab.",
     modeBot: "AI duel", modeHuman: "Rated duel", test: "test",
@@ -487,6 +487,7 @@ function Arena({
   const guard = useTabGuard({
     active: !over,
     graceMs: AWAY_GRACE_MS,
+    storageKey: `algoyol-duel-away:${duel.id}`,
     onLose: useCallback(() => {
       onLeftTab();
       void (async () => { await forfeitDuel(duel.id); await refresh(); })();
@@ -527,7 +528,7 @@ function Arena({
           lasts. A rule a player only discovers by losing to it is a trap. */}
       <div className={`duel-rule ${guard.strays ? "warned" : ""}`} role="note">
         <b>⚠ {t.ruleTitle}.</b> <span>{t.ruleBody} {t.ruleGrace(Math.round(AWAY_GRACE_MS / 1000))}</span>
-        {guard.strays > 0 && <em className="duel-stray-count">{t.strayCount(guard.strays)}</em>}
+        {guard.strays > 0 && <em className="duel-stray-count">{t.strayCount(guard.strays, guard.usedSeconds, Math.round(AWAY_GRACE_MS / 1000))}</em>}
       </div>
 
       {/* Back inside the grace period. Nothing has happened yet — this is the
@@ -537,7 +538,7 @@ function Arena({
           <div className="challenge-card">
             <p className="eyebrow stray-title">⚠ {t.strayTitle}</p>
             <p className="stray-body">
-              {t.strayBody(guard.lastStray, guard.strays, Math.round(AWAY_GRACE_MS / 1000))}
+              {t.strayBody(guard.lastStray, guard.strays, Math.round(AWAY_GRACE_MS / 1000), guard.usedSeconds)}
             </p>
             <div className="match-actions">
               <button className="primary" onClick={guard.clearStray}>{t.strayOk}</button>
