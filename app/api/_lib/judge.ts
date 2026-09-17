@@ -104,13 +104,31 @@ const perProcess = { enable_per_process_and_thread_time_limit: true, enable_per_
  * together pushes it past ten. The learner then got "Judging timed out" for a
  * program that was about to be accepted.
  *
- * Backing off spends the same number of subrequests over 45 seconds rather
- * than 10, and keeps the early polls dense so the common fast case is still
+ * Backing off spends its subrequests over minutes rather than 10 seconds, and keeps the early polls dense so the common fast case is still
  * answered in about a second.
  */
-const MAX_POLLS = 20;
-const BUDGET_MS = 45_000;
-const pollDelay = (attempt: number) => Math.min(4000, Math.round(250 * 1.35 ** attempt));
+const MAX_POLLS = 36;
+const BUDGET_MS = 150_000;
+const pollDelay = (attempt: number) => Math.min(5000, Math.round(250 * 1.35 ** attempt));
+
+/* 150 s, not 45, since the judge became our own VPS.
+ *
+ * 45 s was sized for the shared ce.judge0.com, where a job that had not
+ * settled by then was usually never going to. A self-hosted queue is
+ * different: it is only ever behind, never stuck, and a job the Worker gave up
+ * on is still compiled and run afterwards -- the work is spent either way, and
+ * the learner was told JUDGE_ERROR for a program that was about to be
+ * accepted. A stress test on 2026-09-17 did exactly that: 113 submissions of
+ * one C++ solution in 77 s against a judge that clears ~1.2 a second, and the
+ * last 42 came back "did not return a verdict within 45s" while the queue was
+ * still draining.
+ *
+ * The budget is shared by everything one judged submission sends (see
+ * PollBudget), so the batched job and its per-test fallback together still
+ * stay under the Worker's 50-subrequest ceiling with room for the duel
+ * route's own calls: at most 2 creates + 36 polls. */
+type PollBudget = { polls: number; deadline: number; attempt: number };
+const newBudget = (): PollBudget => ({ polls: MAX_POLLS, deadline: Date.now() + BUDGET_MS, attempt: 0 });
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -143,7 +161,7 @@ class JudgeTimeout extends Error {
       // what turns "try again" into something anyone can act on.
       (lastError
         ? `The judge kept refusing the read (${lastError}).`
-        : "The shared judge queue is busy — try again in a moment."),
+        : "The judge queue is busy — try again in a moment."),
     );
     this.name = "JudgeTimeout";
   }
@@ -170,7 +188,7 @@ const isFinal = (r: Result) => (r.status?.id || 0) > 2;
  *  while the batch is still running. */
 export type JudgeProgress = (settled: number, total: number) => void;
 
-async function execute(submissions: Submission[], onProgress?: JudgeProgress): Promise<Result[]> {
+async function execute(submissions: Submission[], onProgress?: JudgeProgress, budget: PollBudget = newBudget()): Promise<Result[]> {
   const { url, headers } = endpoint();
   const created = await fetch(`${url}/submissions/batch?base64_encoded=false`, {
     method: "POST", headers, body: JSON.stringify({ submissions }),
@@ -194,11 +212,10 @@ async function execute(submissions: Submission[], onProgress?: JudgeProgress): P
    * (our own inputs are known-good UTF-8) and only the read asks for base64. */
   const query = `${url}/submissions/batch?tokens=${tokens.join(",")}&base64_encoded=true` +
     `&fields=token,status,time,memory,stdout,stderr,compile_output,message`;
-  const started = Date.now();
   let settled = 0;
   let lastPollError = "";
-  for (let attempt = 0; attempt < MAX_POLLS && Date.now() - started < BUDGET_MS; attempt++) {
-    await sleep(pollDelay(attempt));
+  for (; budget.polls > 0 && Date.now() < budget.deadline; budget.polls--) {
+    await sleep(Math.max(0, Math.min(pollDelay(budget.attempt++), budget.deadline - Date.now())));
     const checked = await fetch(query, { headers });
     if (!checked.ok) {
       // Remembered rather than swallowed: a batch that never settles because
@@ -302,12 +319,16 @@ async function judgeTests(
   const total = submissions.length;
   let settled: Result[] = [];
   const key = newBatchKey();
+  const budget = newBudget();
   try {
     onProgress?.(0, total);
     const job = buildBatchSubmission(language, sourceCode, cases, {
       cpu: limits[language].cpu * scale, wall: limits[language].wall * scale, memoryKb: 262144, outputKb: 1024,
     }, key);
-    const [result] = await execute([job]);
+    // The job is one token, so its own progress is 0/1 until the end. Every
+    // poll is still reported as 0/total: the stream stays visibly alive for
+    // the minutes a busy queue can take.
+    const [result] = await execute([job], onProgress && ((done) => { if (!done) onProgress(0, total); }), budget);
     if (result.status?.id === 6) {
       // A compile error is the verdict for every test; there is nothing to fall back to.
       return [{ ...result, status: { id: 6, description: "Compilation Error" } }];
@@ -324,7 +345,7 @@ async function judgeTests(
     console.warn(`judge: batched job failed (${error instanceof Error ? error.message : error}); judging per test`);
   }
   const offset = settled.length;
-  const rest = await execute(submissions.slice(offset), onProgress && ((done, n) => onProgress(offset + done, offset + n)));
+  const rest = await execute(submissions.slice(offset), onProgress && ((done, n) => onProgress(offset + done, offset + n)), budget);
   return settled.concat(rest);
 }
 

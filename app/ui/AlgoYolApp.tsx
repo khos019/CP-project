@@ -1013,7 +1013,7 @@ function Problem({lang,item,code,setCode,codeLang,setCodeLang,verdict,submit,onB
  /* The editor does not depend on the statement, so it is mounted while the
     statement is still in flight: a solver who already knows the problem can
     start typing, and a restored draft does not wait on a fetch. */
- const editor=<CodeEditor code={code} setCode={setCode} lang={codeLang} setLang={setCodeLang} onSubmit={submit} submitLabel={copy[lang].submit} verdict={verdict} extraAction={<a className="text-link editor-escape" href="/playground" onClick={linkTo(()=>go("playground"))}>{tr(lang,"algoYolApp.bosh_muhitda_ochish")}</a>}/>;
+ const editor=<CodeEditor code={code} setCode={setCode} lang={codeLang} setLang={setCodeLang} onSubmit={submit} submitLabel={copy[lang].submit} verdict={verdict} busy={/tekshirilmoqda|navbat|judging|queue/i.test(verdict)} extraAction={<a className="text-link editor-escape" href="/playground" onClick={linkTo(()=>go("playground"))}>{tr(lang,"algoYolApp.bosh_muhitda_ochish")}</a>}/>;
  return <><button className="crumb crumb-btn" onClick={onBack}>← {tr(lang,"algoYolApp.ortga")}</button><ProblemHead lang={lang} item={item} solved={solved} section="problem" onSection={onSection}/>
  {statement.status==="loading"
   ?<div className="workspace"><article className="panel statement" aria-busy="true"><ScreenLoading lang={lang}/></article>{editor}</div>
