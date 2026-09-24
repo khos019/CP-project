@@ -2760,6 +2760,14 @@ a.editor-escape:hover{color:var(--ink);border-color:var(--line-strong);backgroun
  font-size:var(--t-sm);
 }
 .order-list small{font-family:var(--font-mono);color:var(--muted)}
+/* Buyurtma navbatida ustun soni qat'iy emas: ism uzun, Telegram nomi qisqa,
+   tugma esa oxirida turishi kerak. Grid o'rniga o'ralib ketadigan qator. */
+.shop-queue{margin-top:var(--s4)}
+.shop-queue h3 i{font-style:normal;color:var(--muted);font-size:var(--t-sm)}
+.queue-list li{display:flex;flex-wrap:wrap;gap:var(--s3);align-items:center}
+.queue-list li b{min-width:0}
+.queue-list li a{font-size:var(--t-sm)}
+.queue-list li button,.queue-list li .tag{margin-left:auto}
 .shop-field{display:grid;gap:5px}
 .shop-field span{font-size:var(--t-xs);color:var(--muted)}
 .shop-field input{

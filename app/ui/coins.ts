@@ -8,13 +8,15 @@
 // as unofficial in the UI, because anything the browser can compute the user
 // can also edit.
 
-import { readScoped, writeScoped, readToken, supabaseConfig } from "./session";
+import { readScoped, writeScoped, readToken, readStoredUserId, supabaseConfig } from "./session";
 
 export type ShopItem = {
   slug: string; nameUz: string; nameEn: string; descriptionUz: string; descriptionEn: string;
   costCoins: number; telegramStars: number | null; art: string;
 };
 export type Order = { id: string; slug: string; status: string; costCoins: number; createdAt: string };
+/** An order as staff see it: the buyer and the handle the gift is sent to. */
+export type StaffOrder = Order & { username: string; displayName: string; telegram: string };
 export type DayActivity = { day: string; activeSeconds: number; duels: number; topics: number };
 
 // Mirrors coin_rules in migration 013. 1+2+3+4+5 = 15 = one 15-star gift.
@@ -25,7 +27,7 @@ export const COIN_RULES = [
   { days: 8, coins: 4 },
   { days: 10, coins: 5 },
 ] as const;
-export const DAY_SECONDS_REQUIRED = 50 * 60;
+export const DAY_SECONDS_REQUIRED = 40 * 60;
 export const DAY_DUELS_REQUIRED = 1;
 // A finished topic is a roadmap unit crossing into done: quiz >= 70% and the
 // problem accepted. Reported once, at the transition — see saveUnit().
@@ -291,8 +293,13 @@ export async function purchase(slug: string, telegram: string): Promise<{ ok: bo
   } catch { return { ok: false, error: "offline" }; }
 }
 
+/* Staff may read every order (the "staff orders" policy in migration 013), so
+   "your orders" has to say whose it wants — without the filter an owner's own
+   list quietly fills up with everyone else's purchases. */
 export async function fetchOrders(): Promise<Order[] | null> {
-  const r = rest("shop_orders?select=id,cost_coins,status,created_at,shop_items(slug)&order=created_at.desc");
+  const me = readStoredUserId();
+  if (!me) return null;
+  const r = rest(`shop_orders?select=id,cost_coins,status,created_at,shop_items(slug)&user_id=eq.${me}&order=created_at.desc`);
   if (!r) return null;
   try {
     const res = await fetch(r.url, { headers: r.headers });
@@ -304,6 +311,39 @@ export async function fetchOrders(): Promise<Order[] | null> {
       createdAt: String(o.created_at), slug: String((o.shop_items as { slug?: string } | null)?.slug || ""),
     }));
   } catch { return null; }
+}
+
+/* The queue staff work from. Pending first, because that is the whole job:
+   everything below the first fulfilled row is history. */
+export async function fetchAllOrders(limit = 100): Promise<StaffOrder[] | null> {
+  const r = rest(`shop_orders?select=id,cost_coins,status,created_at,telegram_username,shop_items(slug),profiles!shop_orders_user_id_fkey(username,display_name)&order=created_at.desc&limit=${limit}`);
+  if (!r) return null;
+  try {
+    const res = await fetch(r.url, { headers: r.headers });
+    if (!res.ok) return null;
+    const rows = await res.json();
+    if (!Array.isArray(rows)) return null;
+    const orders = rows.map((o: Record<string, unknown>) => {
+      const who = o.profiles as { username?: string; display_name?: string } | null;
+      return {
+        id: String(o.id), costCoins: Number(o.cost_coins), status: String(o.status),
+        createdAt: String(o.created_at), slug: String((o.shop_items as { slug?: string } | null)?.slug || ""),
+        username: String(who?.username || ""), displayName: String(who?.display_name || ""),
+        telegram: String(o.telegram_username || ""),
+      };
+    });
+    return orders.sort((a, b) => Number(b.status === "pending") - Number(a.status === "pending"));
+  } catch { return null; }
+}
+
+/** Mark an order delivered. The role check lives in the function, not here. */
+export async function fulfilOrder(id: string, note?: string): Promise<boolean> {
+  const r = rest("rpc/fulfil_order");
+  if (!r) return false;
+  try {
+    const res = await fetch(r.url, { method: "POST", headers: r.headers, body: JSON.stringify({ p_order: id, p_note: note || null }) });
+    return res.ok;
+  } catch { return false; }
 }
 
 /** Fallback catalogue so the shop still renders before migration 013 runs. */

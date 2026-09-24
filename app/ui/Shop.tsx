@@ -5,10 +5,12 @@ import { tr } from "./i18n";
 import { GiftArtwork, ART_CREDIT, ART_CREDIT_EN } from "./gift-art";
 import {
   COIN_RULES, DAY_DUELS_REQUIRED, DAY_SECONDS_REQUIRED, DAY_TOPICS_REQUIRED, FALLBACK_ITEMS, TOTAL_LADDER_COINS,
-  claimLocal, claimServer, coinsForStreak, fetchBalance, fetchOrders, fetchShopItems, fetchStreak,
-  localBalance, localStreak, nextMilestone, purchase, readActivity,
-  type CoinServer, type Order, type ShopItem,
+  claimLocal, claimServer, coinsForStreak, fetchAllOrders, fetchBalance, fetchOrders, fetchShopItems, fetchStreak,
+  fulfilOrder, localBalance, localStreak, nextMilestone, purchase, readActivity,
+  type CoinServer, type Order, type ShopItem, type StaffOrder,
 } from "./coins";
+import { can } from "./permissions";
+import type { Role } from "./AlgoYolApp";
 
 type Lang = "uz" | "en";
 
@@ -29,6 +31,10 @@ const T = {
     notMigrated: "Do‘kon serverda hali sozlanmagan (013-migratsiya ishga tushmagan) — bu ko‘rinish namuna.",
     fulfilNote: "Sovg‘a Telegram orqali qo‘lda yuboriladi.",
     statusPending: "Kutilmoqda", statusFulfilled: "Yuborildi", statusCancelled: "Bekor qilindi",
+    queue: "Barcha buyurtmalar", queueNone: "Hech kim buyurtma bermagan.",
+    queueNote: "Sovg‘ani Telegram orqali yuborgach, “Yuborildi” ni bosing.",
+    markSent: "Yuborildi", marked: "Buyurtma yopildi.", markFailed: "Belgilab bo‘lmadi — qayta urinib ko‘ring.",
+    waiting: "kutilmoqda",
   },
   en: {
     title: "Shop centre", sub: "Earn coins for staying active, then trade them for a Telegram gift.",
@@ -46,13 +52,17 @@ const T = {
     notMigrated: "The shop is not set up on the server yet (migration 013 has not run) — this view is a preview.",
     fulfilNote: "The gift is sent manually over Telegram.",
     statusPending: "Pending", statusFulfilled: "Sent", statusCancelled: "Cancelled",
+    queue: "All orders", queueNone: "Nobody has ordered yet.",
+    queueNote: "Send the gift over Telegram, then press “Sent”.",
+    markSent: "Sent", marked: "Order closed.", markFailed: "Could not mark it — try again.",
+    waiting: "waiting",
   },
 };
 
 /* `authLoading` exists for the same reason as `probed` below: a stored token
    is still being verified on the first paint, so a signed-in learner would
    otherwise be told they are signed out for as long as that takes. */
-export function Shop({ lang, signed, authLoading }: { lang: Lang; signed: boolean; authLoading: boolean }) {
+export function Shop({ lang, signed, authLoading, role = "user" }: { lang: Lang; signed: boolean; authLoading: boolean; role?: Role }) {
   const t = T[lang];
   const [items, setItems] = useState<ShopItem[]>(FALLBACK_ITEMS);
   const [balance, setBalance] = useState(0);
@@ -64,6 +74,10 @@ export function Shop({ lang, signed, authLoading }: { lang: Lang; signed: boolea
   // means flashing a failure notice at every learner for a second.
   const [probed, setProbed] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
+  /* The fulfilment queue: everyone's orders, but only for the staff who can
+     actually act on them — the same admin/owner pair the RLS policy allows. */
+  const staff = can(role, "content.view_management");
+  const [queue, setQueue] = useState<StaffOrder[]>([]);
   const [telegram, setTelegram] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState("");
@@ -79,7 +93,19 @@ export function Shop({ lang, signed, authLoading }: { lang: Lang; signed: boolea
     setStreak(remoteStreak !== null ? remoteStreak : localStreak());
     if (remoteItems?.length) setItems(remoteItems);
     if (remoteOrders) setOrders(remoteOrders);
+    if (staff) {
+      const all = await fetchAllOrders();
+      if (all) setQueue(all);
+    }
     setProbed(true);
+  };
+
+  const markSent = async (id: string) => {
+    setBusy(id);
+    const ok = await fulfilOrder(id);
+    setMessage(ok ? t.marked : t.markFailed);
+    await refresh();
+    setBusy("");
   };
   useEffect(() => {
     // Re-read once the session resolves: the first pass can run against a
@@ -88,7 +114,7 @@ export function Shop({ lang, signed, authLoading }: { lang: Lang; signed: boolea
     // written during this render; the rule cannot see past the async boundary.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     void refresh();
-  }, [signed]);
+  }, [signed, staff]);
 
   const act = readActivity()[new Date().toISOString().slice(0, 10)] || { activeSeconds: 0, duels: 0, topics: 0 };
   const upcoming = nextMilestone(streak);
@@ -238,6 +264,46 @@ export function Shop({ lang, signed, authLoading }: { lang: Lang; signed: boolea
           </label>
         </section>
       </div>
+
+      {/* Owner uchun ish navbati: kim, qaysi sovg'ani, qaysi Telegram nomiga
+          kutyapti. Kutilayotganlar tepada — yopilganlari shunchaki tarix. */}
+      {staff && (
+        <section className="panel shop-queue">
+          <h3>
+            {t.queue}
+            {queue.some(o => o.status === "pending") && (
+              <i className="mono"> {queue.filter(o => o.status === "pending").length} {t.waiting}</i>
+            )}
+          </h3>
+          {queue.length === 0 ? (
+            <p className="muted">{t.queueNone}</p>
+          ) : (
+            <>
+              <p className="muted">{t.queueNote}</p>
+              <ul className="order-list queue-list">
+                {queue.map(o => (
+                  <li key={o.id}>
+                    <b>{o.displayName || o.username}</b>
+                    <span className="muted">@{o.username}</span>
+                    <span>{o.slug}</span>
+                    <a className="mono" href={`https://t.me/${o.telegram.replace(/^@/, "")}`} target="_blank" rel="noreferrer">
+                      {o.telegram.startsWith("@") ? o.telegram : `@${o.telegram}`}
+                    </a>
+                    <small className="mono">−{o.costCoins}</small>
+                    {o.status === "pending" ? (
+                      <button className="ghost" onClick={() => void markSent(o.id)} disabled={busy === o.id}>{t.markSent}</button>
+                    ) : (
+                      <span className={`tag ${o.status === "fulfilled" ? "tag-solved" : ""}`}>
+                        {o.status === "fulfilled" ? t.statusFulfilled : t.statusCancelled}
+                      </span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </section>
+      )}
 
       <div className="gift-grid">
         {items.map(item => {
