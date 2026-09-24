@@ -52,6 +52,7 @@ export function ProfilePage({
   openRoadmap,
   isStaff,
   goSiteFeed,
+  goShopOrders,
   onSection,
   onOpenPerson,
   onOpenProblem,
@@ -69,6 +70,7 @@ export function ProfilePage({
   openRoadmap: (slug: string) => void;
   isStaff: boolean;
   goSiteFeed: () => void;
+  goShopOrders: () => void;
   /** The profile's other sections live at /u/<handle>/..., shared with every
       visitor's view of this account. */
   onSection: (section: ProfileSection) => void;
@@ -181,6 +183,7 @@ export function ProfilePage({
           {isStaff && <button role="menuitem" onClick={goAdmin}>{t.admin}</button>}
           {isOwner && <button role="menuitem" onClick={goUsers}>{t.users}</button>}
           {isOwner && <button role="menuitem" onClick={goSiteFeed}>{tr(lang, "profile.siteFeed")}</button>}
+          {isStaff && <button role="menuitem" onClick={goShopOrders}>{lang === "uz" ? "Sovg‘a buyurtmalari" : "Gift orders"}</button>}
           <button role="menuitem" className="danger" onClick={signOut}>{t.signOut}</button>
         </div>
       </details>

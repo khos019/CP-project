@@ -2768,6 +2768,7 @@ a.editor-escape:hover{color:var(--ink);border-color:var(--line-strong);backgroun
 .queue-list li b{min-width:0}
 .queue-list li a{font-size:var(--t-sm)}
 .queue-list li button,.queue-list li .tag{margin-left:auto}
+.shop-toggle{display:flex;align-items:center;gap:8px;font-size:var(--t-sm);color:var(--muted);margin:var(--s2) 0}
 .shop-field{display:grid;gap:5px}
 .shop-field span{font-size:var(--t-xs);color:var(--muted)}
 .shop-field input{

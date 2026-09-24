@@ -6,11 +6,10 @@ import { GiftArtwork, ART_CREDIT, ART_CREDIT_EN } from "./gift-art";
 import {
   COIN_RULES, DAY_DUELS_REQUIRED, DAY_SECONDS_REQUIRED, DAY_TOPICS_REQUIRED, FALLBACK_ITEMS, TOTAL_LADDER_COINS,
   claimLocal, claimServer, coinsForStreak, fetchAllOrders, fetchBalance, fetchOrders, fetchShopItems, fetchStreak,
-  fulfilOrder, localBalance, localStreak, nextMilestone, purchase, readActivity,
-  type CoinServer, type Order, type ShopItem, type StaffOrder,
+  localBalance, localStreak, nextMilestone, purchase, readActivity,
+  type CoinServer, type Order, type ShopItem,
 } from "./coins";
 import { can } from "./permissions";
-import { sendMessage } from "./session";
 import type { Role } from "./AlgoYolApp";
 
 type Lang = "uz" | "en";
@@ -32,11 +31,8 @@ const T = {
     notMigrated: "Do‘kon serverda hali sozlanmagan (013-migratsiya ishga tushmagan) — bu ko‘rinish namuna.",
     fulfilNote: "Sovg‘a Telegram orqali qo‘lda yuboriladi.",
     statusPending: "Kutilmoqda", statusFulfilled: "Yuborildi", statusCancelled: "Bekor qilindi",
-    queue: "Barcha buyurtmalar", queueNone: "Hech kim buyurtma bermagan.",
-    queueNote: "Sovg‘ani Telegram orqali yuborgach, “Yuborildi” ni bosing.",
-    markSent: "Yuborildi", marked: "Buyurtma yopildi va xabar yuborildi.", markFailed: "Belgilab bo‘lmadi — qayta urinib ko‘ring.",
-    sentMessage: (gift: string, tg: string) => `Sovg‘angiz yuborildi: ${gift}. Telegram: ${tg.startsWith("@") ? tg : `@${tg}`}. Kelmagan bo‘lsa shu yerga yozing.`,
-    waiting: "kutilmoqda",
+    queue: "Sovg‘a buyurtmalari", queueOpen: "Ochish",
+    queueNone: "Kutilayotgan buyurtma yo‘q.", queueWaiting: (n: number) => `${n} ta buyurtma kutilmoqda.`,
   },
   en: {
     title: "Shop centre", sub: "Earn coins for staying active, then trade them for a Telegram gift.",
@@ -54,18 +50,15 @@ const T = {
     notMigrated: "The shop is not set up on the server yet (migration 013 has not run) — this view is a preview.",
     fulfilNote: "The gift is sent manually over Telegram.",
     statusPending: "Pending", statusFulfilled: "Sent", statusCancelled: "Cancelled",
-    queue: "All orders", queueNone: "Nobody has ordered yet.",
-    queueNote: "Send the gift over Telegram, then press “Sent”.",
-    markSent: "Sent", marked: "Order closed and the buyer told.", markFailed: "Could not mark it — try again.",
-    sentMessage: (gift: string, tg: string) => `Your gift is on its way: ${gift}. Telegram: ${tg.startsWith("@") ? tg : `@${tg}`}. Tell us here if it does not arrive.`,
-    waiting: "waiting",
+    queue: "Gift orders", queueOpen: "Open",
+    queueNone: "No orders waiting.", queueWaiting: (n: number) => `${n} order${n === 1 ? "" : "s"} waiting.`,
   },
 };
 
 /* `authLoading` exists for the same reason as `probed` below: a stored token
    is still being verified on the first paint, so a signed-in learner would
    otherwise be told they are signed out for as long as that takes. */
-export function Shop({ lang, signed, authLoading, role = "user" }: { lang: Lang; signed: boolean; authLoading: boolean; role?: Role }) {
+export function Shop({ lang, signed, authLoading, role = "user", onOrders }: { lang: Lang; signed: boolean; authLoading: boolean; role?: Role; onOrders?: () => void }) {
   const t = T[lang];
   const [items, setItems] = useState<ShopItem[]>(FALLBACK_ITEMS);
   const [balance, setBalance] = useState(0);
@@ -77,10 +70,10 @@ export function Shop({ lang, signed, authLoading, role = "user" }: { lang: Lang;
   // means flashing a failure notice at every learner for a second.
   const [probed, setProbed] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
-  /* The fulfilment queue: everyone's orders, but only for the staff who can
-     actually act on them — the same admin/owner pair the RLS policy allows. */
+  /* Staff do not buy gifts, they deliver them. All this page owes them is the
+     count and a way through to the queue, which lives on its own page. */
   const staff = can(role, "content.view_management");
-  const [queue, setQueue] = useState<StaffOrder[]>([]);
+  const [waiting, setWaiting] = useState(0);
   const [telegram, setTelegram] = useState("");
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState("");
@@ -98,22 +91,11 @@ export function Shop({ lang, signed, authLoading, role = "user" }: { lang: Lang;
     if (remoteOrders) setOrders(remoteOrders);
     if (staff) {
       const all = await fetchAllOrders();
-      if (all) setQueue(all);
+      if (all) setWaiting(all.filter(o => o.status === "pending").length);
     }
     setProbed(true);
   };
 
-  /* Closing an order is also telling somebody their gift is on its way: the
-     buyer cannot see this queue, so without the message the only thing that
-     changes for them is a word in a list they may never open again. */
-  const markSent = async (order: StaffOrder) => {
-    setBusy(order.id);
-    const ok = await fulfilOrder(order.id);
-    if (ok) await sendMessage(order.userId, t.sentMessage(order.slug, order.telegram), role === "owner");
-    setMessage(ok ? t.marked : t.markFailed);
-    await refresh();
-    setBusy("");
-  };
   useEffect(() => {
     // Re-read once the session resolves: the first pass can run against a
     // token still being renewed, and its answer would stick otherwise.
@@ -272,43 +254,13 @@ export function Shop({ lang, signed, authLoading, role = "user" }: { lang: Lang;
         </section>
       </div>
 
-      {/* Owner uchun ish navbati: kim, qaysi sovg'ani, qaysi Telegram nomiga
-          kutyapti. Kutilayotganlar tepada — yopilganlari shunchaki tarix. */}
-      {staff && (
+      {/* Xodim uchun bu sahifada faqat bitta savol bor: kimdir kutyaptimi?
+          Javob "ha" bo'lsa, ish o'z sahifasida davom etadi. */}
+      {staff && onOrders && (
         <section className="panel shop-queue">
-          <h3>
-            {t.queue}
-            {queue.some(o => o.status === "pending") && (
-              <i className="mono"> {queue.filter(o => o.status === "pending").length} {t.waiting}</i>
-            )}
-          </h3>
-          {queue.length === 0 ? (
-            <p className="muted">{t.queueNone}</p>
-          ) : (
-            <>
-              <p className="muted">{t.queueNote}</p>
-              <ul className="order-list queue-list">
-                {queue.map(o => (
-                  <li key={o.id}>
-                    <b>{o.displayName || o.username}</b>
-                    <span className="muted">@{o.username}</span>
-                    <span>{o.slug}</span>
-                    <a className="mono" href={`https://t.me/${o.telegram.replace(/^@/, "")}`} target="_blank" rel="noreferrer">
-                      {o.telegram.startsWith("@") ? o.telegram : `@${o.telegram}`}
-                    </a>
-                    <small className="mono">−{o.costCoins}</small>
-                    {o.status === "pending" ? (
-                      <button className="ghost" onClick={() => void markSent(o)} disabled={busy === o.id}>{t.markSent}</button>
-                    ) : (
-                      <span className={`tag ${o.status === "fulfilled" ? "tag-solved" : ""}`}>
-                        {o.status === "fulfilled" ? t.statusFulfilled : t.statusCancelled}
-                      </span>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
+          <h3>{t.queue}</h3>
+          <p className="muted">{waiting > 0 ? t.queueWaiting(waiting) : t.queueNone}</p>
+          <button className={waiting > 0 ? "primary" : "ghost"} onClick={onOrders}>{t.queueOpen}</button>
         </section>
       )}
 
