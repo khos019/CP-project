@@ -183,7 +183,7 @@ export function ProfilePage({
           {isStaff && <button role="menuitem" onClick={goAdmin}>{t.admin}</button>}
           {isOwner && <button role="menuitem" onClick={goUsers}>{t.users}</button>}
           {isOwner && <button role="menuitem" onClick={goSiteFeed}>{tr(lang, "profile.siteFeed")}</button>}
-          {isStaff && <button role="menuitem" onClick={goShopOrders}>{lang === "uz" ? "Sovg‘a buyurtmalari" : "Gift orders"}</button>}
+          {isStaff && <button role="menuitem" onClick={goShopOrders}>{tr(lang, "profile.shopOrders")}</button>}
           <button role="menuitem" className="danger" onClick={signOut}>{t.signOut}</button>
         </div>
       </details>

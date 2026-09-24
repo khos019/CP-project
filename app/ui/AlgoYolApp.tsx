@@ -982,7 +982,7 @@ function ProblemHead({lang,item,solved,section,onSection}:{lang:Lang;item:BankPr
  const tabs:[ProblemSection,string,string][]=[["problem",`/problem/${item.id}`,lang==="uz"?"Masala":"Problem"]];
  if(item.judge)tabs.push(["problem-submissions",`/problem/${item.id}/submissions`,lang==="uz"?"Mening yuborishlarim":"My submissions"]);
  return <><div className="page-head"><div><span className="tag">{item.id}</span> <span className="tag rating-tag" style={{color:ratingColor(item.rating||1200)}}>★ {item.rating||1200}</span> <span className="tag">{item.tag}</span> {solved&&<span className="tag tag-solved">✓ {tr(lang,"algoYolApp.yechilgan")}</span>}<h1 className="page-title" style={{marginTop:12}}>{lang==="uz"?item.uz:item.en}</h1></div><span className="muted mono">{fmtLimits(item)}</span></div>
- <nav className="pv-nav problem-nav" aria-label={lang==="uz"?item.uz:item.en}>{tabs.map(([s,href,label])=><a key={s} href={href} className={section===s?"on":""} aria-current={section===s?"page":undefined} onClick={e=>{if(e.metaKey||e.ctrlKey||e.shiftKey||e.button!==0)return;e.preventDefault();if(section!==s)onSection(s)}}>{label}</a>)}</nav></>;
+ <nav className="pv-nav" aria-label={lang==="uz"?item.uz:item.en}>{tabs.map(([s,href,label])=><a key={s} href={href} className={section===s?"on":""} aria-current={section===s?"page":undefined} onClick={e=>{if(e.metaKey||e.ctrlKey||e.shiftKey||e.button!==0)return;e.preventDefault();if(section!==s)onSection(s)}}>{label}</a>)}</nav></>;
 }
 
 function ProblemSubmissionsPage({lang,item,signed,authLoading,verdict,onSection,onSignIn,onReuse}:{lang:Lang;item:BankProblem;signed:boolean;authLoading:boolean;verdict:string;onSection:(v:ProblemSection)=>void;onSignIn:()=>void;onReuse:(source:string,language:"cpp20"|"python3")=>void}){

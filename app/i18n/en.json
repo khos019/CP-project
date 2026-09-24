@@ -283,6 +283,7 @@
   "problem.statementFailed": "The statement could not be loaded. Try refreshing the page.",
   "problem.timeLimit": "Time limit",
   "profile.duelHistory": "Duel history",
+  "profile.shopOrders": "Gift orders",
   "profile.siteFeed": "Site submissions",
   "profilePage.account": "Account",
   "profilePage.activity": "Recent activity",
