@@ -16,7 +16,7 @@ export type ShopItem = {
 };
 export type Order = { id: string; slug: string; status: string; costCoins: number; createdAt: string };
 /** An order as staff see it: the buyer and the handle the gift is sent to. */
-export type StaffOrder = Order & { username: string; displayName: string; telegram: string };
+export type StaffOrder = Order & { userId: string; username: string; displayName: string; telegram: string };
 export type DayActivity = { day: string; activeSeconds: number; duels: number; topics: number };
 
 // Mirrors coin_rules in migration 013. 1+2+3+4+5 = 15 = one 15-star gift.
@@ -316,7 +316,7 @@ export async function fetchOrders(): Promise<Order[] | null> {
 /* The queue staff work from. Pending first, because that is the whole job:
    everything below the first fulfilled row is history. */
 export async function fetchAllOrders(limit = 100): Promise<StaffOrder[] | null> {
-  const r = rest(`shop_orders?select=id,cost_coins,status,created_at,telegram_username,shop_items(slug),profiles!shop_orders_user_id_fkey(username,display_name)&order=created_at.desc&limit=${limit}`);
+  const r = rest(`shop_orders?select=id,user_id,cost_coins,status,created_at,telegram_username,shop_items(slug),profiles!shop_orders_user_id_fkey(username,display_name)&order=created_at.desc&limit=${limit}`);
   if (!r) return null;
   try {
     const res = await fetch(r.url, { headers: r.headers });
@@ -326,7 +326,7 @@ export async function fetchAllOrders(limit = 100): Promise<StaffOrder[] | null> 
     const orders = rows.map((o: Record<string, unknown>) => {
       const who = o.profiles as { username?: string; display_name?: string } | null;
       return {
-        id: String(o.id), costCoins: Number(o.cost_coins), status: String(o.status),
+        id: String(o.id), userId: String(o.user_id), costCoins: Number(o.cost_coins), status: String(o.status),
         createdAt: String(o.created_at), slug: String((o.shop_items as { slug?: string } | null)?.slug || ""),
         username: String(who?.username || ""), displayName: String(who?.display_name || ""),
         telegram: String(o.telegram_username || ""),

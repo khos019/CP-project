@@ -10,6 +10,7 @@ import {
   type CoinServer, type Order, type ShopItem, type StaffOrder,
 } from "./coins";
 import { can } from "./permissions";
+import { sendMessage } from "./session";
 import type { Role } from "./AlgoYolApp";
 
 type Lang = "uz" | "en";
@@ -33,7 +34,8 @@ const T = {
     statusPending: "Kutilmoqda", statusFulfilled: "Yuborildi", statusCancelled: "Bekor qilindi",
     queue: "Barcha buyurtmalar", queueNone: "Hech kim buyurtma bermagan.",
     queueNote: "Sovg‘ani Telegram orqali yuborgach, “Yuborildi” ni bosing.",
-    markSent: "Yuborildi", marked: "Buyurtma yopildi.", markFailed: "Belgilab bo‘lmadi — qayta urinib ko‘ring.",
+    markSent: "Yuborildi", marked: "Buyurtma yopildi va xabar yuborildi.", markFailed: "Belgilab bo‘lmadi — qayta urinib ko‘ring.",
+    sentMessage: (gift: string, tg: string) => `Sovg‘angiz yuborildi: ${gift}. Telegram: ${tg.startsWith("@") ? tg : `@${tg}`}. Kelmagan bo‘lsa shu yerga yozing.`,
     waiting: "kutilmoqda",
   },
   en: {
@@ -54,7 +56,8 @@ const T = {
     statusPending: "Pending", statusFulfilled: "Sent", statusCancelled: "Cancelled",
     queue: "All orders", queueNone: "Nobody has ordered yet.",
     queueNote: "Send the gift over Telegram, then press “Sent”.",
-    markSent: "Sent", marked: "Order closed.", markFailed: "Could not mark it — try again.",
+    markSent: "Sent", marked: "Order closed and the buyer told.", markFailed: "Could not mark it — try again.",
+    sentMessage: (gift: string, tg: string) => `Your gift is on its way: ${gift}. Telegram: ${tg.startsWith("@") ? tg : `@${tg}`}. Tell us here if it does not arrive.`,
     waiting: "waiting",
   },
 };
@@ -100,9 +103,13 @@ export function Shop({ lang, signed, authLoading, role = "user" }: { lang: Lang;
     setProbed(true);
   };
 
-  const markSent = async (id: string) => {
-    setBusy(id);
-    const ok = await fulfilOrder(id);
+  /* Closing an order is also telling somebody their gift is on its way: the
+     buyer cannot see this queue, so without the message the only thing that
+     changes for them is a word in a list they may never open again. */
+  const markSent = async (order: StaffOrder) => {
+    setBusy(order.id);
+    const ok = await fulfilOrder(order.id);
+    if (ok) await sendMessage(order.userId, t.sentMessage(order.slug, order.telegram), role === "owner");
     setMessage(ok ? t.marked : t.markFailed);
     await refresh();
     setBusy("");
@@ -291,7 +298,7 @@ export function Shop({ lang, signed, authLoading, role = "user" }: { lang: Lang;
                     </a>
                     <small className="mono">−{o.costCoins}</small>
                     {o.status === "pending" ? (
-                      <button className="ghost" onClick={() => void markSent(o.id)} disabled={busy === o.id}>{t.markSent}</button>
+                      <button className="ghost" onClick={() => void markSent(o)} disabled={busy === o.id}>{t.markSent}</button>
                     ) : (
                       <span className={`tag ${o.status === "fulfilled" ? "tag-solved" : ""}`}>
                         {o.status === "fulfilled" ? t.statusFulfilled : t.statusCancelled}
