@@ -247,7 +247,7 @@ cout<<r<<"\\n";`,
 
 /* ------------------------------------------------------------------ 1800 */
 P.push({
-  id: "B488", judge: "dp-longest-chain-of-pairs", topic: "dp", rating: 1800,
+  id: "B488", judge: "dp-longest-chain-of-pairs", topic: "dynamic-programming", rating: 1800,
   tag: "Sorting with dynamic programming", timeLimitMs: 1000,
   uz: "Juftliklardan eng uzun zanjir",
   en: "The longest chain of pairs",
@@ -383,7 +383,7 @@ cout<<total<<"\\n";`,
 
 /* ------------------------------------------------------------------ 2100 */
 P.push({
-  id: "C490", judge: "dp-weighted-interval-schedule", topic: "dp", rating: 2100,
+  id: "C490", judge: "dp-weighted-interval-schedule", topic: "dynamic-programming", rating: 2100,
   tag: "Binary search with dynamic programming", timeLimitMs: 2000,
   uz: "Eng foydali ishlar to‘plami",
   en: "The most profitable set of jobs",

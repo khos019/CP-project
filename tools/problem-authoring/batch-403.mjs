@@ -310,7 +310,7 @@ cout<<(sorted?0:n)<<"\\n";`,
 
 /* ------------------------------------------------------------------ 1700 */
 P.push({
-  id: "B409", judge: "dp-count-decodings", topic: "dp", rating: 1700,
+  id: "B409", judge: "dp-count-decodings", topic: "dynamic-programming", rating: 1700,
   tag: "Dynamic programming", timeLimitMs: 1000,
   uz: "Xabarni nechta usulda o‘qish mumkin",
   en: "How many ways the message can be read",
@@ -486,7 +486,7 @@ cout<<best<<"\\n";`,
 
 /* ------------------------------------------------------------------ 2200 */
 P.push({
-  id: "C412", judge: "dp-bitmask-count-matchings", topic: "dp", rating: 2200,
+  id: "C412", judge: "dp-bitmask-count-matchings", topic: "dynamic-programming", rating: 2200,
   tag: "Bitmask dynamic programming", timeLimitMs: 2000,
   uz: "To‘liq juftlashtirishlar soni",
   en: "The number of perfect matchings",

@@ -350,7 +350,7 @@ cout<<del<<"\\n";`,
 
 /* ------------------------------------------------------------------ 1900 */
 P.push({
-  id: "B420", judge: "dp-max-sum-no-two-adjacent-circle", topic: "dp", rating: 1900,
+  id: "B420", judge: "dp-max-sum-no-two-adjacent-circle", topic: "dynamic-programming", rating: 1900,
   tag: "Dynamic programming", timeLimitMs: 1000,
   uz: "Halqadagi qo‘shnisiz eng katta yig‘indi",
   en: "The largest sum with no two neighbours on a ring",

@@ -91,7 +91,7 @@ cout<<(n*a+d*n*(n-1))<<"\\n";`,
 
 /* ------------------------------------------------------------------ 1300 */
 P.push({
-  id: "B465", judge: "dp-min-steps-to-one", topic: "dp", rating: 1300,
+  id: "B465", judge: "dp-min-steps-to-one", topic: "dynamic-programming", rating: 1300,
   tag: "Dynamic programming", timeLimitMs: 1000,
   uz: "Birga tushish uchun eng kam qadam",
   en: "The fewest steps down to one",
@@ -302,7 +302,7 @@ cout<<sum<<"\\n";`,
 
 /* ------------------------------------------------------------------ 1800 */
 P.push({
-  id: "B469", judge: "dp-max-profit-two-trades", topic: "dp", rating: 1800,
+  id: "B469", judge: "dp-max-profit-two-trades", topic: "dynamic-programming", rating: 1800,
   tag: "Dynamic programming", timeLimitMs: 1000,
   uz: "Ikkita savdodagi eng katta foyda",
   en: "The largest profit from two trades",

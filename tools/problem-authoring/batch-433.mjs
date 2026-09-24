@@ -232,7 +232,7 @@ cout<<c<<"\\n";`,
 
 /* ------------------------------------------------------------------ 1700 */
 P.push({
-  id: "B438", judge: "dp-count-dice-sums", topic: "dp", rating: 1700,
+  id: "B438", judge: "dp-count-dice-sums", topic: "dynamic-programming", rating: 1700,
   tag: "Dynamic programming", timeLimitMs: 2000,
   uz: "Zarlar yig‘indisi nechta usulda chiqadi",
   en: "How many ways the dice add up",

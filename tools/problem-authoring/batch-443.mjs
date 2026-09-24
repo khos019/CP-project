@@ -217,7 +217,7 @@ cout<<total<<"\\n";`,
 
 /* ------------------------------------------------------------------ 1700 */
 P.push({
-  id: "B448", judge: "dp-max-sum-k-non-adjacent-pairs", topic: "dp", rating: 1700,
+  id: "B448", judge: "dp-max-sum-k-non-adjacent-pairs", topic: "dynamic-programming", rating: 1700,
   tag: "Dynamic programming", timeLimitMs: 1000,
   uz: "Qo‘shni bo‘lmagan uchta element",
   en: "Three elements that are not neighbours",
@@ -311,7 +311,7 @@ cout<<ans<<"\\n";`,
 
 /* ------------------------------------------------------------------ 2000 */
 P.push({
-  id: "C450", judge: "dp-max-subarray-one-deletion", topic: "dp", rating: 2000,
+  id: "C450", judge: "dp-max-subarray-one-deletion", topic: "dynamic-programming", rating: 2000,
   tag: "Dynamic programming", timeLimitMs: 1000,
   uz: "Bitta elementni tashlab yuborish mumkin bo‘lgan eng katta yig‘indi",
   en: "The largest stretch sum with one element dropped",

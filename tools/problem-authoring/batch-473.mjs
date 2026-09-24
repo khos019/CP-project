@@ -269,7 +269,7 @@ cout<<best<<"\\n";`,
 
 /* ------------------------------------------------------------------ 1700 */
 P.push({
-  id: "B478", judge: "dp-count-tilings-2xn", topic: "dp", rating: 1700,
+  id: "B478", judge: "dp-count-tilings-2xn", topic: "dynamic-programming", rating: 1700,
   tag: "Dynamic programming", timeLimitMs: 1000,
   uz: "2 × n maydonni qoplash",
   en: "Tiling a 2 by n board",

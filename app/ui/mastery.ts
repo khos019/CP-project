@@ -50,9 +50,25 @@ export function saveMasteryConfig(next:MasteryConfig){
 /* Back-compat: existing imports use MASTERY_CONFIG as a constant. */
 export const MASTERY_CONFIG=DEFAULT_MASTERY_CONFIG;
 
+/* Eleven problems were tagged "dp" while the roadmap they belong to is called
+   "dynamic-programming", so whoever solved them earned mastery in a track no
+   screen reads. Fold the stray bucket into the real one on read: the evidence
+   is already spent, and re-solving those problems would pay nothing. */
+function foldLegacyTopics(store:MasteryStore):MasteryStore{
+ const stray=store.scores["dp"];
+ if(stray===undefined&&!store.unlocks["dp"]&&!store.validated["dp"])return store;
+ const slug="dynamic-programming";
+ store.scores[slug]=Math.min(1000,(store.scores[slug]||0)+(stray||0));
+ store.unlocks[slug]=store.unlocks[slug]||!!store.unlocks["dp"];
+ store.validated[slug]=store.validated[slug]||!!store.validated["dp"];
+ delete store.scores["dp"];delete store.unlocks["dp"];delete store.validated["dp"];
+ writeScoped(KEY,JSON.stringify(store));
+ return store;
+}
+
 export function loadMastery():MasteryStore{
  if(typeof window==="undefined")return empty;
- try{const raw=readScoped(KEY);if(!raw)return empty;const parsed=JSON.parse(raw) as MasteryStore;return {scores:parsed.scores||{},evidence:parsed.evidence||{},unlocks:parsed.unlocks||{},validated:parsed.validated||{}}}catch{return empty}
+ try{const raw=readScoped(KEY);if(!raw)return empty;const parsed=JSON.parse(raw) as MasteryStore;return foldLegacyTopics({scores:parsed.scores||{},evidence:parsed.evidence||{},unlocks:parsed.unlocks||{},validated:parsed.validated||{}})}catch{return empty}
 }
 export function loadMasteryLog():MasteryEvent[]{
  if(typeof window==="undefined")return[];
