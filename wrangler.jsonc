@@ -6,6 +6,10 @@
     "nodejs_compat"
   ],
   "main": "./worker/index.ts",
+  "routes": [
+    { "pattern": "algoyol.uz", "custom_domain": true },
+    { "pattern": "www.algoyol.uz", "custom_domain": true }
+  ],
   "assets": {
     "directory": "dist/client",
     "not_found_handling": "none",
