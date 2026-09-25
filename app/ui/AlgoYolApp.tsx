@@ -579,6 +579,8 @@ const LAND={uz:{
  ctaInBody:"Yo‘l xaritangiz sizni kutmoqda. Tayyor bo‘lsangiz, duelda bilimingizni sinab ko‘ring.",
  ctaInPrimary:"O‘rganishni davom ettirish",
  ctaInSecondary:"Duel maydoni",
+ foundersTitle:"Asoschilar",
+ foundersLede:"AlgoYo‘lni ikki nafar olimpiada dasturchisi quradi. Bu yerdagi har bir dars, masala va duel qoidasi o‘sha tayyorgarlik tajribasidan chiqqan.",
 },en:{
  what:"AlgoYo‘l is a complete algorithms school in Uzbek. A structured roadmap, a check at every step, a real code judge, and live duels — from zero to olympiad level.",
  whyEyebrow:"Why AlgoYo‘l",
@@ -615,7 +617,44 @@ const LAND={uz:{
  ctaInBody:"Your roadmap is waiting. When you feel ready, put it to the test in the arena.",
  ctaInPrimary:"Continue learning",
  ctaInSecondary:"Duel arena",
+ foundersTitle:"Founders",
+ foundersLede:"AlgoYo‘l is built by two competitive programmers. Every lesson, problem and duel rule here comes out of that training.",
 }};
+
+/* The two people behind the platform, with what they have actually won.
+ *
+ * Kept here beside LAND rather than in the message catalogue because an award
+ * is a pair -- a rank and an event -- and splitting that pair across two JSON
+ * files would let a rank drift away from the event it belongs to. The `tone`
+ * only picks the colour of the rank chip; it carries no other meaning. */
+type Award={tone:"gold"|"silver"|"bronze";rank:{uz:string;en:string};event:{uz:string;en:string}};
+const FOUNDERS:{name:string;role:{uz:string;en:string};awards:Award[]}[]=[
+ {name:"Muxammadali",
+  role:{uz:"Hammuassis",en:"Co-founder"},
+  awards:[
+   {tone:"bronze",rank:{uz:"Bronza",en:"Bronze"},event:{uz:"Info Cup 2025",en:"Info Cup 2025"}},
+   {tone:"bronze",rank:{uz:"Bronza",en:"Bronze"},
+    event:{uz:"Al-Xorazmiy xalqaro matematika va informatika olimpiadasi",
+           en:"Al-Khwarizmi International Mathematics and Informatics Olympiad"}},
+   {tone:"gold",rank:{uz:"1-o‘rin",en:"1st place"},
+    event:{uz:"Respublika informatika olimpiadasi",en:"National Informatics Olympiad"}},
+   {tone:"silver",rank:{uz:"2-o‘rin",en:"2nd place"},
+    event:{uz:"Digital Generation tanlovi, respublika bosqichi",
+           en:"Digital Generation Contest, republican stage"}},
+  ]},
+ {name:"Ozodbek",
+  role:{uz:"Hammuassis",en:"Co-founder"},
+  awards:[
+   {tone:"silver",rank:{uz:"Kumush",en:"Silver"},
+    event:{uz:"Al-Xorazmiy xalqaro matematika va informatika olimpiadasi",
+           en:"Al-Khwarizmi International Mathematics and Informatics Olympiad"}},
+   {tone:"bronze",rank:{uz:"Bronza",en:"Bronze"},event:{uz:"Info Cup 2025",en:"Info Cup 2025"}},
+   {tone:"silver",rank:{uz:"2-o‘rin",en:"2nd place"},event:{uz:"MSITF",en:"MSITF"}},
+   {tone:"gold",rank:{uz:"1-o‘rin",en:"1st place"},event:{uz:"STEM Republic",en:"STEM Republic"}},
+   {tone:"bronze",rank:{uz:"3-o‘rin × 2",en:"3rd place × 2"},
+    event:{uz:"STEM Republic",en:"STEM Republic"}},
+  ]},
+];
 
 /* The explanation of what AlgoYo'l is and how it works is not marketing that
    stops being true once you register — the unlock rule and the mastery scale
@@ -716,6 +755,34 @@ function LandingBrowse({lang,go,openRoadmap}:{lang:Lang;go:(v:View)=>void;openRo
  </section>;
 }
 
+/* Who is behind this. It sits after the catalogue and before the call to
+   action: a visitor who has just seen what is on offer is the one asking who
+   made it, and the answer is the last thing they read before the sign-up. */
+function LandingFounders({lang}:{lang:Lang}){
+ const L=LAND[lang];
+ return <section className="lp-block">
+  <div className="section-head"><h2>{L.foundersTitle}</h2></div>
+  <p className="lp-lede muted">{L.foundersLede}</p>
+  <div className="founders">{FOUNDERS.map(f=>
+   <article className="founder" key={f.name}>
+    <div className="founder-head">
+     <span className="founder-mark" aria-hidden>{f.name.slice(0,1)}</span>
+     <span className="founder-who">
+      <b>{f.name}</b>
+      <span className="muted">{f.role[lang]}</span>
+     </span>
+    </div>
+    <ul className="founder-awards">{f.awards.map((a,i)=>
+     <li key={`${a.event[lang]}-${i}`}>
+      <span className={`award-rank award-${a.tone}`}>{a.rank[lang]}</span>
+      <span className="award-event">{a.event[lang]}</span>
+     </li>)}
+    </ul>
+   </article>)}
+  </div>
+ </section>;
+}
+
 function LandingCta({lang,go,signed}:{lang:Lang;go:(v:View)=>void;signed:boolean}){
  const L=LAND[lang];
  return <section className="lp-cta">
@@ -747,6 +814,7 @@ function Home({lang,go,openRoadmap}:{lang:Lang,go:(v:View)=>void,openRoadmap:(sl
   </section>
   <LandingLoop lang={lang}/>
   <LandingBrowse lang={lang} go={go} openRoadmap={openRoadmap}/>
+  <LandingFounders lang={lang}/>
   <LandingCta lang={lang} go={go} signed={false}/>
  </>;
 }
