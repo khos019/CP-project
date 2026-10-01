@@ -2409,7 +2409,7 @@ function NoteBand({ note, band }: { note: string; band: number }) {
   return <>
     <line x1="60" x2="460" y1="152.5" y2="152.5" stroke={DC.dim} strokeWidth="1" strokeDasharray="2 4" />
     {lines.map((line, i) =>
-      T(260, top + 12 + i * NOTE_LINE, line, DC.lime, fit(line, NOTE_MAX_W, NOTE_SIZE, 10)))}
+      <g key={i}>{T(260, top + 12 + i * NOTE_LINE, line, DC.lime, fit(line, NOTE_MAX_W, NOTE_SIZE, 10))}</g>)}
   </>;
 }
 
