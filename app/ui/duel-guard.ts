@@ -37,6 +37,16 @@
  * while you are away. It is therefore checked twice — once on a timer, in case
  * the browser does run it, and once on return, by measuring how long the
  * absence actually lasted. The second check is the one that always works.
+ *
+ * A TAB THAT NEVER SHOWED THE DUEL DOES NOT POLICE IT. `match_found` reaches
+ * every open tab of the site and each one mounts the arena. A second tab left
+ * in the background used to see `document.hidden`, start the countdown the
+ * moment the duel began and forfeit it ten seconds later -- while the player
+ * sat in the first tab reading problem A (seven duels lost that way on
+ * 2026-09-28, each about eleven seconds long, none with a submission). So a
+ * tab is only "armed" once the duel has actually been on screen in it, and an
+ * absence is forgiven while another tab of the site is showing the same duel
+ * in the foreground: the player has not left, they are over there.
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -54,6 +64,10 @@ export type TabGuard = {
   usedSeconds: number;
   clearStray: () => void;
 };
+
+/* How old another tab's "the duel is on screen here" stamp may be and still
+   count. Stamps are written once a second by a foreground tab only. */
+const WATCH_FRESH_MS = 2500;
 
 export function useTabGuard({
   active, graceMs, onLose, storageKey,
@@ -99,32 +113,66 @@ export function useTabGuard({
     spent.current = readSpent();
     setUsedMs(spent.current);
 
+    /* Which tab has the duel in front of the player right now. localStorage,
+       because it is the one store every tab of the site shares; the id tells a
+       tab's own stamp from somebody else's. */
+    const watchKey = storageKey ? `${storageKey}:watch` : null;
+    const tabId = Math.random().toString(36).slice(2);
+    const stampWatching = () => {
+      if (!watchKey) return;
+      try { window.localStorage.setItem(watchKey, `${tabId}:${Date.now()}`); } catch { /* storage blocked */ }
+    };
+    const watchedElsewhere = () => {
+      if (!watchKey) return false;
+      try {
+        const [id, at] = (window.localStorage.getItem(watchKey) || "").split(":");
+        return !!id && id !== tabId && Date.now() - Number(at) < WATCH_FRESH_MS;
+      } catch { return false; }
+    };
+    // Armed once the duel has been on screen here. A tab that mounted in the
+    // background has shown the player nothing, so it has nothing to enforce.
+    let armed = !document.hidden;
+
     const give = (seconds: number) => {
       if (lost.current) return;
       lost.current = true;
       lose.current(seconds);
     };
 
-    const leave = () => {
-      if (leftAt.current !== null || lost.current) return;
-      leftAt.current = Date.now();
-      setAway(true);
-      setAwaySeconds(0);
+    const startTimer = () => {
       // Best effort: a hidden tab's timers are throttled and this may fire late
       // or not at all. `back()` is what actually guarantees the rule.
       // It fires when what is LEFT of the allowance runs out.
       timer.current = window.setTimeout(() => {
+        // The player is in another tab of this same duel: nothing was spent,
+        // and the absence starts over from now.
+        if (watchedElsewhere()) {
+          if (leftAt.current !== null) leftAt.current = Date.now();
+          startTimer();
+          return;
+        }
         writeSpent(graceMs);
         give(Math.round(graceMs / 1000));
-      }, Math.max(0, graceMs - spent.current));
+      }, Math.max(1000, graceMs - spent.current));
+    };
+
+    const leave = () => {
+      if (!armed || leftAt.current !== null || lost.current) return;
+      leftAt.current = Date.now();
+      setAway(true);
+      setAwaySeconds(0);
+      startTimer();
     };
 
     const back = () => {
+      armed = true;
       const at = leftAt.current;
       leftAt.current = null;
       setAway(false);
       if (timer.current !== null) { window.clearTimeout(timer.current); timer.current = null; }
       if (at === null || lost.current) return;
+      // Came here straight from another tab that was showing this duel.
+      if (watchedElsewhere()) { stampWatching(); return; }
       const gone = Date.now() - at;
       spent.current += gone;
       writeSpent(spent.current);
@@ -152,14 +200,17 @@ export function useTabGuard({
         const now = Date.now() - leftAt.current;
         setAwaySeconds(Math.round(now / 1000));
         setUsedMs(spent.current + now);
+      } else if (armed && !document.hidden && document.hasFocus()) {
+        stampWatching();
       }
     }, 1000);
 
     // A reload that lands with the allowance already gone.
     if (spent.current >= graceMs) give(Math.round(spent.current / 1000));
 
-    // Started while already away — a duel accepted from a background tab.
-    if (document.hidden) leave();
+    // Mounted in the foreground: say so at once rather than a second from now,
+    // so a background tab's first look already finds this one watching.
+    if (armed && document.hasFocus()) stampWatching();
 
     return () => {
       document.removeEventListener("visibilitychange", onVisibility);
