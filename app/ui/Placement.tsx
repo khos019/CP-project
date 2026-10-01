@@ -28,6 +28,7 @@ import { catalogue } from "./i18n";
 import { BrandMark } from "./BrandMark";
 import { roadmapCatalog } from "./roadmap-data";
 import { loadMasteryConfig, loadPlacement, savePlacement, useMastery } from "./mastery";
+import { markSettledLocally, pushPlacementState } from "./placement-state";
 import { readLocal } from "./progress";
 import { roadmapStatus } from "./RoadmapHub";
 import {
@@ -157,6 +158,10 @@ export function Placement({
       at: Date.now(),
       seen: shown,
     });
+    /* The offer banner is done with this learner now, on every device they
+       ever sign in from — see placement-state.ts. */
+    markSettledLocally();
+    void pushPlacementState({ taken: true, level: estimateRating(list) });
     setSeen((prev) => new Set([...prev, ...shown]));
     setFinished(list);
     setStep("result");
@@ -365,6 +370,12 @@ export function Placement({
     if (next.has(s)) next.delete(s); else next.add(s);
     return next;
   });
+  const startFresh = () => {
+    markSettledLocally();
+    void pushPlacementState({ dismissed: true });
+    window.dispatchEvent(new Event("algoyol-progress"));
+    onFinish();
+  };
   const rule = (text: string, vars: Record<string, number>): ReactNode =>
     Object.entries(vars).reduce((s, [k, v]) => s.replace(`{${k}}`, String(v)), text);
 
@@ -422,7 +433,10 @@ export function Placement({
         </div>
 
         <button className="primary pl-cta" disabled={count === 0} onClick={begin}>{t.start}</button>
-        <button className="secondary pl-cta" onClick={onFinish}>{t.fresh}</button>
+        {/* "I'll start from zero" is an answer, not a postponement: the test is
+            settled and the banner stops offering it. "Later" is the one exit
+            that leaves the offer standing. */}
+        <button className="secondary pl-cta" onClick={startFresh}>{t.fresh}</button>
         <button className="lang pl-cta" onClick={onFinish}>{t.skip}</button>
       </div>
     </div>
