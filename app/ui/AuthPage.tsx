@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { BrandMark } from "./BrandMark";
 import { RoadmapGraph, useSpine } from "./RoadmapGraph";
 import { fetchAuthProviders, supabaseConfig, type AuthProviders } from "./session";
+import { emailProblem } from "./email-check";
 
 type Lang = "uz" | "en";
 type Mode = "login" | "signup" | "confirm" | "reset";
@@ -57,6 +58,11 @@ const L = {
     offline: "Xizmatga ulanib bo‘lmadi. Internetni tekshiring.",
     guestHint: "Ro‘yxatdan o‘tmasdan ham darslarni ko‘rishingiz mumkin — progress esa faqat hisobingizda saqlanadi.",
     googleOff: "Google orqali kirish hozircha yoqilmagan. Email va parol bilan davom eting.",
+    googleWhy: "Eng tez yo‘l: parol ham, tasdiqlash xati ham kerak emas.",
+    withEmail: "Email va parol bilan ro‘yxatdan o‘tish",
+    errTypo: (email: string) => `Manzilda xato bor shekilli. ${email} demoqchimisiz?`,
+    errDisposable: "Vaqtinchalik pochta qabul qilinmaydi — doimiy email kiriting yoki Google orqali kiring.",
+    errGmail: "Bunday Gmail manzili bo‘lishi mumkin emas. @ dan oldingi qismni tekshiring.",
   },
   en: {
     welcome: "Welcome back",
@@ -99,6 +105,11 @@ const L = {
     offline: "Could not reach the service. Check your connection.",
     guestHint: "You can browse the lessons without an account — progress is only saved once you sign in.",
     googleOff: "Google sign-in is not enabled yet. Continue with email and password.",
+    googleWhy: "The quickest way: no password and no confirmation email.",
+    withEmail: "Register with email and password",
+    errTypo: (email: string) => `That address looks mistyped. Did you mean ${email}?`,
+    errDisposable: "Temporary inboxes are not accepted — use a permanent email or continue with Google.",
+    errGmail: "That cannot be a Gmail address. Check the part before the @.",
   },
 };
 
@@ -127,10 +138,16 @@ export function AuthPage({
   const firstField = useRef<HTMLInputElement>(null);
   // null = still asking the backend which providers it accepts
   const [providers, setProviders] = useState<AuthProviders | null>(null);
+  /* A new account through Google sends no email at all, so it cannot bounce
+     and there is nothing to confirm. While Google is on, registering leads
+     with it and the email form is one click further away. Signing in is left
+     alone: somebody who already has a password should see where it goes. */
+  const [emailOpen, setEmailOpen] = useState(false);
+  const formHidden = mode === "signup" && providers?.google === true && !emailOpen;
 
   useEffect(() => {
     firstField.current?.focus();
-  }, [mode]);
+  }, [mode, formHidden]);
 
   useEffect(() => {
     let live = true;
@@ -152,6 +169,13 @@ export function AuthPage({
   const validate = () => {
     const next: Record<string, string> = {};
     if (!EMAIL_RE.test(email.trim())) next.email = t.errEmail;
+    else if (mode === "signup") {
+      // Only a new address is questioned — see email-check.ts.
+      const problem = emailProblem(email.trim());
+      if (problem?.kind === "typo") next.email = t.errTypo(problem.suggestion);
+      else if (problem?.kind === "disposable") next.email = t.errDisposable;
+      else if (problem?.kind === "gmail") next.email = t.errGmail;
+    }
     if (mode !== "reset") {
       if (password.length < MIN_PASSWORD) next.password = t.errPassword;
       if (mode === "signup") {
@@ -333,13 +357,22 @@ export function AuthPage({
             </svg>
             {t.google}
           </button>
+          {formHidden ? (
+            <>
+              <p className="muted auth-hint">{t.googleWhy}</p>
+              <button type="button" className="lang auth-switch" onClick={() => setEmailOpen(true)}>
+                {t.withEmail}
+              </button>
+            </>
+          ) : (
           <div className="auth-divider">
             <span>{t.orEmail}</span>
           </div>
+          )}
             </>
           )}
 
-          <form onSubmit={authenticate} noValidate>
+          {!formHidden && <form onSubmit={authenticate} noValidate>
             {mode === "signup" && (
               <div className="field">
                 <label htmlFor="auth-username">{t.username}</label>
@@ -450,7 +483,7 @@ export function AuthPage({
             <button disabled={busy} className="primary auth-submit" type="submit">
               {busy ? t.wait : mode === "login" ? t.signIn : t.signUp}
             </button>
-          </form>
+          </form>}
 
           <button className="lang auth-switch" onClick={() => switchMode(mode === "login" ? "signup" : "login")}>
             {mode === "login" ? t.noAccount : t.haveAccount}
