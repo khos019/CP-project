@@ -3703,6 +3703,11 @@ a.editor-escape:hover{color:var(--ink);border-color:var(--line-strong);backgroun
  .actions>.primary{white-space:nowrap}
 }
 
+.leader-pager{display:flex;align-items:center;justify-content:center;gap:16px;margin-top:22px;font-size:14px;font-weight:650}
+.leader-pager button:disabled{opacity:.45;cursor:default}
+.leader-mine{border:0;cursor:pointer}
+.leader-mine:hover{color:var(--ink)}
+
 /* ------------------------------------------------------------ large monitors
    The site is drawn for a laptop: a 1240px column and pixel-sized type. On a
    desktop monitor that column sat in the middle third of the screen with

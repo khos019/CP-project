@@ -45,7 +45,7 @@ import { FriendsScreen, ProblemSubmissions, SiteSubmissions, SubmissionsScreen }
 import { DuelHistoryScreen } from "./DuelHistory";
 import { readDraft, writeDraft } from "./drafts";
 import {
- GUEST_SCOPE, adoptGuestInto, adoptLegacyInto, clearSession, dropScopeData, ensureFreshToken, fetchLeaderboard,
+ GUEST_SCOPE, adoptGuestInto, adoptLegacyInto, clearSession, dropScopeData, ensureFreshToken, fetchLeaderboard, fetchLadderRank, LEADER_PAGE,
  fetchLearnerCount,
  fetchProfile, fetchUnreadCount, readScoped, readStoredUserId, readToken, removeScoped, searchPeople, setScope,
  verifyStoredSession,
@@ -1156,20 +1156,32 @@ function Leaderboard({lang,me,signed,onOpenPerson}:{lang:Lang;me:Profile|null;si
  const [query,setQuery]=useState(""),[found,setFound]=useState<{q:string;rows:LeaderRow[]}|null>(null);
  const [mode,setMode]=useState<"top"|"friends">("top");
  const [friends,setFriends]=useState<FriendRow[]|null>(null);
- useEffect(()=>{let live=true;fetchLeaderboard(50).then(list=>{if(!live)return;if(!list){setState("error");return}setRows(list);setState("ready")});return()=>{live=false}},[]);
+ // The ladder is read a page at a time. It used to be the first fifty rows and
+ // nothing else, which was the whole table until the table grew past fifty —
+ // and then everybody below that line simply was not on the leaderboard.
+ const [page,setPage]=useState(0),[total,setTotal]=useState(0);
+ useEffect(()=>{let live=true;fetchLeaderboard(page).then(got=>{if(!live)return;if(!got){setState("error");return}setRows(got.rows);setTotal(got.total);setState("ready")});return()=>{live=false}},[page]);
+ const pages=Math.max(1,Math.ceil(total/LEADER_PAGE));
+ const turn=(to:number)=>{setPage(Math.min(pages-1,Math.max(0,to)));window.scrollTo({top:0})};
+ // My own place is asked of the database, not read off the page on screen.
+ const [myPlace,setMyPlace]=useState<number|null>(null);
+ const meKey=me?`${me.username}|${me.duel_rating}|${me.solved_count}`:"";
+ useEffect(()=>{if(!meKey)return;const [username,r,s]=meKey.split("|");let live=true;
+  void fetchLadderRank({username,duel_rating:Number(r),solved_count:Number(s)}).then(n=>{if(live)setMyPlace(n)});
+  return()=>{live=false}},[meKey]);
  // Typing is not a query. The search waits for a pause, so a five-letter
  // handle costs one request rather than five.
  useEffect(()=>{const q=query.trim();if(!q)return;
   const id=window.setTimeout(()=>{void searchPeople(q).then(list=>setFound({q,rows:list||[]}))},250);
   return()=>window.clearTimeout(id)},[query]);
  useEffect(()=>{if(mode!=="friends"||!signed)return;let live=true;void fetchFriends().then(list=>{if(live)setFriends(list||[])});return()=>{live=false}},[mode,signed]);
- const myRank=me&&rows?rows.findIndex(r=>r.id===me.id):-1;
  const searchOn=query.trim().length>0;
  const searching=searchOn&&found?.q!==query.trim();
  // A rank is a position in the whole ladder, so it is shown only where it is
  // actually known: inventing "#1" for the best of three search hits would be a
  // different number with the same shape.
- const rankOf=(id:string)=>{const i=rows?rows.findIndex(r=>r.id===id):-1;return i>=0?i+1:null};
+ const rankOf=(id:string)=>{const i=rows?rows.findIndex(r=>r.id===id):-1;return i>=0?page*LEADER_PAGE+i+1:null};
+ const plain=!searchOn&&mode==="top";
  const list:LeaderRow[]|null=searchOn?(found&&found.q===query.trim()?found.rows:null)
   :mode==="friends"?(friends?friends.map(f=>({id:f.id,username:f.username,display_name:f.display_name,duel_rating:f.duel_rating,solved_count:f.solved_count})):null)
   :rows;
@@ -1189,7 +1201,7 @@ function Leaderboard({lang,me,signed,onOpenPerson}:{lang:Lang;me:Profile|null;si
  const empty=lang==="uz"
   ?(searchOn?"Bunday foydalanuvchi topilmadi.":mode==="friends"?"Do‘stlar ro‘yxati bo‘sh. Kimningdir profiliga kirib, ism yonidagi ☆ ni bosing.":"Hali reytingda hech kim yo‘q. Birinchi bo‘ling!")
   :(searchOn?"No such user.":mode==="friends"?"No friends yet. Open somebody's profile and press the ☆ beside their name.":"Nobody is ranked yet. Be the first.");
- return <><div className="page-head"><div><p className="eyebrow">ELO · K=32</p><h1 className="page-title">{tr(lang,"algoYolApp.duel_reytingi")}</h1><p className="muted">{tr(lang,"algoYolApp.reyting_duel_natijalaridan_hisoblanadi_oda")}</p></div>{me&&myRank>=0&&<span className="tag">{tr(lang,"algoYolApp.sizning_orningiz")} #{myRank+1}</span>}</div>
+ return <><div className="page-head"><div><p className="eyebrow">ELO · K=32</p><h1 className="page-title">{tr(lang,"algoYolApp.duel_reytingi")}</h1><p className="muted">{tr(lang,"algoYolApp.reyting_duel_natijalaridan_hisoblanadi_oda")}</p></div>{me&&myPlace!==null&&<button type="button" className="tag leader-mine" onClick={()=>{setQuery("");setMode("top");turn(Math.floor((myPlace-1)/LEADER_PAGE))}}>{tr(lang,"algoYolApp.sizning_orningiz")} #{myPlace}</button>}</div>
  <div className="leader-tools">
   <input className="leader-search" type="search" value={query} onChange={e=>setQuery(e.target.value)} placeholder={tr(lang,"algoYolApp.nickname_yoki_ism_boyicha_qidirish")} aria-label={tr(lang,"algoYolApp.foydalanuvchi_qidirish")}/>
   {signed&&!searchOn&&<div className="leader-modes">
@@ -1200,7 +1212,12 @@ function Leaderboard({lang,me,signed,onOpenPerson}:{lang:Lang;me:Profile|null;si
  {(state==="loading"||(searchOn&&searching)||(!searchOn&&mode==="friends"&&friends===null))&&<div className="screen-state" role="status"><span className="spinner" aria-hidden/><p className="muted">{tr(lang,"algoYolApp.yuklanmoqda")}</p></div>}
  {state==="error"&&!searchOn&&<div className="panel"><div className="notice notice-error">{tr(lang,"algoYolApp.reytingni_yuklab_bolmadi_keyinroq_urinib_k")}</div></div>}
  {list&&!(searchOn&&searching)&&(list.length?<div className="leaderboard">{list.map(x=>{const mine=me?.id===x.id;const name=x.display_name?.trim()||x.username;const rank=rankOf(x.id);return <button type="button" className={`leader-row ${mine?"me":""}`} key={x.id} onClick={()=>onOpenPerson(x.username)} title={lang==="uz"?`${name} profilini ochish`:`Open ${name}'s profile`}><span className="rank">{rank?`#${rank}`:"—"}</span><span className="leader-who"><b>{name}<OnlineDot online={signed&&online.has(x.id)} lang={lang} label={name}/>{mine&&<span className="tag tag-you">{tr(lang,"algoYolApp.siz")}</span>}</b><span className="muted">@{x.username}</span></span><span className="tag">{x.solved_count} AC</span><span className="rating">{x.duel_rating}</span></button>})}</div>
- :<div className="screen-state panel"><p className="muted">{empty}</p></div>)}</>;
+ :<div className="screen-state panel"><p className="muted">{empty}</p></div>)}
+ {plain&&state==="ready"&&pages>1&&<nav className="leader-pager" aria-label={lang==="uz"?"Reyting sahifalari":"Leaderboard pages"}>
+  <button type="button" className="secondary" disabled={page===0} onClick={()=>turn(page-1)}>← {lang==="uz"?"Oldingi":"Previous"}</button>
+  <span className="muted">{page*LEADER_PAGE+1}–{Math.min(total,(page+1)*LEADER_PAGE)} / {total}</span>
+  <button type="button" className="secondary" disabled={page>=pages-1} onClick={()=>turn(page+1)}>{lang==="uz"?"Keyingi":"Next"} →</button>
+ </nav>}</>;
 }
 
 function Admin({lang,profile}:{lang:Lang,profile:Profile}){

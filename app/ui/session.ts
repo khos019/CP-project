@@ -495,17 +495,45 @@ export async function fetchOwnerStats(): Promise<
    profiles are public by design — so a guest sees a genuine ranking rather
    than a fabricated row claiming to be them. */
 export type LeaderRow = { id: string; username: string; display_name: string; duel_rating: number; solved_count: number };
-export async function fetchLeaderboard(limit = 50): Promise<LeaderRow[] | null> {
+/* One page of the ladder, and how long the ladder is. The order ends on the
+   username so it is total: most of a young ladder sits on exactly 1200, and
+   without a last tie-break two pages could show the same person or skip one. */
+export const LEADER_PAGE = 50;
+export async function fetchLeaderboard(page = 0): Promise<{ rows: LeaderRow[]; total: number } | null> {
   const { url, key } = supabaseConfig();
   if (!url || !key) return null;
   try {
     const response = await fetch(
-      `${url}/rest/v1/profiles?select=id,username,display_name,duel_rating,solved_count&order=duel_rating.desc,solved_count.desc&limit=${limit}`,
-      { headers: { apikey: key } },
+      `${url}/rest/v1/profiles?select=id,username,display_name,duel_rating,solved_count&order=duel_rating.desc,solved_count.desc,username.asc&limit=${LEADER_PAGE}&offset=${page * LEADER_PAGE}`,
+      { headers: { apikey: key, Prefer: "count=exact" } },
     );
     if (!response.ok) return null;
     const rows = (await response.json()) as LeaderRow[];
-    return Array.isArray(rows) ? rows : null;
+    if (!Array.isArray(rows)) return null;
+    // "0-49/125" — the part after the slash is the whole table.
+    const total = Number((response.headers.get("content-range") || "").split("/")[1]);
+    return { rows, total: Number.isFinite(total) ? total : page * LEADER_PAGE + rows.length };
+  } catch {
+    return null;
+  }
+}
+
+/* Where one person stands on that same ladder: everybody the order above puts
+   ahead of them, counted by the database, plus one. Asked separately because
+   the person may not be on the page being looked at. */
+export async function fetchLadderRank(who: { username: string; duel_rating: number; solved_count: number }): Promise<number | null> {
+  const { url, key } = supabaseConfig();
+  if (!url || !key) return null;
+  const r = Math.round(who.duel_rating), s = Math.round(who.solved_count);
+  if (!Number.isFinite(r) || !Number.isFinite(s) || !/^[a-zA-Z0-9_]+$/.test(who.username)) return null;
+  try {
+    const ahead = `(duel_rating.gt.${r},and(duel_rating.eq.${r},solved_count.gt.${s}),and(duel_rating.eq.${r},solved_count.eq.${s},username.lt.${who.username}))`;
+    const response = await fetch(`${url}/rest/v1/profiles?select=id&or=${encodeURIComponent(ahead)}&limit=1`, {
+      headers: { apikey: key, Prefer: "count=exact" },
+    });
+    if (!response.ok) return null;
+    const count = Number((response.headers.get("content-range") || "").split("/")[1]);
+    return Number.isFinite(count) ? count + 1 : null;
   } catch {
     return null;
   }
