@@ -51,8 +51,15 @@
  *
  * Owner, allowance spent and the open absence live in localStorage under one
  * key per duel -- the one store every tab shares, and one that survives a
- * reload or a closed tab, so neither gives the allowance back. A reload does
- * spend the second or two it takes: the duel was not on screen for it.
+ * reload or a closed tab, so neither gives the allowance back.
+ *
+ * A RELOAD OF THE DUEL TAB IS FREE. The page is gone for the second or two it
+ * takes, but the player is looking at that tab the whole time, not at anything
+ * else -- and on a slow connection a reload ate most of the allowance. It is
+ * free only when it really is one: the navigation says "reload", this very tab
+ * left the marker (sessionStorage survives a reload of one tab and nothing
+ * else), the page came back in front and focused, and quickly. Close-and-
+ * reopen, or switching away while it loads, is charged like any absence.
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -83,7 +90,12 @@ type Shared = {
   spent: number;
   /** When the owner's current absence began; null while it is on screen. */
   leftAt: number | null;
+  /** When the owner's page unloaded, if it did; the gap from here is the reload. */
+  pausedAt: number | null;
 };
+
+/* The longest a reload may take and still be forgiven. */
+const RELOAD_FREE_MS = 15_000;
 
 export function useTabGuard({
   active, graceMs, onLose, storageKey,
@@ -124,7 +136,8 @@ export function useTabGuard({
     // two tabs answering to one id would both believe they own the duel.
     const tabId = Math.random().toString(36).slice(2);
     let mine = false;
-    let memory: Shared = { owner: null, spent: 0, leftAt: null };
+    let memory: Shared = { owner: null, spent: 0, leftAt: null, pausedAt: null };
+    const reloadKey = storageKey ? `${storageKey}:reload` : null;
 
     const read = (): Shared => {
       if (!storageKey) return { ...memory };
@@ -135,6 +148,7 @@ export function useTabGuard({
             owner: typeof v.owner === "string" ? v.owner : null,
             spent: Math.max(0, Number(v.spent) || 0),
             leftAt: typeof v.leftAt === "number" ? v.leftAt : null,
+            pausedAt: typeof v.pausedAt === "number" ? v.pausedAt : null,
           };
         }
       } catch { /* storage blocked or garbled */ }
@@ -165,12 +179,19 @@ export function useTabGuard({
       setElsewhere(true);
     };
 
-    const claim = () => {
+    const claim = (reloaded = false) => {
       const s = read();
+      const now = Date.now();
       // Whatever absence the previous owner left open is spent now: from the
       // moment it began until this tab took over, the duel was on no screen.
-      if (s.leftAt !== null) s.spent += Math.max(0, Date.now() - s.leftAt);
-      write({ owner: tabId, spent: s.spent, leftAt: null });
+      // A forgiven reload is charged only for what came before the unload.
+      if (reloaded && s.pausedAt !== null) {
+        if (s.leftAt !== null) s.spent += Math.max(0, s.pausedAt - s.leftAt);
+      } else {
+        const from = s.leftAt ?? s.pausedAt;
+        if (from !== null) s.spent += Math.max(0, now - from);
+      }
+      write({ owner: tabId, spent: s.spent, leftAt: null, pausedAt: null });
       mine = true;
       stopTimer();
       leftAt.current = null;
@@ -180,7 +201,7 @@ export function useTabGuard({
       setElsewhere(false);
       if (s.spent >= graceMs) give(Math.round(s.spent / 1000));
     };
-    claimRef.current = claim;
+    claimRef.current = () => claim();
 
     const stillMine = () => {
       if (!mine) return false;
@@ -260,13 +281,25 @@ export function useTabGuard({
       else setElsewhere(s.owner !== null && s.owner !== tabId);
     };
 
-    // The tab is closing or reloading. The duel goes free for the next tab to
-    // claim; the absence stays open and is charged to that claim.
+    // Leaving the arena without leaving the tab. The duel goes free for the
+    // next tab to claim; the absence stays open and is charged to that claim.
     const free = () => {
       const s = read();
       if (s.owner === tabId) write({ ...s, owner: null, leftAt: s.leftAt ?? Date.now() });
     };
-    const onPageHide = () => { if (mine) free(); };
+    // The tab is closing or reloading -- this event cannot tell which. Unloading
+    // itself raises visibilitychange and blur just before, so an absence that
+    // began in the last half second is the unload, not the player leaving. The
+    // marker in sessionStorage is what lets the reloaded page prove it is this tab.
+    const onPageHide = () => {
+      if (!mine) return;
+      const s = read();
+      if (s.owner !== tabId) return;
+      const now = Date.now();
+      const real = leftAt.current !== null && now - leftAt.current > 500 ? s.leftAt : null;
+      write({ ...s, owner: null, leftAt: real, pausedAt: now });
+      if (reloadKey) try { window.sessionStorage.setItem(reloadKey, String(now)); } catch { /* storage blocked */ }
+    };
 
     document.addEventListener("visibilitychange", onVisibility);
     window.addEventListener("blur", onBlur);
@@ -289,7 +322,20 @@ export function useTabGuard({
     spent.current = first.spent;
     setUsedMs(first.spent);
     if (first.owner !== null) setElsewhere(true);
-    else if (!document.hidden) claim();
+    else if (!document.hidden) {
+      let marker: string | null = null;
+      try {
+        if (reloadKey) { marker = window.sessionStorage.getItem(reloadKey); window.sessionStorage.removeItem(reloadKey); }
+      } catch { /* storage blocked */ }
+      const nav = performance.getEntriesByType?.("navigation")[0] as PerformanceNavigationTiming | undefined;
+      claim(
+        first.pausedAt !== null
+        && nav?.type === "reload"
+        && marker === String(first.pausedAt)
+        && document.hasFocus()
+        && Date.now() - first.pausedAt < RELOAD_FREE_MS,
+      );
+    }
     // A reload that lands with the allowance already gone.
     if (first.spent >= graceMs) give(Math.round(first.spent / 1000));
 
