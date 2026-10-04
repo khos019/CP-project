@@ -49,8 +49,8 @@ const STARTER: Record<CodeLang, string> = {
 /* How much absence a whole duel forgives, summed over every trip away. See
    app/ui/duel-guard.ts for why this is not zero: browsers raise blur and visibility events for notifications, the
    address bar and OS popups, and none of those are somebody reading an
-   editorial. Ten seconds is far shorter than looking anything up. */
-const AWAY_GRACE_MS = 10_000;
+   editorial. Five seconds is far shorter than looking anything up. */
+const AWAY_GRACE_MS = 5_000;
 
 const clock = (total: number) =>
   `${String(Math.floor(Math.max(0, total) / 60)).padStart(2, "0")}:${String(Math.floor(Math.max(0, total)) % 60).padStart(2, "0")}`;
