@@ -96,6 +96,10 @@ const T = {
       `${s} soniya g‘oyib bo‘ldingiz — bu ${n}-marta. Jami ${used} / ${g} soniya ishlatildi; ${g} soniyaga yetsa duel avtomatik yutqaziladi.`,
     strayOk: "Tushunarli, davom etaman",
     strayCount: (n: number, used: number, g: number) => `${n} marta chiqdingiz · ${used}/${g} s`,
+    elsewhereTitle: "Duel boshqa tabda ochiq",
+    elsewhereBody: (used: number, g: number) =>
+      `Duel faqat bitta tabda o‘ynaladi. Bu yerda o‘tgan vaqt ham chiqib ketish hisoblanadi (${used} / ${g} soniya ishlatildi).`,
+    elsewhereGo: "Shu tabda davom ettirish",
     awayNow: "Duelga qayting",
     lostByLeaving: "Duel tabini tashlab ketganingiz uchun mag‘lub bo‘ldingiz.",
     modeBot: "AI bilan duel", modeHuman: "Reytingli duel", test: "test",
@@ -129,6 +133,10 @@ const T = {
       `You were away ${s}s — that is time ${n}. ${used} of ${g} seconds used in total; reach ${g} and the duel is forfeited automatically.`,
     strayOk: "Understood, carry on",
     strayCount: (n: number, used: number, g: number) => `left ${n} times · ${used}/${g} s`,
+    elsewhereTitle: "The duel is open in another tab",
+    elsewhereBody: (used: number, g: number) =>
+      `A duel is played in one tab only. Time spent here counts as time away (${used} of ${g} seconds used).`,
+    elsewhereGo: "Continue in this tab",
     awayNow: "Come back to the duel",
     lostByLeaving: "You lost because you left the duel tab.",
     modeBot: "AI duel", modeHuman: "Rated duel", test: "test",
@@ -531,9 +539,24 @@ function Arena({
         {guard.strays > 0 && <em className="duel-stray-count">{t.strayCount(guard.strays, guard.usedSeconds, Math.round(AWAY_GRACE_MS / 1000))}</em>}
       </div>
 
+      {/* Another tab is playing this duel. This one hides it and says where it
+          is: reading the problem here would be the same as reading it on any
+          other site, and the time is charged the same way. */}
+      {guard.elsewhere && (
+        <div className="challenge-backdrop" role="alertdialog" aria-modal="true">
+          <div className="challenge-card">
+            <p className="eyebrow stray-title">⚠ {t.elsewhereTitle}</p>
+            <p className="stray-body">{t.elsewhereBody(guard.usedSeconds, Math.round(AWAY_GRACE_MS / 1000))}</p>
+            <div className="match-actions">
+              <button className="primary" onClick={guard.takeOver}>{t.elsewhereGo}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Back inside the grace period. Nothing has happened yet — this is the
           warning that says what nearly did. */}
-      {guard.lastStray !== null && !guard.away && (
+      {guard.lastStray !== null && !guard.away && !guard.elsewhere && (
         <div className="challenge-backdrop" role="alertdialog" aria-modal="true">
           <div className="challenge-card">
             <p className="eyebrow stray-title">⚠ {t.strayTitle}</p>
