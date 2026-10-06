@@ -326,6 +326,15 @@ log(`style fallbacks: ${fallbacks}, rejected attempts dropped: ${dropped}`);
 
 // 6. Rows, exactly as bank_submissions will hold them.
 const maxInput = (key) => Math.max(...tests[key].map((t) => t.stdin.length));
+// Each round problem's reference solution, timed alone. Under parallel load
+// the judging above measured Windows scheduling as much as the program.
+log("timing reference solutions one at a time...");
+const refMs = {};
+for (const round of rounds) for (const p of round.problems) {
+  refMs[p.problem_key] = await J.time(p.problem_key, solutions[p.problem_key].solution, tests[p.problem_key]);
+}
+const slowest = Object.entries(refMs).sort((a, b) => b[1] - a[1]).slice(0, 5);
+log("  slowest: " + slowest.map(([k, v]) => k + "=" + v + "ms").join(", "));
 const rows = [];
 subs.forEach((s, i) => {
   if (!results[i]) return;
@@ -341,11 +350,10 @@ subs.forEach((s, i) => {
     problem_title: s.bot.lang === "uz" ? s.p.title_uz : s.p.title_en,
     language: "cpp20",
     verdict: r.verdict,
-    // Below ~200 ms the local figure is mostly Windows process start-up and
-    // scheduling under parallel load, not the program, so small runs get the
-    // few milliseconds the sandbox reports for them.
+    // The judge reports the slowest test it ran, which for a correct or a
+    // nearly correct program is about what the reference solution takes.
     runtime_ms: r.verdict === "TIME_LIMIT_EXCEEDED" ? limitMs + int(1, 40)
-      : r.runtimeMs < 200 ? int(0, 12) + Math.round(maxInput(key) / 250000) : r.runtimeMs,
+      : Math.max(0, Math.round(refMs[key] * uni(s.ok ? 0.85 : 0.6, s.ok ? 1.3 : 1.15)) + int(0, 3)),
     // Local memory is not measurable the way the sandbox measures it, so this
     // is an estimate: the C++ runtime's floor plus room for the input.
     memory_kb: 3300 + int(0, 700) + Math.min(60000, Math.round((maxInput(key) * 3) / 1024)),

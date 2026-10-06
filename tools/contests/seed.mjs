@@ -2,6 +2,8 @@
  *
  *   node tools/contests/seed.mjs              dry run: what would be written
  *   node tools/contests/seed.mjs --apply      write it (needs 044 applied)
+ *   node tools/contests/seed.mjs --update-timing  rewrite runtime/memory of
+ *                                             applied rows from seed.json
  *   node tools/contests/seed.mjs --rollback   delete every contest and seeded
  *                                             account this script created
  *
@@ -19,7 +21,8 @@ import { join } from "node:path";
 const HERE = new URL(".", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$1");
 const ROOT = join(HERE, "..", "..");
 const OUT = join(HERE, "out");
-const mode = process.argv.includes("--apply") ? "apply" : process.argv.includes("--rollback") ? "rollback" : "dry";
+const mode = process.argv.includes("--apply") ? "apply" : process.argv.includes("--rollback") ? "rollback"
+  : process.argv.includes("--update-timing") ? "timing" : "dry";
 
 const seed = JSON.parse(readFileSync(join(OUT, "seed.json"), "utf8"));
 const appliedFile = join(OUT, "applied.json");
@@ -84,6 +87,24 @@ if (mode === "rollback") {
   console.log(`deleted ${n} accounts (profiles and their submissions cascade)`);
   applied.users = {};
   remember();
+  process.exit(0);
+}
+
+if (process.argv.includes("--update-timing")) {
+  // Rewrites runtime_ms and memory_kb of rows already applied, by id. Sent as
+  // whole rows because an upsert must be a valid insert; the other columns
+  // carry the values they already hold.
+  let done = 0;
+  for (const batch of chunks(seed.submissions, 250)) {
+    await rest("POST", "bank_submissions?on_conflict=id", batch.map((r) => ({
+      id: r.id, user_id: applied.users[r.bot], problem_key: r.problem_key, problem_title: r.problem_title,
+      language: r.language, verdict: r.verdict, runtime_ms: r.runtime_ms, memory_kb: r.memory_kb,
+      passed: r.passed, total: r.total, source_code: r.source_code, created_at: r.created_at,
+    })), "resolution=merge-duplicates,return=minimal");
+    done += batch.length;
+    process.stdout.write(`  updated ${done}/${seed.submissions.length}\r`);
+  }
+  console.log(`\nupdated timing on ${done} submissions`);
   process.exit(0);
 }
 

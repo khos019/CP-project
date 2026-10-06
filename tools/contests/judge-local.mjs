@@ -130,7 +130,28 @@ export async function makeJudge(workDir) {
     return result;
   }
 
-  return { judge, save, baseMs: base };
+  /* Clean timing for one source: compiled (or reused), then every test run
+     one at a time with nothing else in flight, best of five. The parallel
+     judging above is right about verdicts and wrong about milliseconds. */
+  async function time(problemKey, source, tests) {
+    const id = createHash("sha256").update(problemKey + "\0" + source).digest("hex").slice(0, 24);
+    const dir = join(workDir, "b", id.slice(0, 2));
+    const src = join(dir, id + ".cpp"), exe = join(dir, id + ".exe");
+    if (!existsSync(exe)) {
+      mkdirSync(dir, { recursive: true });
+      writeFileSync(src, source);
+      await run(GXX, [...FLAGS, "-I", pchDir, src, "-o", exe]);
+    }
+    let worst = 0;
+    for (const t of tests) {
+      let best = Infinity;
+      for (let k = 0; k < 5; k++) best = Math.min(best, (await run(exe, [], { input: t.stdin, timeoutMs: 10000 })).ms);
+      worst = Math.max(worst, best - base);
+    }
+    return Math.max(0, Math.round(worst));
+  }
+
+  return { judge, time, save, baseMs: base };
 }
 
 /* Run fn over items with `width` in flight at once. */
