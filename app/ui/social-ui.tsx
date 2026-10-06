@@ -284,7 +284,10 @@ export function SubmissionHistory({
       )}
       {state === "ready" && rows && rows.length > 0 && (
         <div className="sub-table-wrap">
-          <table className="sub-table">
+          {/* On a phone the same rows are laid out as cards (.sub-cards in
+              globals.css): six columns do not fit 375px, and scrolling
+              sideways to read the verdict defeats the list. */}
+          <table className="sub-table sub-cards">
             <thead>
               <tr>
                 <th>{t.when}</th>
@@ -299,9 +302,9 @@ export function SubmissionHistory({
               {rows.map((row) => (
                 <tr key={row.id}>
                   <td className="mono sub-when">{when(row.created_at, lang)}</td>
-                  <td>{row.problem_title || row.problem_key}</td>
-                  <td className="mono">{LANG_LABEL[row.language] || row.language}</td>
-                  <td>
+                  <td className="sub-prob">{row.problem_title || row.problem_key}</td>
+                  <td className="mono sub-lang">{LANG_LABEL[row.language] || row.language}</td>
+                  <td className="sub-res">
                     <span className={`sub-verdict ${row.verdict === "ACCEPTED" ? "ok" : "bad"}`}>
                       {t.verdicts[row.verdict] || row.verdict}
                       {row.passed !== null && row.total !== null && row.verdict !== "ACCEPTED" && (
@@ -309,8 +312,8 @@ export function SubmissionHistory({
                       )}
                     </span>
                   </td>
-                  <td className="mono">{row.runtime_ms === null ? "—" : `${row.runtime_ms} ms`}</td>
-                  <td>
+                  <td className="mono sub-rt">{row.runtime_ms === null ? "—" : `${row.runtime_ms} ms`}</td>
+                  <td className="sub-code">
                     <button className="link-btn" onClick={() => setOpenRow(row)}>
                       {row.readable || isMe ? t.view : <><LockIcon /> {t.locked}</>}
                     </button>

@@ -3795,3 +3795,25 @@ a.editor-escape:hover{color:var(--ink);border-color:var(--line-strong);backgroun
  .leader-who b{flex-wrap:nowrap;white-space:nowrap;overflow:hidden}
  .leader-who > .muted{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 }
+
+/* Yechimlar tarixi, telefon: jadval o'rniga kartochka. Masala nomi tepada,
+   natija va kod tugmasi o'rtada, vaqt / til / runtime pastda kichik. */
+@media (max-width:600px){
+ .sub-cards thead{display:none}
+ .sub-cards,.sub-cards tbody{display:block;width:100%}
+ .sub-cards tr{
+  display:grid;grid-template-columns:auto auto 1fr auto;
+  grid-template-areas:"prob prob prob prob" "res res res code" "when lang rt rt";
+  column-gap:12px;row-gap:6px;align-items:center;
+  padding:12px 2px;border-bottom:1px solid color-mix(in srgb,var(--surface-2) 44%,var(--line));
+ }
+ .sub-cards tr:last-child{border-bottom:0}
+ .sub-cards td{padding:0;border:0}
+ .sub-cards .sub-prob{grid-area:prob;font-weight:600;line-height:1.35}
+ .sub-cards .sub-res{grid-area:res}
+ .sub-cards .sub-code{grid-area:code;justify-self:end}
+ .sub-cards .sub-when,.sub-cards .sub-lang,.sub-cards .sub-rt{font-size:12px;color:var(--muted)}
+ .sub-cards .sub-when{grid-area:when}
+ .sub-cards .sub-lang{grid-area:lang}
+ .sub-cards .sub-rt{grid-area:rt}
+}
