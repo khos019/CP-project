@@ -3781,8 +3781,14 @@ a.editor-escape:hover{color:var(--ink);border-color:var(--line-strong);backgroun
  .standings .st-who{position:sticky;left:0;background:var(--surface);z-index:1}
  .standings thead .st-who{background:var(--surface-2)}
  .standings .st-num{width:30px}
- .standings .st-cell{width:36px}
+ .standings .st-cell{width:35px;padding-left:3px;padding-right:3px}
  .standings .st-cell small{font-size:10px}
+ /* "Penalty" is wider than "Jarima", and that alone pushed the E column
+    off a 375px screen in English. */
+ .standings thead th{font-size:10px;letter-spacing:0}
+ /* Two problem cards share a row here, so one line holds only a word or two
+    of the title: let it take two lines before it is cut. */
+ .contest-problem-title{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.3}
 }
 
 /* Reyting, telefon: tartib 1200 da AC soni bilan ajraladi, shuning uchun AC
