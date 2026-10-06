@@ -3769,37 +3769,62 @@ a.editor-escape:hover{color:var(--ink);border-color:var(--line-strong);backgroun
  font-family:var(--font-mono);font-size:var(--t-xs);font-weight:700;
 }
 
-/* Bitta raund: sarlavha ostida fakt-tabletkalar, keyin masalalar ro‘yxati
-   (nomlar to‘liq — kartochkalarda ular qirqilib qolardi), keyin jadval. */
-.cx-hero{margin-bottom:var(--s4)}
-.cx-facts{display:flex;flex-wrap:wrap;gap:var(--s2);margin-top:var(--s3)}
-.cx-fact{
- display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border:1px solid var(--line);
- border-radius:var(--r-full);background:var(--surface);font-size:var(--t-sm);color:var(--muted);
+/* Bitta raund — Codeforces tuzilishida uch sahifa: Masalalar (bosh sahifa,
+   yon paneli bilan), Natijalar va Yechimlar. Tepada sarlavha va tablar. */
+.cx-round-head{margin-bottom:var(--s3)}
+.cx-round-head .page-title{margin:0}
+.cx-tabs{display:flex;gap:2px;margin:var(--s3) 0 var(--s5);border-bottom:1px solid var(--line);overflow-x:auto;scrollbar-width:none}
+.cx-tabs::-webkit-scrollbar{display:none}
+.cx-tabs a{
+ white-space:nowrap;padding:11px 16px;margin-bottom:-1px;color:var(--muted);font-weight:600;font-size:14.5px;
+ text-decoration:none;border-bottom:2px solid transparent;
+ transition:color var(--dur-fast) var(--ease),border-color var(--dur-fast) var(--ease);
 }
-.cx-fact b{color:var(--ink);font-weight:600}
-.cx-section-head{display:flex;align-items:center;justify-content:space-between;gap:var(--s3);margin:var(--s5) 0 var(--s3)}
-.cx-section-head h2{margin:0;font-size:var(--t-h3)}
-.cx-problems{border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surface);overflow:hidden}
-.cx-problem{
- display:grid;grid-template-columns:34px minmax(0,1fr) 56px 170px;gap:var(--s4);align-items:center;
- padding:12px var(--s5);border-bottom:1px solid var(--line-faint);color:inherit;text-decoration:none;
+.cx-tabs a:hover{color:var(--ink)}
+.cx-tabs a.on{color:var(--ink);border-bottom-color:var(--green)}
+.cx-r{text-align:right}
+.cx-count{font-size:var(--t-sm)}
+
+/* Masalalar: chapda jadval, o'ngda raund haqida bloklar. */
+.cx-dash{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:var(--s5);align-items:start}
+.cx-ptable{border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surface);overflow:hidden}
+.cx-prow{
+ display:grid;grid-template-columns:44px minmax(0,1fr) 72px 120px;gap:var(--s4);align-items:center;
+ padding:14px var(--s5);border-bottom:1px solid var(--line-faint);color:inherit;text-decoration:none;
  transition:background var(--dur-fast) var(--ease);
 }
-.cx-problem:last-child{border-bottom:0}
-.cx-problem:hover{background:var(--surface-2)}
+.cx-prow:last-child{border-bottom:0}
+a.cx-prow:hover{background:var(--surface-2)}
+a.cx-prow:hover .cx-pname b{text-decoration:underline;text-underline-offset:3px}
+.cx-prow-head{padding-top:10px;padding-bottom:10px;background:var(--surface-2);font-size:var(--t-xs);font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
 .cx-idx{
- width:32px;height:32px;display:grid;place-items:center;border-radius:var(--r-sm);
+ width:34px;height:34px;display:grid;place-items:center;border-radius:var(--r-sm);
  border:1.5px solid var(--line-strong);background:var(--inset);
  font-family:var(--font-display);font-weight:700;
 }
-.cx-ptitle{font-weight:600;line-height:1.35;min-width:0}
-.cx-problem:hover .cx-ptitle{text-decoration:underline;text-underline-offset:3px}
-.cx-rating{font-family:var(--font-mono);font-size:var(--t-sm);font-weight:700;text-align:right}
-.cx-solve{display:flex;flex-direction:column;gap:5px}
+.cx-pname{display:flex;flex-direction:column;gap:3px;min-width:0}
+.cx-pname b{font-weight:600;line-height:1.35}
+.cx-pname small{font-family:var(--font-mono);font-size:var(--t-xs);color:var(--muted)}
+.cx-rating{font-family:var(--font-mono);font-size:var(--t-sm);font-weight:700}
+.cx-solved{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.cx-solved-n{font-family:var(--font-mono);font-size:var(--t-sm);font-weight:600}
+.cx-solved .cx-solve-bar{width:100%}
 .cx-solve-bar{height:6px;border-radius:var(--r-full);background:var(--inset);overflow:hidden}
 .cx-solve-bar i{display:block;height:100%;border-radius:inherit;background:var(--green)}
-.cx-solve small{font-family:var(--font-mono);font-size:var(--t-xs);color:var(--muted)}
+
+.cx-dash-side{display:grid;gap:var(--s3)}
+.cx-box{border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surface);padding:var(--s4)}
+.cx-box header{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--s2);margin-bottom:var(--s3)}
+.cx-box header b{font-family:var(--font-display);line-height:1.3}
+.cx-box p{margin:0;font-size:var(--t-sm);line-height:1.55;color:var(--muted)}
+.cx-state{flex:none;padding:2px 8px;border-radius:var(--r-full);font-size:var(--t-xs);font-weight:600;background:var(--inset);color:var(--muted);border:1px solid var(--line)}
+.cx-box dl{margin:0;display:grid;gap:8px}
+.cx-box dl div{display:flex;justify-content:space-between;gap:var(--s3);font-size:var(--t-sm)}
+.cx-box dt{color:var(--muted)}
+.cx-box dd{margin:0;text-align:right;font-weight:600}
+.cx-box dd a{color:inherit}
+.cx-practice{display:block;margin-top:var(--s3);text-align:center;text-decoration:none}
+
 /* Qoida — talab qilinganda ochiladigan kichik oyna, doim ko‘rinib turgan
    uzun jumla emas. */
 .cx-rules{position:relative;font-size:var(--t-sm);color:var(--muted)}
@@ -3846,6 +3871,26 @@ a.editor-escape:hover{color:var(--ink);border-color:var(--line-strong);backgroun
 .standings .st-first span,.standings .st-first small{color:var(--ink)}
 .standings .st-bad span{color:var(--bad)}
 
+
+/* Yechimlar: filtrlar, keyin jadval; telefonda har bir yechim kartochka. */
+.cx-filters{display:flex;flex-wrap:wrap;align-items:flex-end;gap:var(--s3);margin-bottom:var(--s4)}
+.cx-filters label{display:flex;flex-direction:column;gap:4px;font-size:var(--t-xs);color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+.cx-filters select{min-width:180px;max-width:100%;font:inherit;font-size:var(--t-sm);text-transform:none;letter-spacing:0;font-weight:500;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:8px 10px}
+.cx-filters .cx-count{margin-left:auto;align-self:center}
+.cx-status-wrap{border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surface);overflow-x:auto}
+.cx-status{width:100%;border-collapse:collapse;font-size:var(--t-sm)}
+.cx-status th{padding:9px 12px;text-align:left;background:var(--surface-2);color:var(--muted);font-size:var(--t-xs);font-weight:600;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap;border-bottom:1px solid var(--line)}
+.cx-status td{padding:10px 12px;border-bottom:1px solid var(--line-faint);vertical-align:middle}
+.cx-status tr:last-child td{border-bottom:0}
+.cx-status tbody tr:hover td{background:var(--surface-2)}
+.cx-status .cs-when{white-space:nowrap}
+.cx-status .cs-when small{display:block;font-size:var(--t-xs);color:var(--muted)}
+.cx-status .cs-who a{color:inherit;font-weight:600;text-decoration:none}
+.cx-status .cs-who a:hover{text-decoration:underline}
+.cx-status .cs-prob b{font-family:var(--font-display)}
+.cx-status .cs-prob span{color:var(--muted)}
+.cx-status .cs-lang,.cx-status .cs-time,.cx-status .cs-mem{white-space:nowrap;color:var(--muted)}
+
 /* Telefon. Ro‘yxat: sana bloki kichrayadi, masala belgilari pastga tushadi.
    Jadval: handle yashiriladi, ism qisqartiriladi va surilganda joyida turadi,
    kataklar beshtasi ham 375px ga sig‘adigan darajada ixcham. */
@@ -3856,8 +3901,30 @@ a.editor-escape:hover{color:var(--ink);border-color:var(--line-strong);backgroun
  .cx-date b{font-size:20px}
  .cx-title{font-size:var(--t-body)}
  .cx-side{grid-column:1 / -1;flex-direction:row;justify-content:space-between;align-items:center}
- .cx-problem{grid-template-columns:32px minmax(0,1fr) auto;row-gap:8px;padding:12px var(--s4)}
- .cx-solve{grid-column:2 / -1}
+ .cx-dash{grid-template-columns:1fr}
+ .cx-prow{grid-template-columns:34px minmax(0,1fr) auto;row-gap:8px;padding:12px var(--s4)}
+ .cx-prow-head{display:none}
+ .cx-solved{grid-column:2 / -1;flex-direction:row-reverse;align-items:center;gap:10px}
+ .cx-solved .cx-solve-bar{flex:1}
+ .cx-tabs a{padding:10px 12px}
+ .cx-filters label{flex:1 1 140px}
+ .cx-filters select{min-width:0;width:100%}
+ .cx-filters .cx-count{margin-left:0;flex-basis:100%}
+ .cx-status-wrap{overflow:visible}
+ .cx-status thead{display:none}
+ .cx-status,.cx-status tbody{display:block;width:100%}
+ .cx-status tr{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"prob verdict" "who time" "when mem";column-gap:12px;row-gap:4px;padding:12px var(--s4);border-bottom:1px solid var(--line-faint)}
+ .cx-status tr:last-child{border-bottom:0}
+ .cx-status td{padding:0;border:0}
+ .cx-status tbody tr:hover td{background:none}
+ .cx-status .cs-prob{grid-area:prob;min-width:0}
+ .cx-status .cs-verdict{grid-area:verdict;text-align:right}
+ .cx-status .cs-who{grid-area:who}
+ .cx-status .cs-time{grid-area:time;font-size:var(--t-xs)}
+ .cx-status .cs-when{grid-area:when;font-size:var(--t-xs);color:var(--muted)}
+ .cx-status .cs-when small{display:inline;margin-left:6px}
+ .cx-status .cs-mem{grid-area:mem;font-size:var(--t-xs)}
+ .cx-status .cs-lang{display:none}
  .cx-section-head{flex-wrap:wrap}
  .standings{font-size:var(--t-xs)}
  .standings th,.standings td{padding:6px 4px}
