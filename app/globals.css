@@ -3731,72 +3731,150 @@ a.editor-escape:hover{color:var(--ink);border-color:var(--line-strong);backgroun
 /* ─── Kontestlar ─────────────────────────────────────────────────────── */
 .back-link{display:inline-block;margin-bottom:var(--s4);color:var(--muted);text-decoration:none;font-size:var(--t-sm)}
 .back-link:hover{color:var(--ink)}
-.contest-list{border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;background:var(--surface)}
-.contest-card{
- display:flex;align-items:center;justify-content:space-between;gap:var(--s4);flex-wrap:wrap;
- padding:14px var(--s5);border-bottom:1px solid var(--line-faint);color:inherit;text-decoration:none;
+
+/* Ro‘yxat: yuqorida uchta raqam, keyin yillar bo‘yicha kartochkalar. Har bir
+   kartochkaning chap tomonida sana bloki — arxivni ko‘z sana bo‘yicha
+   o‘qiydi, sarlavha esa hammasida deyarli bir xil ("Raund #N"). */
+.cx-summary{display:flex;gap:var(--s6);flex-wrap:wrap;margin:0 0 var(--s4)}
+.cx-stat{display:flex;flex-direction:column;gap:4px}
+.cx-stat b{font-family:var(--font-display);font-size:var(--t-h2);line-height:1}
+.cx-stat span{font-size:var(--t-xs);color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.cx-year{display:flex;align-items:center;gap:var(--s3);margin:var(--s5) 0 var(--s3);font-size:var(--t-sm);font-weight:600;color:var(--muted);letter-spacing:.08em}
+.cx-year::after{content:"";flex:1;height:1px;background:var(--line)}
+.cx-list{display:grid;gap:var(--s3)}
+.cx-card{
+ display:grid;grid-template-columns:60px minmax(0,1fr) auto;gap:var(--s4);align-items:center;
+ padding:var(--s4) var(--s5);border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surface);
+ color:inherit;text-decoration:none;
+ transition:border-color var(--dur-fast) var(--ease),transform var(--dur-fast) var(--ease),box-shadow var(--dur-fast) var(--ease);
+}
+.cx-card:hover{border-color:var(--line-strong);transform:translateY(-1px);box-shadow:var(--shadow)}
+.cx-date{
+ display:flex;flex-direction:column;align-items:center;justify-content:center;height:60px;
+ border-radius:var(--r-md);background:var(--inset);border:1px solid var(--line-faint);
+}
+.cx-date b{font-family:var(--font-display);font-size:24px;line-height:1}
+.cx-date span{margin-top:4px;font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.cx-main{display:flex;flex-direction:column;gap:5px;min-width:0}
+.cx-title{font-family:var(--font-display);font-size:var(--t-h3);line-height:1.25}
+.cx-meta{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:var(--t-sm);color:var(--muted)}
+.cx-meta > span + span::before{content:"·";margin-right:14px;color:var(--dim)}
+.cx-winner{font-size:var(--t-sm);color:var(--muted)}
+.cx-winner b{color:var(--ink);font-weight:600}
+.cx-side{display:flex;flex-direction:column;align-items:flex-end;gap:var(--s2)}
+.cx-chips{display:flex;gap:4px}
+.cx-chip{
+ width:26px;height:26px;display:inline-grid;place-items:center;border-radius:var(--r-sm);
+ border:1px solid currentColor;background:color-mix(in srgb,currentColor 9%,transparent);
+ font-family:var(--font-mono);font-size:var(--t-xs);font-weight:700;
+}
+
+/* Bitta raund: sarlavha ostida fakt-tabletkalar, keyin masalalar ro‘yxati
+   (nomlar to‘liq — kartochkalarda ular qirqilib qolardi), keyin jadval. */
+.cx-hero{margin-bottom:var(--s4)}
+.cx-facts{display:flex;flex-wrap:wrap;gap:var(--s2);margin-top:var(--s3)}
+.cx-fact{
+ display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border:1px solid var(--line);
+ border-radius:var(--r-full);background:var(--surface);font-size:var(--t-sm);color:var(--muted);
+}
+.cx-fact b{color:var(--ink);font-weight:600}
+.cx-section-head{display:flex;align-items:center;justify-content:space-between;gap:var(--s3);margin:var(--s5) 0 var(--s3)}
+.cx-section-head h2{margin:0;font-size:var(--t-h3)}
+.cx-problems{border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surface);overflow:hidden}
+.cx-problem{
+ display:grid;grid-template-columns:34px minmax(0,1fr) 56px 170px;gap:var(--s4);align-items:center;
+ padding:12px var(--s5);border-bottom:1px solid var(--line-faint);color:inherit;text-decoration:none;
  transition:background var(--dur-fast) var(--ease);
 }
-.contest-card:last-child{border-bottom:0}
-.contest-card:hover{background:var(--surface-2)}
-.contest-card-main{display:flex;flex-direction:column;gap:2px;min-width:0}
-.contest-card-title{font-family:var(--font-display)}
-.contest-card-meta{font-size:var(--t-sm)}
-.contest-card-side{display:flex;align-items:center;gap:var(--s3)}
-.contest-chips{display:flex;gap:4px}
-.contest-chip{
- width:24px;height:24px;display:inline-grid;place-items:center;border-radius:var(--r-sm);
- border:1px solid currentColor;font-family:var(--font-mono);font-size:var(--t-xs);font-weight:600;
+.cx-problem:last-child{border-bottom:0}
+.cx-problem:hover{background:var(--surface-2)}
+.cx-idx{
+ width:32px;height:32px;display:grid;place-items:center;border-radius:var(--r-sm);
+ border:1.5px solid var(--line-strong);background:var(--inset);
+ font-family:var(--font-display);font-weight:700;
 }
-.contest-problems{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:var(--s3);margin-bottom:var(--s4)}
-.contest-problem{
- display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:var(--s3);row-gap:2px;
- padding:var(--s3) var(--s4);border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface);
- color:inherit;text-decoration:none;
+.cx-ptitle{font-weight:600;line-height:1.35;min-width:0}
+.cx-problem:hover .cx-ptitle{text-decoration:underline;text-underline-offset:3px}
+.cx-rating{font-family:var(--font-mono);font-size:var(--t-sm);font-weight:700;text-align:right}
+.cx-solve{display:flex;flex-direction:column;gap:5px}
+.cx-solve-bar{height:6px;border-radius:var(--r-full);background:var(--inset);overflow:hidden}
+.cx-solve-bar i{display:block;height:100%;border-radius:inherit;background:var(--green)}
+.cx-solve small{font-family:var(--font-mono);font-size:var(--t-xs);color:var(--muted)}
+/* Qoida — talab qilinganda ochiladigan kichik oyna, doim ko‘rinib turgan
+   uzun jumla emas. */
+.cx-rules{position:relative;font-size:var(--t-sm);color:var(--muted)}
+.cx-rules summary{cursor:pointer;list-style:none;padding:4px 10px;border:1px solid var(--line);border-radius:var(--r-full);background:var(--surface)}
+.cx-rules summary::-webkit-details-marker{display:none}
+.cx-rules summary::after{content:" ▾"}
+.cx-rules[open] summary::after{content:" ▴"}
+.cx-rules summary:hover{color:var(--ink);border-color:var(--line-strong)}
+.cx-rules p{
+ position:absolute;right:0;top:calc(100% + 8px);z-index:5;width:min(380px,82vw);margin:0;
+ padding:var(--s3) var(--s4);border:1px solid var(--line-strong);border-radius:var(--r-md);
+ background:var(--surface-2);box-shadow:var(--shadow);line-height:1.55;color:var(--ink);
 }
-.contest-problem:hover{border-color:var(--line-strong);background:var(--surface-2)}
-.contest-problem-idx{grid-row:1 / 3;align-self:center;font-family:var(--font-display);font-size:var(--t-h3);font-weight:700}
-.contest-problem-title{font-size:var(--t-sm);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.contest-problem-meta{display:flex;gap:var(--s3);font-family:var(--font-mono);font-size:var(--t-xs)}
-.contest-rules{font-size:var(--t-xs);margin:0 0 var(--s4)}
+
 .standings-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:var(--r-lg);background:var(--surface)}
 .standings{width:100%;border-collapse:collapse;font-size:var(--t-sm)}
-.standings th,.standings td{padding:8px 10px;border-bottom:1px solid var(--line-faint);white-space:nowrap}
-.standings thead th{background:var(--surface-2);color:var(--muted);font-weight:600;text-align:left}
+.standings th,.standings td{padding:9px 10px;border-bottom:1px solid var(--line-faint);white-space:nowrap}
+.standings thead th{background:var(--surface-2);color:var(--muted);font-weight:600;text-align:left;font-size:var(--t-xs);text-transform:uppercase;letter-spacing:.06em}
 .standings tbody tr:last-child td{border-bottom:0}
-.standings tbody tr:hover{background:var(--surface-2)}
-.standings .st-place{width:40px;font-family:var(--font-mono);color:var(--dim)}
+.standings tbody tr:hover td{background:var(--surface-2)}
+.standings tbody tr:hover td.st-ok{background:color-mix(in srgb,var(--green) 18%,var(--surface-2))}
+.standings tbody tr:hover td.st-first{background:color-mix(in srgb,var(--green) 36%,var(--surface-2))}
+.standings .st-place{width:44px;font-family:var(--font-mono);color:var(--dim);text-align:center}
+.standings .st-medal{
+ display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;
+ font-weight:700;font-size:12px;color:#1b1b1b;
+}
+.standings .st-medal-1{background:#e2b93b}
+.standings .st-medal-2{background:#b4bcc6}
+.standings .st-medal-3{background:#cd8a52}
 .standings .st-who a{color:inherit;text-decoration:none}
 .standings .st-who a:hover b{text-decoration:underline}
+.standings .st-top .st-who b{font-weight:700}
 .standings .st-num{text-align:right;font-family:var(--font-mono);width:56px}
+.standings .st-pen{color:var(--muted)}
 .standings .st-cell{text-align:center;width:64px;font-family:var(--font-mono);border-left:1px solid var(--line-faint)}
-.standings th.st-cell{text-align:center}
+.standings th.st-cell{text-align:center;font-size:var(--t-sm);color:var(--ink)}
+.standings th.st-cell small{display:block;margin-top:2px;font-size:10px;font-weight:500;color:var(--dim);letter-spacing:0}
 .standings .st-cell span{display:block;font-weight:700}
 .standings .st-cell small{display:block;font-size:var(--t-xs);color:var(--muted)}
 .standings .st-ok{background:var(--green-wash)}
 .standings .st-ok span{color:var(--ok)}
+.standings .st-first{background:color-mix(in srgb,var(--green) 32%,transparent)}
+.standings .st-first span,.standings .st-first small{color:var(--ink)}
 .standings .st-bad span{color:var(--bad)}
-/* A phone has room for the name and the five cells, not for the handle too:
-   the handle goes, the name is clipped, and the name column stays put while
-   the cells scroll under it on the narrowest screens. */
+
+/* Telefon. Ro‘yxat: sana bloki kichrayadi, masala belgilari pastga tushadi.
+   Jadval: handle yashiriladi, ism qisqartiriladi va surilganda joyida turadi,
+   kataklar beshtasi ham 375px ga sig‘adigan darajada ixcham. */
 @media (max-width:640px){
- .contest-card{padding:12px var(--s4)}
+ .cx-summary{gap:var(--s5)}
+ .cx-card{grid-template-columns:50px minmax(0,1fr);padding:var(--s3) var(--s4);gap:var(--s3)}
+ .cx-date{height:50px}
+ .cx-date b{font-size:20px}
+ .cx-title{font-size:var(--t-body)}
+ .cx-side{grid-column:1 / -1;flex-direction:row;justify-content:space-between;align-items:center}
+ .cx-problem{grid-template-columns:32px minmax(0,1fr) auto;row-gap:8px;padding:12px var(--s4)}
+ .cx-solve{grid-column:2 / -1}
+ .cx-section-head{flex-wrap:wrap}
  .standings{font-size:var(--t-xs)}
  .standings th,.standings td{padding:6px 4px}
- .standings .st-place{width:18px;padding-left:6px}
+ .standings .st-place{width:24px;padding-left:6px}
+ .standings .st-medal{width:20px;height:20px;font-size:11px}
  .standings .st-who .muted{display:none}
- .standings .st-who b{display:block;max-width:68px;overflow:hidden;text-overflow:ellipsis}
+ .standings .st-who b{display:block;max-width:64px;overflow:hidden;text-overflow:ellipsis}
  .standings .st-who{position:sticky;left:0;background:var(--surface);z-index:1}
  .standings thead .st-who{background:var(--surface-2)}
- .standings .st-num{width:30px}
+ .standings .st-num{width:28px}
  .standings .st-cell{width:35px;padding-left:3px;padding-right:3px}
  .standings .st-cell small{font-size:10px}
  /* "Penalty" is wider than "Jarima", and that alone pushed the E column
     off a 375px screen in English. */
  .standings thead th{font-size:10px;letter-spacing:0}
- /* Two problem cards share a row here, so one line holds only a word or two
-    of the title: let it take two lines before it is cut. */
- .contest-problem-title{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.3}
+ .standings th.st-cell{font-size:var(--t-xs)}
+ .standings th.st-cell small{font-size:9px}
 }
 
 /* Reyting, telefon: tartib 1200 da AC soni bilan ajraladi, shuning uchun AC
