@@ -394,8 +394,10 @@ log(`\nparticipants: ${usedBots.length} people · submissions: ${rows.length} ${
 writeFileSync(join(OUT, "seed.json"), JSON.stringify({
   seed: SEED,
   generated_at: new Date().toISOString(),
-  bots: usedBots.map(({ key, username, display_name, country, bio, lang, created_at }) =>
-    ({ key, username, display_name, country, bio, lang, created_at })),
+  // skill, keen and style are not written to the database; duels.mjs reads
+  // them so a person plays duels at the level, and in the hand, they compete in.
+  bots: usedBots.map(({ key, username, display_name, country, bio, lang, created_at, skill, keen, style }) =>
+    ({ key, username, display_name, country, bio, lang, created_at, skill, keen, style })),
   contests: rounds,
   submissions: rows,
 }, null, 1));
