@@ -7,7 +7,7 @@ import { bankProblems } from "./problem-bank";
 import { RatingGraph } from "./RatingGraph";
 import { nextRank, rankOf } from "./rating";
 import { shortDateTime } from "./dates";
-import { fetchPersonByUsername, type PublicPerson, type Role } from "./session";
+import { fetchLadderRank, fetchPersonByUsername, type PublicPerson, type Role } from "./session";
 import {
   fetchFriendIds, fetchProfileSummary, fetchPublicDuelHistory, fetchPublicFriends, fetchSubmissions,
   removeFriend,
@@ -242,6 +242,21 @@ export function PublicProfile({
     return () => { live = false; };
   }, [personId]);
 
+  /* The place is asked the way the leaderboard orders it — rating, then
+     problems solved, then handle — so the two never disagree. The summary's
+     own `place` counts only higher ratings, which gave everybody on a shared
+     rating the same number while the leaderboard listed them one by one. */
+  const [ladderPlace, setLadderPlace] = useState<number | null>(null);
+  const ladderKey = person ? `${person.username}|${person.duel_rating}|${person.solved_count}` : "";
+  useEffect(() => {
+    if (!ladderKey) return;
+    const [handle, r, s] = ladderKey.split("|");
+    let live = true;
+    void fetchLadderRank({ username: handle, duel_rating: Number(r), solved_count: Number(s) })
+      .then((n) => { if (live) setLadderPlace(n); });
+    return () => { live = false; };
+  }, [ladderKey]);
+
   // The rest waits for the section that shows it.
   useEffect(() => {
     if (!personId || section !== "overview" || recent) return;
@@ -414,7 +429,7 @@ export function PublicProfile({
         </div>
         <div className="pv-stat">
           <small>{t.place}</small>
-          <b className="mono">{sum ? `#${sum.place}` : "—"}</b>
+          <b className="mono">{ladderPlace ? `#${ladderPlace}` : sum ? `#${sum.place}` : "—"}</b>
           <span className="pv-sub">{sum ? t.ofMembers(sum.members) : ""}</span>
         </div>
         <div className="pv-stat">
