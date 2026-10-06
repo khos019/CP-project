@@ -170,6 +170,10 @@ export function AlgoYolApp(){
  // it during the first render would make the two disagree and break hydration.
  // eslint-disable-next-line react-hooks/set-state-in-effect
  useEffect(()=>{const saved=localStorage.getItem("algoyol-lang") as Lang|null;if(saved)setLang(saved)},[]);
+ // layout.tsx renders <html lang="uz">; an English page has to say so too, or a
+ // screen reader reads English text with Uzbek pronunciation and the browser
+ // offers to translate it from Uzbek.
+ useEffect(()=>{document.documentElement.lang=lang},[lang]);
  // Boot: adopt the stored scope synchronously so the first paint reads the
  // right namespace, then verify the token. The "loading" flip has to happen
  // here for the same hydration reason as the language above.

@@ -53,7 +53,7 @@ const T = {
     notFoundBody: "Nickname o‘zgargan yoki hisob o‘chirilgan bo‘lishi mumkin.",
     networkErr: "Ma’lumotni olib bo‘lmadi. Internetni tekshirib, qayta urining.",
     message: "Xabar yozish",
-    joined: "qo‘shildi",
+    joined: "{d} qo‘shildi",
     self: "Profilni tahrirlash",
     signIn: "Kirish",
     signInToWrite: "Xabar yozish uchun kiring",
@@ -99,7 +99,7 @@ const T = {
     notFoundBody: "The username may have changed, or the account was removed.",
     networkErr: "Could not load the data. Check your connection and try again.",
     message: "Send a message",
-    joined: "joined",
+    joined: "Joined {d}",
     self: "Edit profile",
     signIn: "Sign in",
     signInToWrite: "Sign in to send a message",
@@ -397,7 +397,9 @@ export function PublicProfile({
               <span className="mono">@{person.username}</span>
               {person.country && <><span aria-hidden>·</span><span>{person.country}</span></>}
               <span aria-hidden>·</span>
-              <span>{joinedOn(person.created_at, lang)} {t.joined}</span>
+              {/* The date's place in the sentence is the language's to decide:
+                  "2025-yil sentabr qo‘shildi", but "Joined September 2025". */}
+              <span>{t.joined.replace("{d}", joinedOn(person.created_at, lang))}</span>
             </p>
             {person.bio && <p className="pv-bio">{person.bio}</p>}
           </div>
