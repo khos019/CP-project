@@ -3764,7 +3764,7 @@ a.editor-escape:hover{color:var(--ink);border-color:var(--line-strong);backgroun
 .standings .st-cell{text-align:center;width:64px;font-family:var(--font-mono);border-left:1px solid var(--line-faint)}
 .standings th.st-cell{text-align:center}
 .standings .st-cell span{display:block;font-weight:700}
-.standings .st-cell small{display:block;font-size:var(--t-xs);color:var(--dim)}
+.standings .st-cell small{display:block;font-size:var(--t-xs);color:var(--muted)}
 .standings .st-ok{background:var(--green-wash)}
 .standings .st-ok span{color:var(--ok)}
 .standings .st-bad span{color:var(--bad)}
