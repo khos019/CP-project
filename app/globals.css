@@ -3463,7 +3463,17 @@ a.editor-escape:hover{color:var(--ink);border-color:var(--line-strong);backgroun
 .drg-frame{fill:none;stroke:var(--line);stroke-width:1}
 .drg-tick{fill:var(--dim);font-size:11px;font-family:var(--font-mono)}
 .drg-band{font-size:10.5px;font-weight:600;letter-spacing:.02em;opacity:.85}
-.drg-line{fill:none;stroke:color-mix(in srgb,var(--dim) 8%,var(--ink));stroke-opacity:.85;stroke-width:1.75;stroke-linejoin:round;stroke-linecap:round}
+.drg-line{fill:none;stroke:color-mix(in srgb,var(--dim) 8%,var(--ink));stroke-opacity:.9;stroke-width:2.25;stroke-linejoin:round;stroke-linecap:round}
+/* The rank stripes carry the meaning of the chart, so they are a shade
+   stronger than a background wash. */
+.drg-stripe{opacity:.17}
+.drg-baseline{stroke:var(--ink);stroke-opacity:.45;stroke-width:1.5;stroke-dasharray:6 5}
+.drg-empty{fill:var(--ink);font-size:15px;font-weight:600}
+.drg-empty-hint{fill:var(--muted);font-size:12px}
+.drg-narrow .drg-empty{font-size:18px}
+.drg-narrow .drg-empty-hint{font-size:14px}
+.drg-sum{margin:0;display:flex;align-items:baseline;gap:var(--s3);flex-wrap:wrap;font-size:var(--t-sm);color:var(--muted)}
+.drg-sum > b{font-size:20px}
 .drg-cursor{stroke:var(--ink);stroke-opacity:.25;stroke-width:1}
 .drg-peak{fill:none;stroke:var(--orange);stroke-width:1.75}
 .drg-dot{stroke:var(--inset);stroke-width:2;cursor:pointer;transition:r var(--dur-fast) var(--ease)}
@@ -3482,6 +3492,8 @@ a.editor-escape:hover{color:var(--ink);border-color:var(--line-strong);backgroun
 .drg-narrow .drg-band{font-size:12.5px}
 @media (max-width:640px){
  .drg{padding:var(--s4)}
+ /* The title keeps its line; the summary goes under it. */
+ .drg-head{flex-direction:column;align-items:flex-start;gap:4px}
 }
 
 

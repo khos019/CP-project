@@ -42,23 +42,25 @@ type Lang = "uz" | "en";
 const T = {
   uz: {
     title: "Duel reytingi",
-    empty: "Grafik uchun hali duel yo‘q",
-    emptyHint: "Birinchi duel yakunlangach shu yerda reyting egri chizig‘i chiziladi.",
+    emptyHint: "Birinchi duel tugagach chiziq shu yerdan boshlanadi.",
     vs: "Raqib",
     bot: "Algo (AI)",
     outcome: { win: "G‘alaba", loss: "Mag‘lubiyat", draw: "Durang" },
     unrated: "reytingsiz",
     peak: "Eng yuqori",
+    duels: (n: number) => `${n} ta duel`,
+    noneYet: "Hali duel yo‘q",
   },
   en: {
     title: "Duel rating",
-    empty: "No duels to graph yet",
-    emptyHint: "The rating curve appears here once the first duel is finished.",
+    emptyHint: "The curve starts here after the first duel.",
     vs: "Opponent",
     bot: "Algo (AI)",
     outcome: { win: "Win", loss: "Loss", draw: "Draw" },
     unrated: "unrated",
     peak: "Peak",
+    duels: (n: number) => `${n} duel${n === 1 ? "" : "s"}`,
+    noneYet: "No duels yet",
   },
 } as const;
 
@@ -97,12 +99,24 @@ function yTicks(lo: number, hi: number): number[] {
   return out.length > 5 ? out.filter((_, i) => i % 2 === 0) : out;
 }
 
+/* Does the segment a-b cross the box? Sampled, which is plenty at this scale. */
+function segmentHits(a: { x: number; y: number }, b: { x: number; y: number },
+  bx0: number, by0: number, bx1: number, by1: number) {
+  for (let k = 0; k <= 12; k++) {
+    const x = a.x + ((b.x - a.x) * k) / 12, y = a.y + ((b.y - a.y) * k) / 12;
+    if (x > bx0 && x < bx1 && y > by0 && y < by1) return true;
+  }
+  return false;
+}
+
 export function RatingGraph({
-  lang, rows, className,
+  lang, rows, rating = 1200, className,
 }: {
   lang: Lang;
   /** Finished duels, newest first -- the order the RPC returns. */
   rows: PublicDuelRow[];
+  /** The account's current duel rating, for the empty chart's baseline. */
+  rating?: number;
   className?: string;
 }) {
   const t = T[lang];
@@ -124,19 +138,6 @@ export function RatingGraph({
     .filter((r) => r.finished_at)
     .sort((a, b) => +new Date(a.finished_at) - +new Date(b.finished_at));
 
-  if (!history.length) {
-    return (
-      <section className={`panel drg ${className || ""}`}>
-        <h2 className="drg-title">{t.title}</h2>
-        <div className="os-blank">
-          <span className="os-blank-ic" aria-hidden>📈</span>
-          <b>{t.empty}</b>
-          <p>{t.emptyHint}</p>
-        </div>
-      </section>
-    );
-  }
-
   const innerW = W - PAD.left - PAD.right;
   const innerH = H - PAD.top - PAD.bottom;
   const x0 = PAD.left;
@@ -149,13 +150,38 @@ export function RatingGraph({
   const step = n > 1 ? (innerW - 2 * EDGE) / (n - 1) : 0;
   const xs = history.map((_, i) => x0 + EDGE + i * step);
 
-  const [lo, hi] = domain(history.flatMap((r) => [r.rating_after, r.rating_before]));
+  /* With no duels the chart is still drawn, as Codeforces draws one for an
+     account that has not competed: the bands around the starting rating and a
+     dashed line where the curve will begin. */
+  const empty = history.length === 0;
+  const [lo, hi] = domain(empty ? [rating] : history.flatMap((r) => [r.rating_after, r.rating_before]));
   const yOf = (rating: number) => PAD.top + innerH - ((rating - lo) / (hi - lo)) * innerH;
 
   const points: Point[] = history.map((row, i) => ({
     x: xs[i], y: yOf(row.rating_after), t: times[i], row,
   }));
   const line = points.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+
+  const dotR = n > 80 ? 2.5 : n > 40 ? 3.25 : 4;
+
+  /* A band's name goes in the first of its four corners the curve leaves
+     free -- top right, top left, bottom right, bottom left -- and is left out
+     only if all four are taken: a label sitting under the last dots is what
+     made "Newbie" read as "ewbie". */
+  const labelW = (text: string) => text.length * (narrow ? 7.6 : 6.4) + 6;
+  const clear = (bx0: number, by0: number, bx1: number, by1: number) =>
+    !points.some((p) => p.x + dotR + 3 > bx0 && p.x - dotR - 3 < bx1 && p.y + dotR + 3 > by0 && p.y - dotR - 3 < by1)
+    && !(points.length > 1 && points.some((p, i) => i > 0 && segmentHits(points[i - 1], p, bx0, by0, bx1, by1)));
+  const bandLabel = (name: string, yTop: number, yBottom: number): { x: number; y: number; anchor: "start" | "end" } | null => {
+    const w = labelW(name);
+    const rows = [yTop + 14, yBottom - 6];
+    for (const baseline of rows) {
+      const top = baseline - 12, bottom = baseline + 4;
+      if (clear(x1 - 8 - w, top, x1 - 4, bottom)) return { x: x1 - 8, y: baseline, anchor: "end" };
+      if (clear(x0 + 4, top, x0 + 8 + w, bottom)) return { x: x0 + 8, y: baseline, anchor: "start" };
+    }
+    return null;
+  };
 
   let peakIndex = 0;
   points.forEach((p, i) => { if (p.row.rating_after >= points[peakIndex].row.rating_after) peakIndex = i; });
@@ -190,20 +216,29 @@ export function RatingGraph({
   };
 
   const active = hover !== null ? points[hover] : null;
+  const current = empty ? rating : history[history.length - 1].rating_after;
+  const peak = empty ? rating : points[peakIndex].row.rating_after;
   const activeRank = active ? rankOf(active.row.rating_after) : null;
 
   return (
     <section className={`panel drg ${className || ""}`}>
       <div className="drg-head">
         <h2 className="drg-title">{t.title}</h2>
+        {!empty && (
+          <p className="drg-sum">
+            <b className="mono" style={{ color: rankOf(current).color }}>{current}</b>
+            <span>{t.peak} <b className="mono" style={{ color: rankOf(peak).color }}>{peak}</b></span>
+            <span>{t.duels(n)}</span>
+          </p>
+        )}
       </div>
 
       <div ref={measure} className={`drg-box ${narrow ? "drg-narrow" : ""}`} style={{ aspectRatio: `${W} / ${H}` }}>
         <svg
           ref={svgRef}
           viewBox={`0 0 ${W} ${H}`} className="drg-svg" role="img"
-          aria-label={`${t.title}: ${history[history.length - 1].rating_after}`}
-          onMouseMove={(e) => pick(e.clientX, e.clientY)}
+          aria-label={`${t.title}: ${empty ? t.noneYet : current}`}
+          onMouseMove={(e) => { if (!empty) pick(e.clientX, e.clientY); }}
           onMouseLeave={() => setHover(null)}
         >
           {/* Rank bands, each with its name in its own colour. */}
@@ -216,12 +251,14 @@ export function RatingGraph({
             const height = yOf(from) - y;
             return (
               <g key={rank.min}>
-                <rect x={x0} y={y} width={innerW} height={height} fill={rank.color} opacity={0.13} />
-                {height >= 18 && (
-                  <text x={x1 - 8} y={y + 14} className="drg-band" fill={rank.color} textAnchor="end">
-                    {lang === "uz" ? rank.nameUz : rank.nameEn}
-                  </text>
-                )}
+                <rect x={x0} y={y} width={innerW} height={height} fill={rank.color} className="drg-stripe" />
+                {height >= 18 && (() => {
+                  const name = lang === "uz" ? rank.nameUz : rank.nameEn;
+                  const at = bandLabel(name, y, y + height);
+                  return at && (
+                    <text x={at.x} y={at.y} className="drg-band" fill={rank.color} textAnchor={at.anchor}>{name}</text>
+                  );
+                })()}
               </g>
             );
           })}
@@ -245,20 +282,31 @@ export function RatingGraph({
 
           <rect x={x0} y={PAD.top} width={innerW} height={innerH} className="drg-frame" />
 
-          <polyline points={line} className="drg-line" />
+          {!empty && <polyline points={line} className="drg-line" />}
+
+          {empty && (
+            <g>
+              <line x1={x0} x2={x1} y1={yOf(rating)} y2={yOf(rating)} className="drg-baseline" />
+              {/* Above the dashed line, which sits at the rating the curve will start from. */}
+              <text x={(x0 + x1) / 2} y={yOf(rating) - (narrow ? 42 : 34)} className="drg-empty" textAnchor="middle">{t.noneYet}</text>
+              <text x={(x0 + x1) / 2} y={yOf(rating) - (narrow ? 18 : 14)} className="drg-empty-hint" textAnchor="middle">{t.emptyHint}</text>
+            </g>
+          )}
 
           {active && (
             <line x1={active.x} x2={active.x} y1={PAD.top} y2={PAD.top + innerH} className="drg-cursor" />
           )}
 
           {/* The peak is ringed, as Codeforces rings a maximum. */}
-          <circle cx={points[peakIndex].x} cy={points[peakIndex].y} r={8.5} className="drg-peak">
-            <title>{`${t.peak}: ${points[peakIndex].row.rating_after}`}</title>
-          </circle>
+          {!empty && (
+            <circle cx={points[peakIndex].x} cy={points[peakIndex].y} r={dotR + 4.5} className="drg-peak">
+              <title>{`${t.peak}: ${points[peakIndex].row.rating_after}`}</title>
+            </circle>
+          )}
 
           {points.map((p, i) => (
             <circle
-              key={p.row.id} cx={p.x} cy={p.y} r={hover === i ? 5.5 : 4}
+              key={p.row.id} cx={p.x} cy={p.y} r={hover === i ? dotR + 1.5 : dotR}
               fill={rankOf(p.row.rating_after).color} className="drg-dot"
               tabIndex={0}
               aria-label={`${p.row.rating_after} · ${fullDateTime(p.row.finished_at, lang)}`}

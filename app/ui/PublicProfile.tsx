@@ -478,7 +478,7 @@ export function PublicProfile({
 
       {section === "overview" && (
         <div className="pv-body">
-          {duelState === "ready" && duels && <RatingGraph lang={lang} rows={duels} />}
+          {duelState === "ready" && duels && <RatingGraph lang={lang} rows={duels} rating={rating} />}
           {duelState === "missing" && <p className="muted os-empty">{t.duelsMissing}</p>}
 
           <div className="pv-grid">
