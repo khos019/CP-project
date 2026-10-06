@@ -78,7 +78,8 @@ export function DuelTable({
   const t = T[lang];
   return (
     <div className="sub-table-wrap">
-      <table className="sub-table">
+      {/* Cards on a phone, like the submissions list (.dh-cards in globals.css). */}
+      <table className="sub-table dh-cards">
         <thead>
           <tr>
             <th>{t.when}</th>
@@ -92,7 +93,7 @@ export function DuelTable({
           {rows.map((row) => (
             <tr key={row.id}>
               <td className="mono sub-when">{shortDateTime(row.finished_at, lang)}</td>
-              <td>
+              <td className="dh-opp">
                 {row.opponent_is_bot ? (
                   <span>{t.bot} <span className="tag feed-me-tag">{t.botMode}</span></span>
                 ) : row.opponent_username ? (
@@ -104,13 +105,13 @@ export function DuelTable({
                 )}
                 <small className="muted mono dh-elo"> · {row.opponent_rating} Elo</small>
               </td>
-              <td className="mono">{row.my_score} : {row.opp_score}</td>
-              <td>
+              <td className="mono dh-score">{row.my_score} : {row.opp_score}</td>
+              <td className="dh-res">
                 <span className={`sub-verdict ${row.outcome === "win" ? "ok" : row.outcome === "loss" ? "bad" : ""}`}>
                   {row.outcome === "win" ? t.won : row.outcome === "loss" ? t.lost : t.draw}
                 </span>
               </td>
-              <td className="mono">
+              <td className="mono dh-delta">
                 <span className={row.delta > 0 ? "dh-win" : row.delta < 0 ? "dh-loss" : "muted"}>
                   {row.delta > 0 ? "+" : ""}{row.delta}
                 </span>

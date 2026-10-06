@@ -3817,3 +3817,23 @@ a.editor-escape:hover{color:var(--ink);border-color:var(--line-strong);backgroun
  .sub-cards .sub-lang{grid-area:lang}
  .sub-cards .sub-rt{grid-area:rt}
 }
+
+/* Duel tarixi, telefon: kartochka. Raqib va natija tepada, hisob va reyting
+   o'zgarishi o'rtada, vaqt pastda. */
+@media (max-width:600px){
+ .dh-cards thead{display:none}
+ .dh-cards,.dh-cards tbody{display:block;width:100%}
+ .dh-cards tr{
+  display:grid;grid-template-columns:minmax(0,1fr) auto;
+  grid-template-areas:"opp res" "score delta" "when when";
+  column-gap:12px;row-gap:6px;align-items:center;
+  padding:12px 2px;border-bottom:1px solid color-mix(in srgb,var(--surface-2) 44%,var(--line));
+ }
+ .dh-cards tr:last-child{border-bottom:0}
+ .dh-cards td{padding:0;border:0}
+ .dh-cards .dh-opp{grid-area:opp;font-weight:600;min-width:0;overflow-wrap:anywhere}
+ .dh-cards .dh-res{grid-area:res;justify-self:end}
+ .dh-cards .dh-score{grid-area:score}
+ .dh-cards .dh-delta{grid-area:delta;justify-self:end}
+ .dh-cards .sub-when{grid-area:when;font-size:12px;color:var(--muted)}
+}
