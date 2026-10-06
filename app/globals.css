@@ -3837,3 +3837,13 @@ a.editor-escape:hover{color:var(--ink);border-color:var(--line-strong);backgroun
  .dh-cards .dh-delta{grid-area:delta;justify-self:end}
  .dh-cards .sub-when{grid-area:when;font-size:12px;color:var(--muted)}
 }
+
+/* Sayt bo'yicha yechimlar lentasi, telefon: .sub-cards kartochkasi, tepasida
+   muallif qatori bilan. "Siz" qatorining foni kataklarga emas, butun
+   kartochkaga beriladi — aks holda u yamoq-yamoq bo'lib chiqadi. */
+@media (max-width:600px){
+ .feed-cards tr{grid-template-areas:"who who who who" "prob prob prob prob" "res res res code" "when lang rt rt"}
+ .feed-cards .sub-who{grid-area:who;font-size:13px;min-width:0;overflow-wrap:anywhere}
+ .feed-cards .feed-mine{background:color-mix(in srgb,color-mix(in srgb,var(--lime) 96%,var(--ink)) 3.5%,transparent);border-radius:var(--r-sm);padding-left:8px;padding-right:8px}
+ .feed-cards .feed-mine>td{background:none}
+}

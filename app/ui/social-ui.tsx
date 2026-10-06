@@ -703,7 +703,8 @@ export function SiteSubmissions({
         )}
         {state === "ready" && rows && rows.length > 0 && (
           <div className="sub-table-wrap">
-            <table className="sub-table">
+            {/* The submissions-list cards plus a line for the author (.feed-cards). */}
+            <table className="sub-table sub-cards feed-cards">
               <thead>
                 <tr>
                   <th>{t.when}</th>
@@ -719,15 +720,15 @@ export function SiteSubmissions({
                 {rows.map((row) => (
                   <tr key={row.id} className={row.is_me ? "feed-mine" : undefined}>
                     <td className="mono sub-when">{when(row.created_at, lang)}</td>
-                    <td>
+                    <td className="sub-who">
                       <button className="link-btn" onClick={() => onOpenPerson(row.author_username)}>
                         {row.author_name || row.author_username}
                       </button>
                       {row.is_me && <span className="tag feed-me-tag">{t.meTag}</span>}
                     </td>
-                    <td>{row.problem_title || row.problem_key}</td>
-                    <td className="mono">{LANG_LABEL[row.language] || row.language}</td>
-                    <td>
+                    <td className="sub-prob">{row.problem_title || row.problem_key}</td>
+                    <td className="mono sub-lang">{LANG_LABEL[row.language] || row.language}</td>
+                    <td className="sub-res">
                       <span className={`sub-verdict ${row.verdict === "ACCEPTED" ? "ok" : "bad"}`}>
                         {t.verdicts[row.verdict] || row.verdict}
                         {row.passed !== null && row.total !== null && row.verdict !== "ACCEPTED" && (
@@ -735,8 +736,8 @@ export function SiteSubmissions({
                         )}
                       </span>
                     </td>
-                    <td className="mono">{row.runtime_ms === null ? "—" : `${row.runtime_ms} ms`}</td>
-                    <td>
+                    <td className="mono sub-rt">{row.runtime_ms === null ? "—" : `${row.runtime_ms} ms`}</td>
+                    <td className="sub-code">
                       <button className="link-btn" onClick={() => setOpenRow(row)}>
                         {row.readable ? t.view : <><LockIcon /> {t.locked}</>}
                       </button>
