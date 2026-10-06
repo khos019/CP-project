@@ -3740,7 +3740,7 @@ a.editor-escape:hover{color:var(--ink);border-color:var(--line-strong);backgroun
  width:24px;height:24px;display:inline-grid;place-items:center;border-radius:var(--r-sm);
  border:1px solid currentColor;font-family:var(--font-mono);font-size:var(--t-xs);font-weight:600;
 }
-.contest-problems{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:var(--s3);margin-bottom:var(--s4)}
+.contest-problems{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:var(--s3);margin-bottom:var(--s4)}
 .contest-problem{
  display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:var(--s3);row-gap:2px;
  padding:var(--s3) var(--s4);border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface);
@@ -3768,7 +3768,19 @@ a.editor-escape:hover{color:var(--ink);border-color:var(--line-strong);backgroun
 .standings .st-ok{background:var(--green-wash)}
 .standings .st-ok span{color:var(--ok)}
 .standings .st-bad span{color:var(--bad)}
+/* A phone has room for the name and the five cells, not for the handle too:
+   the handle goes, the name is clipped, and the name column stays put while
+   the cells scroll under it on the narrowest screens. */
 @media (max-width:640px){
  .contest-card{padding:12px var(--s4)}
- .standings th,.standings td{padding:6px 8px}
+ .standings{font-size:var(--t-xs)}
+ .standings th,.standings td{padding:6px 4px}
+ .standings .st-place{width:18px;padding-left:6px}
+ .standings .st-who .muted{display:none}
+ .standings .st-who b{display:block;max-width:68px;overflow:hidden;text-overflow:ellipsis}
+ .standings .st-who{position:sticky;left:0;background:var(--surface);z-index:1}
+ .standings thead .st-who{background:var(--surface-2)}
+ .standings .st-num{width:30px}
+ .standings .st-cell{width:36px}
+ .standings .st-cell small{font-size:10px}
 }
