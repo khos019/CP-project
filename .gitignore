@@ -43,6 +43,9 @@ next-env.d.ts
 /work/
 *.tsbuildinfo
 
+# Contest archive build output (binaries, verdict cache, seed.json)
+tools/contests/out/
+
 # Supabase CLI scratch state
 supabase/.temp/
 

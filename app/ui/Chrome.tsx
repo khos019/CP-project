@@ -31,12 +31,13 @@ export type Lang = "uz" | "en";
  * hiding them behind an avatar menu meant a signed-out visitor had no way to
  * reach the shop at all. What made the old header unreadable was that all
  * seven were <button>s competing with the actual actions beside them — not
- * that there were seven. They are links now, and the divider says which four
+ * that there were seven. They are links now, and the divider says which five
  * are the spine and which two are the annexes. */
 const PRIMARY = [
   { view: "roadmaps", href: "/roadmaps", uz: "Yo‘l xaritalari", en: "Roadmaps" },
   { view: "problems", href: "/problems", uz: "Masalalar", en: "Problems" },
   { view: "duel", href: "/duel", uz: "Duel", en: "Duel" },
+  { view: "contests", href: "/contests", uz: "Kontestlar", en: "Contests" },
   { view: "leaderboard", href: "/leaderboard", uz: "Reyting", en: "Rating" },
 ] as const;
 
@@ -45,7 +46,7 @@ const SECONDARY = [
   { view: "shop", href: "/shop", uz: "Do‘kon", en: "Shop" },
 ] as const;
 
-/* On a phone the same four live in a bottom bar, where a thumb can reach them.
+/* On a phone the spine lives in a bottom bar, where a thumb can reach them.
    Home returns as the first tab because the bottom bar is the only navigation
    on that screen — the header keeps just the brand and the avatar. */
 const TABS = [
@@ -61,6 +62,7 @@ const TABS = [
 const MORE = [
   { view: "playground", href: "/playground", uz: "Kompilyator", en: "Compiler", icon: "⌨" },
   { view: "shop", href: "/shop", uz: "Do‘kon", en: "Shop", icon: "◆" },
+  { view: "contests", href: "/contests", uz: "Kontestlar", en: "Contests", icon: "⚑" },
   { view: "leaderboard", href: "/leaderboard", uz: "Reyting", en: "Rating", icon: "▲" },
   { view: "placement", href: "/placement", uz: "Darajani aniqlash", en: "Placement", icon: "◎" },
 ] as const;
@@ -306,6 +308,7 @@ export function SiteFooter({ lang, go }: { lang: Lang; go: Nav }) {
         <nav className="footer-col" aria-label={tr(lang,"chrome.hamjamiyat")}>
           <h3>{tr(lang,"chrome.hamjamiyat")}</h3>
           {link("/duel", "duel", uz ? "Duel" : "Duel")}
+          {link("/contests", "contests", uz ? "Kontestlar" : "Contests")}
           {link("/leaderboard", "leaderboard", tr(lang,"algoYolApp.reyting_2"))}
           {link("/shop", "shop", tr(lang,"chrome.dokon"))}
         </nav>
