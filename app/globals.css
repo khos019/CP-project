@@ -3468,10 +3468,6 @@ a.editor-escape:hover{color:var(--ink);border-color:var(--line-strong);backgroun
    stronger than a background wash. */
 .drg-stripe{opacity:.17}
 .drg-baseline{stroke:var(--ink);stroke-opacity:.45;stroke-width:1.5;stroke-dasharray:6 5}
-.drg-empty{fill:var(--ink);font-size:15px;font-weight:600}
-.drg-empty-hint{fill:var(--muted);font-size:12px}
-.drg-narrow .drg-empty{font-size:18px}
-.drg-narrow .drg-empty-hint{font-size:14px}
 .drg-sum{margin:0;display:flex;align-items:baseline;gap:var(--s3);flex-wrap:wrap;font-size:var(--t-sm);color:var(--muted)}
 .drg-sum > b{font-size:20px}
 .drg-cursor{stroke:var(--ink);stroke-opacity:.25;stroke-width:1}

@@ -42,7 +42,6 @@ type Lang = "uz" | "en";
 const T = {
   uz: {
     title: "Duel reytingi",
-    emptyHint: "Birinchi duel tugagach chiziq shu yerdan boshlanadi.",
     vs: "Raqib",
     bot: "Algo (AI)",
     outcome: { win: "G‘alaba", loss: "Mag‘lubiyat", draw: "Durang" },
@@ -53,7 +52,6 @@ const T = {
   },
   en: {
     title: "Duel rating",
-    emptyHint: "The curve starts here after the first duel.",
     vs: "Opponent",
     bot: "Algo (AI)",
     outcome: { win: "Win", loss: "Loss", draw: "Draw" },
@@ -287,9 +285,6 @@ export function RatingGraph({
           {empty && (
             <g>
               <line x1={x0} x2={x1} y1={yOf(rating)} y2={yOf(rating)} className="drg-baseline" />
-              {/* Above the dashed line, which sits at the rating the curve will start from. */}
-              <text x={(x0 + x1) / 2} y={yOf(rating) - (narrow ? 42 : 34)} className="drg-empty" textAnchor="middle">{t.noneYet}</text>
-              <text x={(x0 + x1) / 2} y={yOf(rating) - (narrow ? 18 : 14)} className="drg-empty-hint" textAnchor="middle">{t.emptyHint}</text>
             </g>
           )}
 
