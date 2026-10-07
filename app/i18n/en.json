@@ -135,6 +135,8 @@
   "contests.first_note": "The first to solve each problem has the darker cell.",
   "contests.first_solve": "First to solve",
   "contests.format": "Format",
+  "contests.hidden": "Hidden",
+  "contests.hidden_note": "This round is hidden from everyone else — only you (the owner) can see it.",
   "contests.lead": "Past AlgoYo‘l rounds, five problems from A to E each. The standings are computed from the participants' actual submissions.",
   "contests.length": "Length",
   "contests.limits": "{s} s · {mb} MB",

@@ -9,6 +9,8 @@
  *   node tools/contests/seed.mjs --duels          dry run of out/duels.json
  *   node tools/contests/seed.mjs --apply-duels    write the bot-vs-bot duels
  *   node tools/contests/seed.mjs --rollback-duels delete them, ratings to 1200
+ *   node tools/contests/seed.mjs --hide-contests  take the rounds off the site (049)
+ *   node tools/contests/seed.mjs --show-contests  put them back
  *
  * Uses SUPABASE_SERVICE_ROLE_KEY from .env.local. Every account it creates is
  * recorded in out/applied.json as it goes, and in bot_accounts, so a rollback
@@ -25,7 +27,7 @@ const HERE = new URL(".", import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, "$
 const ROOT = join(HERE, "..", "..");
 const OUT = join(HERE, "out");
 const arg = (f) => process.argv.includes(f);
-const mode = arg("--apply-duels") ? "apply-duels" : arg("--rollback-duels") ? "rollback-duels" : arg("--duels") ? "dry-duels"
+const mode = arg("--hide-contests") ? "hide" : arg("--show-contests") ? "show" : arg("--apply-duels") ? "apply-duels" : arg("--rollback-duels") ? "rollback-duels" : arg("--duels") ? "dry-duels"
   : arg("--apply") ? "apply" : arg("--rollback") ? "rollback" : arg("--update-timing") ? "timing" : "dry";
 const duelsFile = join(OUT, "duels.json");
 const duels = existsSync(duelsFile) ? JSON.parse(readFileSync(duelsFile, "utf8")) : null;
@@ -101,6 +103,14 @@ async function removeDuels() {
     await rest("DELETE", `bank_submissions?id=in.(${batch.join(",")})`);
   }
   console.log(`deleted ${duels.matches.length} seeded duels and their submissions`);
+}
+
+if (mode === "hide" || mode === "show") {
+  // Visibility only: nothing is written but contests.hidden.
+  const slugs = seed.contests.map((c) => c.slug);
+  await rest("PATCH", `contests?slug=in.(${slugs.join(",")})`, { hidden: mode === "hide" });
+  console.log(`${slugs.length} contests are now ${mode === "hide" ? "hidden from everyone but the owner" : "visible to everyone"}`);
+  process.exit(0);
 }
 
 if (mode === "rollback-duels") {

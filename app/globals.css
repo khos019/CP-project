@@ -3783,6 +3783,8 @@ a.editor-escape:hover{color:var(--ink);border-color:var(--line-strong);backgroun
 .cx-tabs a:hover{color:var(--ink)}
 .cx-tabs a.on{color:var(--ink);border-bottom-color:var(--green)}
 .cx-r{text-align:right}
+.cx-hidden-tag{background:var(--orange-wash);color:var(--orange);border-color:color-mix(in srgb,var(--orange) 35%,transparent)}
+.cx-hidden-note{margin:var(--s3) 0 0;font-size:var(--t-sm)}
 .cx-count{font-size:var(--t-sm)}
 
 /* Masalalar: chapda jadval, o'ngda raund haqida bloklar. */

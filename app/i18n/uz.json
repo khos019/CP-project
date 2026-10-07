@@ -135,6 +135,8 @@
   "contests.first_note": "Har bir masalani birinchi yechgan ishtirokchining katagi to‘qroq rangda.",
   "contests.first_solve": "Birinchi yechgan",
   "contests.format": "Format",
+  "contests.hidden": "Yashirin",
+  "contests.hidden_note": "Bu raund boshqalarga ko‘rinmaydi — uni faqat siz (owner) ko‘ryapsiz.",
   "contests.lead": "O‘tgan AlgoYo‘l raundlari: har birida A dan E gacha besh masala. Natijalar jadvali ishtirokchilarning haqiqiy submissionlaridan hisoblanadi.",
   "contests.length": "Davomiyligi",
   "contests.limits": "{s} s · {mb} MB",

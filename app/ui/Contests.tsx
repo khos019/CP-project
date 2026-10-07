@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { tr, type Lang } from "./i18n";
-import { supabaseConfig } from "./session";
+import { readToken, supabaseConfig } from "./session";
 import { ratingColor } from "./rating";
 import { linkTo } from "./Chrome";
 import { bankProblems } from "./problem-bank";
@@ -24,6 +24,8 @@ type ContestSummary = {
   participants: number; problems: { idx: string; rating: number }[];
   /** From 047; absent until it is applied, and the card simply leaves it out. */
   winner?: { username: string; display_name: string } | null;
+  /** From 049: only the owner ever receives a hidden round. */
+  hidden?: boolean;
 };
 type ContestProblem = {
   idx: string; bank_id: string; problem_key: string; title_uz: string; title_en: string;
@@ -45,12 +47,18 @@ type Load<T> = { state: "loading" } | { state: "ready"; data: T } | { state: "no
 async function publicRpc<T>(name: string, args: Record<string, unknown> = {}): Promise<Load<T>> {
   const { url, key } = supabaseConfig();
   if (!url || !key) return { state: "error" };
+  // Signed in, the request carries the session, because a hidden round (049)
+  // is shown to the owner. A stale session is not worth an error page: the
+  // same question is asked again as a visitor.
+  const ask = (bearer: string) => fetch(`${url}/rest/v1/rpc/${name}`, {
+    method: "POST",
+    headers: { apikey: key, Authorization: `Bearer ${bearer}`, "content-type": "application/json" },
+    body: JSON.stringify(args),
+  });
   try {
-    const res = await fetch(`${url}/rest/v1/rpc/${name}`, {
-      method: "POST",
-      headers: { apikey: key, Authorization: `Bearer ${key}`, "content-type": "application/json" },
-      body: JSON.stringify(args),
-    });
+    const token = readToken();
+    let res = await ask(token || key);
+    if (token && res.status === 401) res = await ask(key);
     // Until 044 is applied the function does not exist, and the page says so
     // rather than looking broken.
     if (res.status === 404) return { state: "not-migrated" };
@@ -180,7 +188,8 @@ function ContestList({ lang, onOpenContest }: { lang: Lang; onOpenContest: (slug
             <span className="cx-chips" aria-label={tr(lang, "contests.problems")}>
               {c.problems.map((p) => <span key={p.idx} className="cx-chip" style={{ color: ratingColor(p.rating) }} title={`${p.idx} · ${p.rating}`}>{p.idx}</span>)}
             </span>
-            {c.archived && <span className="tag">{tr(lang, "contests.archive")}</span>}
+            {c.hidden ? <span className="tag cx-hidden-tag">{tr(lang, "contests.hidden")}</span>
+              : c.archived && <span className="tag">{tr(lang, "contests.archive")}</span>}
           </div>
         </a>;
       })}</div>
@@ -226,6 +235,7 @@ function ContestRound({ lang, slug, tab, onTab, onOpenList, onOpenSubmissions, o
     <div className="cx-round-head">
       <p className="eyebrow">{tr(lang, "contests.round_n", { n: contest.number })}{contest.archived ? ` · ${tr(lang, "contests.archive")}` : ""}</p>
       <h1 className="page-title">{lang === "uz" ? contest.title_uz : contest.title_en}</h1>
+      {contest.hidden && <p className="notice cx-hidden-note">{tr(lang, "contests.hidden_note")}</p>}
     </div>
     <nav className="cx-tabs" aria-label={tr(lang, "contests.title")}>
       {tabs.map((t) => (
