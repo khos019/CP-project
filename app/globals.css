@@ -4436,3 +4436,80 @@ a.cx-prow:hover .cx-pname b{text-decoration:underline;text-underline-offset:3px}
  .dh-continue-foot{flex-direction:column;align-items:stretch}
  .dh-actions .primary{flex:1}
 }
+
+/* ─── Ega statistikasi: "Bugun" bloki, ikonkali plitkalar, HTML grafiklar ─ */
+.os-today{
+ position:relative;overflow:hidden;isolation:isolate;
+ margin-bottom:var(--s6);padding:var(--s5);border-radius:var(--r-xl);
+ background:var(--surface);border:1px solid var(--line);
+}
+.os-today::before{
+ content:"";position:absolute;inset:0;z-index:-1;
+ background:radial-gradient(70% 120% at 0 0,color-mix(in srgb,var(--green) 10%,transparent),transparent 60%);
+}
+.os-today .os-h2{margin-bottom:var(--s4)}
+.os-today-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--s3)}
+.os-tiles{grid-template-columns:repeat(auto-fit,minmax(210px,1fr))}
+.os-tiles-3{grid-template-columns:repeat(3,minmax(0,1fr))}
+@media(max-width:760px){.os-tiles-3{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.os-tile{
+ --tone:var(--green);
+ display:flex;flex-direction:column;gap:6px;padding:16px 18px;border-radius:16px;
+ background:var(--surface);border:1px solid var(--line);
+ transition:border-color var(--dur-fast) var(--ease);
+}
+.os-tile:hover{border-color:color-mix(in srgb,var(--tone) 35%,var(--line))}
+.os-tile-head{display:flex;align-items:center;gap:8px;min-width:0}
+.os-tile-ic{
+ width:28px;height:28px;border-radius:8px;flex:none;display:grid;place-items:center;
+ color:var(--tone);background:color-mix(in srgb,var(--tone) 13%,transparent);
+}
+.os-tile-ic svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.os-tile small{font-size:13px;font-weight:600;color:var(--muted);line-height:1.3}
+.os-tile b{font-size:28px;line-height:1.1;letter-spacing:-.03em;color:var(--ink)}
+.os-tile-hint{font-size:12px;line-height:1.45;color:var(--dim)}
+.os-tile.os-big{background:color-mix(in srgb,var(--tone) 6%,var(--surface));border-color:color-mix(in srgb,var(--tone) 22%,var(--line))}
+.os-tile.os-big b{font-size:clamp(24px,calc(2.2 * var(--vw)),32px);color:var(--tone);text-wrap:balance}
+.os-tile.os-big .os-tile-ic{width:32px;height:32px;border-radius:10px}
+.os-tile.tone-green{--tone:var(--green)}
+.os-tile.tone-blue{--tone:#4f8cff}
+.os-tile.tone-orange{--tone:var(--orange)}
+.os-tile.tone-violet{--tone:#9b6bff}
+.os-footnote{font-size:12.5px;line-height:1.6;margin:var(--s2) 0 0;max-width:80ch}
+.os-footnote b{color:var(--muted)}
+
+.os-charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:var(--s4);margin-bottom:var(--s6)}
+.os-chart-top{display:flex;align-items:baseline;justify-content:space-between;gap:var(--s3);flex-wrap:wrap}
+.os-chart-total{font-size:13px;color:var(--muted);white-space:nowrap}
+.os-chart-total small{font-size:12px}
+.os-chart-total b{color:var(--ink);font-size:15px}
+.os-chart-hint b{color:var(--green)}
+.os-plot{position:relative;height:150px;padding-top:18px;border-bottom:1px solid var(--line);
+ background:repeating-linear-gradient(to top,transparent 0 calc(25% - 1px),color-mix(in srgb,var(--ink) 6%,transparent) calc(25% - 1px) 25%)}
+.os-plot-max{position:absolute;top:0;right:0;font-size:10.5px;color:var(--dim)}
+.os-plot-bars{display:flex;align-items:flex-end;gap:3px;height:100%}
+.os-col{
+ flex:1;min-width:0;height:100%;padding:0;border:0;background:none;
+ display:flex;align-items:flex-end;border-radius:4px 4px 0 0;
+}
+.os-col i{
+ display:block;width:100%;border-radius:4px 4px 1px 1px;
+ background:linear-gradient(to top,color-mix(in srgb,var(--green) 70%,transparent),var(--green));
+ transition:filter var(--dur-fast) var(--ease),opacity var(--dur-fast) var(--ease);
+}
+.os-col.zero i{height:3px;background:color-mix(in srgb,var(--ink) 10%,transparent)}
+.os-col.today i{background:linear-gradient(to top,color-mix(in srgb,var(--orange) 70%,transparent),var(--orange))}
+.os-col.zero.today i{background:color-mix(in srgb,var(--orange) 35%,transparent)}
+.os-plot-bars:hover .os-col:not(.on) i{opacity:.55}
+.os-col.on{background:color-mix(in srgb,var(--ink) 5%,transparent)}
+.os-col.on i{filter:brightness(1.1)}
+.os-col:focus-visible{outline:2px solid var(--green);outline-offset:1px}
+.os-chart-axis span:nth-child(2){opacity:.8}
+
+@media(max-width:900px){.os-today-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:520px){
+ .os-today{padding:var(--s4)}
+ .os-today-grid{grid-template-columns:1fr}
+ .os-charts{grid-template-columns:1fr}
+ .os-plot-bars{gap:2px}
+}

@@ -121,6 +121,24 @@ export function OwnerStats({ lang, goProfile, onPickDay }: { lang: Lang; goProfi
   );
 }
 
+/* Stroked icons for the tiles; colour comes from the tile. */
+const IC: Record<string, string> = {
+  eye: "M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12Zm10 3a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z",
+  clock: "M12 7v5l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z",
+  plus: "M15 19a6 6 0 0 0-12 0M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM19 8v6M22 11h-6",
+  key: "M15 7a4 4 0 1 1-3.9 4.9L3 20v-3h3v-3h3l2.1-2.1A4 4 0 0 1 15 7Zm1 1.5h.01",
+  users: "M9 11.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14.5A6.5 6.5 0 0 1 21.5 20",
+  calendar: "M4 6h16v14H4zM4 10h16M8 3v4M16 3v4",
+  mail: "M3 6h18v12H3zM3 7l9 6 9-6",
+  ghost: "M12 3a7 7 0 0 0-7 7v10l2.5-2 2.5 2 2-2 2 2 2.5-2 2.5 2V10a7 7 0 0 0-7-7ZM9.5 10h.01M14.5 10h.01",
+  route: "M6 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM18 9a2 2 0 1 0 0-4 2 2 0 0 0 0 4ZM6 15V9a4 4 0 0 1 4-4h6M18 9v6a4 4 0 0 1-4 4H8",
+  layers: "m12 3 9 5-9 5-9-5 9-5ZM3 13l9 5 9-5",
+  quiz: "M9 11l2 2 4-4M5 4h14v16H5z",
+  check: "M20 6 9 17l-5-5",
+  timer: "M10 2h4M12 14l3-3M20 14a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z",
+  sum: "M18 5H6l6 7-6 7h12",
+};
+
 function StatsBody({ lang, t, stats, onPickDay }: { lang: Lang; t: (typeof T)["uz"]; stats: Stats; onPickDay: (day: string) => void }) {
   const langRows = useMemo(
     () => Object.entries(stats.by_language || {}).sort((a, b) => b[1] - a[1]),
@@ -140,25 +158,44 @@ function StatsBody({ lang, t, stats, onPickDay }: { lang: Lang; t: (typeof T)["u
       maxDay: stats.online_max_day_seconds || 0,
     };
   }, [stats]);
+  const fill = (text: string, vars: Record<string, string | number>) =>
+    Object.entries(vars).reduce((s, [k, v]) => s.replace(`{${k}}`, String(v)), text);
+  const pct = (n: number) => (stats.learners_total ? Math.round((n / stats.learners_total) * 100) : 0);
 
   return (
     <>
-      <section className="os-section">
-        <h2 className="os-h2">{t.accounts}</h2>
-        <div className="os-tiles">
-          <Tile label={t.total} value={stats.learners_total} accent />
-          <Tile label={t.activeToday} value={stats.active_today} accent />
-          <Tile label={t.active7} value={stats.active_7d} />
-          <Tile label={t.active30} value={stats.active_30d} />
-          <Tile label={t.newToday} value={stats.new_today} />
-          <Tile label={t.new7} value={stats.new_7d} />
-          <Tile label={t.confirmed} value={stats.confirmed} />
-          <Tile label={t.neverIn} value={stats.never_signed_in} />
+      {/* ── Today: the numbers an owner opens this page for. "On the site"
+          (heartbeats) and "signed in" (auth sessions) are different things,
+          so each tile says in one line what it counts. ──────────────────── */}
+      <section className="os-today">
+        <h2 className="os-h2">{t.todayTitle}</h2>
+        <div className="os-today-grid">
+          {online && (
+            <Tile hero icon="eye" tone="green" label={t.onlineTodayWho} value={online.todayLearners} hint={t.onlineTodayWhoHint} />
+          )}
+          {online && (
+            <Tile hero icon="clock" tone="blue" label={t.onlineToday} value={duration(online.today, t, lang)}
+              hint={online.todayLearners ? fill(t.onlineTodayHint, { n: online.todayLearners, avg: duration(online.today / online.todayLearners, t, lang) }) : undefined} />
+          )}
+          <Tile hero icon="plus" tone="orange" label={t.newToday} value={stats.new_today} hint={t.newTodayHint} />
+          <Tile hero icon="key" tone="violet" label={t.activeToday} value={stats.active_today} hint={t.activeTodayHint} />
         </div>
       </section>
 
       <section className="os-section">
-        <div className="panel">
+        <h2 className="os-h2">{t.accounts}</h2>
+        <div className="os-tiles os-tiles-3">
+          <Tile icon="users" label={t.total} value={stats.learners_total} hint={t.totalHint} />
+          <Tile icon="calendar" label={t.new7} value={stats.new_7d} hint={t.new7Hint} />
+          <Tile icon="key" label={t.active7} value={stats.active_7d} hint={t.activeHint} />
+          <Tile icon="key" label={t.active30} value={stats.active_30d} hint={t.activeHint} />
+          <Tile icon="mail" label={t.confirmed} value={stats.confirmed} hint={fill(t.confirmedHint, { p: pct(stats.confirmed) })} />
+          <Tile icon="ghost" label={t.neverIn} value={stats.never_signed_in} hint={t.neverInHint} />
+        </div>
+      </section>
+
+      <div className="os-charts">
+        <section className="panel">
           <DayBars
             lang={lang}
             t={t}
@@ -169,36 +206,32 @@ function StatsBody({ lang, t, stats, onPickDay }: { lang: Lang; t: (typeof T)["u
             format={(v) => String(v)}
             onPick={onPickDay}
           />
-        </div>
-      </section>
+        </section>
+        {online && (
+          <section className="panel">
+            <DayBars
+              lang={lang}
+              t={t}
+              title={t.onlineChart}
+              hint={t.onlineHint}
+              emptyText={t.noOnline}
+              series={online.series.map((d) => ({ day: d.day, value: d.seconds }))}
+              format={(v) => duration(v, t, lang)}
+            />
+          </section>
+        )}
+      </div>
 
       <section className="os-section">
         <h2 className="os-h2">{t.online}</h2>
         {online ? (
           <>
             <div className="os-tiles">
-              <Tile label={t.onlineToday} value={duration(online.today, t, lang)} accent />
-              <Tile label={t.onlineTodayWho} value={online.todayLearners} accent />
-              <Tile
-                label={t.onlineAvg}
-                value={online.todayLearners ? duration(online.today / online.todayLearners, t, lang) : "—"}
-              />
-              <Tile label={t.online7} value={duration(online.week, t, lang)} />
-              <Tile label={t.online30} value={duration(online.month, t, lang)} />
-              <Tile label={t.onlineMax} value={duration(online.maxDay, t, lang)} />
+              <Tile icon="sum" label={t.online7} value={duration(online.week, t, lang)} />
+              <Tile icon="sum" label={t.online30} value={duration(online.month, t, lang)} />
+              <Tile icon="timer" label={t.onlineMax} value={duration(online.maxDay, t, lang)} />
             </div>
-            <div className="panel" style={{ marginTop: 16 }}>
-              <DayBars
-                lang={lang}
-                t={t}
-                title={t.onlineChart}
-                hint={t.onlineHint}
-                emptyText={t.noOnline}
-                series={online.series.map((d) => ({ day: d.day, value: d.seconds }))}
-                format={(v) => duration(v, t, lang)}
-              />
-            </div>
-            <p className="muted os-empty">{t.onlineNote}</p>
+            <p className="muted os-footnote">{t.onlineNote}</p>
           </>
         ) : (
           // 009 answers without these keys, and zeros would read as "nobody
@@ -212,10 +245,10 @@ function StatsBody({ lang, t, stats, onPickDay }: { lang: Lang; t: (typeof T)["u
       <section className="os-section">
         <h2 className="os-h2">{t.learning}</h2>
         <div className="os-tiles">
-          <Tile label={t.withProgress} value={stats.learners_with_progress} accent />
-          <Tile label={t.unitsDone} value={stats.units_completed} />
-          <Tile label={t.quizzes} value={stats.quizzes_passed} />
-          <Tile label={t.solved} value={stats.problems_solved} />
+          <Tile icon="route" label={t.withProgress} value={stats.learners_with_progress} hint={fill(t.confirmedHint, { p: pct(stats.learners_with_progress) })} />
+          <Tile icon="layers" label={t.unitsDone} value={stats.units_completed} />
+          <Tile icon="quiz" label={t.quizzes} value={stats.quizzes_passed} />
+          <Tile icon="check" label={t.solved} value={stats.problems_solved} />
         </div>
       </section>
 
@@ -245,26 +278,39 @@ function StatsBody({ lang, t, stats, onPickDay }: { lang: Lang; t: (typeof T)["u
         </section>
       </div>
 
-      <section className="panel os-note">
-        <h3>{t.notTracked}</h3>
-        <p className="muted">{t.notTrackedBody}</p>
-      </section>
+      <p className="muted os-footnote">
+        <b>{t.notTracked}.</b> {t.notTrackedBody}
+      </p>
     </>
   );
 }
 
-function Tile({ label, value, accent }: { label: string; value: number | string; accent?: boolean }) {
+function Tile({
+  label, value, hint, icon, tone, hero,
+}: {
+  label: string; value: number | string; hint?: string; icon?: string;
+  tone?: "green" | "blue" | "orange" | "violet"; hero?: boolean;
+}) {
   return (
-    <div className={accent ? "os-tile accent" : "os-tile"}>
+    <div className={`os-tile${hero ? " os-big" : ""}${tone ? ` tone-${tone}` : ""}`}>
+      <span className="os-tile-head">
+        {icon && (
+          <span className="os-tile-ic" aria-hidden>
+            <svg viewBox="0 0 24 24"><path d={IC[icon]} /></svg>
+          </span>
+        )}
+        <small>{label}</small>
+      </span>
       <b className="mono">{value}</b>
-      <small>{label}</small>
+      {hint && <span className="os-tile-hint">{hint}</span>}
     </div>
   );
 }
 
-/* Daily counts over a fixed 30-day window: discrete time buckets, so bars, not a
-   line. Zero days are drawn as a baseline tick so "nobody joined" reads as a
-   real zero rather than missing data. */
+/* Daily values over a fixed 30-day window: discrete buckets, so bars. Drawn in
+   HTML rather than a stretched SVG so the bars keep crisp corners, the peak is
+   labelled and today's bar stands out. Zero days keep a faint stub so "nobody"
+   reads as a real zero rather than missing data. */
 function DayBars({
   lang,
   t,
@@ -281,8 +327,6 @@ function DayBars({
   hint: string;
   emptyText: string;
   series: { day: string; value: number }[];
-  /* Sign-ups are a count and online time is a duration; the bars are the same
-     shape either way, so only the readout differs. */
   format: (value: number) => string;
   onPick?: (day: string) => void;
 }) {
@@ -290,76 +334,52 @@ function DayBars({
   const max = Math.max(1, ...series.map((d) => d.value));
   const total = series.reduce((n, d) => n + d.value, 0);
   const shown = focus !== null && series[focus] ? series[focus] : null;
-
-  const W = 100;
-  const H = 34;
-  const gap = 0.6;
-  const barW = Math.max(0.8, W / Math.max(series.length, 1) - gap);
+  const last = series.length - 1;
+  const mid = Math.floor(last / 2);
 
   return (
     <figure className="os-chart">
       <figcaption>
-        <h2 className="os-h2">{title}</h2>
+        <span className="os-chart-top">
+          <h2 className="os-h2">{title}</h2>
+          <span className="os-chart-total">
+            <small>{t.chartTotal}</small> <b className="mono">{format(total)}</b>
+          </span>
+        </span>
         <p className="muted os-chart-hint">
           {shown ? (
             <>
               <b className="mono">{format(shown.value)}</b> · {dayLabel(shown.day, lang)}
             </>
-          ) : total === 0 ? (
-            emptyText
-          ) : (
-            hint
-          )}
+          ) : total === 0 ? emptyText : hint}
         </p>
       </figcaption>
-      {/* The pointer is tracked across the whole plot rather than per bar: at 30
-          days a bar is under three pixels wide, so requiring a direct hit would
-          make the readout practically unreachable. */}
-      <svg
-        className="os-chart-svg"
-        viewBox={`0 0 ${W} ${H + 6}`}
-        preserveAspectRatio="none"
-        role="img"
-        aria-label={`${title}: ${format(total)}`}
-        onPointerMove={(e) => {
-          const box = e.currentTarget.getBoundingClientRect();
-          if (!box.width || !series.length) return;
-          const ratio = (e.clientX - box.left) / box.width;
-          setFocus(Math.min(series.length - 1, Math.max(0, Math.floor(ratio * series.length))));
-        }}
-        onPointerLeave={() => setFocus(null)}
-        onClick={() => {
-          // Statistics stays aggregate; the names live on the Users page, which
-          // is also where anything can be done about them. So a bar does not
-          // expand here, it opens that page already filtered to its day.
-          if (onPick && shown && shown.value > 0) onPick(shown.day);
-        }}
-        style={{ cursor: onPick && shown && shown.value > 0 ? "pointer" : "default" }}
-      >
-        <line x1="0" y1={H} x2={W} y2={H} className="os-axis" vectorEffect="non-scaling-stroke" />
-        {focus !== null && (
-          <rect x={focus * (barW + gap) - gap / 2} y="0" width={barW + gap} height={H} className="os-guide" />
-        )}
-        {series.map((d, i) => {
-          const h = d.value === 0 ? 0.9 : Math.max(1.6, (d.value / max) * (H - 3));
-          const x = i * (barW + gap);
-          return (
-            <rect
-              key={d.day}
-              x={x}
-              y={H - h}
-              width={barW}
-              height={h}
-              rx="0.5"
-              className={`os-bar${d.value === 0 ? " zero" : ""}${focus === i ? " on" : ""}`}
-            >
-              <title>{`${dayLabel(d.day, lang)}: ${format(d.value)}`}</title>
-            </rect>
-          );
-        })}
-      </svg>
+      <div className="os-plot" role="img" aria-label={`${title}: ${format(total)}`} onPointerLeave={() => setFocus(null)}>
+        <span className="os-plot-max mono">{format(max)}</span>
+        <div className="os-plot-bars">
+          {series.map((d, i) => {
+            const clickable = !!onPick && d.value > 0;
+            return (
+              <button
+                type="button"
+                key={d.day}
+                className={`os-col${d.value === 0 ? " zero" : ""}${focus === i ? " on" : ""}${i === last ? " today" : ""}`}
+                onPointerEnter={() => setFocus(i)}
+                onFocus={() => setFocus(i)}
+                onClick={() => { if (clickable && onPick) onPick(d.day); }}
+                tabIndex={clickable ? 0 : -1}
+                style={{ cursor: clickable ? "pointer" : "default" }}
+                aria-label={`${dayLabel(d.day, lang)}: ${format(d.value)}`}
+              >
+                <i style={d.value === 0 ? undefined : { height: `${Math.max(4, (d.value / max) * 100)}%` }} />
+              </button>
+            );
+          })}
+        </div>
+      </div>
       <div className="os-chart-axis">
         <span className="mono">{series[0] ? dayLabel(series[0].day, lang) : ""}</span>
+        <span className="mono">{series[mid] ? dayLabel(series[mid].day, lang) : ""}</span>
         <span className="mono">{t.today}</span>
       </div>
     </figure>
