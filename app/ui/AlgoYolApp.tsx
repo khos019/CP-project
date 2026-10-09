@@ -1,7 +1,7 @@
 ﻿"use client";
 /* eslint-disable @next/next/no-html-link-for-pages -- see the note in ./Chrome */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { tr, catalogue } from "./i18n";
 import { RoadmapExperience } from "./RoadmapExperience";
 import { RoadmapHub, roadmapStatus, unitDone } from "./RoadmapHub";
@@ -11,7 +11,7 @@ import { bankProblems, type BankProblem } from "./problem-bank";
 import { useProblemDetail } from "./problem-detail";
 import { MathText } from "./math-text";
 import { LockIcon } from "./icons";
-import { applySolve, ratingColor } from "./rating";
+import { applySolve, rankName, ratingColor } from "./rating";
 import { Shop } from "./Shop";
 import { ShopOrders } from "./ShopOrders";
 import { Playground } from "./Playground";
@@ -1186,6 +1186,27 @@ function SignInRequired({lang,go,what}:{lang:Lang;go:(v:View)=>void;what:"profil
  </div>;
 }
 
+/* Gold, silver, bronze — drawn, so the three places read the same on every OS. */
+const MEDAL=["#f5c84c","#c9d1d6","#e09a5c"];
+function Medal({place,small=false}:{place:number;small?:boolean}){
+ const c=MEDAL[place-1];
+ return <svg className={`lb-medal${small?" sm":""}`} viewBox="0 0 24 24" aria-label={`#${place}`}>
+  <path d="M7 2h4l2 6H9L7 2Zm6 0h4l-2 6h-4l2-6Z" fill={c} opacity=".55"/>
+  <circle cx="12" cy="15" r="7" fill={c}/><circle cx="12" cy="15" r="5.2" fill="none" stroke="#000" strokeOpacity=".15"/>
+  <text x="12" y="18.4" textAnchor="middle" fontSize="9" fontWeight="800" fill="#000" fillOpacity=".6">{place}</text>
+ </svg>;
+}
+/* A photo when there is one, otherwise the initial on the rank colour. */
+/* Google photos refuse requests that carry a referrer, hence no-referrer; any
+   photo that still fails falls back to the initial instead of a blank disc. */
+function LeaderAvatar({row,size="md"}:{row:LeaderRow;size?:"md"|"lg"}){
+ const name=row.display_name?.trim()||row.username;
+ const [broken,setBroken]=useState(false);
+ return <span className={`lb-avatar lb-avatar-${size}`} aria-hidden="true">
+  {row.avatar_url&&!broken?<img src={row.avatar_url} alt="" loading="lazy" referrerPolicy="no-referrer" onError={()=>setBroken(true)}/>:<span>{name.charAt(0).toUpperCase()}</span>}
+ </span>;
+}
+
 /* The ranking is read from the profiles table. It used to be a hard-coded list
    containing a row called "Siz" (You) with an invented rating — every visitor,
    signed in or not, appeared to hold 4th place. */
@@ -1227,7 +1248,7 @@ function Leaderboard({lang,me,signed,onOpenPerson}:{lang:Lang;me:Profile|null;si
  const rankOf=(id:string)=>{const i=rows?rows.findIndex(r=>r.id===id):-1;return i>=0?page*LEADER_PAGE+i+1:null};
  const plain=!searchOn&&mode==="top";
  const list:LeaderRow[]|null=searchOn?(found&&found.q===query.trim()?found.rows:null)
-  :mode==="friends"?(friends?friends.map(f=>({id:f.id,username:f.username,display_name:f.display_name,duel_rating:f.duel_rating,solved_count:f.solved_count})):null)
+  :mode==="friends"?(friends?friends.map(f=>({id:f.id,username:f.username,display_name:f.display_name,avatar_url:f.avatar_url,duel_rating:f.duel_rating,solved_count:f.solved_count})):null)
   :rows;
  /* Who on this page is here right now. Asked for the rows actually being
     rendered, and re-asked on the same cadence as the heartbeat that feeds it —
@@ -1242,9 +1263,9 @@ function Leaderboard({lang,me,signed,onOpenPerson}:{lang:Lang;me:Profile|null;si
   const id=window.setInterval(pull,30000);
   return()=>{live=false;window.clearInterval(id)};
  },[ids,signed]);
- const empty=lang==="uz"
-  ?(searchOn?"Bunday foydalanuvchi topilmadi.":mode==="friends"?"Do‘stlar ro‘yxati bo‘sh. Kimningdir profiliga kirib, ism yonidagi ☆ ni bosing.":"Hali reytingda hech kim yo‘q. Birinchi bo‘ling!")
-  :(searchOn?"No such user.":mode==="friends"?"No friends yet. Open somebody's profile and press the ☆ beside their name.":"Nobody is ranked yet. Be the first.");
+ const [empty,emptyBody]=lang==="uz"
+  ?(searchOn?["Bunday foydalanuvchi topilmadi","Boshqa nickname yoki ism bilan urinib ko‘ring."]:mode==="friends"?["Do‘stlar ro‘yxati bo‘sh","Kimningdir profiliga kirib, ism yonidagi ☆ ni bosing."]:["Hali reytingda hech kim yo‘q","Birinchi duelni o‘ynab, ro‘yxatni boshlang."])
+  :(searchOn?["No such user","Try a different username or name."]:mode==="friends"?["No friends yet","Open somebody's profile and press the ☆ beside their name."]:["Nobody is ranked yet","Play the first duel and start the ladder."]);
  return <><div className="page-head"><div><p className="eyebrow">ELO · K=32</p><h1 className="page-title">{tr(lang,"algoYolApp.duel_reytingi")}</h1><p className="muted">{tr(lang,"algoYolApp.reyting_duel_natijalaridan_hisoblanadi_oda")}</p></div>{me&&myPlace!==null&&<button type="button" className="tag leader-mine" onClick={()=>{setQuery("");setMode("top");turn(Math.floor((myPlace-1)/LEADER_PAGE))}}>{tr(lang,"algoYolApp.sizning_orningiz")} #{myPlace}</button>}</div>
  <div className="leader-tools">
   <input className="leader-search" type="search" value={query} onChange={e=>setQuery(e.target.value)} placeholder={tr(lang,"algoYolApp.nickname_yoki_ism_boyicha_qidirish")} aria-label={tr(lang,"algoYolApp.foydalanuvchi_qidirish")}/>
@@ -1255,8 +1276,48 @@ function Leaderboard({lang,me,signed,onOpenPerson}:{lang:Lang;me:Profile|null;si
  </div>
  {(state==="loading"||(searchOn&&searching)||(!searchOn&&mode==="friends"&&friends===null))&&<div className="screen-state" role="status"><span className="spinner" aria-hidden/><p className="muted">{tr(lang,"algoYolApp.yuklanmoqda")}</p></div>}
  {state==="error"&&!searchOn&&<div className="panel"><div className="notice notice-error">{tr(lang,"algoYolApp.reytingni_yuklab_bolmadi_keyinroq_urinib_k")}</div></div>}
- {list&&!(searchOn&&searching)&&(list.length?<div className="leaderboard">{list.map(x=>{const mine=me?.id===x.id;const name=x.display_name?.trim()||x.username;const rank=rankOf(x.id);return <button type="button" className={`leader-row ${mine?"me":""}`} key={x.id} onClick={()=>onOpenPerson(x.username)} title={lang==="uz"?`${name} profilini ochish`:`Open ${name}'s profile`}><span className="rank">{rank?`#${rank}`:"—"}</span><span className="leader-who"><b>{name}<OnlineDot online={signed&&online.has(x.id)} lang={lang} label={name}/>{mine&&<span className="tag tag-you">{tr(lang,"algoYolApp.siz")}</span>}</b><span className="muted">@{x.username}</span></span><span className="tag">{x.solved_count} AC</span><span className="rating">{x.duel_rating}</span></button>})}</div>
- :<div className="screen-state panel"><p className="muted">{empty}</p></div>)}
+ {list&&!(searchOn&&searching)&&(list.length?(()=>{
+  /* The first three of the whole ladder stand on a podium; everyone else is
+     a compact row. Only on the real first page — a search or the friends list
+     has no "first place" to celebrate. */
+  const podium=plain&&page===0&&list.length>=3?list.slice(0,3):[];
+  const rest=list.slice(podium.length);
+  const nameOf=(x:LeaderRow)=>x.display_name?.trim()||x.username;
+  const openTitle=(name:string)=>lang==="uz"?`${name} profilini ochish`:`Open ${name}'s profile`;
+  return <>
+   {podium.length>0&&<div className="lb-podium">{[1,0,2].map(i=>{const x=podium[i],name=nameOf(x),mine=me?.id===x.id;
+    return <button type="button" key={x.id} className={`lb-step lb-step-${i+1}${mine?" me":""}`} onClick={()=>onOpenPerson(x.username)} title={openTitle(name)} style={{"--tier":ratingColor(x.duel_rating)} as CSSProperties}>
+     <Medal place={i+1}/>
+     <LeaderAvatar row={x} size="lg"/>
+     <b className="lb-step-name">{name}<OnlineDot online={signed&&online.has(x.id)} lang={lang} label={name}/></b>
+     <span className="lb-handle">@{x.username}</span>
+     <span className="lb-tier">{rankName(x.duel_rating,lang)}</span>
+     <span className="lb-step-rating mono">{x.duel_rating}</span>
+     <span className="lb-step-ac">{x.solved_count} {lang==="uz"?"ta yechim":"solved"}</span>
+    </button>})}</div>}
+   {rest.length>0&&<div className="lb-table" role="table">
+    <div className="lb-head" role="row">
+     <span role="columnheader">#</span>
+     <span role="columnheader">{lang==="uz"?"O‘yinchi":"Player"}</span>
+     <span role="columnheader" className="lb-col-tier">{lang==="uz"?"Daraja":"Rank"}</span>
+     <span role="columnheader" className="lb-col-ac">{lang==="uz"?"Yechgan":"Solved"}</span>
+     <span role="columnheader" className="lb-col-rating">{lang==="uz"?"Reyting":"Rating"}</span>
+    </div>
+    {rest.map(x=>{const mine=me?.id===x.id,name=nameOf(x),rank=rankOf(x.id);
+     return <button type="button" role="row" className={`lb-row${mine?" me":""}`} key={x.id} onClick={()=>onOpenPerson(x.username)} title={openTitle(name)} style={{"--tier":ratingColor(x.duel_rating)} as CSSProperties}>
+      <span className="lb-rank mono">{rank&&rank<=3?<Medal place={rank} small/>:rank??"—"}</span>
+      <span className="lb-who">
+       <LeaderAvatar row={x}/>
+       <span className="lb-names"><b>{name}<OnlineDot online={signed&&online.has(x.id)} lang={lang} label={name}/>{mine&&<span className="tag tag-you">{tr(lang,"algoYolApp.siz")}</span>}</b><span className="lb-handle">@{x.username}</span></span>
+      </span>
+      <span className="lb-col-tier"><span className="lb-tier">{rankName(x.duel_rating,lang)}</span></span>
+      <span className="lb-col-ac mono">{x.solved_count}</span>
+      <span className="lb-col-rating lb-rating mono">{x.duel_rating}</span>
+     </button>})}
+   </div>}
+  </>;
+ })()
+ :<EmptyState lang={lang} icon={searchOn?"search":mode==="friends"?"users":"trophy"} title={empty} body={emptyBody}/>)}
  {plain&&state==="ready"&&pages>1&&<nav className="leader-pager" aria-label={lang==="uz"?"Reyting sahifalari":"Leaderboard pages"}>
   <button type="button" className="secondary" disabled={page===0} onClick={()=>turn(page-1)}>← {lang==="uz"?"Oldingi":"Previous"}</button>
   <span className="muted">{page*LEADER_PAGE+1}–{Math.min(total,(page+1)*LEADER_PAGE)} / {total}</span>

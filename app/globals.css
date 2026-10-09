@@ -4130,3 +4130,95 @@ a.cx-prow:hover .cx-pname b{text-decoration:underline;text-underline-offset:3px}
  .feed-cards .feed-mine{background:color-mix(in srgb,color-mix(in srgb,var(--lime) 96%,var(--ink)) 3.5%,transparent);border-radius:var(--r-sm);padding-left:8px;padding-right:8px}
  .feed-cards .feed-mine>td{background:none}
 }
+
+/* ─── Reyting: shohsupa + jadval ─────────────────────────────────────────
+   Top three on a podium (2 · 1 · 3, the winner raised), everyone else in a
+   compact table. Each row/card carries --tier, its rank colour, so avatar
+   ring, title chip and rating all agree without per-tier classes. */
+.lb-podium{
+ display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--s4);
+ align-items:end;margin:0 0 var(--s5);
+}
+.lb-step{
+ position:relative;display:grid;justify-items:center;gap:4px;text-align:center;
+ padding:var(--s5) var(--s4) var(--s5);min-width:0;
+ background:var(--surface);border:1px solid var(--line);border-radius:var(--r-xl);
+ color:inherit;font:inherit;cursor:pointer;overflow:hidden;isolation:isolate;
+ transition:transform var(--dur-fast) var(--ease),box-shadow var(--dur-fast) var(--ease),border-color var(--dur-fast) var(--ease);
+}
+.lb-step::before{
+ content:"";position:absolute;inset:0 0 auto;height:90px;z-index:-1;
+ background:radial-gradient(120% 100% at 50% 0,color-mix(in srgb,var(--tier) 16%,transparent),transparent 70%);
+}
+.lb-step:hover{transform:translateY(-3px);border-color:color-mix(in srgb,var(--tier) 40%,var(--line));box-shadow:0 14px 34px color-mix(in srgb,var(--shadow-c) 28%,transparent)}
+.lb-step-1{padding-top:var(--s6);padding-bottom:var(--s6);border-color:color-mix(in srgb,#f5c84c 45%,var(--line))}
+.lb-step-1::before{height:120px;background:radial-gradient(120% 100% at 50% 0,color-mix(in srgb,#f5c84c 20%,transparent),transparent 70%)}
+.lb-step.me{border-color:var(--orange)}
+.lb-step .lb-medal{position:absolute;top:12px;left:12px}
+.lb-step-name{display:flex;align-items:center;justify-content:center;gap:6px;max-width:100%;margin-top:6px;font-size:1rem}
+.lb-step-name,.lb-names b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lb-step-rating{font-size:1.75rem;font-weight:800;line-height:1.1;margin-top:6px;color:var(--tier);letter-spacing:-.02em}
+.lb-step-1 .lb-step-rating{font-size:2.1rem}
+.lb-step-ac{font-size:var(--t-xs);color:var(--dim)}
+.lb-handle{font-size:var(--t-xs);color:var(--dim);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.lb-tier{
+ display:inline-block;padding:2px 9px;border-radius:var(--r-full);white-space:nowrap;
+ font-size:11px;font-weight:600;color:var(--tier);
+ background:color-mix(in srgb,var(--tier) 13%,transparent);
+}
+.lb-medal{width:30px;height:30px;flex:none;filter:drop-shadow(0 2px 4px rgb(0 0 0 / .18))}
+.lb-step .lb-medal{width:36px;height:36px}
+.lb-medal.sm{width:24px;height:24px}
+
+.lb-avatar{
+ display:grid;place-items:center;flex:none;border-radius:50%;overflow:hidden;
+ background:color-mix(in srgb,var(--tier) 22%,var(--surface-2));color:var(--tier);font-weight:700;
+ box-shadow:0 0 0 2px var(--surface),0 0 0 3.5px color-mix(in srgb,var(--tier) 70%,transparent);
+}
+.lb-avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.lb-avatar-md{width:34px;height:34px;font-size:14px}
+.lb-avatar-lg{width:64px;height:64px;font-size:24px}
+.lb-step-1 .lb-avatar-lg{width:76px;height:76px;font-size:28px}
+
+.lb-table{border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;background:var(--surface)}
+.lb-head,.lb-row{
+ display:grid;grid-template-columns:52px minmax(0,1fr) 170px 80px 84px;gap:var(--s3);align-items:center;
+ padding:0 var(--s5);
+}
+.lb-head{
+ height:38px;font-size:var(--t-xs);font-weight:500;color:var(--dim);
+ background:var(--surface-2);border-bottom:1px solid var(--line);
+}
+.lb-row{
+ width:100%;min-height:58px;text-align:left;font:inherit;color:inherit;cursor:pointer;
+ background:none;border:0;border-bottom:1px solid var(--line-faint);
+ transition:background var(--dur-fast) var(--ease);
+}
+.lb-row:last-child{border-bottom:0}
+.lb-row:hover{background:var(--surface-2)}
+.lb-row:focus-visible{outline:2px solid var(--green);outline-offset:-2px}
+.lb-row.me{background:var(--orange-wash);box-shadow:inset 3px 0 0 var(--orange)}
+.lb-rank{font-size:var(--t-sm);color:var(--dim);display:flex;align-items:center}
+.lb-who{display:flex;align-items:center;gap:var(--s3);min-width:0}
+.lb-names{display:grid;min-width:0;line-height:1.3}
+.lb-names b{display:flex;align-items:center;gap:6px;font-size:var(--t-sm);font-weight:600}
+.lb-col-ac,.lb-col-rating{text-align:right;justify-self:end}
+.lb-col-ac{font-size:var(--t-sm);color:var(--muted)}
+.lb-rating{font-size:1rem;font-weight:700;color:var(--tier)}
+.lb-head .lb-col-ac,.lb-head .lb-col-rating{font-size:inherit;color:inherit;font-family:inherit}
+
+@media(max-width:760px){
+ .lb-podium{gap:var(--s2)}
+ .lb-step{padding:var(--s4) var(--s2)}
+ .lb-step-1{padding-top:var(--s5);padding-bottom:var(--s5)}
+ .lb-step .lb-medal{top:8px;left:8px;width:24px;height:24px}
+ .lb-avatar-lg{width:48px;height:48px;font-size:18px}
+ .lb-step-1 .lb-avatar-lg{width:56px;height:56px}
+ .lb-step-rating{font-size:1.3rem}.lb-step-1 .lb-step-rating{font-size:1.5rem}
+ .lb-step .lb-tier,.lb-step .lb-handle{display:none}
+ .lb-head,.lb-row{grid-template-columns:26px minmax(0,1fr) 34px 46px;gap:var(--s2);padding:0 var(--s3)}
+ .lb-avatar-md{width:30px;height:30px;font-size:13px}
+ .lb-who{gap:var(--s2)}
+ .lb-head{display:none}
+ .lb-col-tier{display:none}
+}

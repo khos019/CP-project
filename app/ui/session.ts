@@ -494,7 +494,7 @@ export async function fetchOwnerStats(): Promise<
 /* Leaderboard reads the real profiles table. Anonymous visitors can read it —
    profiles are public by design — so a guest sees a genuine ranking rather
    than a fabricated row claiming to be them. */
-export type LeaderRow = { id: string; username: string; display_name: string; duel_rating: number; solved_count: number };
+export type LeaderRow = { id: string; username: string; display_name: string; avatar_url?: string | null; duel_rating: number; solved_count: number };
 /* One page of the ladder, and how long the ladder is. The order ends on the
    username so it is total: most of a young ladder sits on exactly 1200, and
    without a last tie-break two pages could show the same person or skip one. */
@@ -504,7 +504,7 @@ export async function fetchLeaderboard(page = 0): Promise<{ rows: LeaderRow[]; t
   if (!url || !key) return null;
   try {
     const response = await fetch(
-      `${url}/rest/v1/profiles?select=id,username,display_name,duel_rating,solved_count&order=duel_rating.desc,solved_count.desc,username.asc&limit=${LEADER_PAGE}&offset=${page * LEADER_PAGE}`,
+      `${url}/rest/v1/profiles?select=id,username,display_name,avatar_url,duel_rating,solved_count&order=duel_rating.desc,solved_count.desc,username.asc&limit=${LEADER_PAGE}&offset=${page * LEADER_PAGE}`,
       { headers: { apikey: key, Prefer: "count=exact" } },
     );
     if (!response.ok) return null;
