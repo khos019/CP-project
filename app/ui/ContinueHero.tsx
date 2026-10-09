@@ -8,6 +8,7 @@ import { loadMastery, masteryLabel } from "./mastery";
 import { emptyProgress, loadProgress, type Progress } from "./progress";
 import { can } from "./permissions";
 import type { Profile, Role } from "./session";
+import { nextRank, rankOf } from "./rating";
 
 type Lang = "uz" | "en";
 
@@ -88,64 +89,88 @@ export function ContinueHero({
       ? active.titleUz
       : active.titleEn;
 
-  return (
-    <section className="hero">
-      <div className="hero-copy ch-copy">
-        <div className="eyebrow">{started ? t.continueEyebrow : t.startEyebrow}</div>
-        <h1>{started ? title : t.startTitle}</h1>
-        <p className="ch-track">
-          <span className="ch-ic" style={{ background: active.color }} aria-hidden>
-            {active.icon}
-          </span>
-          {lang === "uz" ? active.titleUz : active.titleEn}
-          <span className="ch-sep" aria-hidden>
-            ·
-          </span>
-          <span className="mono">
-            {doneInActive}/{active.units.length}
-          </span>{" "}
-          {t.doneOf}
-        </p>
-        {!started && <p className="ch-lede">{t.startBody}</p>}
-        {!nextUnit && started && <p className="ch-lede">{t.allDone}</p>}
-        <div className="progress ch-progress">
-          <span style={{ width: `${pct}%` }} />
-        </div>
-        <div className="hero-cta">
-          <button className="primary" onClick={() => openRoadmap(active.slug)}>
-            {started ? t.open : t.startCta}
-          </button>
-          <button className="secondary" onClick={() => go("roadmaps")}>
-            {t.allRoadmaps}
-          </button>
-        </div>
-        <div className="orbit" />
-      </div>
+  const uz = lang === "uz";
+  const rank = rankOf(profile.duel_rating);
+  const next = nextRank(profile.duel_rating);
+  const rankPct = next ? Math.max(4, Math.min(100, ((profile.duel_rating - rank.min) / (next.rank.min - rank.min)) * 100)) : 100;
+  const firstName = (profile.display_name?.trim() || profile.username).split(/\s+/)[0];
+  const overall = totalUnits ? doneTotal / totalUnits : 0;
+  // A ring for overall progress: 2πr with r=26.
+  const C = 2 * Math.PI * 26;
+  const quick: { to: string; label: string; d: string }[] = [
+    { to: "problems", label: uz ? "Masalalar" : "Problems", d: "M9 11l2 2 4-4M5 4h14v16H5zM9 4v2h6V4" },
+    { to: "duel", label: uz ? "Duel" : "Duel", d: "M14.5 17.5 3 6V3h3l11.5 11.5M13 19l6-6M16 16l4 4M14.5 6.5 18 3h3v3l-3.5 3.5M5 14l4 4M7 17l-3 3" },
+    { to: "contests", label: uz ? "Kontestlar" : "Contests", d: "M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4ZM17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3" },
+    { to: "playground", label: uz ? "Kompilyator" : "Compiler", d: "m8 8-4 4 4 4M16 8l4 4-4 4M13.5 5l-3 14" },
+  ];
 
-      <div className="hero-side">
-        <div className="stat-card ch-stat">
-          <span className="eyebrow">{t.rating}</span>
-          <span className="big mono">{profile.duel_rating}</span>
-          <button className="secondary ch-stat-btn" onClick={() => go("duel")}>
-            {t.findRival}
-          </button>
+  return (
+    <>
+      <p className="dh-greet">{uz ? `Xush kelibsiz, ${firstName}` : `Welcome back, ${firstName}`} <span aria-hidden>👋</span></p>
+      <section className="dh">
+        {/* The next step, tinted with its own track's colour. */}
+        <div className="dh-continue" style={{ ["--track" as string]: active.color }}>
+          <div className="dh-continue-top">
+            <span className="dh-track-ic" aria-hidden>{active.icon}</span>
+            <span className="dh-track">
+              <small>{started ? t.continueEyebrow : t.startEyebrow}</small>
+              <b>{lang === "uz" ? active.titleUz : active.titleEn}</b>
+            </span>
+            <span className="dh-pct mono">{pct}%</span>
+          </div>
+          <h1>{started ? title : t.startTitle}</h1>
+          {!started && <p className="dh-lede">{t.startBody}</p>}
+          {!nextUnit && started && <p className="dh-lede">{t.allDone}</p>}
+          <div className="dh-bar" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100}>
+            <span style={{ width: `${pct}%` }} />
+          </div>
+          <div className="dh-continue-foot">
+            <span className="muted"><span className="mono">{doneInActive}/{active.units.length}</span> {t.doneOf}</span>
+            <span className="dh-actions">
+              <button className="secondary" onClick={() => go("roadmaps")}>{t.allRoadmaps}</button>
+              <button className="primary" onClick={() => openRoadmap(active.slug)}>{started ? t.open : t.startCta} →</button>
+            </span>
+          </div>
         </div>
-        <div className="stat-card ch-stat">
-          <span className="eyebrow">{t.mastery}</span>
-          <span className="big mono">
-            {doneTotal}
-            <small className="ch-dim">/{totalUnits}</small>
-          </span>
-          <span className="muted ch-stat-note">
-            {topRoadmap && topScore > 0
-              ? `${lang === "uz" ? topRoadmap.titleUz : topRoadmap.titleEn} · ${masteryLabel(topScore, lang)}`
-              : tr(lang,"continueHero.hali_mahorat_isboti_yoq")}
-          </span>
-          <button className="secondary ch-stat-btn" onClick={() => go("profile")}>
-            {t.viewProfile}
-          </button>
+
+        <div className="dh-side">
+          <div className="dh-stat" style={{ ["--rank" as string]: rank.color }}>
+            <span className="dh-stat-head"><small>{t.rating}</small><i className="dh-rank">{uz ? rank.nameUz : rank.nameEn}</i></span>
+            <b className="mono dh-rating">{profile.duel_rating}</b>
+            <span className="dh-next">
+              <span className="dh-next-bar"><i style={{ width: `${rankPct}%` }} /></span>
+              <small>{next ? (uz ? `${next.gap} ball → ${next.rank.nameUz}` : `${next.gap} to ${next.rank.nameEn}`) : "—"}</small>
+            </span>
+            <button className="secondary dh-stat-btn" onClick={() => go("duel")}>{t.findRival}</button>
+          </div>
+          <div className="dh-stat dh-stat-mastery">
+            <svg className="dh-ring" viewBox="0 0 64 64" aria-hidden>
+              <circle cx="32" cy="32" r="26" />
+              <circle cx="32" cy="32" r="26" className="on" strokeDasharray={C} strokeDashoffset={C * (1 - overall)} />
+            </svg>
+            <span className="dh-ring-copy">
+              <small>{t.mastery}</small>
+              <b className="mono">{doneTotal}<span className="ch-dim">/{totalUnits}</span></b>
+              <span className="muted dh-note">
+                {topRoadmap && topScore > 0
+                  ? `${lang === "uz" ? topRoadmap.titleUz : topRoadmap.titleEn} · ${masteryLabel(topScore, lang)}`
+                  : tr(lang,"continueHero.hali_mahorat_isboti_yoq")}
+              </span>
+              <button className="dh-link" onClick={() => go("profile")}>{t.viewProfile} →</button>
+            </span>
+          </div>
         </div>
-      </div>
-    </section>
+      </section>
+
+      <nav className="dh-quick" aria-label={uz ? "Tezkor havolalar" : "Quick links"}>
+        {quick.map((q) => (
+          <a key={q.to} href={`/${q.to}`} onClick={(e) => { if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return; e.preventDefault(); go(q.to); }}>
+            <span className="dh-quick-ic" aria-hidden><svg viewBox="0 0 24 24"><path d={q.d} /></svg></span>
+            {q.label}
+            <span className="dh-quick-go" aria-hidden>→</span>
+          </a>
+        ))}
+      </nav>
+    </>
   );
 }
