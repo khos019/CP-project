@@ -748,6 +748,13 @@ function Dashboard({lang,profile,go,openRoadmap,onSelectProblem}:{
  </>;
 }
 
+/* Learn · check · solve · duel — one drawn icon per step of the loop. */
+const LOOP_ICONS=[
+ "M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5v-15ZM4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5M8 7h8M8 11h6",
+ "M9 11.5l2.2 2.2L15.5 9.5M12 3l7 3v5.5c0 4.4-3 8.2-7 9.5-4-1.3-7-5.1-7-9.5V6l7-3Z",
+ "m8 8-4 4 4 4M16 8l4 4-4 4M13.5 5l-3 14",
+ "M14.5 17.5 3 6V3h3l11.5 11.5M13 19l6-6M16 16l4 4M19 21l2-2M14.5 6.5 18 3h3v3l-3.5 3.5M5 14l4 4M7 17l-3 3M3 19l2 2",
+];
 function LandingLoop({lang}:{lang:Lang}){
  const L=LAND[lang];
  return <section className="lp-block">
@@ -755,7 +762,7 @@ function LandingLoop({lang}:{lang:Lang}){
   <p className="lp-lede muted">{L.howLede}</p>
   <ol className="loop">{L.how.map(([title,body],i)=>
    <li className="loop-step" key={title}>
-    <span className="loop-n">{i+1}</span>
+    <span className="loop-ic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d={LOOP_ICONS[i]}/></svg><i>{i+1}</i></span>
     <b>{title}</b>
     <span className="muted">{body}</span>
    </li>)}
@@ -832,7 +839,20 @@ function Home({lang,go,openRoadmap}:{lang:Lang,go:(v:View)=>void,openRoadmap:(sl
     </div>
     <PlatformStats lang={lang}/>
    </div>
-   <div className="hero-graph"><RoadmapGraph lang={lang} nodes={nodes} onOpen={openRoadmap}/></div>
+   <div className="hero-graph">
+    <div className="hero-stage"><RoadmapGraph lang={lang} nodes={nodes} onOpen={openRoadmap}/></div>
+    {/* Two glimpses of the product at work, decorative: a verdict from the
+        judge and a duel clock — what the roadmap leads to. */}
+    <div className="hero-float hero-float-verdict" aria-hidden="true">
+     <span className="hf-ic hf-ok"><svg viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></svg></span>
+     <span><b>{lang==="uz"?"Qabul qilindi":"Accepted"}</b><small className="mono">15 ms · 3.2 MB</small></span>
+     <span className="hf-delta mono">+12</span>
+    </div>
+    <div className="hero-float hero-float-duel" aria-hidden="true">
+     <span className="hf-ic hf-duel"><svg viewBox="0 0 24 24"><path d="M14.5 17.5 3 6V3h3l11.5 11.5M13 19l6-6M16 16l4 4M14.5 6.5 18 3h3v3l-3.5 3.5M5 14l4 4M7 17l-3 3"/></svg></span>
+     <span><b>{lang==="uz"?"Duel":"Duel"}</b><small className="mono">2 : 1 · 24:13</small></span>
+    </div>
+   </div>
   </section>
   <LandingLoop lang={lang}/>
   <LandingBrowse lang={lang} go={go} openRoadmap={openRoadmap}/>
