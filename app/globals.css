@@ -4222,3 +4222,50 @@ a.cx-prow:hover .cx-pname b{text-decoration:underline;text-underline-offset:3px}
  .lb-head{display:none}
  .lb-col-tier{display:none}
 }
+
+/* ─── Profil: daraja belgisi, raqam ikonkalari, faollik kalendari ──────── */
+.pv-rank{
+ font-style:normal;font-family:var(--font-sans);font-size:12px;font-weight:600;letter-spacing:0;
+ padding:3px 10px;border-radius:var(--r-full);color:var(--rank);
+ background:color-mix(in srgb,var(--rank) 13%,transparent);
+ border:1px solid color-mix(in srgb,var(--rank) 30%,transparent);
+}
+.pv-cover{height:120px}
+.pv-hero-body{margin-top:-58px}
+.pv-stat>small{display:flex;align-items:center;gap:6px}
+.pv-stat-ic{width:14px;height:14px;flex:none;color:var(--rank);opacity:.9}
+.pv-stat{transition:border-color var(--dur-fast) var(--ease),transform var(--dur-fast) var(--ease)}
+.pv-stat:hover{border-color:color-mix(in srgb,var(--rank) 30%,var(--line))}
+
+.ah{margin-bottom:var(--s4)}
+.ah .pv-card-head h2{display:flex;align-items:baseline;gap:6px}
+.ah-year{font-size:var(--t-xs);font-weight:500;color:var(--dim);font-family:var(--font-sans)}
+.ah-total{font-size:var(--t-xs)}
+.ah-stats{display:flex;gap:var(--s5);flex-wrap:wrap;margin:2px 0 var(--s4)}
+.ah-stats div{display:grid;gap:1px}
+.ah-stats b{font-size:1.05rem;font-weight:700;color:var(--ink)}
+.ah-stats small{font-size:var(--t-xs);color:var(--dim)}
+.ah-stats .on b{color:var(--orange)}
+.ah-scroll{overflow-x:auto;scrollbar-width:thin;padding-bottom:4px;container-type:inline-size}
+/* Cells grow to fill the card (53 weeks + the day labels), between 10 and 18px. */
+.ah-grid{
+ --gap:3px;--cell:clamp(10px,calc((100cqw - 34px) / 53 - var(--gap)),18px);
+ display:grid;grid-template-columns:28px auto;grid-template-rows:auto auto;column-gap:6px;row-gap:4px;
+ width:max-content;margin:0 auto;
+}
+.ah-months{grid-column:2;display:grid;grid-template-columns:repeat(53,calc(var(--cell) + var(--gap)));font-size:10.5px;color:var(--dim);height:14px}
+.ah-months span{white-space:nowrap}
+.ah-days{grid-column:1;grid-row:2;display:grid;grid-template-rows:repeat(7,var(--cell));gap:var(--gap);font-size:10px;color:var(--dim);line-height:var(--cell)}
+.ah-cells{grid-column:2;grid-row:2;display:flex;gap:var(--gap)}
+.ah-week{display:grid;grid-template-rows:repeat(7,var(--cell));gap:var(--gap)}
+.ah-c{display:block;width:var(--cell);height:var(--cell);border-radius:calc(var(--cell) / 4);background:var(--surface-2);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--ink) 5%,transparent)}
+.ah-c.l1{background:color-mix(in srgb,var(--green) 28%,var(--surface-2))}
+.ah-c.l2{background:color-mix(in srgb,var(--green) 50%,var(--surface-2))}
+.ah-c.l3{background:color-mix(in srgb,var(--green) 74%,var(--surface-2))}
+.ah-c.l4{background:var(--green)}
+.ah-c.future{background:none;box-shadow:none}
+.ah-week .ah-c:not(.future):hover{outline:2px solid var(--ink);outline-offset:-1px}
+.ah-legend{display:flex;align-items:center;justify-content:flex-end;gap:4px;margin-top:var(--s3);font-size:10.5px;color:var(--dim)}
+.ah-legend .ah-c{width:11px;height:11px;border-radius:3px}
+.ah-legend span{margin:0 3px}
+@media(max-width:640px){.ah-grid{margin:0}.ah-stats{gap:var(--s4)}}

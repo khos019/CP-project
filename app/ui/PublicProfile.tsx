@@ -5,6 +5,7 @@ import { DuelTable } from "./DuelHistory";
 import { OnlineDot, onlineAmong } from "./presence";
 import { bankProblems } from "./problem-bank";
 import { RatingGraph } from "./RatingGraph";
+import { ActivityHeatmap } from "./ActivityHeatmap";
 import { nextRank, rankOf } from "./rating";
 import { shortDateTime } from "./dates";
 import { fetchLadderRank, fetchPersonByUsername, type PublicPerson, type Role } from "./session";
@@ -165,6 +166,17 @@ const BANK_BY_DIFF = DIFFS.reduce((acc, d) => {
 }, {} as Record<Diff, number>);
 const BANK_BY_KEY = new Map(bankProblems.filter((p) => p.judge).map((p) => [p.judge as string, p]));
 
+const STAT_ICONS: Record<string, string> = {
+  bolt: "M13 3 5 13.5h6L10 21l8-10.5h-6L13 3Z",
+  trophy: "M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4ZM17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3",
+  check: "M20 6 9 17l-5-5",
+  swords: "M14.5 17.5 3 6V3h3l11.5 11.5M13 19l6-6M16 16l4 4M19 21l2-2M14.5 6.5 18 3h3v3l-3.5 3.5M5 14l4 4M7 17l-3 3M3 19l2 2",
+  users: "M9 11.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14.5A6.5 6.5 0 0 1 21.5 20",
+};
+const StatIcon = ({ name }: { name: string }) => (
+  <svg className="pv-stat-ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={STAT_ICONS[name]} /></svg>
+);
+
 export function PublicProfile({
   lang, username, section = "overview", meId, signedIn,
   onBack, onSection, onOpenPerson, onOpenProblem, onMessage, onMyProfile, onSignIn,
@@ -203,6 +215,7 @@ export function PublicProfile({
   const [friends, setFriends] = useState<FriendRow[] | null>(null);
   const [friendState, setFriendState] = useState<"idle" | "ready" | "error" | "missing">("idle");
   const [recent, setRecent] = useState<SubmissionRow[] | null>(null);
+  const [subDates, setSubDates] = useState<string[] | null>(null);
   const [online, setOnline] = useState(false);
   const [isFriend, setIsFriend] = useState(false);
   const mounted = useRef(true);
@@ -261,8 +274,13 @@ export function PublicProfile({
   useEffect(() => {
     if (!personId || section !== "overview" || recent) return;
     let live = true;
-    fetchSubmissions(personId, 6).then((result) => {
-      if (live) setRecent(Array.isArray(result) ? result : []);
+    /* One read feeds both the recent list (its first rows) and the activity
+       calendar (every row's date), rather than two requests for one table. */
+    fetchSubmissions(personId, 600).then((result) => {
+      if (!live) return;
+      const rows = Array.isArray(result) ? result : [];
+      setRecent(rows.slice(0, 6));
+      setSubDates(rows.map((r) => r.created_at));
     });
     return () => { live = false; };
   }, [personId, section, recent]);
@@ -391,6 +409,7 @@ export function PublicProfile({
             <h1>
               <span className="pv-name">{name}</span>
               <OnlineDot online={online} lang={lang} label={name} />
+              <i className="pv-rank">{lang === "uz" ? rank.nameUz : rank.nameEn}</i>
               {t.roles[person.role] && <i className="pv-role">{t.roles[person.role]}</i>}
             </h1>
             <p className="pv-meta">
@@ -412,7 +431,7 @@ export function PublicProfile({
       {/* ── Figures ────────────────────────────────────────────────────── */}
       <div className="pv-stats">
         <div className="pv-stat pv-stat-rating">
-          <small>{t.rating}</small>
+          <small><StatIcon name="bolt" />{t.rating}</small>
           <b className="mono" style={{ color: rank.color }}>{rating}</b>
           <span className="pv-sub">
             {t.max} <b className="mono" style={{ color: rankOf(peak).color }}>{peak}</b>
@@ -430,19 +449,19 @@ export function PublicProfile({
           </div>
         </div>
         <div className="pv-stat">
-          <small>{t.place}</small>
+          <small><StatIcon name="trophy" />{t.place}</small>
           <b className="mono">{ladderPlace ? `#${ladderPlace}` : sum ? `#${sum.place}` : "—"}</b>
           <span className="pv-sub">{sum ? t.ofMembers(sum.members) : ""}</span>
         </div>
         <div className="pv-stat">
-          <small>{t.solved}</small>
+          <small><StatIcon name="check" />{t.solved}</small>
           <b className="mono">{solvedCount}</b>
           <span className="pv-sub">
             {sum && sum.submissions > 0 ? t.subsLine(sum.submissions, Math.round((sum.accepted / sum.submissions) * 100)) : ""}
           </span>
         </div>
         <div className="pv-stat">
-          <small>{t.duels}</small>
+          <small><StatIcon name="swords" />{t.duels}</small>
           <b className="mono">{duelCount ?? "—"}</b>
           <span className="pv-sub pv-wl">
             <i className="dh-win">{tally.win}{t.wl.win}</i>
@@ -451,7 +470,7 @@ export function PublicProfile({
           </span>
         </div>
         <div className="pv-stat">
-          <small>{t.friends}</small>
+          <small><StatIcon name="users" />{t.friends}</small>
           <b className="mono">{counts.friends ?? "—"}</b>
           <span className="pv-sub">{t.follows}</span>
         </div>
@@ -480,6 +499,9 @@ export function PublicProfile({
         <div className="pv-body">
           {duelState === "ready" && duels && <RatingGraph lang={lang} rows={duels} rating={rating} />}
           {duelState === "missing" && <p className="muted os-empty">{t.duelsMissing}</p>}
+          {subDates && duelState !== "loading" && (
+            <ActivityHeatmap lang={lang} dates={[...subDates, ...(duels || []).map((d) => d.finished_at || d.started_at)]} />
+          )}
 
           <div className="pv-grid">
             <ProblemsCard lang={lang} summary={summary} onOpenProblem={onOpenProblem} />
