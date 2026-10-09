@@ -67,12 +67,39 @@ const nameOf = (player: { is_bot: boolean; display_name: string; username: strin
   !player ? "—" : player.is_bot ? BOT_NAME : player.display_name || player.username || "—";
 const BotName = () => <><span className="bot-name">{BOT_NAME}</span><i className="bot-chip">AI</i></>;
 
+/* Matchmaking icons — drawn, not emoji, so they take the theme colour and
+   look the same on every OS. */
+const SwordsIcon = () => (
+  <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M14.5 17.5 3 6V3h3l11.5 11.5" />
+    <path d="m13 19 6-6M16 16l4 4M19 21l2-2" />
+    <path d="M14.5 6.5 18 3h3v3l-3.5 3.5" />
+    <path d="m5 14 4 4M7 17l-3 3M3 19l2 2" />
+  </svg>
+);
+const RadarIcon = () => (
+  <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+    <circle cx="12" cy="12" r="9" opacity=".35" />
+    <circle cx="12" cy="12" r="5" opacity=".55" />
+    <g className="radar-sweep"><path d="M12 12 L12 3" /><path d="M12 3a9 9 0 0 1 6.4 2.6L12 12z" fill="currentColor" stroke="none" opacity=".25" /></g>
+    <circle cx="12" cy="12" r="1.4" fill="currentColor" stroke="none" />
+    <circle cx="16.5" cy="8.2" r="1.1" fill="currentColor" stroke="none" className="radar-blip" />
+  </svg>
+);
+const TabIcon = () => (
+  <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="3" y="4" width="18" height="16" rx="2.5" /><path d="M3 9h18M8 4v5" />
+    <path d="m10 13 4 4M14 13l-4 4" />
+  </svg>
+);
+
 const T = {
   uz: {
-    eyebrow: "Reytingli matchmaking", title: "Duel uchun raqib toping",
+    title: "Duel uchun raqib toping",
     sub: "Tizim sizga reytingi yaqin bo‘lgan raqibni qidiradi.",
-    ready: "Bellashishga tayyormisiz?", searching: "Raqib qidirilmoqda…",
-    find: "Raqib qidirish", cancel: "Qidiruvni bekor qilish", needAuth: "Kirish talab qilinadi",
+    ready: "Duelga tayyormisiz?", searching: "Raqib qidirilmoqda…",
+    find: "Raqib qidirish", cancel: "Bekor qilish", needAuth: "Kirib, boshlash",
+    ruleShort: "Tabdan chiqsangiz — mag‘lubiyat",
     range: "Reyting oralig‘i", online: "Mavjud raqiblar", elapsed: "Vaqt",
     expanding: "Raqib topilmasa, oraliq kengayadi.", botSoon: `Odam topilmadi — ${BOT_NAME} tayyorlanmoqda…`,
     challenge: "Duel chaqirig‘i", accept: "Qabul qilish", decline: "Rad etish",
@@ -106,10 +133,11 @@ const T = {
     diff: { easy: "OSON", medium: "O‘RTA", hard: "QIYIN", insane: "JUDA QIYIN" } as Record<string, string>,
   },
   en: {
-    eyebrow: "Rated matchmaking", title: "Find a duel opponent",
+    title: "Find a duel opponent",
     sub: "We will match you with a player near your rating.",
-    ready: "Ready to compete?", searching: "Searching for an opponent…",
-    find: "Search for competitor", cancel: "Cancel search", needAuth: "Sign in required",
+    ready: "Ready to duel?", searching: "Searching for an opponent…",
+    find: "Find an opponent", cancel: "Cancel", needAuth: "Sign in to start",
+    ruleShort: "Leave this tab and you lose",
     range: "Rating range", online: "Available opponents", elapsed: "Elapsed",
     expanding: "The range widens if nobody suitable is found.", botSoon: `No human found — ${BOT_NAME} is warming up…`,
     challenge: "Duel challenge", accept: "Accept", decline: "Decline",
@@ -380,7 +408,6 @@ export function DuelMatchmaking({
     <>
       <div className="page-head">
         <div>
-          <p className="eyebrow" style={{ color: "var(--dim)" }}>{t.eyebrow}</p>
           <h1 className="page-title">{t.title}</h1>
           <p className="muted">{t.sub}</p>
         </div>
@@ -388,11 +415,15 @@ export function DuelMatchmaking({
       </div>
 
       <div className="matchmaking panel">
-        <div className={`search-orb ${searching ? "pulse" : ""}`}>{searching ? "⚡" : "⚔"}</div>
+        <div className={`search-orb ${searching ? "pulse" : ""}`} aria-hidden="true">
+          {searching ? <RadarIcon /> : <SwordsIcon />}
+        </div>
         <h2>{searching ? t.searching : t.ready}</h2>
 
-        <p className="duel-rule-lite">
-          <b>⚠ {t.ruleTitle}.</b> {t.ruleBody}
+        {/* The full rule lives in the tooltip and on the arena screen; here
+            one line is enough to be seen before the duel starts. */}
+        <p className="duel-rule-chip" title={t.ruleBody}>
+          <TabIcon /> {t.ruleShort}
         </p>
 
         {searching ? (
@@ -410,8 +441,7 @@ export function DuelMatchmaking({
           </>
         ) : (
           <>
-            <p className="muted">{t.sub}</p>
-            <button className="primary" onClick={begin} disabled={busy}>
+            <button className="primary mm-go" onClick={begin} disabled={busy}>
               {signed ? t.find : t.needAuth}
             </button>
           </>
