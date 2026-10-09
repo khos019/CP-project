@@ -2306,27 +2306,65 @@ body{font-size:var(--t-body);line-height:1.6}
 /* Same reason as .dash-main: the table must shrink into the column rather
    than widen it. */
 .pb-results{min-width:0}
+/* A viewport-tall column: search and the short filters stay pinned, and only
+   the topic list — the one part that outgrows the screen — scrolls, taking
+   every pixel left over. Scroll chaining is left on, so reaching the end of
+   the list hands the wheel back to the page. */
 .pb-filters{
  position:sticky;top:calc(var(--header-h) + var(--s4));
- display:grid;gap:var(--s5);align-content:start;
- /* Taller than the viewport once all topics are listed, so it scrolls on its own. */
- max-height:calc(100vh - var(--header-h) - var(--s4) * 2);
- overflow-y:auto;overscroll-behavior:contain;
- padding:2px 6px 2px 2px;scrollbar-width:thin;
+ display:flex;flex-direction:column;gap:var(--s4);
+ height:calc(100vh - var(--header-h) - var(--s4) * 2);
+ height:calc(100dvh - var(--header-h) - var(--s4) * 2);
+ min-height:360px;
 }
+.pb-filters>*{flex:none}
 .pb-filters .rm-search{width:100%;min-width:0}
-.pb-group{display:grid;gap:var(--s3)}
+.pb-group{display:grid;gap:var(--s2)}
 .pb-group h3{margin:0;font-size:var(--t-xs);font-weight:500;color:var(--dim);font-family:var(--font-sans);letter-spacing:0}
-.pb-topics{display:grid;gap:1px}
+/* One-row segmented toggle — half the height of wrapped pills, which is
+   height handed straight to the topic list. */
+.pb-chips{
+ display:grid;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr);gap:2px;
+ padding:2px;border:1px solid var(--line);border-radius:var(--r-md);background:var(--surface);
+}
+.pb-chips button{
+ min-width:0;padding:6px 4px;border:0;border-radius:calc(var(--r-md) - 2px);background:none;
+ font-size:var(--t-xs);font-weight:500;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+ transition:background var(--dur-fast) var(--ease),color var(--dur-fast) var(--ease);
+}
+.pb-chips button:hover{color:var(--ink);background:var(--surface-2)}
+.pb-chips button.active{color:var(--green);background:var(--green-wash);box-shadow:inset 0 0 0 1px var(--green)}
+.pb-topics-group{flex:1 1 auto;min-height:0;grid-template-rows:auto minmax(0,1fr)}
+.pb-topics{
+ display:grid;gap:1px;align-content:start;
+ overflow-y:auto;min-height:0;
+ /* The buttons bleed 9px left for their hover pill; pad so it is not clipped. */
+ margin:0 -6px 0 -9px;padding:2px 6px 2px 9px;
+ scrollbar-width:thin;scrollbar-color:var(--line) transparent;
+ --fade-up:0px;--fade-down:0px;
+ mask-image:linear-gradient(to bottom,transparent,#000 var(--fade-up),#000 calc(100% - var(--fade-down)),transparent);
+ transition:--fade-up var(--dur-fast) var(--ease),--fade-down var(--dur-fast) var(--ease);
+}
+.pb-topics.fade-up{--fade-up:28px}
+.pb-topics.fade-down{--fade-down:40px}
+@property --fade-up{syntax:"<length>";inherits:false;initial-value:0px}
+@property --fade-down{syntax:"<length>";inherits:false;initial-value:0px}
+.pb-topics::-webkit-scrollbar{width:6px}
+.pb-topics::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px}
+.pb-topics:hover::-webkit-scrollbar-thumb{background:var(--dim)}
 .pb-topics button{
+ display:flex;align-items:baseline;justify-content:space-between;gap:var(--s2);
  text-align:left;background:none;border:0;border-radius:var(--r-sm);
  padding:6px 9px;margin:0 -9px;
  font-size:var(--t-sm);color:var(--muted);
  transition:background var(--dur-fast) var(--ease),color var(--dur-fast) var(--ease);
 }
+.pb-topics button span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pb-topics button small{flex:none;font-size:var(--t-xs);color:var(--dim);font-variant-numeric:tabular-nums}
 .pb-topics button:hover{background:var(--surface-2);color:var(--ink)}
 .pb-topics button.active{color:var(--green);background:var(--green-wash)}
-.pb-clear{justify-self:start}
+.pb-topics button.active small{color:var(--green)}
+.pb-clear{align-self:flex-start}
 
 /* Jadval: kartochka grid emas — ro'yxat skan qilinadi, o'qilmaydi. */
 .pb-table{
@@ -2358,8 +2396,9 @@ body{font-size:var(--t-body);line-height:1.6}
 
 @media(max-width:1024px){
  .pb-layout{grid-template-columns:1fr}
- .pb-filters{position:static;grid-template-columns:1fr;gap:var(--s4);max-height:none;overflow:visible}
- .pb-topics{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));display:grid}
+ .pb-filters{position:static;height:auto;min-height:0;gap:var(--s4)}
+ .pb-topics{grid-template-columns:repeat(auto-fill,minmax(150px,1fr));display:grid;overflow:visible;mask-image:none;margin:0;padding:0}
+ .pb-topics button span{white-space:normal}
 }
 @media(max-width:640px){
  /* Jadval kartochkaga aylanadi — gorizontal scroll hech qayerda bo'lmasin. */

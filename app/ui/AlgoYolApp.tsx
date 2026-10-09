@@ -958,6 +958,33 @@ function Problems({lang,filter,setFilter,items,go,onSelect}:{lang:Lang,filter:st
  },[topic,filter,solvedOnly,query]);
 
  const topics=useMemo(()=>[...new Set(problems.map(p=>p.topic))],[]);
+ const topicCount=useMemo(()=>{const m=new Map<string,number>();problems.forEach(p=>m.set(p.topic,(m.get(p.topic)||0)+1));return m},[]);
+ /* The topic list scrolls inside the sidebar; the fades say which way there is more. */
+ const topicsRef=useRef<HTMLDivElement>(null),topicsClicked=useRef(false);
+ const [topicsEdge,setTopicsEdge]=useState({up:false,down:false});
+ const syncTopicsEdge=()=>{const el=topicsRef.current;if(!el)return;
+  const up=el.scrollTop>2,down=el.scrollTop+el.clientHeight<el.scrollHeight-2;
+  setTopicsEdge(e=>e.up===up&&e.down===down?e:{up,down})};
+ /* Keep the chosen topic visible (e.g. arriving from ?topic=…) by moving only
+    the list — scrollIntoView would drag the page along too. It jumps for a
+    topic that came from the URL and glides only after a click. Skipped while
+    the list is not a scroller (phone layout, or the stylesheet not in yet);
+    the resize observer retries once it is. */
+ const revealTopic=()=>{
+  const el=topicsRef.current,b=el?.querySelector<HTMLElement>("button.active");if(!el||!b)return;
+  if(getComputedStyle(el).overflowY==="visible")return;
+  const top=b.offsetTop-el.offsetTop,bottom=top+b.offsetHeight,fade=40;
+  if(top<el.scrollTop+fade||bottom>el.scrollTop+el.clientHeight-fade)
+   el.scrollTo({top:top-(el.clientHeight-b.offsetHeight)/2,behavior:topicsClicked.current?"smooth":"instant"});
+ };
+ const pickTopic=(tp:string)=>{topicsClicked.current=true;setTopic(tp)};
+ useEffect(()=>{
+  const el=topicsRef.current;if(!el)return;
+  const check=()=>{revealTopic();syncTopicsEdge()};
+  check();
+  const ro=new ResizeObserver(check);ro.observe(el);return()=>ro.disconnect();
+ },[]);// eslint-disable-line react-hooks/exhaustive-deps
+ useEffect(()=>{revealTopic();syncTopicsEdge()},[topic]);// eslint-disable-line react-hooks/exhaustive-deps
  const topicName=(slug:string)=>{const r=roadmapCards.find(x=>x.slug===slug);return r?(uz?r.uz:r.en):slug};
  /* Green means accepted, red means sent and not accepted yet, and nothing
     means never attempted. Mastery evidence still counts as solved so a solve
@@ -992,25 +1019,29 @@ function Problems({lang,filter,setFilter,items,go,onSelect}:{lang:Lang,filter:st
 
     <div className="pb-group">
      <h3>{tr(lang,"algoYolApp.holat")}</h3>
-     <div className="filters">{(["all","solved","unsolved"] as const).map(f=>
-      <button key={f} className={solvedOnly===f?"active":""} onClick={()=>setSolvedOnly(f)}>
-       {f==="all"?(tr(lang,"algoYolApp.barchasi")):f==="solved"?(tr(lang,"algoYolApp.yechilgan")):(tr(lang,"algoYolApp.yechilmagan"))}
+     {/* Toggles: clicking the active chip clears it, so no "all" chip is needed. */}
+     <div className="pb-chips">{(["solved","unsolved"] as const).map(f=>
+      <button key={f} className={solvedOnly===f?"active":""} aria-pressed={solvedOnly===f} onClick={()=>setSolvedOnly(solvedOnly===f?"all":f)}>
+       {f==="solved"?(tr(lang,"algoYolApp.yechilgan")):(tr(lang,"algoYolApp.yechilmagan"))}
       </button>)}</div>
     </div>
 
     <div className="pb-group">
      <h3>{tr(lang,"algoYolApp.qiyinlik")}</h3>
-     <div className="filters">{["all","easy","medium","hard","insane"].map(f=>
-      <button key={f} className={filter===f?"active":""} onClick={()=>setFilter(f)}>
-       {f==="all"?(tr(lang,"algoYolApp.barchasi")):f}
-      </button>)}</div>
+     <div className="pb-chips">{["easy","medium","hard","insane"].map(f=>
+      <button key={f} className={filter===f?"active":""} aria-pressed={filter===f} onClick={()=>setFilter(filter===f?"all":f)}>{f}</button>)}</div>
     </div>
 
-    <div className="pb-group">
+    <div className="pb-group pb-topics-group">
      <h3>{tr(lang,"algoYolApp.mavzu")}</h3>
-     <div className="pb-topics">
-      <button className={topic==="all"?"active":""} onClick={()=>setTopic("all")}>{tr(lang,"algoYolApp.barcha_mavzu")}</button>
-      {topics.map(tp=><button key={tp} className={topic===tp?"active":""} onClick={()=>setTopic(tp)}>{topicName(tp)}</button>)}
+     <div ref={topicsRef} onScroll={syncTopicsEdge}
+      className={`pb-topics${topicsEdge.up?" fade-up":""}${topicsEdge.down?" fade-down":""}`}>
+      <button className={topic==="all"?"active":""} onClick={()=>pickTopic("all")}>
+       <span>{tr(lang,"algoYolApp.barcha_mavzu")}</span><small>{problems.length}</small>
+      </button>
+      {topics.map(tp=><button key={tp} className={topic===tp?"active":""} onClick={()=>pickTopic(tp)}>
+       <span>{topicName(tp)}</span><small>{topicCount.get(tp)}</small>
+      </button>)}
      </div>
     </div>
 
