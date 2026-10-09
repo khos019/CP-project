@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { tr, catalogue } from "./i18n";
+import { EmptyState } from "./kit";
 import { roadmapCatalog } from "./roadmap-data";
 import { loadMastery, loadMasteryLog, loadDuelHistory, masteryLabel, MASTERY_CONFIG } from "./mastery";
 import { emptyProgress, loadProgress, type Progress } from "./progress";
@@ -237,12 +238,8 @@ export function ProfilePage({
               ))}
             </div>
           ) : (
-            <div className="pf-empty">
-              <p className="muted">{t.noTopics}</p>
-              <button className="primary" onClick={goRoadmaps}>
-                {t.startLearning}
-              </button>
-            </div>
+            <EmptyState lang={lang} compact icon="compass" title={t.noTopics} body={t.noTopicsBody}
+              action={{ label: t.startLearning, onClick: goRoadmaps }} />
           )}
         </section>
 
@@ -262,12 +259,8 @@ export function ProfilePage({
               ))}
             </ul>
           ) : (
-            <div className="pf-empty">
-              <p className="muted">{t.noActivity}</p>
-              <button className="secondary" onClick={goRoadmaps}>
-                {t.startLearning}
-              </button>
-            </div>
+            <EmptyState lang={lang} compact icon="pulse" title={t.noActivity} body={t.noActivityBody}
+              action={{ label: t.startLearning, onClick: goRoadmaps, secondary: true }} />
           )}
         </section>
       </div>

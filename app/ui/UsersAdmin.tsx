@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { tr } from "./i18n";
+import { EmptyState } from "./kit";
 import {
   ownerSearchUsers,
   ownerSetRole,
@@ -281,10 +282,7 @@ export function UsersAdmin({
       )}
 
       {state === "ready" && rows && rows.length === 0 && (
-        <div className="panel ua-empty">
-          <span aria-hidden>🔍</span>
-          <p className="muted">{day ? t.emptyDay : browsing ? t.emptyAll : t.empty}</p>
-        </div>
+        <EmptyState lang={lang} icon={browsing || day ? "users" : "search"} title={day ? t.emptyDay : browsing ? t.emptyAll : t.empty} />
       )}
 
       {rows && rows.length > 0 && (

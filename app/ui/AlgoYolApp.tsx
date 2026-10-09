@@ -726,7 +726,7 @@ function Dashboard({lang,profile,go,openRoadmap,onSelectProblem}:{
     </div>
     {suggestions.length
      ? <ProblemList lang={lang} items={suggestions} onSelect={onSelectProblem}/>
-     : <EmptyState lang={lang} icon="◎"
+     : <EmptyState lang={lang} icon="sparkle"
         title={tr(lang,"algoYolApp.tavsiya_qoldi_emas")}
         body={tr(lang,"algoYolApp.bankdagi_masalalarni_yechib_boldingiz_duel")}
         action={{label:tr(lang,"algoYolApp.duel_topish"),onClick:()=>go("duel")}}/>}
@@ -1072,7 +1072,7 @@ function Problems({lang,filter,setFilter,items,go,onSelect}:{lang:Lang,filter:st
          </tr>;
         })}</tbody>
        </table>
-     : <EmptyState lang={lang} icon="⌕"
+     : <EmptyState lang={lang} icon="search"
         title={tr(lang,"algoYolApp.bu_filtrlarga_mos_masala_yoq")}
         body={tr(lang,"algoYolApp.qidiruvni_qisqartiring_yoki_mavzu_filtrini")}
         action={{label:tr(lang,"algoYolApp.filtrlarni_tozalash"),onClick:clear}}/>}

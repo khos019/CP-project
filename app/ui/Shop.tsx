@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { tr } from "./i18n";
+import { EmptyState } from "./kit";
 import { GiftArtwork, ART_CREDIT, ART_CREDIT_EN } from "./gift-art";
 import {
   COIN_RULES, DAY_DUELS_REQUIRED, DAY_SECONDS_REQUIRED, DAY_TOPICS_REQUIRED, FALLBACK_ITEMS, TOTAL_LADDER_COINS,
@@ -24,7 +25,7 @@ const T = {
     next: "Keyingi bosqich", buy: "Sotib olish", cost: "narxi", stars: "yulduz",
     tgLabel: "Telegram username", tgPlaceholder: "@username",
     need: "Yetarli tanga yo‘q", pending: "Buyurtma qabul qilindi — owner yetkazadi.",
-    orders: "Buyurtmalaringiz", none: "Buyurtmalar yo‘q.",
+    orders: "Buyurtmalaringiz", none: "Buyurtmalar yo‘q",
     localWarn: "Hisobga kirmagansiz — tangalar faqat shu qurilmada saqlanmoqda va rasmiy emas.",
     expired: "Sessiya muddati tugagan — tangalar hisobingizdan o‘qilmadi. Qaytadan kiring.",
     offline: "Serverga ulanib bo‘lmadi — ko‘rsatilgan tangalar rasmiy emas.",
@@ -43,7 +44,7 @@ const T = {
     next: "Next milestone", buy: "Buy", cost: "costs", stars: "stars",
     tgLabel: "Telegram username", tgPlaceholder: "@username",
     need: "Not enough coins", pending: "Order received — the owner will deliver it.",
-    orders: "Your orders", none: "No orders yet.",
+    orders: "Your orders", none: "No orders yet",
     localWarn: "You are signed out — coins are stored on this device only and are not official.",
     expired: "Your session has expired — we could not read your account balance. Please sign in again.",
     offline: "The server could not be reached — the coins shown are not official.",
@@ -229,11 +230,7 @@ export function Shop({ lang, signed, authLoading, role = "user", onOrders }: { l
           {orders.length === 0 ? (
             /* Bo'sh ro'yxat ham bir narsa aytishi kerak: hozircha nima yo'qligi
                va u qayerdan paydo bo'lishi. */
-            <div className="orders-empty">
-              <span aria-hidden="true">◎</span>
-              <b>{t.none}</b>
-              <small>{t.fulfilNote}</small>
-            </div>
+            <EmptyState lang={lang} compact icon="bag" title={t.none} body={t.fulfilNote} />
           ) : (
             <ul className="order-list">
               {orders.map(o => (

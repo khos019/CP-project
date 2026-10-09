@@ -14,7 +14,7 @@ export function NotFound({ lang, go }: { lang: Lang; go: (v: string) => void }) 
   return (
     <EmptyState
       lang={lang}
-      icon="⌘"
+      icon="map"
       title={tr(lang,"notFound.bunday_sahifa_yoq")}
       body={tr(lang,"notFound.havola_eskirgan_bolishi_mumkin_yol_xarital")}
       action={{ label: tr(lang,"chrome.yol_xaritalari"), onClick: () => go("roadmaps") }}

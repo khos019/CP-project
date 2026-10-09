@@ -8,6 +8,7 @@ import { ratingColor } from "./rating";
 import { linkTo } from "./Chrome";
 import { bankProblems } from "./problem-bank";
 import { verdictLabel } from "./social-ui";
+import { EmptyState } from "./kit";
 
 /* Past rounds and their standings.
  *
@@ -145,7 +146,7 @@ function ContestList({ lang, onOpenContest }: { lang: Lang; onOpenContest: (slug
 
   if (load.state !== "ready") return <>{head}<Waiting lang={lang} load={load} /></>;
   const list = load.data;
-  if (!list.length) return <>{head}<div className="screen-state panel"><p className="muted">{tr(lang, "contests.empty")}</p></div></>;
+  if (!list.length) return <>{head}<EmptyState lang={lang} icon="trophy" title={tr(lang, "contests.empty")} body={tr(lang, "contests.empty_body")} /></>;
 
   // Newest first, under a heading per year: a long archive reads by season.
   const years: { year: number; items: ContestSummary[] }[] = [];
@@ -345,7 +346,7 @@ function StandingsTab({ lang, board, onOpenSubmissions }: {
       </details>
     </div>
 
-    {rows.length === 0 ? <div className="screen-state panel"><p className="muted">{tr(lang, "contests.no_rows")}</p></div>
+    {rows.length === 0 ? <EmptyState lang={lang} icon="podium" title={tr(lang, "contests.no_rows")} body={tr(lang, "contests.no_rows_body")} />
       : <div className="standings-wrap"><table className="standings">
         <thead><tr>
           <th className="st-place">#</th>
@@ -440,7 +441,7 @@ function StatusTab({ lang, slug, board, onOpenSubmissions }: {
     </div>
 
     {load.state !== "ready" ? <Waiting lang={lang} load={load} notMigrated="contests.status_not_migrated" />
-      : load.data.rows.length === 0 ? <div className="screen-state panel"><p className="muted">{tr(lang, "contests.status_none")}</p></div>
+      : load.data.rows.length === 0 ? <EmptyState lang={lang} icon="search" title={tr(lang, "contests.status_none")} body={tr(lang, "contests.status_none_body")} />
       : <div className="cx-status-wrap"><table className="cx-status">
         <thead><tr>
           <th>{tr(lang, "contests.col_when")}</th>

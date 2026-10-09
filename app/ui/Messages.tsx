@@ -15,6 +15,7 @@ import {
   type Profile,
   type Role,
 } from "./session";
+import { EmptyState } from "./kit";
 
 type Lang = "uz" | "en";
 
@@ -34,7 +35,8 @@ const T = {
     title: "Xabarlar",
     eyebrow: "Suhbatlar",
     lede: "Har qanday o‘quvchiga yozing. Ega yozganda xabar sayt nomidan boradi.",
-    empty: "Hali xabar yo‘q. Pastdagi qidiruv orqali birinchi suhbatni boshlang.",
+    emptyTitle: "Hali xabar yo‘q", emptyBody: "Qidiruv orqali birinchi suhbatni boshlang.",
+    pickTitle: "Suhbatni tanlang", pickBody: "Ro‘yxatdan birini oching yoki yangisini boshlang.",
     newChat: "Yangi suhbat",
     findPerson: "Kimga yozmoqchisiz?",
     searchHint: "Nickname yoki ism bo‘yicha qidiring (kamida 2 belgi).",
@@ -68,7 +70,8 @@ const T = {
     title: "Messages",
     eyebrow: "Conversations",
     lede: "Write to any learner. When the owner writes, the message comes from the site.",
-    empty: "No messages yet. Use the search below to start the first conversation.",
+    emptyTitle: "No messages yet", emptyBody: "Start the first conversation with the search.",
+    pickTitle: "Pick a conversation", pickBody: "Open one from the list or start a new one.",
     newChat: "New conversation",
     findPerson: "Who do you want to write to?",
     searchHint: "Search by username or name (at least 2 characters).",
@@ -309,7 +312,7 @@ export function Messages({
           {threads === null ? (
             <p className="muted">{t.loading}</p>
           ) : threads.length === 0 ? (
-            <p className="muted">{t.empty}</p>
+            <EmptyState lang={lang} compact icon="chat" title={t.emptyTitle} body={t.emptyBody} />
           ) : (
             threads.map((th) => (
               <button
@@ -367,7 +370,7 @@ export function Messages({
               )}
             </div>
           ) : !active ? (
-            <p className="muted">{t.empty}</p>
+            <EmptyState lang={lang} compact icon="chat" title={t.pickTitle} body={t.pickBody} />
           ) : (
             <>
               <header className="msg-head">
