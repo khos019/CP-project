@@ -49,6 +49,10 @@ const PER_SECTION = PER_TIER * TIERS.length;
    filter keeps a newly added section from producing an empty quiz step. */
 const SECTIONS = roadmapCatalog.filter((r) => placementBank.some((q) => q.track === r.slug));
 
+const FactIcon = ({ d }: { d: string }) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>
+);
+
 /** Inline `code` spans inside question and option text. Plain parts stay bare
  *  text nodes: an option button styles its `span` children as the letter badge. */
 function Rich({ text }: { text: string }) {
@@ -387,8 +391,16 @@ export function Placement({
         <h1 className="pl-title">{t.welcome}</h1>
         <p className="muted pl-lead">{t.lead}</p>
 
-        <div className="pl-rules">
-          <p className="eyebrow">{t.howTitle}</p>
+        {/* The three things worth knowing before starting, at a glance; the
+            scoring detail is one click away for whoever wants it. */}
+        <ul className="pl-facts">
+          <li><FactIcon d="M9 4h6M12 4v3M12 13l2.5-2.5M19 13a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z" />{rule(t.factQuestions, { n: PER_SECTION })}</li>
+          <li><FactIcon d="M12 8v5M12 16.5h.01M10.3 3.9 2.6 17.5A2 2 0 0 0 4.3 20.5h15.4a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0Z" />{rule(t.factStop, { n: WRONG_LIMIT })}</li>
+          <li><FactIcon d="M12 3 4.5 6v5.5c0 4.6 3.2 8.4 7.5 9.5 4.3-1.1 7.5-4.9 7.5-9.5V6L12 3ZM9 12l2 2 4-4" />{t.factSafe}</li>
+        </ul>
+
+        <details className="pl-rules">
+          <summary>{t.howTitle}</summary>
           <div className="pl-tiers">
             {TIERS.map((tier) => (
               <div key={tier} className={`pl-tier-card ${tier}`}>
@@ -403,10 +415,8 @@ export function Placement({
             <li><b className="mono">{config.unlock}</b> — {t.ruleUnlock}</li>
             <li><b className="mono">{config.complete}</b> — {t.ruleComplete}</li>
             <li>{rule(t.ruleCap, { cap: SECTION_CAP })}</li>
-            <li>{rule(t.ruleStop, { n: WRONG_LIMIT })}</li>
-            <li>{t.ruleNever}</li>
           </ul>
-        </div>
+        </details>
 
         <div className="pl-pick">
           <div className="pl-pick-head">
