@@ -6,7 +6,7 @@
    channel, the presence heartbeat and every open screen with it. The href is
    here so the address is honest to the browser, not so Next handles it. */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { tr } from "./i18n";
 import { BrandMark } from "./BrandMark";
 import { ThemeToggle } from "./ThemeToggle";
@@ -108,11 +108,64 @@ function useLearnerStats(signed: boolean) {
   return { coins, streak };
 }
 
+/* Flags are drawn rather than emoji: Windows renders 🇺🇿 as the letters "UZ". */
+const FLAGS: Record<string, ReactNode> = {
+  uz: <><rect width="24" height="6" fill="#0099b5" /><rect y="6" width="24" height="6" fill="#fff" /><rect y="12" width="24" height="6" fill="#1eb53a" />
+    <rect y="5.6" width="24" height=".8" fill="#ce1126" /><rect y="11.6" width="24" height=".8" fill="#ce1126" />
+    <circle cx="4.6" cy="3" r="1.9" fill="#fff" /><circle cx="5.4" cy="3" r="1.6" fill="#0099b5" /></>,
+  en: <><rect width="24" height="18" fill="#012169" /><path d="M0 0l24 18M24 0L0 18" stroke="#fff" strokeWidth="3.6" /><path d="M0 0l24 18M24 0L0 18" stroke="#c8102e" strokeWidth="1.4" />
+    <path d="M12 0v18M0 9h24" stroke="#fff" strokeWidth="5" /><path d="M12 0v18M0 9h24" stroke="#c8102e" strokeWidth="3" /></>,
+  ru: <><rect width="24" height="6" fill="#fff" /><rect y="6" width="24" height="6" fill="#0039a6" /><rect y="12" width="24" height="6" fill="#d52b1e" /></>,
+};
+const Flag = ({ code }: { code: string }) => (
+  <svg className="flag" viewBox="0 0 24 18" aria-hidden="true">{FLAGS[code]}</svg>
+);
+const LANGS: { code: string; label: string; soon?: boolean }[] = [
+  { code: "uz", label: "O‘zbekcha" },
+  { code: "en", label: "English" },
+  { code: "ru", label: "Русский", soon: true },
+];
+
+function LangMenu({ lang, setLang }: { lang: Lang; setLang: (l: Lang) => void }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!open) return;
+    const away = (e: MouseEvent) => { if (!ref.current?.contains(e.target as Node)) setOpen(false); };
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", away);
+    document.addEventListener("keydown", esc);
+    return () => { document.removeEventListener("mousedown", away); document.removeEventListener("keydown", esc); };
+  }, [open]);
+  return (
+    <div className="lang-menu" ref={ref}>
+      <button className="lang-btn" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(v => !v)}
+        aria-label={tr(lang, "chrome.til")}>
+        <Flag code={lang} /><span>{lang.toUpperCase()}</span>
+        <svg className="lang-chev" viewBox="0 0 12 12" aria-hidden="true"><path d="m3 4.5 3 3 3-3" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+      </button>
+      {open && (
+        <div className="menu lang-list" role="menu">
+          {LANGS.map(l => (
+            <button key={l.code} role="menuitemradio" aria-checked={l.code === lang} disabled={l.soon}
+              className={`menu-item lang-item${l.code === lang ? " active" : ""}`}
+              onClick={() => { setOpen(false); if (!l.soon) setLang(l.code as Lang); }}>
+              <Flag code={l.code} /><span>{l.label}</span>
+              {l.soon ? <small>{tr(lang, "chrome.tez_orada")}</small>
+                : l.code === lang && <svg className="lang-check" viewBox="0 0 12 12" aria-hidden="true"><path d="m2.5 6.2 2.3 2.3 4.7-5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function SiteHeader({
-  lang, view, go, signed, authLoading, name, unread, swapLang,
+  lang, view, go, signed, authLoading, name, unread, setLang,
 }: {
   lang: Lang; view: string; go: Nav; signed: boolean; authLoading: boolean;
-  name: string | null; unread: number; swapLang: () => void;
+  name: string | null; unread: number; setLang: (l: Lang) => void;
 }) {
   const uz = lang === "uz";
   const [menu, setMenu] = useState(false);
@@ -170,8 +223,7 @@ export function SiteHeader({
       </nav>
 
       <div className="actions">
-        <button className="lang" onClick={swapLang}
-          aria-label={tr(lang,"chrome.switch_to_english")}>{tr(lang,"chrome.en")}</button>
+        <LangMenu lang={lang} setLang={setLang} />
 
         {signed && streak !== null && streak > 0 && (
           <span className="streak" title={uz ? `${streak} kunlik seriya` : `${streak}-day streak`}>

@@ -379,7 +379,7 @@ const wasDone=!!data.solved[lesson]&&(data.quizScores[lesson]||0)>=70;data.solve
   const landing=screenToPath(screenRef.current);
   window.history.replaceState(screenRef.current,"",
    landing===window.location.pathname?landing+window.location.search:landing);const onPop=(e:PopStateEvent)=>{const st=e.state as Screen|null;applyScreen(st&&typeof st==="object"&&"view" in st?st:pathToScreen(window.location.pathname));navDepth.current=Math.max(0,navDepth.current-1)};window.addEventListener("popstate",onPop);return()=>window.removeEventListener("popstate",onPop)},[]); const applyLang=(n:Lang)=>{setLang(n);localStorage.setItem("algoyol-lang",n)};
- const swap=()=>applyLang(lang==="uz"?"en":"uz");
+
  const enterSession=async(token:string,remember:boolean,isNew:boolean,refreshToken?:string)=>{
   setAuth({status:"loading"});
   const next=await fetchProfile(token);
@@ -541,7 +541,7 @@ const wasDone=!!data.solved[lesson]&&(data.quizScores[lesson]||0)>=70;data.solve
   markAttempt(activeProblem.judge,String(r.verdict||"")==="ACCEPTED");
   void recordSubmission({problemKey:activeProblem.judge,problemTitle:lang==="uz"?activeProblem.uz:activeProblem.en,language:codeLang,verdict:String(r.verdict||"JUDGE_ERROR"),runtimeMs:r.runtimeMs??null,memoryKb:r.memoryKb??null,passed:r.passed??null,total:r.total??null,source:code})}catch{setVerdict(tr(lang,"algoYolApp.tekshiruvchi_bilan_aloqa_uzildi"))}};
  const zone=(["duel","leaderboard","contests"] as View[]).includes(view)?"compete":"learn";
- return <div className="shell" data-zone={zone}><SiteHeader lang={lang} view={view} go={v=>go(v as View)} signed={signed} authLoading={auth.status==="loading"} name={profile?.display_name||profile?.username||null} unread={unread} swapLang={swap} />
+ return <div className="shell" data-zone={zone}><SiteHeader lang={lang} view={view} go={v=>go(v as View)} signed={signed} authLoading={auth.status==="loading"} name={profile?.display_name||profile?.username||null} unread={unread} setLang={applyLang} />
  {signed&&offerPlacement&&view!=="placement"&&<div className="placement-offer">
   <span className="po-ic" aria-hidden>◎</span>
   <span className="po-copy"><b>{tr(lang,"algoYolApp.darajangizni_aniqlaymizmi")}</b>
