@@ -72,7 +72,7 @@ export function RoadmapHub({lang,role,openRoadmap}:{lang:Lang;role:Role;openRoad
  const doneIn=(r:MasteryRoadmap)=>r.units.filter(u=>unitDone(progress,u)).length;
  const categories=useMemo(()=>{const map=new Map<string,MasteryRoadmap[]>();roadmapCatalog.forEach(r=>map.set(r.category,[...(map.get(r.category)||[]),r]));return[...map.entries()]},[]);
  return <>
-  <div className="page-head"><div><p className="eyebrow">{t.begin} → {t.expert}</p><h1 className="page-title">{t.title}</h1><p className="muted">{t.sub}</p></div><span className="tag">{roadmapCatalog.length} {tr(lang,"algoYolApp.yonalish")}</span></div>
+  <div className="page-head"><div><h1 className="page-title">{t.title}</h1><p className="muted">{t.sub}</p></div><span className="tag">{roadmapCatalog.length} {tr(lang,"algoYolApp.yonalish")}</span></div>
   <div className="rm-stats">
    <div className="rm-stat"><small>{t.overall}</small><b>{stats.pct}%</b><div className="progress"><span style={{width:`${stats.pct}%`}}/></div></div>
    <div className="rm-stat"><small>{t.units}</small><b>{stats.done}<span className="rm-dim">/{stats.total}</span></b></div>
