@@ -4638,3 +4638,83 @@ a.cx-prow:hover .cx-pname b{text-decoration:underline;text-underline-offset:3px}
 .play-out.busy pre{animation:play-wait 1.2s ease-in-out infinite}
 @keyframes play-wait{50%{opacity:.5}}
 @media(max-width:760px){.play-limits{display:none}}
+
+/* ─── Duel arenasi: tablo, qadamlar, ish maydoni ───────────────────────────
+   Scoped under .duel-bar / .arena so it beats the old minified dark-theme
+   rules without touching anything else. */
+.duel-bar{
+ display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:var(--s4);
+ padding:var(--s4) var(--s5);margin-bottom:var(--s3);border-radius:var(--r-xl);
+ background:var(--surface);border:1px solid color-mix(in srgb,var(--line) 60%,transparent);
+ box-shadow:0 18px 44px -24px color-mix(in srgb,var(--shadow-c) 45%,transparent);
+}
+.duel-bar .duel-side{display:flex;align-items:center;gap:var(--s3);min-width:0;justify-items:initial;text-align:left}
+.duel-bar .duel-side.them{justify-content:flex-end;text-align:right}
+.duel-side-copy{display:grid;min-width:0;line-height:1.25}
+.duel-bar .duel-who{font-size:14px;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.duel-bar .duel-elo{font-size:12px;color:var(--dim)}
+.duel-face{
+ width:44px;height:44px;border-radius:50%;flex:none;display:grid;place-items:center;font-weight:700;font-size:17px;
+ color:var(--green);background:var(--green-wash);box-shadow:0 0 0 2px var(--surface),0 0 0 4px color-mix(in srgb,var(--green) 40%,transparent);
+}
+.duel-side.them .duel-face{color:var(--orange);background:var(--orange-wash);box-shadow:0 0 0 2px var(--surface),0 0 0 4px color-mix(in srgb,var(--orange) 40%,transparent)}
+.duel-bar .duel-score{font-family:var(--font-display);font-size:2.4rem;font-weight:700;line-height:1;color:var(--muted);margin:0 var(--s2)}
+.duel-side.me .duel-score{margin-left:auto}
+.duel-side.them .duel-score{margin-right:auto}
+.duel-side.ahead .duel-score{color:var(--green)}
+.duel-side.them.ahead .duel-score{color:var(--orange)}
+.duel-bar .duel-clock{display:grid;justify-items:center;gap:6px;padding:0 var(--s4)}
+.duel-bar .duel-clock .timer{font-size:2.4rem;line-height:1;color:var(--ink);text-shadow:none;font-variant-numeric:tabular-nums}
+.duel-bar .duel-clock .timer.warned{color:var(--orange)}
+.duel-bar .duel-clock .timer.end{color:var(--bad)}
+.duel-time-bar{display:block;width:150px;height:4px;border-radius:99px;background:color-mix(in srgb,var(--ink) 8%,transparent);overflow:hidden}
+.duel-time-bar i{display:block;height:100%;border-radius:inherit;background:var(--green);transition:width 1s linear}
+.duel-clock .timer.warned~.duel-time-bar i{background:var(--orange)}
+.duel-clock .timer.end~.duel-time-bar i{background:var(--bad)}
+
+.duel-rule{font-size:13px}
+.duel-rule-more{color:var(--dim);cursor:help}
+
+/* The arena container: no dark gradient, just a quiet surface. */
+.duel-layout .arena{background:none;border:0;box-shadow:none;padding:0;color:var(--ink)}
+.arena .duel-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--s3)}
+.arena .duel-steps .step{
+ display:grid;gap:6px;text-align:left;padding:12px 14px;border-radius:var(--r-lg);
+ background:var(--surface);border:1px solid var(--line);color:var(--muted);box-shadow:none;opacity:1;
+ transition:border-color var(--dur-fast) var(--ease),box-shadow var(--dur-fast) var(--ease);
+}
+.step-top{display:flex;align-items:center;gap:8px}
+.step-n{font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--ink);padding:2px 7px;border-radius:7px;background:var(--surface-2)}
+.step-diff{font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--muted)}
+.step-diff.easy{color:#3fb27f}.step-diff.medium{color:#e0a33a}.step-diff.hard{color:#e2574c}.step-diff.insane{color:#9b6bff}
+.step-lock{display:inline-grid;color:var(--dim)}
+.step-lock svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.step-pts{margin-left:auto;font-size:12px;color:var(--dim)}
+.arena .duel-steps .step.open{border-color:color-mix(in srgb,var(--green) 55%,var(--line));box-shadow:0 0 0 3px color-mix(in srgb,var(--green) 14%,transparent);background:var(--surface);color:var(--muted)}
+.arena .duel-steps .step.open .step-n{background:var(--green);color:#fff}
+.arena .duel-steps .step.mine{background:var(--green-wash);border-color:color-mix(in srgb,var(--green) 40%,transparent);color:var(--muted);box-shadow:none}
+.arena .duel-steps .step.mine .step-n{background:var(--green);color:#fff}
+.arena .duel-steps .step.theirs{background:color-mix(in srgb,var(--orange) 9%,var(--surface));border-color:color-mix(in srgb,var(--orange) 35%,transparent);color:var(--muted)}
+.arena .duel-steps .step.theirs .step-n{background:var(--orange);color:#fff}
+.arena .duel-steps .step.locked{border-style:dashed;background:transparent;opacity:.75}
+.arena .duel-steps .step .claim{font-size:12px;font-weight:600;opacity:1}
+.arena .duel-steps .step.open .claim{color:var(--green)}
+
+.arena .duel-work{margin-top:var(--s4)}
+.arena .duel-problem{
+ background:var(--surface);border:1px solid color-mix(in srgb,var(--line) 70%,transparent);border-radius:var(--r-lg);
+ box-shadow:0 10px 30px -20px color-mix(in srgb,var(--shadow-c) 40%,transparent);color:var(--ink);
+}
+.arena .duel-problem h2{color:var(--ink);margin:10px 0 6px;font-size:1.35rem}
+.arena .duel-problem .tag{display:inline-block;justify-self:start;width:auto}
+
+.duel-layout .duel-card{border-radius:var(--r-lg);border-color:color-mix(in srgb,var(--line) 70%,transparent);box-shadow:0 10px 30px -22px color-mix(in srgb,var(--shadow-c) 40%,transparent)}
+.duel-layout .status-line{display:flex;align-items:center;gap:6px;padding:8px 0;font-size:13px}
+.duel-layout .status-line .feed-time{padding:1px 6px;border-radius:6px;background:var(--surface-2)}
+
+@media(max-width:760px){
+ .duel-bar{grid-template-columns:1fr 1fr;padding:var(--s3)}
+ .duel-bar .duel-clock{grid-column:1/-1;grid-row:1}
+ .duel-face{display:none}
+ .arena .duel-steps{grid-template-columns:1fr}
+}

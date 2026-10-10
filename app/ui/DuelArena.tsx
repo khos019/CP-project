@@ -541,32 +541,42 @@ function Arena({
           between a page heading and a panel further down. The clock sits in
           the middle because it belongs to both players. */}
       <div className="duel-bar">
-        <div className="duel-side me">
-          <span className="duel-who">{t.you}</span>
+        <div className={`duel-side me${(me?.score ?? 0) > (them?.score ?? 0) ? " ahead" : ""}`}>
+          <span className="duel-face" aria-hidden>{(me?.display_name || me?.username || "?").slice(0, 1).toUpperCase()}</span>
+          <span className="duel-side-copy">
+            <span className="duel-who">{t.you}</span>
+            <span className="duel-elo">{me?.rating ?? "—"} Elo</span>
+          </span>
           <span className="duel-score">{me?.score ?? 0}</span>
-          <span className="duel-elo">{me?.rating ?? "—"} Elo</span>
         </div>
 
         <div className="duel-clock">
           <span className={`timer ${remaining <= 60 ? "end" : remaining <= 300 ? "warned" : ""}`}>
             {clock(remaining)}
           </span>
+          {/* How much of the duel is left, as a bar under the clock. */}
+          <span className="duel-time-bar" aria-hidden>
+            <i style={{ width: `${Math.max(0, Math.min(100, (remaining / Math.max(1, (new Date(duel.ends_at).getTime() - new Date(duel.started_at).getTime()) / 1000)) * 100))}%` }} />
+          </span>
           <span className="duel-mode">
             {duel.mode === "bot" ? t.modeBot : t.modeHuman} · #{duel.id.slice(0, 8)}
           </span>
         </div>
 
-        <div className="duel-side them">
-          <span className="duel-who">{them?.is_bot ? <BotName /> : nameOf(them)}</span>
+        <div className={`duel-side them${(them?.score ?? 0) > (me?.score ?? 0) ? " ahead" : ""}`}>
           <span className="duel-score">{them?.score ?? 0}</span>
-          <span className="duel-elo">{them?.rating ?? "—"} Elo</span>
+          <span className="duel-side-copy">
+            <span className="duel-who">{them?.is_bot ? <BotName /> : nameOf(them)}</span>
+            <span className="duel-elo">{them?.rating ?? "—"} Elo</span>
+          </span>
+          <span className="duel-face" aria-hidden>{them?.is_bot ? "A" : nameOf(them).slice(0, 1).toUpperCase()}</span>
         </div>
       </div>
 
       {/* Said before it can be broken, and said again for as long as the duel
           lasts. A rule a player only discovers by losing to it is a trap. */}
       <div className={`duel-rule ${guard.strays ? "warned" : ""}`} role="note">
-        <b>⚠ {t.ruleTitle}.</b> <span>{t.ruleBody} {t.ruleGrace(Math.round(AWAY_GRACE_MS / 1000))}</span>
+        <b>⚠ {t.ruleShort}</b> <span className="duel-rule-more" title={`${t.ruleBody} ${t.ruleGrace(Math.round(AWAY_GRACE_MS / 1000))}`}>{t.ruleGrace(Math.round(AWAY_GRACE_MS / 1000))}</span>
         {guard.strays > 0 && <em className="duel-stray-count">{t.strayCount(guard.strays, guard.usedSeconds, Math.round(AWAY_GRACE_MS / 1000))}</em>}
       </div>
 
@@ -622,8 +632,13 @@ function Arena({
                   {/* A locked step says its number and what it is worth and
                       nothing else — the difficulty is a fact about a problem
                       that has not been handed out yet. */}
-                  <b>{String(r.round + 1).padStart(2, "0")}{open ? ` · ${t.diff[p?.difficulty || ""] || (p?.difficulty || "").toUpperCase()}` : ""}</b>
-                  <span>{r.points} {t.points}</span>
+                  <span className="step-top">
+                    <b className="step-n">{String(r.round + 1).padStart(2, "0")}</b>
+                    {open
+                      ? <span className={`step-diff ${p?.difficulty || ""}`}>{t.diff[p?.difficulty || ""] || (p?.difficulty || "").toUpperCase()}</span>
+                      : <span className="step-lock" aria-hidden><svg viewBox="0 0 24 24"><path d="M6 11h12v9H6zM8.5 11V8a3.5 3.5 0 0 1 7 0v3" /></svg></span>}
+                    <span className="step-pts mono">{r.points} {t.points}</span>
+                  </span>
                   {/* Both players on every round, not just whoever got there
                       first. Knowing the opponent has already taken round two
                       is what decides whether you keep pushing on it or move. */}
