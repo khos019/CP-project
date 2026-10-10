@@ -36,6 +36,15 @@ print(a + b)
 
 const T = catalogue("playground");
 
+const Ic = ({ d }: { d: string }) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>
+);
+const I_CLOCK = "M12 7v5l3 2M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z";
+const I_CHIP = "M7 7h10v10H7zM9 3v4M15 3v4M9 17v4M15 17v4M3 9h4M3 15h4M17 9h4M17 15h4";
+const I_KEY = "M3 7h18v10H3zM7 11h.01M11 11h.01M15 11h.01M8 14h8";
+const I_IN = "M12 3v12M7 10l5 5 5-5M5 21h14";
+const I_OUT = "m5 7 5 5-5 5M12 17h7";
+
 export function Playground({ lang }: { lang: Lang }) {
   const t = T[lang];
   const [codeLang, setCodeLang] = useState<"cpp20" | "python3">("cpp20");
@@ -75,11 +84,14 @@ export function Playground({ lang }: { lang: Lang }) {
     <>
       <div className="page-head">
         <div>
-          <p className="eyebrow">{t.eyebrow}</p>
           <h1 className="page-title">{t.title}</h1>
           <p className="muted">{t.sub}</p>
         </div>
-        <span className="muted mono">5 s · 256 MB</span>
+        <div className="play-limits">
+          <span><Ic d={I_CLOCK} />5 s</span>
+          <span><Ic d={I_CHIP} />256 MB</span>
+          <span className="play-kbd"><Ic d={I_KEY} /><kbd>Ctrl</kbd>+<kbd>Enter</kbd></span>
+        </div>
       </div>
 
       <div className="play-grid" data-zone="tool">
@@ -87,19 +99,32 @@ export function Playground({ lang }: { lang: Lang }) {
           code={code} setCode={setCode}
           lang={codeLang} setLang={switchLang}
           onSubmit={run} submitLabel={t.run} busy={busy}
-          verdict={out ? `${out.status} · ${out.runtimeMs} ms · ${out.memoryKb} KB` : ""}
+          verdict={out?.status ? `${out.status} · ${out.runtimeMs} ms · ${out.memoryKb} KB` : ""}
           extraAction={<button className="ghost ide-reset" onClick={() => setCode(STARTERS[codeLang])}>{t.reset}</button>}
-          minHeight={520}
+          minHeight={420}
         />
 
         <aside className="play-side">
           <div className="panel play-io">
-            <h3>{t.input}</h3>
+            <div className="play-io-head">
+              <h3><Ic d={I_IN} />{t.input}</h3>
+              {stdin && <button className="play-clear" onClick={() => setStdin("")}>{lang === "uz" ? "Tozalash" : "Clear"}</button>}
+            </div>
             <textarea aria-label={t.input} value={stdin} onChange={e => setStdin(e.target.value)} spellCheck={false} />
           </div>
-          <div className="panel play-io">
-            <h3>{t.output}</h3>
-            <pre className={out?.stdout ? "" : "muted"}>{out?.stdout || t.empty}</pre>
+          <div className={`panel play-io play-out${busy ? " busy" : ""}`}>
+            <div className="play-io-head">
+              <h3><Ic d={I_OUT} />{t.output}</h3>
+              {/* The run's outcome at a glance: status, then the cost. */}
+              {out && !busy && (out.status || out.runtimeMs > 0) && (
+                <span className="play-result">
+                  {out.status && <i className={`play-status ${/accept|ok|success/i.test(out.status) ? "ok" : "bad"}`}>{out.status}</i>}
+                  <i className="mono">{out.runtimeMs} ms</i>
+                  <i className="mono">{out.memoryKb} KB</i>
+                </span>
+              )}
+            </div>
+            <pre className={out?.stdout ? "" : "muted"}>{busy ? t.running : out?.stdout || t.empty}</pre>
           </div>
           {out?.stderr && (
             <div className="panel play-io play-err">
