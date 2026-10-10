@@ -4737,3 +4737,45 @@ a.cx-prow:hover .cx-pname b{text-decoration:underline;text-underline-offset:3px}
 .gift-grid .gift-card .gift-art{transition:transform .25s var(--ease)}
 .gift-grid .gift-card:hover .gift-art img,.gift-grid .gift-card:hover .gift-art svg{transform:scale(1.06) rotate(-2deg)}
 .gift-grid .gift-art img,.gift-grid .gift-art svg{transition:transform .3s var(--ease)}
+
+/* ─── Yo'l xaritalari: vaqt chizig'i ko'rinishi ───────────────────────────
+   A numbered stage on a rail at the left, that stage's sections as wide
+   cards on the right — instead of a narrow column floating in the middle. */
+.rm-stat small{display:flex;align-items:center;gap:6px}
+.rm-stat-ic{width:14px;height:14px;color:var(--green);flex:none}
+.rm-stat{box-shadow:0 10px 28px -22px color-mix(in srgb,var(--shadow-c) 45%,transparent);border-color:color-mix(in srgb,var(--line) 70%,transparent)}
+.rm-next.solo{grid-template-columns:1fr}
+
+.rm-tree{position:relative;gap:var(--s4)}
+.rm-tree::before{
+ content:"";position:absolute;left:19px;top:40px;bottom:40px;width:2px;border-radius:2px;
+ background:linear-gradient(to bottom,var(--green),color-mix(in srgb,var(--line) 80%,transparent) 30%);
+}
+.rm-tree .rm-cap{justify-self:start;margin-left:0;position:relative;z-index:1;background:var(--bg)}
+.rm-tree .rm-cap.end{justify-self:start}
+.rm-tree .rm-tier{display:grid;grid-template-columns:40px minmax(0,1fr);gap:var(--s4);align-items:start;padding:0}
+.rm-tree .rm-tier.linked::before{display:none}
+.rm-tier-n{
+ position:relative;z-index:1;width:40px;height:40px;border-radius:50%;margin-top:14px;
+ display:grid;place-items:center;font-family:var(--font-mono);font-weight:700;font-size:14px;
+ background:var(--surface);color:var(--dim);border:2px solid var(--line);
+}
+.rm-tier.open .rm-tier-n{color:var(--green);border-color:var(--green);box-shadow:0 0 0 4px color-mix(in srgb,var(--green) 14%,transparent)}
+.rm-tier.done .rm-tier-n{color:#fff;background:var(--green);border-color:var(--green)}
+.rm-tier-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:var(--s3)}
+.rm-tree .rm-node{
+ width:auto;padding:var(--s4) var(--s5);gap:10px;
+ border-color:color-mix(in srgb,var(--line) 70%,transparent);
+ box-shadow:0 10px 28px -22px color-mix(in srgb,var(--shadow-c) 45%,transparent);
+ transition:transform var(--dur-fast) var(--ease),border-color var(--dur-fast) var(--ease),box-shadow var(--dur-fast) var(--ease);
+}
+.rm-tree .rm-node:hover:not(:disabled){transform:translateY(-2px);background:var(--surface)}
+.rm-tree .rm-node.available,.rm-tree .rm-node.in-progress{border-color:color-mix(in srgb,var(--green) 50%,var(--line));box-shadow:0 0 0 3px color-mix(in srgb,var(--green) 10%,transparent),0 10px 28px -22px color-mix(in srgb,var(--shadow-c) 45%,transparent)}
+.rm-tree .rm-node.locked,.rm-tree .rm-node:disabled{opacity:.62;background:color-mix(in srgb,var(--surface) 60%,transparent);border-style:dashed}
+.rm-tree .rm-node .rm-badge{justify-self:start}
+@media(max-width:640px){
+ .rm-tree::before{left:13px}
+ .rm-tree .rm-tier{grid-template-columns:28px minmax(0,1fr);gap:var(--s3)}
+ .rm-tier-n{width:28px;height:28px;font-size:12px;margin-top:12px}
+ .rm-tier-row{grid-template-columns:1fr}
+}

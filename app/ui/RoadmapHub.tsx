@@ -40,6 +40,8 @@ const L = catalogue("roadmapHub");
 export const statusLabel=(s:Status,lang:Lang)=>s==="completed"?L[lang].completed:s==="in-progress"?L[lang].inProgress:s==="available"?L[lang].available:L[lang].locked;
 const rankOf=(rating:number,lang:Lang)=>rating<1200?(tr(lang,"roadmapHub.yangi_boshlovchi")):rating<1400?"Pupil":rating<1600?"Specialist":rating<1900?"Expert":rating<2100?"Candidate Master":"Master";
 
+const StatIc=({d}:{d:string})=><svg className="rm-stat-ic" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d={d}/></svg>;
+
 export function RoadmapHub({lang,role,openRoadmap}:{lang:Lang;role:Role;openRoadmap:(slug:string)=>void}){
  const t=L[lang];
  const canReviewAll=can(role,"roadmap.manage");
@@ -74,14 +76,14 @@ export function RoadmapHub({lang,role,openRoadmap}:{lang:Lang;role:Role;openRoad
  return <>
   <div className="page-head"><div><h1 className="page-title">{t.title}</h1><p className="muted">{t.sub}</p></div><span className="tag">{roadmapCatalog.length} {tr(lang,"algoYolApp.yonalish")}</span></div>
   <div className="rm-stats">
-   <div className="rm-stat"><small>{t.overall}</small><b>{stats.pct}%</b><div className="progress"><span style={{width:`${stats.pct}%`}}/></div></div>
-   <div className="rm-stat"><small>{t.units}</small><b>{stats.done}<span className="rm-dim">/{stats.total}</span></b></div>
-   <div className="rm-stat"><small>{t.rating}</small><b>{stats.rating}</b><span className="rm-rank">{rankOf(stats.rating,lang)}</span></div>
-   <div className="rm-stat"><small>{t.xp}</small><b>{stats.xp}<span className="rm-dim"> XP</span></b></div>
+   <div className="rm-stat"><small><StatIc d="M12 3a9 9 0 1 0 9 9h-9V3Z"/>{t.overall}</small><b>{stats.pct}%</b><div className="progress"><span style={{width:`${stats.pct}%`}}/></div></div>
+   <div className="rm-stat"><small><StatIc d="m12 3 9 5-9 5-9-5 9-5ZM3 13l9 5 9-5"/>{t.units}</small><b>{stats.done}<span className="rm-dim">/{stats.total}</span></b></div>
+   <div className="rm-stat"><small><StatIc d="M13 3 5 13.5h6L10 21l8-10.5h-6L13 3Z"/>{t.rating}</small><b>{stats.rating}</b><span className="rm-rank">{rankOf(stats.rating,lang)}</span></div>
+   <div className="rm-stat"><small><StatIc d="M12 3c.6 4.2 2.8 6.4 7 7-4.2.6-6.4 2.8-7 7-.6-4.2-2.8-6.4-7-7 4.2-.6 6.4-2.8 7-7Z"/>{t.xp}</small><b>{stats.xp}<span className="rm-dim"> XP</span></b></div>
   </div>
-  <div className="rm-next">
+  <div className={`rm-next${recommended.length ? "" : " solo"}`}>
    <div className="rm-panel">{active?<><p className="eyebrow">{stats.done>0?t.continue:t.start}</p><div className="rm-active"><span className="rm-node-ic" style={{background:active.color}}>{active.icon}</span><div><b>{lang==="uz"?active.titleUz:active.titleEn}</b><span className="muted">{doneIn(active)}/{active.units.length} {t.unitsShort} · {active.level}</span><div className="progress"><span style={{width:`${doneIn(active)/active.units.length*100}%`}}/></div></div><button className="primary" onClick={()=>openRoadmap(active.slug)}>{t.open}</button></div></>:<p className="muted">{t.empty}</p>}</div>
-   <div className="rm-panel"><p className="eyebrow">{t.recommended}</p><div className="rm-recs">{recommended.length?recommended.map(r=><button key={r.slug} className="rm-rec" onClick={()=>openRoadmap(r.slug)}><span className="rm-dot available"/><span><b>{lang==="uz"?r.titleUz:r.titleEn}</b><small className="muted">{r.level} · {r.units.length} {t.unitsShort}</small></span></button>):<span className="muted">—</span>}</div></div>
+   {recommended.length>0&&<div className="rm-panel"><p className="eyebrow">{t.recommended}</p><div className="rm-recs">{recommended.map(r=><button key={r.slug} className="rm-rec" onClick={()=>openRoadmap(r.slug)}><span className="rm-dot available"/><span><b>{lang==="uz"?r.titleUz:r.titleEn}</b><small className="muted">{r.level} · {r.units.length} {t.unitsShort}</small></span></button>)}</div></div>}
   </div>
   <div className="rm-toolbar">
    <input className="rm-search" value={query} onChange={e=>setQuery(e.target.value)} placeholder={t.search} aria-label={t.search}/>
@@ -90,7 +92,11 @@ export function RoadmapHub({lang,role,openRoadmap}:{lang:Lang;role:Role;openRoad
   </div>
   {view==="path"?<div className="rm-tree">
    <div className="rm-cap">{t.begin}</div>
-   {tiers.map((tier,ti)=><div className={`rm-tier ${ti>0?"linked":""}`} key={ti}>{tier.filter(matches).map(r=>{
+   {tiers.map((tier,ti)=>{const shown=tier.filter(matches);if(!shown.length)return null;
+    const tierState=tier.every(r=>statuses.get(r.slug)==="completed")?"done":tier.some(r=>{const s=statuses.get(r.slug);return s==="in-progress"||s==="available"})?"open":"locked";
+    return <div className={`rm-tier ${ti>0?"linked":""} ${tierState}`} key={ti}>
+     <span className="rm-tier-n" aria-hidden>{tierState==="done"?"✓":ti+1}</span>
+     <div className="rm-tier-row">{shown.map(r=>{
      const s=statuses.get(r.slug)||"locked",done=doneIn(r),pct=Math.round(done/r.units.length*100);
      const lockedBy=r.prereqs.map(bySlug).filter((p):p is MasteryRoadmap=>!!p&&statuses.get(p.slug)!=="completed");
      return <button key={r.slug} className={`rm-node ${s}`} disabled={s==="locked"} onClick={()=>openRoadmap(r.slug)}>
@@ -99,7 +105,7 @@ export function RoadmapHub({lang,role,openRoadmap}:{lang:Lang;role:Role;openRoad
       <span className="rm-node-meta"><span>{done}/{r.units.length} {t.unitsShort}</span><span className="mono">{tr(lang,"roadmapExperience.mahorat")} {masteryOf(r.slug)}</span><span>{pct}%</span></span>
       <span className="progress"><span style={{width:`${pct}%`}}/></span>
       {s==="locked"&&lockedBy.length>0&&<span className="rm-req">{t.requires}: {lockedBy.map(p=>lang==="uz"?p.titleUz:p.titleEn).join(" + ")}{lang==="uz"?` \u00b7 yoki ${MASTERY_CONFIG.unlock} mahorat`:` \u00b7 or ${MASTERY_CONFIG.unlock} mastery`}</span>}
-     </button>})}</div>)}
+     </button>})}</div></div>})}
    <div className="rm-cap end">{t.expert}</div>
   </div>
   :<div className="rm-map">{categories.map(([cat,list])=><div className="rm-col" key={cat}><h3>{lang==="uz"?list[0].categoryUz:cat}</h3>{list.filter(matches).map(r=>{const s=statuses.get(r.slug)||"locked";return <button key={r.slug} className="rm-item" disabled={s==="locked"} onClick={()=>openRoadmap(r.slug)}><span className={`rm-dot ${s}`}/><span className="rm-item-copy"><b>{lang==="uz"?r.titleUz:r.titleEn}</b><small className="muted">{r.level} · {doneIn(r)}/{r.units.length} · {masteryOf(r.slug)}</small></span><span className="rm-item-state">{s==="completed"?"✓":""}</span></button>})}</div>)}</div>}
