@@ -1069,6 +1069,30 @@ function Problems({lang,filter,setFilter,items,go,onSelect}:{lang:Lang,filter:st
    </aside>
 
    <div className="pb-results">
+    {/* Your standing in the bank, by difficulty, and a way to just start. */}
+    {(()=>{
+     const DIFFS=["easy","medium","hard","insane"] as const;
+     const by=DIFFS.map(d=>{const all=problems.filter(p=>p.difficulty===d);return {d,total:all.length,solved:all.filter(isSolved).length}});
+     const solvedAll=by.reduce((n,x)=>n+x.solved,0),C=2*Math.PI*22;
+     const pickRandom=()=>{const pool=shown.filter(p=>!isSolved(p));const from=pool.length?pool:shown;if(from.length)onSelect(from[Math.floor(Math.random()*from.length)])};
+     return <section className="pb-progress">
+      <div className="pb-ring">
+       <svg viewBox="0 0 52 52" aria-hidden><circle cx="26" cy="26" r="22"/><circle cx="26" cy="26" r="22" className="on" strokeDasharray={C} strokeDashoffset={C*(1-solvedAll/Math.max(1,problems.length))}/></svg>
+       <span><b className="mono">{solvedAll}</b><small>/{problems.length}</small></span>
+      </div>
+      <div className="pb-diffs">{by.map(x=>
+       <div key={x.d} className={`pb-diff ${x.d}`}>
+        <span className="pb-diff-top"><span>{x.d}</span><b className="mono">{x.solved}<small>/{x.total}</small></b></span>
+        <span className="pb-diff-bar"><i style={{width:`${x.total?Math.max(x.solved?3:0,(x.solved/x.total)*100):0}%`}}/></span>
+       </div>)}
+      </div>
+      <button className="secondary pb-random" onClick={pickRandom} disabled={!shown.length}
+       title={uz?"Joriy filtrlardan tasodifiy yechilmagan masala":"A random unsolved problem from the current filters"}>
+       <svg viewBox="0 0 24 24" aria-hidden><path d="M4 4h16v16H4zM8.5 8.5h.01M15.5 8.5h.01M12 12h.01M8.5 15.5h.01M15.5 15.5h.01"/></svg>
+       {uz?"Tasodifiy masala":"Random problem"}
+      </button>
+     </section>;
+    })()}
     {shown.length
      ? <table className="pb-table">
         <thead><tr>

@@ -4521,3 +4521,38 @@ a.cx-prow:hover .cx-pname b{text-decoration:underline;text-underline-offset:3px}
  border-color:color-mix(in srgb,var(--line) 45%,transparent);
  box-shadow:0 1px 2px color-mix(in srgb,var(--shadow-c) 10%,transparent),0 24px 60px -20px color-mix(in srgb,var(--shadow-c) 45%,transparent);
 }
+
+/* ─── Masalalar: progress paneli, tasodifiy masala, yopishqoq sarlavha ──── */
+.pb-progress{
+ display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:var(--s5);align-items:center;
+ padding:var(--s4) var(--s5);margin-bottom:var(--s4);
+ background:var(--surface);border:1px solid color-mix(in srgb,var(--line) 70%,transparent);border-radius:var(--r-lg);
+ box-shadow:0 10px 30px -18px color-mix(in srgb,var(--shadow-c) 40%,transparent);
+}
+.pb-ring{position:relative;width:64px;height:64px;display:grid;place-items:center}
+.pb-ring svg{position:absolute;inset:0;transform:rotate(-90deg)}
+.pb-ring circle{fill:none;stroke:color-mix(in srgb,var(--ink) 8%,transparent);stroke-width:5}
+.pb-ring circle.on{stroke:var(--green);stroke-linecap:round;transition:stroke-dashoffset .8s var(--ease)}
+.pb-ring span{display:grid;justify-items:center;line-height:1}
+.pb-ring b{font-size:17px;font-weight:800}
+.pb-ring small{font-size:10px;color:var(--dim)}
+.pb-diffs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--s4)}
+.pb-diff{--c:var(--green);display:grid;gap:6px;min-width:0}
+.pb-diff.easy{--c:#3fb27f}.pb-diff.medium{--c:#e0a33a}.pb-diff.hard{--c:#e2574c}.pb-diff.insane{--c:#9b6bff}
+.pb-diff-top{display:flex;align-items:baseline;justify-content:space-between;gap:6px}
+.pb-diff-top>span{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--c)}
+.pb-diff-top b{font-size:14px;font-weight:700;color:var(--ink)}
+.pb-diff-top small{font-size:11px;color:var(--dim);font-weight:500}
+.pb-diff-bar{display:block;height:6px;border-radius:99px;background:color-mix(in srgb,var(--c) 14%,transparent);overflow:hidden}
+.pb-diff-bar i{display:block;height:100%;border-radius:inherit;background:var(--c)}
+.pb-random{display:inline-flex;align-items:center;gap:8px;white-space:nowrap}
+.pb-random svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:transform .3s var(--ease)}
+.pb-random:hover svg{transform:rotate(90deg)}
+/* overflow:clip keeps the rounded corners without becoming a scroll box, so the header can stick. */
+.pb-table{overflow:clip}
+.pb-table thead th{position:sticky;top:var(--header-h);z-index:2}
+@media(max-width:760px){
+ .pb-progress{grid-template-columns:auto minmax(0,1fr);gap:var(--s4)}
+ .pb-diffs{grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s3)}
+ .pb-random{grid-column:1/-1;justify-content:center}
+}
