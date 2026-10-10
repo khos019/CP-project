@@ -92,11 +92,7 @@ export function RoadmapHub({lang,role,openRoadmap}:{lang:Lang;role:Role;openRoad
   </div>
   {view==="path"?<div className="rm-tree">
    <div className="rm-cap">{t.begin}</div>
-   {tiers.map((tier,ti)=>{const shown=tier.filter(matches);if(!shown.length)return null;
-    const tierState=tier.every(r=>statuses.get(r.slug)==="completed")?"done":tier.some(r=>{const s=statuses.get(r.slug);return s==="in-progress"||s==="available"})?"open":"locked";
-    return <div className={`rm-tier ${ti>0?"linked":""} ${tierState}`} key={ti}>
-     <span className="rm-tier-n" aria-hidden>{tierState==="done"?"✓":ti+1}</span>
-     <div className="rm-tier-row">{shown.map(r=>{
+   {tiers.map((tier,ti)=><div className={`rm-tier ${ti>0?"linked":""}`} key={ti}>{tier.filter(matches).map(r=>{
      const s=statuses.get(r.slug)||"locked",done=doneIn(r),pct=Math.round(done/r.units.length*100);
      const lockedBy=r.prereqs.map(bySlug).filter((p):p is MasteryRoadmap=>!!p&&statuses.get(p.slug)!=="completed");
      return <button key={r.slug} className={`rm-node ${s}`} disabled={s==="locked"} onClick={()=>openRoadmap(r.slug)}>
@@ -105,7 +101,7 @@ export function RoadmapHub({lang,role,openRoadmap}:{lang:Lang;role:Role;openRoad
       <span className="rm-node-meta"><span>{done}/{r.units.length} {t.unitsShort}</span><span className="mono">{tr(lang,"roadmapExperience.mahorat")} {masteryOf(r.slug)}</span><span>{pct}%</span></span>
       <span className="progress"><span style={{width:`${pct}%`}}/></span>
       {s==="locked"&&lockedBy.length>0&&<span className="rm-req">{t.requires}: {lockedBy.map(p=>lang==="uz"?p.titleUz:p.titleEn).join(" + ")}{lang==="uz"?` \u00b7 yoki ${MASTERY_CONFIG.unlock} mahorat`:` \u00b7 or ${MASTERY_CONFIG.unlock} mastery`}</span>}
-     </button>})}</div></div>})}
+     </button>})}</div>)}
    <div className="rm-cap end">{t.expert}</div>
   </div>
   :<div className="rm-map">{categories.map(([cat,list])=>{
