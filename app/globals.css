@@ -4556,3 +4556,61 @@ a.cx-prow:hover .cx-pname b{text-decoration:underline;text-underline-offset:3px}
  .pb-diffs{grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--s3)}
  .pb-random{grid-column:1/-1;justify-content:center}
 }
+
+/* ─── Kontestlar: bo'sh holat, holat belgilari, ikonkali statistika ────── */
+.cx-empty{
+ position:relative;overflow:hidden;isolation:isolate;
+ display:grid;justify-items:center;gap:var(--s3);text-align:center;
+ padding:var(--s8) var(--s5);border-radius:var(--r-xl);
+ background:var(--surface);border:1px solid color-mix(in srgb,var(--line) 60%,transparent);
+ box-shadow:0 24px 60px -24px color-mix(in srgb,var(--shadow-c) 40%,transparent);
+}
+.cx-empty::before{
+ content:"";position:absolute;inset:0;z-index:-1;
+ background:
+  radial-gradient(60% 80% at 50% 0,color-mix(in srgb,#f5c84c 14%,transparent),transparent 70%),
+  radial-gradient(color-mix(in srgb,var(--ink) 6%,transparent) 1px,transparent 1.4px) 0 0/20px 20px;
+ -webkit-mask-image:linear-gradient(to bottom,#000 40%,transparent);mask-image:linear-gradient(to bottom,#000 40%,transparent);
+}
+.cx-empty-ic{
+ width:76px;height:76px;border-radius:24px;display:grid;place-items:center;margin-bottom:var(--s2);
+ color:#c9921a;background:linear-gradient(150deg,color-mix(in srgb,#f5c84c 26%,var(--surface)),color-mix(in srgb,#f5c84c 8%,var(--surface)));
+ box-shadow:0 14px 30px -10px color-mix(in srgb,#f5c84c 55%,transparent);
+}
+.cx-empty-ic svg{width:34px;height:34px}
+.cx-empty h2{margin:0;font-family:var(--font-display);font-size:clamp(22px,calc(2.4 * var(--vw)),28px)}
+.cx-empty p{margin:0;max-width:46ch}
+.cx-empty-facts{list-style:none;margin:var(--s3) 0 var(--s2);padding:0;display:flex;flex-wrap:wrap;justify-content:center;gap:var(--s2)}
+.cx-empty-facts li{
+ display:inline-flex;align-items:center;gap:7px;padding:7px 13px;border-radius:99px;
+ background:var(--surface-2);border:1px solid var(--line);font-size:13px;font-weight:500;color:var(--ink);
+}
+.cx-empty-facts svg{width:15px;height:15px;color:var(--green)}
+
+.cx-summary{gap:var(--s3)}
+.cx-stat{
+ flex-direction:row;align-items:center;gap:10px;padding:12px 16px 12px 12px;border-radius:var(--r-lg);
+ background:var(--surface);border:1px solid var(--line);
+}
+.cx-stat i{width:34px;height:34px;border-radius:10px;display:grid;place-items:center;color:var(--green);background:var(--green-wash)}
+.cx-stat i svg{width:17px;height:17px}
+.cx-stat b{font-size:1.5rem}
+.cx-stat span{text-transform:none;letter-spacing:0;font-size:13px}
+
+.cx-phase{
+ display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:99px;white-space:nowrap;
+ font-size:12px;font-weight:600;color:var(--muted);background:var(--surface-2);
+}
+.cx-phase small{font-weight:500;opacity:.85}
+.cx-phase small::before{content:"·";margin-right:5px}
+.cx-phase.upcoming{color:#4f8cff;background:color-mix(in srgb,#4f8cff 13%,transparent)}
+.cx-phase.live{color:#e2574c;background:color-mix(in srgb,#e2574c 13%,transparent)}
+.cx-live-dot{width:7px;height:7px;border-radius:50%;background:currentColor;animation:cx-live 1.4s ease-in-out infinite}
+@keyframes cx-live{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,#e2574c 60%,transparent)}50%{box-shadow:0 0 0 5px transparent}}
+@media(prefers-reduced-motion:reduce){.cx-live-dot{animation:none}}
+.cx-card.cx-live{border-color:color-mix(in srgb,#e2574c 35%,var(--line))}
+.cx-card.cx-live .cx-date{color:#e2574c;background:color-mix(in srgb,#e2574c 10%,var(--surface))}
+.cx-card.cx-upcoming .cx-date{color:#4f8cff;background:color-mix(in srgb,#4f8cff 10%,var(--surface))}
+.cx-date b{color:inherit}
+.cx-winner{display:inline-flex;align-items:center;gap:6px}
+.cx-winner svg{width:15px;height:15px;color:#c9921a}

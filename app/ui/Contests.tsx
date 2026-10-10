@@ -100,6 +100,27 @@ const lasting = (minutes: number, lang: Lang) => {
 const clock = (minute: number) =>
   `${String(Math.floor(minute / 60)).padStart(2, "0")}:${String(minute % 60).padStart(2, "0")}`;
 
+/* Where a round is in its life, from its start and length. */
+type Phase = "upcoming" | "live" | "finished";
+const phaseOf = (c: { starts_at: string; duration_minutes: number }, now: number): Phase => {
+  const start = new Date(c.starts_at).getTime(), end = start + c.duration_minutes * 60000;
+  return now < start ? "upcoming" : now < end ? "live" : "finished";
+};
+/* "2 kun 3 soat" / "45 daqiqa" — the two largest units, enough for a countdown chip. */
+const span = (ms: number, lang: Lang) => {
+  const m = Math.max(1, Math.round(ms / 60000)), d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60), mm = m % 60;
+  const u = lang === "uz" ? { d: "kun", h: "soat", m: "daqiqa" } : { d: "d", h: "h", m: "m" };
+  const j = (n: number, x: string) => (lang === "uz" ? `${n} ${x}` : `${n}${x}`);
+  return d ? `${j(d, u.d)}${h ? ` ${j(h, u.h)}` : ""}` : h ? `${j(h, u.h)}${mm ? ` ${j(mm, u.m)}` : ""}` : j(mm, u.m);
+};
+const CxIcon = ({ d }: { d: string }) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>
+);
+const CX_TROPHY = "M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4ZM17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3";
+const CX_USERS = "M9 11.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7ZM2.5 20a6.5 6.5 0 0 1 13 0M16 4.5a3.5 3.5 0 0 1 0 7M18.5 14.5A6.5 6.5 0 0 1 21.5 20";
+const CX_LIST = "M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01";
+const CX_FLAG = "M5 21V4M5 4h11l-2 4 2 4H5";
+
 function Waiting({ lang, load, notMigrated = "contests.not_migrated" }: { lang: Lang; load: Load<unknown>; notMigrated?: string }) {
   if (load.state === "loading") {
     return <div className="screen-state" role="status"><span className="spinner" aria-hidden /><p className="muted">{tr(lang, "algoYolApp.yuklanmoqda")}</p></div>;
@@ -113,7 +134,7 @@ function Waiting({ lang, load, notMigrated = "contests.not_migrated" }: { lang: 
    the standings and every submission sent during it. */
 export type ContestTab = "problems" | "standings" | "status";
 
-export function Contests({ lang, slug, tab, onTab, onOpenContest, onOpenList, onOpenSubmissions, onOpenProblem }: {
+export function Contests({ lang, slug, tab, onTab, onOpenContest, onOpenList, onOpenSubmissions, onOpenProblem, onPractice }: {
   lang: Lang;
   slug: string | null;
   tab: ContestTab;
@@ -122,15 +143,16 @@ export function Contests({ lang, slug, tab, onTab, onOpenContest, onOpenList, on
   onOpenList: () => void;
   onOpenSubmissions: (handle: string) => void;
   onOpenProblem: (bankId: string) => void;
+  onPractice?: () => void;
 }) {
   return slug
     ? <ContestRound key={slug} lang={lang} slug={slug} tab={tab} onTab={onTab} onOpenList={onOpenList} onOpenSubmissions={onOpenSubmissions} onOpenProblem={onOpenProblem} />
-    : <ContestList lang={lang} onOpenContest={onOpenContest} />;
+    : <ContestList lang={lang} onOpenContest={onOpenContest} onPractice={onPractice} />;
 }
 
 /* ------------------------------------------------------------------ list */
 
-function ContestList({ lang, onOpenContest }: { lang: Lang; onOpenContest: (slug: string) => void }) {
+function ContestList({ lang, onOpenContest, onPractice }: { lang: Lang; onOpenContest: (slug: string) => void; onPractice?: () => void }) {
   const [load, setLoad] = useState<Load<ContestSummary[]>>({ state: "loading" });
   useEffect(() => {
     let live = true;
@@ -146,7 +168,20 @@ function ContestList({ lang, onOpenContest }: { lang: Lang; onOpenContest: (slug
 
   if (load.state !== "ready") return <>{head}<Waiting lang={lang} load={load} /></>;
   const list = load.data;
-  if (!list.length) return <>{head}<EmptyState lang={lang} icon="trophy" title={tr(lang, "contests.empty")} body={tr(lang, "contests.empty_body")} /></>;
+  /* No rounds yet: say what a round is, so the page sells the first one. */
+  if (!list.length) return <>{head}
+    <section className="cx-empty">
+      <span className="cx-empty-ic" aria-hidden><CxIcon d={CX_TROPHY} /></span>
+      <h2>{tr(lang, "contests.empty")}</h2>
+      <p className="muted">{tr(lang, "contests.empty_body")}</p>
+      <ul className="cx-empty-facts">
+        <li><CxIcon d={CX_LIST} />{tr(lang, "contests.empty_f1")}</li>
+        <li><CxIcon d={CX_FLAG} />{tr(lang, "contests.empty_f2")}</li>
+        <li><CxIcon d={CX_USERS} />{tr(lang, "contests.empty_f3")}</li>
+      </ul>
+      {onPractice && <button className="primary" onClick={onPractice}>{tr(lang, "contests.empty_cta")} →</button>}
+    </section>
+  </>;
 
   // Newest first, under a heading per year: a long archive reads by season.
   const years: { year: number; items: ContestSummary[] }[] = [];
@@ -156,14 +191,15 @@ function ContestList({ lang, onOpenContest }: { lang: Lang; onOpenContest: (slug
     years[years.length - 1].items.push(c);
   }
   const entries = list.reduce((s, c) => s + c.participants, 0);
+  const now = Date.now();
   const problems = list.reduce((s, c) => s + c.problems.length, 0);
 
   return <>
     {head}
     <div className="cx-summary">
-      <div className="cx-stat"><b>{list.length}</b><span>{tr(lang, "contests.stat_rounds")}</span></div>
-      <div className="cx-stat"><b>{entries}</b><span>{tr(lang, "contests.stat_entries")}</span></div>
-      <div className="cx-stat"><b>{problems}</b><span>{tr(lang, "contests.stat_problems")}</span></div>
+      <div className="cx-stat"><i aria-hidden><CxIcon d={CX_TROPHY} /></i><b>{list.length}</b><span>{tr(lang, "contests.stat_rounds")}</span></div>
+      <div className="cx-stat"><i aria-hidden><CxIcon d={CX_USERS} /></i><b>{entries}</b><span>{tr(lang, "contests.stat_entries")}</span></div>
+      <div className="cx-stat"><i aria-hidden><CxIcon d={CX_LIST} /></i><b>{problems}</b><span>{tr(lang, "contests.stat_problems")}</span></div>
     </div>
 
     {years.map(({ year, items }) => <section key={year} aria-label={String(year)}>
@@ -171,7 +207,9 @@ function ContestList({ lang, onOpenContest }: { lang: Lang; onOpenContest: (slug
       <div className="cx-list">{items.map((c) => {
         const t = tashkent(c.starts_at);
         const winner = c.winner ? (c.winner.display_name?.trim() || c.winner.username) : null;
-        return <a key={c.slug} className="cx-card" href={`/contests/${c.slug}`} onClick={linkTo(() => onOpenContest(c.slug))}>
+        const phase = phaseOf(c, now);
+        const startMs = new Date(c.starts_at).getTime();
+        return <a key={c.slug} className={`cx-card cx-${phase}`} href={`/contests/${c.slug}`} onClick={linkTo(() => onOpenContest(c.slug))}>
           <div className="cx-date" aria-hidden>
             <b>{t.d}</b>
             <span>{lang === "uz" ? UZ_SHORT[t.m] : EN_MONTHS[t.m]}</span>
@@ -183,14 +221,20 @@ function ContestList({ lang, onOpenContest }: { lang: Lang; onOpenContest: (slug
               <span>{lasting(c.duration_minutes, lang)}</span>
               <span>{tr(lang, "contests.participants_n", { n: c.participants })}</span>
             </span>
-            {winner && <span className="cx-winner">{tr(lang, "contests.winner")}: <b>{winner}</b></span>}
+            {winner && phase === "finished" && <span className="cx-winner"><CxIcon d={CX_TROPHY} />{tr(lang, "contests.winner")}: <b>{winner}</b></span>}
           </div>
           <div className="cx-side">
+            <span className={`cx-phase ${phase}`}>
+              {phase === "live" && <i className="cx-live-dot" aria-hidden />}
+              {tr(lang, `contests.${phase}`)}
+              {phase === "upcoming" && <small>{tr(lang, "contests.starts_in", { t: span(startMs - now, lang) })}</small>}
+              {phase === "live" && <small>{tr(lang, "contests.ends_in", { t: span(startMs + c.duration_minutes * 60000 - now, lang) })}</small>}
+            </span>
             <span className="cx-chips" aria-label={tr(lang, "contests.problems")}>
               {c.problems.map((p) => <span key={p.idx} className="cx-chip" style={{ color: ratingColor(p.rating) }} title={`${p.idx} · ${p.rating}`}>{p.idx}</span>)}
             </span>
             {c.hidden ? <span className="tag cx-hidden-tag">{tr(lang, "contests.hidden")}</span>
-              : c.archived && <span className="tag">{tr(lang, "contests.archive")}</span>}
+              : c.archived && phase !== "finished" && <span className="tag">{tr(lang, "contests.archive")}</span>}
           </div>
         </a>;
       })}</div>
