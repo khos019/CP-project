@@ -106,6 +106,7 @@ export function Shop({ lang, signed, authLoading, role = "user", onOrders }: { l
     void refresh();
   }, [signed, staff]);
 
+  const sameDescription = items.length > 1 && items.every(i => i.descriptionUz === items[0].descriptionUz);
   const act = readActivity()[new Date().toISOString().slice(0, 10)] || { activeSeconds: 0, duels: 0, topics: 0 };
   const upcoming = nextMilestone(streak);
 
@@ -261,11 +262,17 @@ export function Shop({ lang, signed, authLoading, role = "user", onOrders }: { l
         </section>
       )}
 
+      {/* The catalogue gets its own heading, with the one number that decides
+          what is reachable right next to it. */}
+      <div className="gift-head">
+        <h2>{lang === "uz" ? "Sovg‘alar" : "Gifts"} <small className="muted">{items.length}</small></h2>
+        <span className="gift-head-bal"><i className="coin-chip">◎</i><b className="mono">{balance}</b> {t.coins}</span>
+      </div>
       <div className="gift-grid">
         {items.map(item => {
           const affordable = balance >= item.costCoins;
           return (
-            <article key={item.slug} className={`gift-card ${affordable ? "" : "locked"}`}>
+            <article key={item.slug} className={`gift-card ${affordable ? "ready" : "locked"}`}>
               {/* Yulduz qiymati sovg'aning o'ziga tegishli, shuning uchun u
                   rasm ustida turadi; pastdagi qator faqat narxni aytadi va
                   bir xil raqam ikki joyda takrorlanmaydi. */}
@@ -278,7 +285,9 @@ export function Shop({ lang, signed, authLoading, role = "user", onOrders }: { l
                 )}
               </div>
               <h3>{lang === "uz" ? item.nameUz : item.nameEn}</h3>
-              <p className="muted">{lang === "uz" ? item.descriptionUz : item.descriptionEn}</p>
+              {/* Shown only when it says something: one sentence repeated on
+                  every card is noise, not information. */}
+              {!sameDescription && <p className="muted">{lang === "uz" ? item.descriptionUz : item.descriptionEn}</p>}
               <div className="gift-meta">
                 <span className="gift-price">
                   <i className="coin-chip">◎</i><b>{item.costCoins}</b> <small>{t.coins}</small>
