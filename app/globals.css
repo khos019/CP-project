@@ -4817,3 +4817,33 @@ a.cx-prow:hover .cx-pname b{text-decoration:underline;text-underline-offset:3px}
 .rm-skill .mark{position:absolute;top:-2px;width:2px;height:9px;border-radius:1px;background:color-mix(in srgb,var(--ink) 22%,transparent)}
 .rm-item-score{font-size:12px;font-weight:700;color:var(--muted);min-width:2.5em;text-align:right}
 .rm-item.completed .rm-item-score{color:var(--green)}
+
+/* ─── Reyting: telefon ─────────────────────────────────────────────────────
+   On a phone a podium card is ~110px wide: the name wraps to two lines
+   instead of being clipped at both ends, the offline dot steps aside, and
+   the winner's card rises a little less. */
+@media(max-width:560px){
+ .page-head:has(+ .leader-tools){margin-bottom:var(--s4)}
+ .lb-podium{gap:6px;margin-bottom:var(--s4)}
+ .lb-step{padding:var(--s4) 4px var(--s3);border-radius:var(--r-lg);gap:2px}
+ .lb-step-1{padding-top:var(--s4);padding-bottom:var(--s4)}
+ .lb-step .lb-medal{top:6px;left:6px;width:22px;height:22px}
+ .lb-step .presence-dot{display:none}
+ .lb-step-name{
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+  white-space:normal;overflow:hidden;text-align:center;overflow-wrap:anywhere;
+  font-size:12px;line-height:1.25;min-height:2.5em;margin-top:4px;letter-spacing:-.01em;
+ }
+ .lb-avatar-lg{width:44px;height:44px;font-size:17px}
+ .lb-step-1 .lb-avatar-lg{width:52px;height:52px;font-size:20px}
+ .lb-step-rating{font-size:1.2rem;margin-top:2px}
+ .lb-step-1 .lb-step-rating{font-size:1.4rem}
+ .lb-step-ac{font-size:11px}
+ .lb-row{min-height:54px;padding:0 var(--s3)}
+ .lb-names b{font-size:13.5px}
+ .lb-row .presence-dot{display:none}
+ .lb-rating{font-size:.95rem}
+ .leader-tools{gap:var(--s2)}
+ .leader-modes{width:100%}
+ .leader-modes button{flex:1}
+}
