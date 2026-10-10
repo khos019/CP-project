@@ -19,6 +19,7 @@ import { tr } from "./i18n";
 import { bankProblems } from "./problem-bank";
 import { useProblemDetail } from "./problem-detail";
 import { CodeEditor } from "./CodeEditor";
+import { readDraft, writeDraft } from "./drafts";
 import { useTabGuard } from "./duel-guard";
 import { heartbeatMark, recordDuelDone } from "./coins";
 import { MathText } from "./math-text";
@@ -679,10 +680,12 @@ function Arena({
               )}
               </div>
 
-              {/* Keyed by round and language: a new problem gets a clean editor
-                  because React remounts it, not because something reset it. */}
+              {/* Keyed by round only: a new problem gets a clean editor because
+                  React remounts it. The language is NOT in the key — it used
+                  to be, and switching main.py → main.cpp → main.py remounted
+                  the editor and threw the Python code away. */}
               <RoundEditor
-                key={`${roundId}:${codeLang}`}
+                key={roundId}
                 lang={lang} duelId={duel.id} round={roundId} codeLang={codeLang}
                 onCodeLang={setCodeLang} refresh={refresh}
                 sampleIn={prose?.samples?.[0]?.input || ""}
@@ -751,7 +754,19 @@ function RoundEditor({
   sampleIn: string; sampleOut: string;
 }) {
   const t = T[lang];
-  const [code, setCode] = useState(STARTER[codeLang]);
+  /* One buffer per language, like two files in an editor: switching tabs
+     shows the other file, it does not clear this one. Each buffer is also a
+     draft keyed by duel and round, so a refresh mid-duel keeps the code. */
+  const draftKey = `duel:${duelId}:${round}`;
+  const [codes, setCodes] = useState<Record<CodeLang, string>>(() => ({
+    cpp20: readDraft(draftKey, "cpp20") ?? STARTER.cpp20,
+    python3: readDraft(draftKey, "python3") ?? STARTER.python3,
+  }));
+  const code = codes[codeLang];
+  const setCode = (next: string) => {
+    setCodes((prev) => ({ ...prev, [codeLang]: next }));
+    writeDraft(draftKey, codeLang, next, STARTER[codeLang]);
+  };
   const [verdict, setVerdict] = useState("");
   const [sending, setSending] = useState(false);
 

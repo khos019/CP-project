@@ -48,17 +48,16 @@ const I_OUT = "m5 7 5 5-5 5M12 17h7";
 export function Playground({ lang }: { lang: Lang }) {
   const t = T[lang];
   const [codeLang, setCodeLang] = useState<"cpp20" | "python3">("cpp20");
-  const [code, setCode] = useState(STARTERS.cpp20);
+  /* One buffer per language, so switching tabs never carries C++ into the
+     Python file or loses what was written in either. */
+  const [codes, setCodes] = useState<Record<"cpp20" | "python3", string>>({ cpp20: STARTERS.cpp20, python3: STARTERS.python3 });
+  const code = codes[codeLang];
+  const setCode = (next: string) => setCodes((prev) => ({ ...prev, [codeLang]: next }));
   const [stdin, setStdin] = useState("12 30\n");
   const [out, setOut] = useState<{ stdout: string; stderr: string; status: string; runtimeMs: number; memoryKb: number } | null>(null);
   const [busy, setBusy] = useState(false);
 
-  const switchLang = (next: "cpp20" | "python3") => {
-    setCodeLang(next);
-    // Only replace the buffer when it is still an untouched starter, so a
-    // language switch never eats work in progress.
-    if (code.trim() === STARTERS.cpp20.trim() || code.trim() === STARTERS.python3.trim()) setCode(STARTERS[next]);
-  };
+  const switchLang = (next: "cpp20" | "python3") => setCodeLang(next);
 
   const run = async () => {
     setBusy(true);
