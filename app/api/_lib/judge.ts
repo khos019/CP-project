@@ -167,6 +167,43 @@ class JudgeTimeout extends Error {
   }
 }
 
+/* Thrown when Judge0 refuses to take the job at all and kept refusing through
+   the retries below. Kept apart from a plain Error so judgeTests does not
+   answer a refusing judge by sending it five more jobs. */
+class JudgeUnavailable extends Error {
+  constructor(readonly status: number, body: string) {
+    super(`Judge0 returned ${status}${body ? `: ${body}` : ""}`);
+    this.name = "JudgeUnavailable";
+  }
+}
+
+/* Statuses that mean "not now" rather than "never". Judge0 answers 503 when
+   its queue is full (MAX_QUEUE_SIZE) and Caddy answers 502/504 while the
+   server container restarts — both seen on 2026-10-14, when every submission
+   for twelve minutes came back JUDGE_ERROR "Judge0 returned 503" although the
+   same programs were accepted the moment the judge was back. */
+const RETRYABLE = new Set([429, 502, 503, 504]);
+const CREATE_RETRY_MS = 30_000;
+
+async function createJobs(url: string, headers: Record<string, string>, submissions: Submission[], budget: PollBudget) {
+  const giveUpAt = Math.min(budget.deadline, Date.now() + CREATE_RETRY_MS);
+  for (let attempt = 0; ; attempt++) {
+    const created = await fetch(`${url}/submissions/batch?base64_encoded=false`, {
+      method: "POST", headers, body: JSON.stringify({ submissions }),
+    });
+    if (created.ok) return created;
+    const body = (await created.text().catch(() => "")).replace(/\s+/g, " ").trim().slice(0, 200);
+    const wait = Math.min(8000, 1000 * 2 ** attempt);
+    // Each retry is a subrequest, so it is paid for out of the same poll budget.
+    if (!RETRYABLE.has(created.status) || budget.polls <= 1 || Date.now() + wait > giveUpAt) {
+      throw new JudgeUnavailable(created.status, body);
+    }
+    console.warn(`judge: Judge0 refused the job (${created.status} ${body}); retrying in ${wait}ms`);
+    budget.polls--;
+    await sleep(wait);
+  }
+}
+
 /* Judge0 returns the text fields base64-encoded (see the note in execute).
    TextDecoder replaces an undecodable byte with U+FFFD rather than throwing,
    which is what we want: a mangled character in a compiler message is still a
@@ -190,10 +227,7 @@ export type JudgeProgress = (settled: number, total: number) => void;
 
 async function execute(submissions: Submission[], onProgress?: JudgeProgress, budget: PollBudget = newBudget()): Promise<Result[]> {
   const { url, headers } = endpoint();
-  const created = await fetch(`${url}/submissions/batch?base64_encoded=false`, {
-    method: "POST", headers, body: JSON.stringify({ submissions }),
-  });
-  if (!created.ok) throw new Error(`Judge0 returned ${created.status}`);
+  const created = await createJobs(url, headers, submissions, budget);
   const tokens = ((await created.json()) as Array<{ token?: string }>).map((x) => x.token).filter(Boolean) as string[];
   if (tokens.length !== submissions.length) throw new Error("Judge did not accept every test.");
 
@@ -341,7 +375,7 @@ async function judgeTests(
     }
     console.warn(`judge: batched job settled ${settled.length}/${total} (status ${result.status?.id} ${result.status?.description}); judging the rest per test`);
   } catch (error) {
-    if (error instanceof JudgeTimeout) throw error;
+    if (error instanceof JudgeTimeout || error instanceof JudgeUnavailable) throw error;
     console.warn(`judge: batched job failed (${error instanceof Error ? error.message : error}); judging per test`);
   }
   const offset = settled.length;
