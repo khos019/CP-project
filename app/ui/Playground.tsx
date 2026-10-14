@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { catalogue } from "./i18n";
 import { CodeEditor } from "./CodeEditor";
+import { judgeFetch, judgeRefusal } from "./judge-client";
 
 // A plain compiler: write code, give it your own input, see what it prints.
 //
@@ -45,7 +46,7 @@ const I_KEY = "M3 7h18v10H3zM7 11h.01M11 11h.01M15 11h.01M8 14h8";
 const I_IN = "M12 3v12M7 10l5 5 5-5M5 21h14";
 const I_OUT = "m5 7 5 5-5 5M12 17h7";
 
-export function Playground({ lang }: { lang: Lang }) {
+export function Playground({ lang, signed, onSignIn }: { lang: Lang; signed: boolean; onSignIn: () => void }) {
   const t = T[lang];
   const [codeLang, setCodeLang] = useState<"cpp20" | "python3">("cpp20");
   /* One buffer per language, so switching tabs never carries C++ into the
@@ -60,16 +61,15 @@ export function Playground({ lang }: { lang: Lang }) {
   const switchLang = (next: "cpp20" | "python3") => setCodeLang(next);
 
   const run = async () => {
+    // Running code needs an account since the 2026-10-14 flood (see guard.ts).
+    if (!signed) { onSignIn(); return; }
     setBusy(true);
     setOut(null);
     try {
-      const response = await fetch("/api/judge", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ mode: "run", language: codeLang, sourceCode: code, stdin }),
-      });
-      const data = await response.json();
-      setOut(response.ok
+      const response = await judgeFetch({ mode: "run", language: codeLang, sourceCode: code, stdin });
+      const data = await response.json().catch(() => ({}));
+      const refusal = judgeRefusal(response.status, lang);
+      setOut(refusal ? { stdout: "", stderr: refusal, status: "", runtimeMs: 0, memoryKb: 0 } : response.ok
         ? { stdout: data.stdout || "", stderr: data.stderr || "", status: data.status || "", runtimeMs: data.runtimeMs || 0, memoryKb: data.memoryKb || 0 }
         : { stdout: "", stderr: data.error || t.failed, status: "", runtimeMs: 0, memoryKb: 0 });
     } catch {
@@ -131,6 +131,7 @@ export function Playground({ lang }: { lang: Lang }) {
               <pre>{out.stderr}</pre>
             </div>
           )}
+          {!signed && <p className="play-note">{judgeRefusal(401, lang)}</p>}
           <p className="play-note muted">{t.note}</p>
         </aside>
       </div>

@@ -24,6 +24,7 @@ import { useTabGuard } from "./duel-guard";
 import { heartbeatMark, recordDuelDone } from "./coins";
 import { MathText } from "./math-text";
 import { verdictLabel } from "./social-ui";
+import { judgeFetch, judgeRefusal } from "./judge-client";
 import {
   // Accept and decline are the shell's job, not this screen's: the card can
   // appear anywhere in the app, so the handlers live where it is rendered.
@@ -796,13 +797,10 @@ function RoundEditor({
     setRunning(true);
     setOut(null);
     try {
-      const response = await fetch("/api/judge", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ mode: "run", language: codeLang, sourceCode: code, stdin }),
-      });
-      const data = await response.json();
-      setOut(response.ok
+      const response = await judgeFetch({ mode: "run", language: codeLang, sourceCode: code, stdin });
+      const data = await response.json().catch(() => ({}));
+      const refusal = judgeRefusal(response.status, lang);
+      setOut(refusal ? { stdout: "", stderr: refusal, status: "", runtimeMs: 0, memoryKb: 0 } : response.ok
         ? {
             stdout: String(data.stdout || ""), stderr: String(data.stderr || ""),
             status: String(data.status || ""), runtimeMs: Number(data.runtimeMs) || 0,

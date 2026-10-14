@@ -16,25 +16,15 @@ test("server-renders the AlgoYo‘l Uzbek product shell",async()=>{
   assert.doesNotMatch(html,/codex-preview/);
 });
 
-test("judge endpoint validates input and returns a real verdict",async(t)=>{
-  const invalid=await fetch(`${base}/api/judge`,{method:"POST",headers:{"content-type":"application/json"},body:"{}"});
-  assert.equal(invalid.status,400);
-  const valid=await fetch(`${base}/api/judge`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({language:"cpp20",sourceCode:"int main(){}"})});
-  const result=await valid.json();
-  // Whatever happened, the endpoint answers with a verdict and never with a
-  // fabricated one — that part is this code's job and is always checked.
-  assert.ok(result.verdict);
-  assert.notEqual(result.demo,true);
-  /* Reaching Judge0 is not. A dev machine pointed at a placeholder JUDGE0_URL
-     (.env.local ships one) reports the judge unreachable, and calling that a
-     failing test teaches people to ignore the suite. Say what could not be
-     checked instead — against a deployed base URL this still fails loudly,
-     because there the judge answers. */
-  if(result.verdict==="JUDGE_ERROR"){
-    t.diagnostic(`judge unreachable from ${base}: ${result.details||"no detail"}`);
-    return t.skip("no judge configured for this base URL");
-  }
-  assert.equal(valid.status,200);
+test("judge endpoint refuses callers without a session",async()=>{
+  /* Since the 2026-10-14 flood (~93k anonymous POSTs in 22 minutes) the judge
+     runs nothing for a caller it cannot tie to an account. Both the missing
+     token and a forged one must stop before Judge0 is touched. */
+  const body=JSON.stringify({language:"cpp20",sourceCode:"int main(){}"});
+  const anonymous=await fetch(`${base}/api/judge`,{method:"POST",headers:{"content-type":"application/json"},body});
+  assert.equal(anonymous.status,401);
+  const forged=await fetch(`${base}/api/judge`,{method:"POST",headers:{"content-type":"application/json",authorization:"Bearer not.a.token"},body});
+  assert.equal(forged.status,401);
 });
 
 test("social card and bilingual content are present",async()=>{

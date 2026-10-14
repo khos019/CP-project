@@ -27,6 +27,7 @@ import { judgeSource, languageIds, isJudgeableProblem, type Language } from "../
 import { bankProblems } from "../../ui/problem-bank";
 import { solutions, hasSolution } from "../_lib/solutions";
 import { planDuel, botConfigFrom, type BotPlan } from "../_lib/bot";
+import { allow } from "../_lib/guard";
 
 const titleFor = (key: string) => bankProblems.find((p) => p.judge === key)?.uz || key;
 
@@ -45,6 +46,10 @@ const asString = (value: unknown) => (typeof value === "string" ? value : "");
 export async function POST(request: Request) {
   const token = bearerFrom(request);
   if (!token) return bad("not_authenticated", 401);
+  // Keyed on the token, not the account: most actions never look the account
+  // up, and a token is a session someone had to sign in to get. 150 a minute
+  // is well above what a searching player's 1 s tick plus heartbeat needs.
+  if (!(await allow("DUEL_LIMITER", await tokenKey(token)))) return bad("rate_limited", 429);
 
   let body: { action?: Action; [key: string]: unknown };
   try {
@@ -465,6 +470,13 @@ async function runBotStep(token: string, matchId: string): Promise<Json> {
   }
 
   return { ok: true, moved: false, reason: "nothing_due" };
+}
+
+/* A short, fixed-length key for the rate limiter; the raw JWT is long and
+   should not be handed around as an identifier. */
+async function tokenKey(token: string): Promise<string> {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(token));
+  return Array.from(new Uint8Array(digest).slice(0, 12), (b) => b.toString(16).padStart(2, "0")).join("");
 }
 
 /* Who is calling. Supabase answers this from the token itself, which is the

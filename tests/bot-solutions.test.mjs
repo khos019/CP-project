@@ -45,11 +45,14 @@ const wrap = (body) =>
 
 async function judge(problemId, sourceCode) {
   for (let attempt = 0; attempt < 3; attempt++) {
+    // /api/judge needs a signed-in session and allows 12 runs a minute per
+    // account: pass an access token in ALGOYOL_TOKEN and expect this to pace.
     const response = await fetch(`${BASE}/api/judge`, {
       method: "POST",
-      headers: { "content-type": "application/json" },
+      headers: { "content-type": "application/json", authorization: `Bearer ${process.env.ALGOYOL_TOKEN || ""}` },
       body: JSON.stringify({ problemId, language: "cpp20", sourceCode }),
     });
+    if (response.status === 429) { attempt--; await new Promise((r) => setTimeout(r, 10_000)); continue; }
     const result = await response.json().catch(() => ({}));
     // The judge is a shared external service; a transient failure is not a
     // failure of the solution being tested.

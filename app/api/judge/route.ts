@@ -6,13 +6,25 @@ import { NextResponse } from "next/server";
    are unchanged: the problem screen, the duel and the playground all read
    them, and this route is not the place to renegotiate that. */
 import { judgeSource, runSource, languageIds, isJudgeableProblem, type Language } from "../_lib/judge";
+import { bearerFrom } from "../_lib/supabase";
+import { allow, verifiedUserId } from "../_lib/guard";
 
 export async function POST(request: Request) {
-  const body = (await request.json()) as {
+  /* An account, then a budget, before anything reaches Judge0 — see guard.ts
+     for the flood that made this necessary. Both answers are cheap: the token
+     check is cached per isolate and the limiter is a local counter. */
+  const userId = await verifiedUserId(bearerFrom(request));
+  if (!userId) return NextResponse.json({ error: "not_authenticated" }, { status: 401 });
+  if (!(await allow("JUDGE_LIMITER", userId))) {
+    return NextResponse.json({ error: "rate_limited" }, { status: 429, headers: { "retry-after": "60" } });
+  }
+
+  const body = (await request.json().catch(() => null)) as {
     problemId?: string; language: Language; sourceCode: string;
     mode?: "judge" | "run"; stdin?: string; stream?: boolean;
   };
 
+  if (!body) return NextResponse.json({ error: "Invalid submission" }, { status: 400 });
   const validLanguage = Boolean(body.language && languageIds[body.language]);
 
   // Playground mode: run the given source against the user's own stdin and
