@@ -126,21 +126,20 @@ export function effectiveSolveProbability(
 
 /** Expected seconds of thinking before a first submission.
  *
- *  Base time comes from the problem's own difficulty — an easy problem is
- *  quicker for everyone — and is then stretched or compressed by how far the
- *  problem is above or below the bot. A bot 400 points above a problem works at
+ *  Base time comes from the problem's own rating — a harder problem is slower
+ *  for everyone — and is then stretched or compressed by how far the problem
+ *  is above or below the bot. A bot 400 points above a problem works at
  *  roughly half the base time; one 400 points below takes about double.
  */
 export function expectedThinkingSeconds(
-  botRating: number, problemRating: number, difficulty: "easy" | "medium" | "hard" | "insane",
-  config = DEFAULT_BOT_CONFIG,
+  botRating: number, problemRating: number, config = DEFAULT_BOT_CONFIG,
 ): number {
-  // Halved from the first cut. The old numbers were defensible on paper —
-  // four minutes of thinking for a medium problem is what a person spends —
-  // but a duel is watched, not read about: an opponent who does nothing at all
-  // for six minutes is indistinguishable from an opponent that is broken, and
-  // that is what the first bot duels actually looked like.
-  const base = { easy: 60, medium: 125, hard: 210, insane: 300 }[difficulty] ?? 125;
+  // A smooth curve in the rating rather than four difficulty buckets. The
+  // buckets made every problem from 800 to 1100 cost the same minute, so
+  // round A was answered in under a minute at every rating below 1300, and a
+  // 1700 problem took no longer than a 1200 one. Now each 100 rating points
+  // adds about 10%: ~1.8 minutes of base at 800, ~3.3 at 1400, ~6 at 2000.
+  const base = 110 * Math.exp((problemRating - 800) / 1000);
   const gap = botRating + config.skillBonus - problemRating;
   const stretched = base * Math.exp(-gap / 520) * config.timeScale;
   return Math.min(config.maxDelaySeconds, Math.max(config.minDelaySeconds, stretched));
@@ -148,8 +147,7 @@ export function expectedThinkingSeconds(
 
 /** The whole behaviour for one round, in the shape the brief asked for. */
 export function getBotSubmissionBehavior(
-  botRating: number, problemRating: number, difficulty: "easy" | "medium" | "hard" | "insane",
-  seed: string, config = DEFAULT_BOT_CONFIG,
+  botRating: number, problemRating: number, seed: string, config = DEFAULT_BOT_CONFIG,
 ): { shouldSolve: boolean; solvesLate: boolean; expectedDelay: number; mistakeProbability: number } {
   const random = seeded(`${seed}:outcome`);
   const p = solveProbability(botRating, problemRating, config);
@@ -168,7 +166,7 @@ export function getBotSubmissionBehavior(
   return {
     shouldSolve: early || late,
     solvesLate: late,
-    expectedDelay: expectedThinkingSeconds(botRating, problemRating, difficulty, config),
+    expectedDelay: expectedThinkingSeconds(botRating, problemRating, config),
     mistakeProbability,
   };
 }
@@ -182,7 +180,6 @@ export function planDuel(
   matchId: string, botRating: number,
   rounds: {
     round: number; problemKey: string; problemRating: number;
-    difficulty: "easy" | "medium" | "hard" | "insane";
     /** How many DISTINCT wrong programs this problem has. The bot may not make
      *  more failed attempts than that, because the alternative is submitting a
      *  byte-identical program twice and collecting the same verdict twice —
@@ -201,7 +198,7 @@ export function planDuel(
     const seed = `${matchId}:${round.round}`;
     const timing = seeded(`${seed}:timing`);
     const mistakes = seeded(`${seed}:mistakes`);
-    const behaviour = getBotSubmissionBehavior(botRating, round.problemRating, round.difficulty, seed, config);
+    const behaviour = getBotSubmissionBehavior(botRating, round.problemRating, seed, config);
 
     // Lognormal-ish jitter so two duels at the same rating do not look identical.
     const jitter = Math.exp((timing() - 0.5) * 0.7);
