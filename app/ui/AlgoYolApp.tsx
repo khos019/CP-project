@@ -541,7 +541,7 @@ const wasDone=!!data.solved[lesson]&&(data.quizScores[lesson]||0)>=70;data.solve
   markAttempt(activeProblem.judge,String(r.verdict||"")==="ACCEPTED");
   void recordSubmission({problemKey:activeProblem.judge,problemTitle:lang==="uz"?activeProblem.uz:activeProblem.en,language:codeLang,verdict:String(r.verdict||"JUDGE_ERROR"),runtimeMs:r.runtimeMs??null,memoryKb:r.memoryKb??null,passed:r.passed??null,total:r.total??null,source:code})}catch{setVerdict(tr(lang,"algoYolApp.tekshiruvchi_bilan_aloqa_uzildi"))}};
  const zone=(["duel","leaderboard","contests"] as View[]).includes(view)?"compete":"learn";
- return <div className="shell" data-zone={zone}><SiteHeader lang={lang} view={view} go={v=>go(v as View)} signed={signed} authLoading={auth.status==="loading"} name={profile?.display_name||profile?.username||null} unread={unread} setLang={applyLang} />
+ return <div className="shell" data-zone={zone}><SiteHeader lang={lang} view={view} go={v=>go(v as View)} signed={signed} authLoading={auth.status==="loading"} name={profile?.display_name||profile?.username||null} unread={unread} setLang={applyLang} onSignOut={signOut} />
  {signed&&offerPlacement&&view!=="placement"&&<div className="placement-offer">
   <span className="po-ic" aria-hidden>◎</span>
   <span className="po-copy"><b>{tr(lang,"algoYolApp.darajangizni_aniqlaymizmi")}</b>

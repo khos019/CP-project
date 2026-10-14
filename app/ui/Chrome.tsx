@@ -162,10 +162,10 @@ function LangMenu({ lang, setLang }: { lang: Lang; setLang: (l: Lang) => void })
 }
 
 export function SiteHeader({
-  lang, view, go, signed, authLoading, name, unread, setLang,
+  lang, view, go, signed, authLoading, name, unread, setLang, onSignOut,
 }: {
   lang: Lang; view: string; go: Nav; signed: boolean; authLoading: boolean;
-  name: string | null; unread: number; setLang: (l: Lang) => void;
+  name: string | null; unread: number; setLang: (l: Lang) => void; onSignOut: () => void;
 }) {
   const uz = lang === "uz";
   const [menu, setMenu] = useState(false);
@@ -263,6 +263,9 @@ export function SiteHeader({
                 {item("/messages", tr(lang,"chrome.xabarlar"))}
                 <div className="menu-sep" />
                 {item("/playground", tr(lang,"chrome.kompilyator"))}
+                <div className="menu-sep" />
+                <button className="menu-item menu-signout" role="menuitem"
+                  onClick={() => { setMenu(false); onSignOut(); }}>{tr(lang,"profilePage.signOut")}</button>
               </div>
             )}
           </div>
