@@ -491,6 +491,30 @@ export async function fetchOwnerStats(): Promise<
   }
 }
 
+/* Duel counts for the owner page (migration 053). Kept out of OwnerStats so
+   the page still loads where 053 has not been applied — null then, and the
+   tiles show a dash. */
+export type DuelWindow = { total: number; ai: number; rated: number };
+export type OwnerDuelStats = {
+  today: DuelWindow; d7: DuelWindow; d30: DuelWindow; all: DuelWindow;
+  live: number; players_today: number;
+};
+export async function fetchOwnerDuelStats(): Promise<OwnerDuelStats | null> {
+  const { url, key } = supabaseConfig();
+  const token = readToken();
+  if (!url || !key || !token) return null;
+  try {
+    const response = await fetch(`${url}/rest/v1/rpc/owner_duel_stats`, {
+      method: "POST",
+      headers: { apikey: key, Authorization: `Bearer ${token}`, "content-type": "application/json" },
+      body: "{}",
+    });
+    return response.ok ? ((await response.json()) as OwnerDuelStats) : null;
+  } catch {
+    return null;
+  }
+}
+
 /* Leaderboard reads the real profiles table. Anonymous visitors can read it —
    profiles are public by design — so a guest sees a genuine ranking rather
    than a fabricated row claiming to be them. */

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { tr, catalogue } from "./i18n";
 import { roadmapCatalog } from "./roadmap-data";
-import { fetchOwnerStats, type OwnerStats as Stats } from "./session";
+import { fetchOwnerStats, fetchOwnerDuelStats, type OwnerStats as Stats, type OwnerDuelStats } from "./session";
 
 type Lang = "uz" | "en";
 
@@ -51,12 +51,15 @@ export function OwnerStats({ lang, goProfile, onPickDay }: { lang: Lang; goProfi
   const t = T[lang];
   const [stats, setStats] = useState<Stats | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "not-migrated" | "forbidden" | "error">("loading");
+  /* undefined while loading, null when 053 is not applied (or the read failed). */
+  const [duels, setDuels] = useState<OwnerDuelStats | null | undefined>(undefined);
 
   /* The read is shared by the first load and the refresh button, but only the
      button needs to announce it: on mount the screen is already in "loading",
      so setting it again was a second render that painted the same thing. */
-  const read = () =>
-    fetchOwnerStats().then((result) => {
+  const read = () => {
+    void fetchOwnerDuelStats().then(setDuels);
+    return fetchOwnerStats().then((result) => {
       if (result.ok) {
         setStats(result.stats);
         setState("ready");
@@ -64,6 +67,7 @@ export function OwnerStats({ lang, goProfile, onPickDay }: { lang: Lang; goProfi
         setState(result.error === "not-migrated" ? "not-migrated" : result.error === "forbidden" ? "forbidden" : "error");
       }
     });
+  };
   const load = () => {
     setState("loading");
     void read();
@@ -116,7 +120,7 @@ export function OwnerStats({ lang, goProfile, onPickDay }: { lang: Lang; goProfi
         </div>
       )}
 
-      {state === "ready" && stats && <StatsBody lang={lang} t={t} stats={stats} onPickDay={onPickDay} />}
+      {state === "ready" && stats && <StatsBody lang={lang} t={t} stats={stats} duels={duels} onPickDay={onPickDay} />}
     </>
   );
 }
@@ -137,9 +141,12 @@ const IC: Record<string, string> = {
   check: "M20 6 9 17l-5-5",
   timer: "M10 2h4M12 14l3-3M20 14a8 8 0 1 1-16 0 8 8 0 0 1 16 0Z",
   sum: "M18 5H6l6 7-6 7h12",
+  swords: "M14.5 17.5 3 6V3h3l11.5 11.5M13 19l6-6M16 16l4 4M19 21l2-2M9.5 14.5 6 18M5 17l2 2",
 };
 
-function StatsBody({ lang, t, stats, onPickDay }: { lang: Lang; t: (typeof T)["uz"]; stats: Stats; onPickDay: (day: string) => void }) {
+function StatsBody({ lang, t, stats, duels, onPickDay }: {
+  lang: Lang; t: (typeof T)["uz"]; stats: Stats; duels: OwnerDuelStats | null | undefined; onPickDay: (day: string) => void;
+}) {
   const langRows = useMemo(
     () => Object.entries(stats.by_language || {}).sort((a, b) => b[1] - a[1]),
     [stats],
@@ -192,6 +199,29 @@ function StatsBody({ lang, t, stats, onPickDay }: { lang: Lang; t: (typeof T)["u
           <Tile icon="mail" label={t.confirmed} value={stats.confirmed} hint={fill(t.confirmedHint, { p: pct(stats.confirmed) })} />
           <Tile icon="ghost" label={t.neverIn} value={stats.never_signed_in} hint={t.neverInHint} />
         </div>
+      </section>
+
+      {/* Duels played. A dash means "not known yet" (053 not applied, or still
+          loading) — never a zero standing in for missing data. */}
+      <section className="os-section">
+        <div className="os-h2-row">
+          <h2 className="os-h2">{t.duels}</h2>
+          {duels && duels.live > 0 && <span className="muted">{fill(t.duelsLive, { n: duels.live })}</span>}
+        </div>
+        {duels === null && <div className="notice notice-info">{t.duelsNotMigrated}</div>}
+        <div className="os-tiles">
+          {([
+            ["today", t.duelsToday], ["d7", t.duels7], ["d30", t.duels30], ["all", t.duelsAll],
+          ] as const).map(([k, label]) => {
+            const w = duels?.[k];
+            const split = w ? fill(t.duelsSplit, { ai: w.ai, rated: w.rated }) : undefined;
+            return (
+              <Tile key={k} icon="swords" label={label} value={w ? w.total : "—"}
+                hint={k === "today" && w && duels ? `${split} · ${fill(t.duelsPlayers, { n: duels.players_today })}` : split} />
+            );
+          })}
+        </div>
+        <p className="muted os-footnote">{t.duelsNote}</p>
       </section>
 
       <div className="os-charts">

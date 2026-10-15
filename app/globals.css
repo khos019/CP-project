@@ -669,6 +669,8 @@ body{background:var(--bg);min-height:calc(100 * var(--vh))}
    ========================================================================== */
 .os-updated{margin:8px 0 0;font-size:12.5px}
 .os-section{display:flex;flex-direction:column;gap:12px;margin-bottom:20px}
+.os-h2-row{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.os-h2-row .os-h2{margin:0}
 .os-h2{font-size:19px;letter-spacing:-.02em;margin:0 0 2px}
 
 .os-tiles{display:grid;grid-template-columns:repeat(4,1fr);gap:11px}
