@@ -556,24 +556,6 @@ export async function fetchLearnerCount(): Promise<number | null> {
   }
 }
 
-export async function saveDuelRating(id: string, next: number) {
-  const { url, key } = supabaseConfig();
-  const token = readToken();
-  if (!url || !key || !token || !id) return;
-  try {
-    await fetch(`${url}/rest/v1/profiles?id=eq.${id}`, {
-      method: "PATCH",
-      headers: {
-        apikey: key,
-        Authorization: `Bearer ${token}`,
-        "content-type": "application/json",
-        Prefer: "return=minimal",
-      },
-      body: JSON.stringify({ duel_rating: next }),
-    });
-  } catch {}
-}
-
 /* ---------------------------------------------------------------------------
    User administration and messaging (migrations 010 and 011)
 

@@ -148,43 +148,6 @@ export async function fetchSubmissions(
   }
 }
 
-/** Records a verdict against the account. Silently does nothing when signed
-    out — a guest has no history to keep, and their work stays local. */
-export async function recordSubmission(entry: {
-  problemKey: string;
-  problemTitle: string;
-  language: "cpp20" | "python3";
-  verdict: string;
-  runtimeMs?: number | null;
-  memoryKb?: number | null;
-  passed?: number | null;
-  total?: number | null;
-  source: string;
-}): Promise<boolean> {
-  const r = auth("bank_submissions");
-  if (!r) return false;
-  try {
-    const res = await fetch(r.url, {
-      method: "POST",
-      headers: { ...r.headers, Prefer: "return=minimal" },
-      body: JSON.stringify({
-        problem_key: entry.problemKey,
-        problem_title: entry.problemTitle,
-        language: entry.language,
-        verdict: entry.verdict,
-        runtime_ms: entry.runtimeMs ?? null,
-        memory_kb: entry.memoryKb ?? null,
-        passed: entry.passed ?? null,
-        total: entry.total ?? null,
-        source_code: entry.source,
-      }),
-    });
-    return res.ok;
-  } catch {
-    return false;
-  }
-}
-
 /* My own submissions for one problem, newest first.
  *
  * This reads bank_submissions directly rather than going through

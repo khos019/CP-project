@@ -6,8 +6,25 @@ import { NextResponse } from "next/server";
    are unchanged: the problem screen, the duel and the playground all read
    them, and this route is not the place to renegotiate that. */
 import { judgeSource, runSource, languageIds, isJudgeableProblem, type Language } from "../_lib/judge";
-import { bearerFrom } from "../_lib/supabase";
+import { bearerFrom, insertAsService } from "../_lib/supabase";
+import { bankProblems } from "../../ui/problem-bank";
 import { allow, verifiedUserId } from "../_lib/guard";
+
+/* The verdict is written here, by the server that produced it, not by the
+   browser that received it. While the browser wrote its own row, anyone could
+   POST {"verdict":"ACCEPTED"} to bank_submissions and collect solved counts,
+   leaderboard places and — through has_solved() — other people's code. 052
+   takes the insert away from clients; this is what replaces it. JUDGE_ERROR is
+   kept too: it is how an outage shows up in the history. */
+type Outcome = Awaited<ReturnType<typeof judgeSource>>;
+async function record(userId: string, problemId: string, language: Language, sourceCode: string, outcome: Outcome) {
+  const problem = bankProblems.find((p) => p.judge === problemId);
+  await insertAsService("bank_submissions", {
+    user_id: userId, problem_key: problemId, problem_title: problem?.uz || problemId,
+    language, verdict: outcome.verdict, runtime_ms: outcome.runtimeMs ?? null, memory_kb: outcome.memoryKb ?? null,
+    passed: outcome.passed ?? null, total: outcome.total ?? null, source_code: sourceCode,
+  });
+}
 
 export async function POST(request: Request) {
   /* An account, then a budget, before anything reaches Judge0 — see guard.ts
@@ -63,6 +80,9 @@ export async function POST(request: Request) {
         try {
           const outcome = await judgeSource(problemId, body.language, body.sourceCode,
             (settled, total) => send({ type: "progress", settled, total }));
+          // Recorded before the result line, so a history the page reloads on
+          // seeing the verdict already contains it.
+          await record(userId, problemId, body.language, body.sourceCode, outcome);
           send({ type: "result", ...outcome });
         } catch (error) {
           send({ type: "result", verdict: "JUDGE_ERROR", passed: 0, total: 0, runtimeMs: 0, memoryKb: 0,
@@ -81,6 +101,7 @@ export async function POST(request: Request) {
   }
 
   const outcome = await judgeSource(problemId, body.language, body.sourceCode);
+  await record(userId, problemId, body.language, body.sourceCode, outcome);
   if (outcome.verdict === "JUDGE_ERROR") {
     return NextResponse.json({ verdict: outcome.verdict, details: outcome.details }, { status: 502 });
   }

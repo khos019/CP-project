@@ -39,7 +39,7 @@ import { PublicProfile } from "./PublicProfile";
 import { MASTERY_CONFIG, backfillMastery, loadMastery, masteryOf, recordEvidence, useMastery } from "./mastery";
 import { emptyProgress, loadProgress, readLocal as readLocalProgress, syncUp } from "./progress";
 import { can } from "./permissions";
-import { fetchFriends, recordSubmission, type FriendRow } from "./social";
+import { fetchFriends, type FriendRow } from "./social";
 import { loadProblemStatuses, markAttempt, syncProblemStatuses, type StatusMap } from "./problem-status";
 import { FriendsScreen, ProblemSubmissions, SiteSubmissions, SubmissionsScreen } from "./social-ui";
 import { DuelHistoryScreen } from "./DuelHistory";
@@ -537,12 +537,10 @@ const wasDone=!!data.solved[lesson]&&(data.quizScores[lesson]||0)>=70;data.solve
    }else r=await response.json().catch(()=>null);
    if(!r){setVerdict(verdictLine({verdict:"JUDGE_ERROR"}));return}
    setVerdict(verdictLine(r));
-  // The verdict belongs to the account, not to this tab: it is what a profile
-  // shows, and what decides whether this person may read other people's code
-  // for the same problem. Written after the fact, so a failed write costs the
-  // learner nothing.
+  // The account's copy of the verdict (profile, solved count, access to other
+  // people's code) is written by /api/judge itself; this is the local mark.
   markAttempt(activeProblem.judge,String(r.verdict||"")==="ACCEPTED");
-  void recordSubmission({problemKey:activeProblem.judge,problemTitle:lang==="uz"?activeProblem.uz:activeProblem.en,language:codeLang,verdict:String(r.verdict||"JUDGE_ERROR"),runtimeMs:r.runtimeMs??null,memoryKb:r.memoryKb??null,passed:r.passed??null,total:r.total??null,source:code})}catch{setVerdict(tr(lang,"algoYolApp.tekshiruvchi_bilan_aloqa_uzildi"))}};
+ }catch{setVerdict(tr(lang,"algoYolApp.tekshiruvchi_bilan_aloqa_uzildi"))}};
  const zone=(["duel","leaderboard","contests"] as View[]).includes(view)?"compete":"learn";
  return <div className="shell" data-zone={zone}><SiteHeader lang={lang} view={view} go={v=>go(v as View)} signed={signed} authLoading={auth.status==="loading"} name={profile?.display_name||profile?.username||null} unread={unread} setLang={applyLang} onSignOut={signOut} />
  {signed&&offerPlacement&&view!=="placement"&&<div className="placement-offer">

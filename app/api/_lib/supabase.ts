@@ -80,3 +80,23 @@ export async function selectAsService<T>(path: string): Promise<T | null> {
     return null;
   }
 }
+
+/** Inserts one row with the service role. For records only the server may
+ *  vouch for — a verdict the judge produced — once clients can no longer write
+ *  the table themselves. False on any failure; callers treat it as best effort. */
+export async function insertAsService(table: string, row: Record<string, unknown>): Promise<boolean> {
+  if (!url() || !serviceKey()) return false;
+  try {
+    const response = await fetch(`${url()}/rest/v1/${table}`, {
+      method: "POST",
+      headers: {
+        apikey: serviceKey(), Authorization: `Bearer ${serviceKey()}`,
+        "content-type": "application/json", Prefer: "return=minimal",
+      },
+      body: JSON.stringify(row),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
