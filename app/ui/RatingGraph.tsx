@@ -81,8 +81,13 @@ function domain(values: number[]): [number, number] {
   const hi = Math.max(...values);
   const mid = (lo + hi) / 2;
   const span = Math.max(400, (hi - lo) * 1.3);
-  const bottom = Math.max(0, Math.floor((mid - span / 2) / 100) * 100);
-  return [bottom, Math.ceil((bottom + span) / 100) * 100];
+  // Both ends are clamped to the data as well as rounded. Rounding the bottom
+  // down and then measuring the top from it used to leave the highest rating
+  // outside the window: 1168..1424 drew on 1000..1400 and the latest dot, the
+  // one that matters most, was cut off at the top edge. 25 points of margin
+  // keep a dot (and the peak's ring) clear of either edge.
+  const bottom = Math.max(0, Math.floor(Math.min(mid - span / 2, lo - 25) / 100) * 100);
+  return [bottom, Math.ceil(Math.max(bottom + span, hi + 25) / 100) * 100];
 }
 
 /* The y labels are the rank boundaries, as on Codeforces -- 1200, 1400, 1600,
