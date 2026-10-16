@@ -20,12 +20,16 @@ insert into public.duel_config(key, value, note) values
   ('friend_invite_ttl_seconds', '120'::jsonb, 'how long a friend-duel invitation waits for an answer')
 on conflict (key) do nothing;
 
--- 2. Invitations. Read and written only through the functions below.
+-- 2. Invitations. Read and written only through the functions below. Named
+--    friend_duel_invites because 001 already created an unrelated, unused
+--    duel_invites (token links) that "create table if not exists" would skip.
 do $$ begin
   create type public.duel_invite_status as enum ('pending', 'accepted', 'declined', 'cancelled', 'expired');
 exception when duplicate_object then null; end $$;
 
-create table if not exists public.duel_invites (
+-- Named friend_duel_invites: 001 already created an unrelated, unused
+-- duel_invites (token links), which "create table if not exists" would skip.
+create table if not exists public.friend_duel_invites (
   id           uuid primary key default gen_random_uuid(),
   sender_id    uuid not null references public.profiles on delete cascade,
   receiver_id  uuid not null references public.profiles on delete cascade,
@@ -40,9 +44,9 @@ create table if not exists public.duel_invites (
   constraint duel_invite_three check (array_length(ratings, 1) = 3),
   constraint duel_invite_minutes check (minutes between 5 and 120)
 );
-create index if not exists idx_duel_invite_inbox on public.duel_invites(receiver_id, expires_at) where status = 'pending';
-create index if not exists idx_duel_invite_outbox on public.duel_invites(sender_id, expires_at) where status = 'pending';
-alter table public.duel_invites enable row level security;
+create index if not exists idx_friend_invite_inbox on public.friend_duel_invites(receiver_id, expires_at) where status = 'pending';
+create index if not exists idx_friend_invite_outbox on public.friend_duel_invites(sender_id, expires_at) where status = 'pending';
+alter table public.friend_duel_invites enable row level security;
 
 -- 3. Send. Any earlier invitation of the sender's that is still waiting is
 --    withdrawn: one open invitation per person keeps the inbox honest.
@@ -72,13 +76,13 @@ begin
   end if;
 
   with gone as (
-    update duel_invites set status = 'cancelled', responded_at = now()
+    update friend_duel_invites set status = 'cancelled', responded_at = now()
      where sender_id = v_me and status = 'pending'
      returning id, receiver_id)
   select coalesce(jsonb_agg(jsonb_build_object('invite_id', id, 'receiver_id', receiver_id)), '[]'::jsonb)
     into v_cancelled from gone;
 
-  insert into duel_invites(sender_id, receiver_id, ratings, minutes, expires_at)
+  insert into friend_duel_invites(sender_id, receiver_id, ratings, minutes, expires_at)
   values (v_me, v_to, p_ratings, p_minutes,
           now() + (duel_cfg('friend_invite_ttl_seconds', 120) || ' seconds')::interval)
   returning id into v_id;
@@ -92,7 +96,7 @@ create or replace function public.duel_invite_respond(p_invite uuid, p_accept bo
 returns jsonb language plpgsql security definer set search_path = public as $$
 declare
   v_me uuid := auth.uid();
-  v_inv duel_invites;
+  v_inv friend_duel_invites;
   v_match uuid;
   pts jsonb := (select value from duel_config where key = 'round_points');
   chosen text[] := '{}';
@@ -101,17 +105,17 @@ declare
   i int;
 begin
   if v_me is null then return jsonb_build_object('ok', false, 'error', 'not_authenticated'); end if;
-  select * into v_inv from duel_invites where id = p_invite for update;
+  select * into v_inv from friend_duel_invites where id = p_invite for update;
   if not found then return jsonb_build_object('ok', false, 'error', 'not_found'); end if;
   if v_inv.receiver_id <> v_me then return jsonb_build_object('ok', false, 'error', 'not_yours'); end if;
   if v_inv.status <> 'pending' then return jsonb_build_object('ok', false, 'error', v_inv.status::text); end if;
   if now() >= v_inv.expires_at then
-    update duel_invites set status = 'expired', responded_at = now() where id = p_invite;
+    update friend_duel_invites set status = 'expired', responded_at = now() where id = p_invite;
     return jsonb_build_object('ok', false, 'error', 'expired', 'sender_id', v_inv.sender_id);
   end if;
 
   if not p_accept then
-    update duel_invites set status = 'declined', responded_at = now() where id = p_invite;
+    update friend_duel_invites set status = 'declined', responded_at = now() where id = p_invite;
     return jsonb_build_object('ok', true, 'accepted', false, 'sender_id', v_inv.sender_id);
   end if;
 
@@ -152,7 +156,7 @@ begin
     values (v_match, i - 1, v_key, v_rate, coalesce((pts -> (i - 1) #>> '{}')::int, 100 * i));
   end loop;
 
-  update duel_invites set status = 'accepted', responded_at = now(), match_id = v_match where id = p_invite;
+  update friend_duel_invites set status = 'accepted', responded_at = now(), match_id = v_match where id = p_invite;
   return jsonb_build_object('ok', true, 'accepted', true, 'duel_id', v_match, 'sender_id', v_inv.sender_id);
 end $$;
 
@@ -162,7 +166,7 @@ returns jsonb language plpgsql security definer set search_path = public as $$
 declare v_me uuid := auth.uid(); v_to uuid;
 begin
   if v_me is null then return jsonb_build_object('ok', false, 'error', 'not_authenticated'); end if;
-  update duel_invites set status = 'cancelled', responded_at = now()
+  update friend_duel_invites set status = 'cancelled', responded_at = now()
    where id = p_invite and sender_id = v_me and status = 'pending'
    returning receiver_id into v_to;
   if v_to is null then return jsonb_build_object('ok', false, 'error', 'not_pending'); end if;
@@ -182,7 +186,7 @@ begin
            'from', jsonb_build_object('id', p.id, 'username', p.username, 'display_name', p.display_name,
                                       'duel_rating', p.duel_rating))
     into v_in
-    from duel_invites i join profiles p on p.id = i.sender_id
+    from friend_duel_invites i join profiles p on p.id = i.sender_id
    where i.receiver_id = v_me and i.status = 'pending' and i.expires_at > now()
    order by i.created_at desc limit 1;
   select jsonb_build_object('id', i.id, 'ratings', to_jsonb(i.ratings), 'minutes', i.minutes,
@@ -190,7 +194,7 @@ begin
            'status', case when i.status = 'pending' and i.expires_at <= now() then 'expired' else i.status::text end,
            'to', jsonb_build_object('id', p.id, 'username', p.username, 'display_name', p.display_name))
     into v_out
-    from duel_invites i join profiles p on p.id = i.receiver_id
+    from friend_duel_invites i join profiles p on p.id = i.receiver_id
    where i.sender_id = v_me
      and ((i.status = 'pending' and i.expires_at > now() - interval '30 seconds')
           or i.responded_at > now() - interval '30 seconds')
