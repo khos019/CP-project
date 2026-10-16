@@ -816,6 +816,14 @@ body{background:var(--bg);min-height:calc(100 * var(--vh))}
 .msg-bubble{align-self:flex-start;max-width:min(78%,560px);display:grid;gap:5px;padding:12px 15px;border-radius:16px 16px 16px 5px;background:var(--surface-2);border:1px solid var(--line)}
 .msg-bubble.mine{align-self:flex-end;border-radius:16px 16px 5px 16px;background:color-mix(in srgb,var(--mint) 17%,var(--inset));border-color:color-mix(in srgb,var(--mint) 30%,var(--surface-2))}
 .msg-bubble p{margin:0;font-size:14.5px;line-height:1.6;white-space:pre-wrap;overflow-wrap:anywhere}
+/* Owner broadcast panel above the inbox, and links inside message bubbles. */
+.broadcast-panel{display:grid;gap:var(--s3);margin-bottom:var(--s4)}
+.broadcast-panel h2{margin:0;font-size:20px}
+.broadcast-panel p{margin:0}
+.broadcast-panel textarea{width:100%;background:var(--inset);border:1px solid var(--line);border-radius:var(--r-md);padding:12px var(--s4);color:var(--ink);font:inherit;font-size:var(--t-sm);line-height:1.6;resize:vertical}
+.broadcast-check{display:flex;align-items:center;gap:8px;font-size:var(--t-sm);color:var(--muted)}
+.broadcast-actions{display:flex;gap:var(--s3);flex-wrap:wrap}
+.msg-bubble a{color:var(--blue);text-decoration:underline;text-underline-offset:2px;overflow-wrap:anywhere}
 .msg-bubble small{font-size:11.5px}
 .msg-site{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:850;letter-spacing:.08em;color:color-mix(in srgb,var(--inset) 53%,var(--surface-2));background:var(--lime);padding:3px 8px;border-radius:6px;justify-self:start}
 .msg-site i{font-style:normal}

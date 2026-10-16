@@ -16,6 +16,7 @@ import {
   type Role,
 } from "./session";
 import { EmptyState } from "./kit";
+import { ownerBroadcast, ownerBroadcastRecipients } from "./session";
 
 type Lang = "uz" | "en";
 
@@ -38,6 +39,14 @@ const T = {
     emptyTitle: "Hali xabar yo‘q", emptyBody: "Qidiruv orqali birinchi suhbatni boshlang.",
     pickTitle: "Suhbatni tanlang", pickBody: "Ro‘yxatdan birini oching yoki yangisini boshlang.",
     newChat: "Yangi suhbat",
+    broadcast: "Hammaga xabar", broadcastTitle: "Barcha foydalanuvchilarga xabar",
+    broadcastLede: (n: number | null) => n === null ? "Oluvchilar sanalmoqda…" : `Xabar ${n} ta foydalanuvchiga boradi (avtomatik yaratilgan kontest hisoblari va siz bundan mustasno).`,
+    broadcastAsSite: "AlgoYo‘l nomidan (rasmiy belgi bilan) yuborish",
+    broadcastNext: "Davom etish", broadcastCancel: "Bekor qilish", broadcastBack: "Ortga",
+    broadcastConfirm: (n: number) => `Xabar ${n} ta foydalanuvchiga yuborilsinmi? Yuborilgan xabarni qaytarib olib bo‘lmaydi.`,
+    broadcastSend: "Ha, hammaga yuborish", broadcastSending: "Yuborilmoqda…",
+    broadcastSent: (n: number) => `Xabar ${n} ta foydalanuvchiga yuborildi.`,
+    broadcastFailed: "Yuborib bo‘lmadi.", broadcastNotMigrated: "Bu imkoniyat hali yoqilmagan (055 migratsiyasi).",
     findPerson: "Kimga yozmoqchisiz?",
     searchHint: "Nickname yoki ism bo‘yicha qidiring (kamida 2 belgi).",
     nobody: "Hech kim topilmadi.",
@@ -67,6 +76,14 @@ const T = {
     roles: { user: "", admin: "ADMIN", owner: "EGA" } as Record<Role, string>,
   },
   en: {
+    broadcast: "Message everyone", broadcastTitle: "A message to every learner",
+    broadcastLede: (n: number | null) => n === null ? "Counting recipients…" : `The message goes to ${n} learners (not the seeded contest accounts, not you).`,
+    broadcastAsSite: "Send as AlgoYo‘l (with the official mark)",
+    broadcastNext: "Continue", broadcastCancel: "Cancel", broadcastBack: "Back",
+    broadcastConfirm: (n: number) => `Send this message to ${n} learners? A sent message cannot be taken back.`,
+    broadcastSend: "Yes, send to everyone", broadcastSending: "Sending…",
+    broadcastSent: (n: number) => `Sent to ${n} learners.`,
+    broadcastFailed: "Could not send.", broadcastNotMigrated: "Not switched on yet (migration 055).",
     title: "Messages",
     eyebrow: "Conversations",
     lede: "Write to any learner. When the owner writes, the message comes from the site.",
@@ -125,6 +142,95 @@ const sendError = (e: ApiError, t: (typeof T)["uz"]) =>
   : e === "not-migrated" ? t.notMigrated
   : t.errNet;
 
+/* Links in a message open in a new tab. Only http(s) is turned into a link,
+   and the text is never parsed as HTML, so a body cannot inject markup. */
+const URL_RE = /(https?:\/\/[^\s<>"']+)/g;
+function MessageBody({ text }: { text: string }) {
+  const parts = text.split(URL_RE);
+  return (
+    <p>
+      {parts.map((part, i) => (i % 2 === 1
+        ? <a key={i} href={part} target="_blank" rel="noopener noreferrer nofollow">{part}</a>
+        : part))}
+    </p>
+  );
+}
+
+/* The announcement an owner starts from; it stays editable. */
+const BROADCAST_DRAFT = `Assalomu alaykum!
+
+Sizni AlgoYo‘l’ning rasmiy Telegram kanaliga taklif qilamiz. Kanalda yangi masalalar, kontestlar, duel turnirlari va saytdagi muhim yangiliklar haqida birinchilardan bo‘lib xabar topasiz.
+
+👉 https://t.me/Algoyol
+
+Shuningdek, masalalar tahlili va foydali maslahatlarni ham ulashib boramiz. Kanalimizga qo‘shiling — sizni kutib qolamiz!
+
+Hurmat bilan,
+AlgoYo‘l jamoasi`;
+
+/* Owner only: one message to every learner, through migration 055. Two steps
+   — read and edit, then confirm with the recipient count in front of you —
+   because a broadcast cannot be recalled. */
+function BroadcastPanel({ t, onClose }: { t: (typeof T)["uz"]; onClose: () => void }) {
+  const [body, setBody] = useState(BROADCAST_DRAFT);
+  const [asSite, setAsSite] = useState(false);
+  const [count, setCount] = useState<number | null>(null);
+  const [step, setStep] = useState<"edit" | "confirm" | "sending" | "sent">("edit");
+  const [sent, setSent] = useState(0);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    void ownerBroadcastRecipients().then((r) => {
+      if (r.ok) setCount(Number(r.data) || 0);
+      else setError(r.error === "not-migrated" ? t.broadcastNotMigrated : t.broadcastFailed);
+    });
+  }, [t]);
+  const send = async () => {
+    setStep("sending"); setError("");
+    const r = await ownerBroadcast(body, asSite);
+    if (r.ok && r.data?.ok) { setSent(Number(r.data.sent) || 0); setStep("sent"); return; }
+    setError(!r.ok && r.error === "not-migrated" ? t.broadcastNotMigrated : t.broadcastFailed);
+    setStep("confirm");
+  };
+  return (
+    <div className="panel broadcast-panel">
+      <h2>{t.broadcastTitle}</h2>
+      {step === "sent" ? (
+        <>
+          <div className="notice">{t.broadcastSent(sent)}</div>
+          <div className="broadcast-actions"><button className="secondary" onClick={onClose}>{t.broadcastBack}</button></div>
+        </>
+      ) : (
+        <>
+          <p className="muted">{t.broadcastLede(count)}</p>
+          <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={13} maxLength={4000}
+            disabled={step !== "edit"} aria-label={t.broadcastTitle} />
+          <label className="broadcast-check">
+            <input type="checkbox" checked={asSite} onChange={(e) => setAsSite(e.target.checked)} disabled={step !== "edit"} />
+            {t.broadcastAsSite}
+          </label>
+          {error && <div className="notice notice-error">{error}</div>}
+          {step === "edit" ? (
+            <div className="broadcast-actions">
+              <button className="primary" disabled={!body.trim() || !count} onClick={() => setStep("confirm")}>{t.broadcastNext}</button>
+              <button className="secondary" onClick={onClose}>{t.broadcastCancel}</button>
+            </div>
+          ) : (
+            <>
+              <div className="notice notice-info">{t.broadcastConfirm(count || 0)}</div>
+              <div className="broadcast-actions">
+                <button className="primary" disabled={step === "sending"} onClick={() => { void send(); }}>
+                  {step === "sending" ? t.broadcastSending : t.broadcastSend}
+                </button>
+                <button className="secondary" disabled={step === "sending"} onClick={() => setStep("edit")}>{t.broadcastBack}</button>
+              </div>
+            </>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
 export function Messages({
   lang,
   me,
@@ -157,6 +263,7 @@ export function Messages({
   const [finder, setFinder] = useState("");
   const [people, setPeople] = useState<Person[] | null>(null);
   const [composing, setComposing] = useState(false);
+  const [broadcasting, setBroadcasting] = useState(false);
   const endRef = useRef<HTMLDivElement | null>(null);
 
   const loadThreads = useCallback(async () => {
@@ -302,10 +409,17 @@ export function Messages({
           <h1 className="page-title">{t.title}</h1>
           <p className="muted ua-lede">{t.lede}</p>
         </div>
-        <button className="secondary" onClick={() => { setComposing(true); setActive(null); }}>
-          {t.newChat}
-        </button>
+        <div className="actions">
+          {me.role === "owner" && (
+            <button className="secondary" onClick={() => setBroadcasting(true)}>📣 {t.broadcast}</button>
+          )}
+          <button className="secondary" onClick={() => { setComposing(true); setActive(null); }}>
+            {t.newChat}
+          </button>
+        </div>
       </div>
+
+      {broadcasting && <BroadcastPanel t={t} onClose={() => setBroadcasting(false)} />}
 
       <div className="msg-layout">
         <aside className="panel msg-list">
@@ -418,7 +532,7 @@ export function Messages({
                             <i>◆</i> {t.site} · {t.official}
                           </span>
                         )}
-                        <p>{m.body}</p>
+                        <MessageBody text={m.body} />
                         <small className="muted">{clock(m.created_at, lang, t)}</small>
                       </div>
                     );

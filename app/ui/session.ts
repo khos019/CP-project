@@ -693,6 +693,10 @@ export type Message = {
 
 export const fetchThreads = (limit = 50) => rpc<MessageThread[]>("my_message_threads", { p_limit: limit });
 export const fetchUnreadCount = () => rpc<number>("my_unread_count");
+/* Owner broadcast (migration 055): one message from the owner to every learner. */
+export const ownerBroadcastRecipients = () => rpc<number>("owner_broadcast_recipients");
+export const ownerBroadcast = (body: string, asSite: boolean) =>
+  rpc<{ ok: boolean; sent?: number; error?: string }>("owner_broadcast", { p_body: body, p_as_site: asSite });
 export const markThreadRead = (otherId: string) => rpc<number>("mark_thread_read", { p_other: otherId });
 
 /* A conversation is every message between the two of us, in either direction.
