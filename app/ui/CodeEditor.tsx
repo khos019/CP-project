@@ -15,7 +15,7 @@ import { tokenize } from "./highlight";
 export type EditorLang = "cpp20" | "python3";
 
 const NAME: Record<EditorLang, string> = { cpp20: "main.cpp", python3: "main.py" };
-const LABEL: Record<EditorLang, string> = { cpp20: "C++20", python3: "Python 3" };
+const LABEL: Record<EditorLang, string> = { cpp20: "C++17", python3: "Python 3" };
 const TOKEN_LANG: Record<EditorLang, "cpp" | "python"> = { cpp20: "cpp", python3: "python" };
 
 /* Bracket behaviour, the part of an editor people only notice when it is
@@ -107,6 +107,71 @@ export function CodeEditor({
     setCode(code.slice(0, from) + text + code.slice(to));
   };
 
+  /* Every edit the editor makes on its own goes through the browser's
+     insertText command rather than through setCode. Writing `value` from
+     React wipes the textarea's native undo history, so after the first
+     auto-indent or auto-closed bracket Ctrl+Z did nothing at all. insertText
+     is recorded like typing: Ctrl+Z / Ctrl+Y (and Ctrl+Shift+Z) walk back
+     through auto-edits, comments and cut lines exactly as through keystrokes.
+     The input event it raises reaches onChange, so React still owns the text.
+     `apply` remains as the fallback for a browser that refuses the command. */
+  const edit = (el: HTMLTextAreaElement, from: number, to: number, text: string, selStart: number, selEnd = selStart) => {
+    if (from === to && !text) return;
+    el.focus();
+    el.setSelectionRange(from, to);
+    const done = text ? document.execCommand("insertText", false, text) : document.execCommand("delete");
+    if (!done) { apply(from, to, text, selStart); return; }
+    el.setSelectionRange(selStart, selEnd);
+    updatePos();
+    sync();
+  };
+
+  /* Ctrl+/ comments or uncomments every line the selection touches, the way
+     VS Code does: if every non-blank line is already commented the markers
+     come off, otherwise one is added at the block's shallowest indent so the
+     comment column lines up. */
+  const toggleComment = (el: HTMLTextAreaElement) => {
+    const marker = lang === "python3" ? "#" : "//";
+    const s = el.selectionStart, t = el.selectionEnd;
+    const start = code.lastIndexOf("\n", s - 1) + 1;
+    // A selection that ends at the very start of a line does not include it.
+    const last = t > s && code[t - 1] === "\n" ? t - 1 : t;
+    const nl = code.indexOf("\n", last);
+    const end = nl === -1 ? code.length : nl;
+    const lines = code.slice(start, end).split("\n");
+    const strip = marker === "#" ? /^(\s*)# ?/ : /^(\s*)\/\/ ?/;
+    const filled = lines.filter((l) => l.trim());
+    const uncomment = filled.length > 0 && filled.every((l) => strip.test(l));
+    const indentOf = (l: string) => (l.match(/^\s*/) || [""])[0].length;
+    const depth = filled.length ? Math.min(...filled.map(indentOf)) : indentOf(lines[0]);
+    const next = lines.map((l) => {
+      if (uncomment) return l.replace(strip, "$1");
+      if (!l.trim() && filled.length) return l;
+      return l.slice(0, depth) + marker + " " + l.slice(depth);
+    });
+    const text = next.join("\n");
+    if (lines.length === 1 && s === t) {
+      // A lone caret stays on its character.
+      const caret = Math.max(start, Math.min(start + text.length, s + text.length - (end - start)));
+      edit(el, start, end, text, caret);
+    } else {
+      edit(el, start, end, text, start, start + text.length);
+    }
+  };
+
+  /* Ctrl+X with nothing selected cuts the whole line, newline included, as
+     every code editor does; with a selection it stays the browser's own cut. */
+  const cutLine = (el: HTMLTextAreaElement) => {
+    const s = el.selectionStart;
+    const start = code.lastIndexOf("\n", s - 1) + 1;
+    const nl = code.indexOf("\n", s);
+    const line = code.slice(start, nl === -1 ? code.length : nl);
+    void navigator.clipboard?.writeText(line + "\n").catch(() => {});
+    if (nl !== -1) edit(el, start, nl + 1, "", start);
+    else if (start > 0) edit(el, start - 1, code.length, "", start - 1);   // last line: take the newline before it
+    else edit(el, 0, code.length, "", 0);
+  };
+
   useCommitEffect(() => {
     const caret = pendingCaret.current;
     if (caret === null) return;
@@ -126,6 +191,20 @@ export function CodeEditor({
       else if (!busy) onSubmit();
       return;
     }
+    /* Matched on e.code as well as e.key: on a Cyrillic layout Ctrl+X arrives
+       as key "ч", and on some layouts "/" sits on another physical key. */
+    const mod = (e.ctrlKey || e.metaKey) && !e.altKey;
+    if (mod && !e.nativeEvent.isComposing && (e.key === "/" || e.code === "Slash")) {
+      e.preventDefault();
+      toggleComment(e.currentTarget);
+      return;
+    }
+    if (mod && !e.shiftKey && (e.key === "x" || e.key === "X" || e.code === "KeyX")
+        && e.currentTarget.selectionStart === e.currentTarget.selectionEnd) {
+      e.preventDefault();
+      cutLine(e.currentTarget);
+      return;
+    }
     // While an IME is composing, the keys belong to the IME.
     if (e.ctrlKey || e.metaKey || e.altKey || e.nativeEvent.isComposing) return;
 
@@ -136,7 +215,7 @@ export function CodeEditor({
 
     if (e.key === "Tab" && !e.shiftKey) {
       e.preventDefault();
-      apply(s, t, INDENT, s + INDENT.length);
+      edit(el, s, t, INDENT, s + INDENT.length);
       return;
     }
 
@@ -151,9 +230,9 @@ export function CodeEditor({
       const inner = opensBlock ? indent + INDENT : indent;
       e.preventDefault();
       if (opensBlock && CLOSE_OF[prev] === next) {
-        apply(s, t, "\n" + inner + "\n" + indent, s + 1 + inner.length);
+        edit(el, s, t, "\n" + inner + "\n" + indent, s + 1 + inner.length);
       } else {
-        apply(s, t, "\n" + inner, s + 1 + inner.length);
+        edit(el, s, t, "\n" + inner, s + 1 + inner.length);
       }
       return;
     }
@@ -161,7 +240,7 @@ export function CodeEditor({
     // Backspace between the halves of an empty pair takes both.
     if (e.key === "Backspace" && s === t && CLOSE_OF[prev] === next) {
       e.preventDefault();
-      apply(s - 1, t + 1, "", s - 1);
+      edit(el, s - 1, t + 1, "", s - 1);
       return;
     }
 
@@ -178,7 +257,7 @@ export function CodeEditor({
       if (lead.length > 0 && /^ +$/.test(lead)) {
         const back = ((lead.length - 1) % INDENT.length) + 1;
         e.preventDefault();
-        apply(s - back, t, "", s - back);
+        edit(el, s - back, t, "", s - back);
         return;
       }
     }
@@ -197,8 +276,8 @@ export function CodeEditor({
       // A quote after a word is an apostrophe, not the start of a string.
       if (e.key === close && (/[\w]/.test(prev) || /[\w]/.test(next))) return;
       e.preventDefault();
-      if (s !== t) apply(s, t, e.key + code.slice(s, t) + close, t + 2);   // wrap the selection
-      else apply(s, t, e.key + close, s + 1);
+      if (s !== t) edit(el, s, t, e.key + code.slice(s, t) + close, s + 1, t + 1);   // wrap the selection
+      else edit(el, s, t, e.key + close, s + 1);
       return;
     }
   };

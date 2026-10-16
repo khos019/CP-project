@@ -251,7 +251,7 @@ type StatusRow = {
 };
 type StatusPage = { total: number; rows: StatusRow[] };
 
-const LANGS: Record<string, string> = { cpp20: "C++20", python3: "Python 3" };
+const LANGS: Record<string, string> = { cpp20: "C++17", python3: "Python 3" };
 const STATUS_PAGE = 50;
 
 function ContestRound({ lang, slug, tab, onTab, onOpenList, onOpenSubmissions, onOpenProblem }: {

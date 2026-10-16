@@ -13,7 +13,7 @@
  * test in turn. What the runner reproduces from Judge0 1.13.1, so a verdict does
  * not change with the path it took:
  *
- *  - the commands: `g++ main.cpp` with no flags, `python3 script.py`, and the
+ *  - the commands: `g++ -std=gnu++17 main.cpp`, `python3 script.py`, and the
  *    LD_LIBRARY_PATH the C++ run command sets;
  *  - the limits per test: CPU (user+sys of the process, the same number isolate
  *    reports), wall clock, address space, stack and output size;
@@ -167,9 +167,9 @@ for index, test in enumerate(job["tests"]):
 `;
 
 const PROGRAMS: Record<BatchLanguage, { file: string; compile?: string; cmd: string[]; env: Record<string, string> }> = {
-  // Language 54's compile_cmd with no compiler options, and its run_cmd.
+  // Language 54's compile_cmd with CPP_STD (judge.ts) as its options, and its run_cmd.
   cpp20: {
-    file: "main.cpp", compile: "/usr/local/gcc-9.2.0/bin/g++ main.cpp\n",
+    file: "main.cpp", compile: "/usr/local/gcc-9.2.0/bin/g++ -std=gnu++17 main.cpp\n",
     cmd: ["./a.out"], env: { LD_LIBRARY_PATH: "/usr/local/gcc-9.2.0/lib64" },
   },
   // Language 71's run_cmd.

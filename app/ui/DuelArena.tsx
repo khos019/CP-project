@@ -113,10 +113,10 @@ const T = {
     opponentSolved: "raqib yechdi", youSolved: "siz yechdingiz", opponentTried: "raqib urinib ko‘rdi",
     noProblem: "Masala topilmadi.", connecting: "Ulanmoqda…", offline: "Aloqa uzildi — qayta ulanmoqda…",
     run: "Ishga tushirish", running: "Ishlamoqda…", stdin: "Kirish (stdin)", stdout: "Chiqish (stdout)",
-    expected: "Kutilgan chiqish", stderr: "Xatolar", noRun: "Hali ishga tushirilmadi.",
+    expected: "Kutilgan chiqish", stderr: "Xatolar", noRun: "Hali ishga tushirilmadi.", compileError: "Kompilyator xabari",
     useSample: "Namunani qo‘yish", matches: "Namuna bilan mos", differs: "Namunadan farq qiladi",
     runNote: "Ishga tushirish tekshiruvchi emas — bu yerda verdikt qo‘yilmaydi, faqat dasturingiz nima chiqarganini ko‘rasiz.",
-    shortcuts: "Ctrl+Enter — ishga tushirish · Ctrl+Shift+Enter — yuborish",
+    shortcuts: "Ctrl+Enter — ishga tushirish · Ctrl+Shift+Enter — yuborish · Ctrl+/ — izoh · Ctrl+Z — ortga · Ctrl+X — qatorni kesish",
     ruleTitle: "Duel shu tabda o‘tadi",
     ruleBody: "Kodni faqat shu yerda yozing. Boshqa tabga yoki boshqa dasturga o‘tsangiz, duel avtomatik yutqaziladi.",
     ruleGrace: (s: number) => `Chiqib ketishlaringiz jami ${s} soniyaga yetsa — mag‘lubiyat.`,
@@ -151,10 +151,10 @@ const T = {
     opponentSolved: "opponent solved", youSolved: "you solved", opponentTried: "opponent attempted",
     noProblem: "Problem not found.", connecting: "Connecting…", offline: "Connection lost — reconnecting…",
     run: "Run", running: "Running…", stdin: "Input (stdin)", stdout: "Output (stdout)",
-    expected: "Expected output", stderr: "Errors", noRun: "Nothing run yet.",
+    expected: "Expected output", stderr: "Errors", noRun: "Nothing run yet.", compileError: "Compiler message",
     useSample: "Load the sample", matches: "Matches the sample", differs: "Differs from the sample",
     runNote: "Running is not the judge — no verdict is given here, only what your program printed.",
-    shortcuts: "Ctrl+Enter to run · Ctrl+Shift+Enter to submit",
+    shortcuts: "Ctrl+Enter to run · Ctrl+Shift+Enter to submit · Ctrl+/ comment · Ctrl+Z undo · Ctrl+X cut line",
     ruleTitle: "The duel happens in this tab",
     ruleBody: "Write your code here and nowhere else. Switching to another tab or another application forfeits the duel.",
     ruleGrace: (s: number) => `${s} seconds away in total and you lose.`,
@@ -784,6 +784,10 @@ function RoundEditor({
     writeDraft(draftKey, codeLang, next, STARTER[codeLang]);
   };
   const [verdict, setVerdict] = useState("");
+  /* The compiler's own message for a submission that did not compile. The
+     verdict line alone said "Compilation error" and nothing else, so a missing
+     '>' three lines down read as "using ll = long long is not supported". */
+  const [compileMsg, setCompileMsg] = useState("");
   const [sending, setSending] = useState(false);
 
   // The sample is already on screen above; starting the input box with it
@@ -818,6 +822,7 @@ function RoundEditor({
     if (sending) return;
     setSending(true);
     setVerdict(t.judging);
+    setCompileMsg("");
     const outcome = await submitToDuel(duelId, round, codeLang, code);
     setSending(false);
     if (!outcome || !("verdict" in outcome) || !outcome.verdict) {
@@ -825,6 +830,7 @@ function RoundEditor({
       await refresh();
       return;
     }
+    setCompileMsg(outcome.verdict === "COMPILATION_ERROR" ? String(outcome.details || "").slice(0, 4000) : "");
     setVerdict(
       outcome.verdict === "ACCEPTED"
         ? `✅ ${verdictLabel(outcome.verdict, lang)} · ${outcome.passed}/${outcome.total}`
@@ -885,6 +891,13 @@ function RoundEditor({
           <div className="dc-pane">
             <div className="dc-head"><h4>{t.expected}</h4></div>
             <pre>{sampleOut}</pre>
+          </div>
+        )}
+
+        {compileMsg && (
+          <div className="dc-pane dc-err">
+            <div className="dc-head"><h4>{t.compileError}</h4></div>
+            <pre>{compileMsg}</pre>
           </div>
         )}
 

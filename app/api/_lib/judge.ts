@@ -92,6 +92,13 @@ type Submission = {
  * compile step to leak and keeps the cgroup accounting. */
 const perProcess = { enable_per_process_and_thread_time_limit: true, enable_per_process_and_thread_memory_limit: true };
 
+/* The C++ standard. Language 54 runs `g++ main.cpp` with no flags, and GCC 9.2
+   without a flag compiles C++14 — so the editor said C++ while anything from
+   C++17 (multiset::extract, structured bindings, if constexpr, std::gcd) was a
+   compilation error. Kept in step with the compile line in judge-batch.ts. */
+export const CPP_STD = "-std=gnu++17";
+const cppOptions = { ...perProcess, compiler_options: CPP_STD };
+
 /* Worst case per judged submission: 1 create + MAX_POLLS checks. Kept well
    under the Worker's subrequest ceiling with room for the caller's own reads.
  *
@@ -311,7 +318,7 @@ export async function judgeSource(
     stdin: test.stdin, expected_output: test.expected_output,
     cpu_time_limit: limits[language].cpu * scale, wall_time_limit: limits[language].wall * scale,
     memory_limit: 262144, max_file_size: 1024,
-    ...(language === "cpp20" ? perProcess : {}),
+    ...(language === "cpp20" ? cppOptions : {}),
   }));
 
   try {
@@ -389,7 +396,7 @@ export async function runSource(language: Language, sourceCode: string, stdin: s
   const result = (await execute([{
     language_id: languageIds[language], source_code: sourceCode, stdin: stdin || "",
     cpu_time_limit: 5, wall_time_limit: 10, memory_limit: 262144, max_file_size: 1024,
-    ...(language === "cpp20" ? perProcess : {}),
+    ...(language === "cpp20" ? cppOptions : {}),
   }]))[0];
   return {
     stdout: result.stdout || "",

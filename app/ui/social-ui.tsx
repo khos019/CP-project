@@ -140,7 +140,7 @@ const when = (iso: string, lang: Lang) => shortDateTime(iso, lang);
 /** A verdict in the reader's language -- one table for every list that shows
     one, so a profile and the submission table cannot word it differently. */
 export const verdictLabel = (verdict: string, lang: Lang) => T[lang].verdicts[verdict] || verdict;
-const LANG_LABEL: Record<string, string> = { cpp20: "C++20", python3: "Python 3" };
+const LANG_LABEL: Record<string, string> = { cpp20: "C++17", python3: "Python 3" };
 
 /* Codeforces puts a star beside the handle and fills it in when the person is
    on your list; it is the one control on the page that is understood without a
