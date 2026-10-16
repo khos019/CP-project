@@ -53,7 +53,6 @@ const duration = (seconds: number, t: (typeof T)["uz"], lang: Lang) => {
 function OnlineNow({ t, onOpenPerson }: { lang: Lang; t: (typeof T)["uz"]; onOpenPerson: (username: string) => void }) {
   const [users, setUsers] = useState<OnlineUser[] | null>(null);
   const [missing, setMissing] = useState(false);
-  const [showAll, setShowAll] = useState(false);
   const [showRecent, setShowRecent] = useState(false);
   useEffect(() => {
     let live = true;
@@ -68,19 +67,25 @@ function OnlineNow({ t, onOpenPerson }: { lang: Lang; t: (typeof T)["uz"]; onOpe
   }, []);
   const online = (users || []).filter((u) => u.online);
   const recent = (users || []).filter((u) => !u.online);
-  // Chips, not cards: thirty people fit in two or three lines. Past the cap
-  // the rest wait behind "+N", so a busy evening cannot push the statistics
-  // off the screen.
-  const CAP = 24;
-  const shown = showAll ? online : online.slice(0, CAP);
-  const chip = (u: OnlineUser, faded = false) => (
-    <button key={u.id} className={`os-chip${faded ? " faded" : ""}`} onClick={() => onOpenPerson(u.username)}
-      title={`@${u.username} · ${u.duel_rating}${u.in_duel ? ` · ${t.onlineInDuel}` : ""}`}>
-      <span className={`os-online-dot${faded ? "" : " on"}`} aria-hidden />
-      <span className="os-chip-name">{u.display_name || u.username}</span>
-      {u.in_duel && <span className="os-chip-duel" aria-label={t.onlineInDuel}>⚔</span>}
-      {faded && <span className="os-chip-ago">{t.onlineAgo.replace("{n}", String(Math.max(1, Math.round(u.seconds_ago / 60))))}</span>}
-    </button>
+  // One row per person on a fixed grid, so names never run into each other.
+  // The list scrolls inside its own box past about ten rows: a busy evening
+  // makes it longer, not the page.
+  const row = (u: OnlineUser, i: number) => (
+    <li key={u.id}>
+      <button className={`os-orow${u.online ? "" : " faded"}`} onClick={() => onOpenPerson(u.username)}>
+        <span className="os-orow-n mono">{i + 1}</span>
+        <span className={`os-online-dot${u.online ? " on" : ""}`} aria-hidden />
+        <span className="os-orow-name">
+          <b>{u.display_name || u.username}</b>
+          <small>@{u.username}</small>
+        </span>
+        <span className="os-orow-tag">
+          {u.in_duel && <i className="os-orow-duel">⚔ {t.onlineInDuel}</i>}
+          {!u.online && <small>{t.onlineAgo.replace("{n}", String(Math.max(1, Math.round(u.seconds_ago / 60))))}</small>}
+        </span>
+        <span className="os-orow-rating mono">{u.duel_rating}</span>
+      </button>
+    </li>
   );
   return (
     <section className="os-section os-online">
@@ -92,24 +97,19 @@ function OnlineNow({ t, onOpenPerson }: { lang: Lang; t: (typeof T)["uz"]; onOpe
         </span>
       </div>
       {missing ? <div className="notice notice-info">{t.onlineNotMigrated}</div> : users && (
-        <>
-          <div className="os-chips">
-            {online.length ? shown.map((u) => chip(u)) : <span className="muted">{t.onlineNowEmpty}</span>}
-            {online.length > CAP && (
-              <button className="os-chip os-chip-more" onClick={() => setShowAll((v) => !v)}>
-                {showAll ? "−" : `+${online.length - CAP}`}
-              </button>
-            )}
-          </div>
+        <div className="os-olist">
+          {online.length
+            ? <ul className="os-olist-rows">{online.map(row)}</ul>
+            : <p className="muted os-olist-empty">{t.onlineNowEmpty}</p>}
           {recent.length > 0 && (
-            <div className="os-recent">
+            <>
               <button className="os-recent-toggle" aria-expanded={showRecent} onClick={() => setShowRecent((v) => !v)}>
                 {t.onlineRecent}: <b>{recent.length}</b> <span aria-hidden>{showRecent ? "▴" : "▾"}</span>
               </button>
-              {showRecent && <div className="os-chips">{recent.map((u) => chip(u, true))}</div>}
-            </div>
+              {showRecent && <ul className="os-olist-rows">{recent.map(row)}</ul>}
+            </>
           )}
-        </>
+        </div>
       )}
     </section>
   );
