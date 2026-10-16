@@ -150,7 +150,8 @@ export function DuelHistoryScreen({
   }, []);
 
   const tally = rows
-    ? rows.reduce((acc, r) => { acc[r.outcome] += 1; return acc; }, { win: 0, loss: 0, draw: 0 })
+    // Friend duels are unrated (054): listed below, not counted here.
+    ? rows.reduce((acc, r) => { if (r.mode !== "friend") acc[r.outcome] += 1; return acc; }, { win: 0, loss: 0, draw: 0 })
     : null;
 
   return (

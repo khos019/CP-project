@@ -320,10 +320,14 @@ export function PublicProfile({
     return () => { live = false; };
   }, [personId, signedIn]);
 
+  /* Friend duels are unrated (054), so they are left out of the wins, losses
+     and draws as they are left off the rating graph; the duel table still
+     lists them. */
   const tally = useMemo(
-    () => (duels || []).reduce((acc, r) => { acc[r.outcome] += 1; return acc; }, { win: 0, loss: 0, draw: 0 }),
+    () => (duels || []).reduce((acc, r) => { if (r.mode !== "friend") acc[r.outcome] += 1; return acc; }, { win: 0, loss: 0, draw: 0 }),
     [duels],
   );
+  const friendDuels = useMemo(() => (duels || []).filter((r) => r.mode === "friend").length, [duels]);
 
   if (state === "loading") {
     return (
@@ -362,7 +366,9 @@ export function PublicProfile({
   const sum = summary && summary !== "missing" ? summary : null;
   const peak = Math.max(rating, sum?.max_rating ?? 0, ...(duels || []).map((d) => d.rating_after));
   const solvedCount = sum ? sum.solved_keys.length : person.solved_count;
-  const duelCount = sum ? sum.duels : duels?.length ?? null;
+  // The summary counts every finished duel; the friend ones come off here.
+  // They are all recent, so the newest 200 loaded above hold every one.
+  const duelCount = sum ? Math.max(0, sum.duels - friendDuels) : duels ? duels.length - friendDuels : null;
 
   const suffix: Record<ProfileSection, string> = {
     overview: "", submissions: "/submissions", duels: "/duels", friends: "/friends",
