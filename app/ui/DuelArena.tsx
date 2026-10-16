@@ -291,8 +291,10 @@ export function DuelMatchmaking({
      attentive player being paid twice for the same half hour. */
   const heartbeatAtStart = useRef<number | null>(null);
 
-  const refresh = useCallback(async () => {
-    const next = await duelState();
+  /* `known` is a state the caller already holds — the answer to a submit or a
+     bot step carries one — so the page applies it instead of asking again. */
+  const refresh = useCallback(async (known?: DuelState) => {
+    const next = known ?? await duelState();
     if (next && "status" in next) {
       setState(next);
       setDrawnAt(Date.now());
@@ -370,7 +372,10 @@ export function DuelMatchmaking({
       if (outcome.state) { setState(outcome.state); setDrawnAt(Date.now()); }
     };
     void run();
-    const id = window.setInterval(run, 1000);
+    // Two seconds, not one: the bot fallback is due after twelve, and a second
+    // either way is invisible, while halving the tick halves a search's load
+    // on the per-IP limit that a classroom shares.
+    const id = window.setInterval(run, 2000);
     return () => { live = false; window.clearInterval(id); };
   }, [status]);
 
@@ -457,7 +462,7 @@ export function DuelMatchmaking({
 function Arena({
   lang, duel, serverNow, drawnAt, refresh, onLeftTab,
 }: {
-  lang: Lang; duel: ActiveDuel; serverNow: string; drawnAt: number; refresh: () => Promise<void>;
+  lang: Lang; duel: ActiveDuel; serverNow: string; drawnAt: number; refresh: (known?: DuelState) => Promise<void>;
   onLeftTab: () => void;
 }) {
   const t = T[lang];
@@ -501,11 +506,16 @@ function Arena({
      up any missed event on the same beat. */
   useEffect(() => {
     let live = true;
+    /* A bot duel needs the beat to move the bot, and the step's answer carries
+       the new state, so it is one request. A human duel hears the opponent
+       over realtime; its poll only catches a missed event, so it can be slow. */
     const beat = async () => {
-      if (duel.mode === "bot") await botStep(duel.id);
-      if (live) await refresh();
+      if (duel.mode === "bot") {
+        const step = await botStep(duel.id);
+        if (live) await refresh(step && "state" in step && step.state ? step.state : undefined);
+      } else if (live) await refresh();
     };
-    const id = window.setInterval(() => { void beat(); }, 4000);
+    const id = window.setInterval(() => { void beat(); }, duel.mode === "bot" ? 4000 : 8000);
     return () => { live = false; window.clearInterval(id); };
   }, [duel.id, duel.mode, refresh]);
 
@@ -766,7 +776,7 @@ function RoundEditor({
   lang, duelId, round, codeLang, onCodeLang, refresh, locked, sampleIn, sampleOut,
 }: {
   lang: Lang; duelId: string; round: number; codeLang: CodeLang;
-  onCodeLang: (next: CodeLang) => void; refresh: () => Promise<void>; locked: boolean;
+  onCodeLang: (next: CodeLang) => void; refresh: (known?: DuelState) => Promise<void>; locked: boolean;
   sampleIn: string; sampleOut: string;
 }) {
   const t = T[lang];
@@ -836,7 +846,9 @@ function RoundEditor({
         ? `✅ ${verdictLabel(outcome.verdict, lang)} · ${outcome.passed}/${outcome.total}`
         : `❌ ${verdictLabel(outcome.verdict, lang)}${outcome.test ? ` · ${t.test} ${outcome.test}` : ""}`,
     );
-    await refresh();
+    // The submit's answer already holds the state after it, next round
+    // included; asking again was a second round trip before the next problem.
+    await refresh(outcome.state);
   };
 
   // Only meaningful when the input actually IS the sample — comparing your

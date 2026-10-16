@@ -119,7 +119,7 @@ export const forfeitDuel = (matchId: string) => post<{ ok: boolean }>({ action: 
  *  schedule was fixed when the duel started, so this only ever carries out a
  *  decision that was already made. */
 export const botStep = (matchId: string) =>
-  post<{ ok: boolean; moved?: boolean; reason?: string; verdict?: string }>({ action: "bot_step", match_id: matchId });
+  post<{ ok: boolean; moved?: boolean; reason?: string; verdict?: string; state?: DuelState }>({ action: "bot_step", match_id: matchId });
 
 export type SubmitResult = {
   ok: boolean; error?: string; verdict?: string; passed?: number; total?: number;

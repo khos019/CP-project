@@ -63,33 +63,8 @@ export async function POST(request: Request) {
   switch (action) {
     // ---------------------------------------------------------------- reads
     case "state": {
-      const result = await rpcAsUser<Json>(token, "duel_state");
-      if (!result.ok) return bad(result.error, result.status);
-
-      /* A duel whose clock has run out is over, whether or not anyone
-         submitted at the end. Nothing used to say so: duel_finish ran only
-         from duel_record_submission, so a round nobody touched after the
-         deadline left the match 'active' forever -- the arena sat at 00:00
-         with no result, and the players stayed "in a duel" for weeks (twelve
-         such matches were found on 2026-09-17).
-
-         The deadline and the clock are both the database's own (ends_at and
-         the `now` duel_state returns), and duel_finish is idempotent, so two
-         tabs asking at once finish it once. */
-      const duel = result.data.duel as Json | null;
-      const now = Date.parse(asString(result.data.now));
-      if (duel && duel.status === "active" && Number.isFinite(now) && now >= Date.parse(asString(duel.ends_at))) {
-        const matchId = asString(duel.id);
-        const finished = await rpcAsService<Json>("duel_finish", { p_match: matchId, p_reason: "time" });
-        if (finished.ok && finished.data.ok && !finished.data.already_finished) {
-          await broadcast([toMatch(matchId, "duel_finished", {
-            duel_id: matchId, winner_id: finished.data.winner_id, reason: "time",
-          })]);
-        }
-        const after = await rpcAsUser<Json>(token, "duel_state");
-        if (after.ok) return NextResponse.json(after.data);
-      }
-      return NextResponse.json(result.data);
+      const result = await currentState(token);
+      return result.ok ? NextResponse.json(result.data) : bad(result.error, result.status);
     }
 
     case "result": {
@@ -265,7 +240,12 @@ export async function POST(request: Request) {
       const matchId = asString(body.match_id);
       if (!matchId) return bad("missing_match_id");
       const moved = await runBotStep(token, matchId);
-      return NextResponse.json(moved);
+      /* The page polls this every few seconds of a bot duel and used to follow
+         every answer with a separate `state` request. Answering both in one
+         response halves the duel's traffic — which matters on a shared school
+         IP, where the per-IP rate limit is everyone's budget at once. */
+      const state = await currentState(token);
+      return NextResponse.json(state.ok ? { ...moved, state: state.data } : moved);
     }
 
     // -------------------------------------------------------- inside a duel
@@ -292,7 +272,9 @@ export async function POST(request: Request) {
       if (!isJudgeableProblem(problemKey)) return bad("problem_not_judgeable", 500);
 
       const seat = Number(duel.my_seat);
-      await broadcast([toMatch(matchId, "submission_received", { seat, round })]);
+      // Sent while the judge works rather than before it: the opponent's
+      // "submitted" badge does not need to cost the submitter a round trip.
+      const received = broadcast([toMatch(matchId, "submission_received", { seat, round })]);
 
       const outcome = await judgeSource(problemKey, language, source);
       const recorded = await rpcAsUser<Json>(token, "duel_record_submission", {
@@ -306,16 +288,14 @@ export async function POST(request: Request) {
       if (!recorded.ok) return bad(recorded.error, recorded.status);
 
       const claimed = recorded.data.claimed === true;
-      await broadcast([toMatch(matchId, "submission_result", {
-        seat, round, verdict: outcome.verdict, claimed,
-      })]);
-
       // The database finishes the duel itself when the last round is claimed,
-      // so this only has to notice that it did.
+      // so this only has to notice that it did. One broadcast call for both
+      // messages: the submitter's next problem waits on this response.
       const after = (recorded.data.state as Json | undefined)?.duel as Json | undefined;
-      if (!after || after.status === "finished") {
-        await broadcast([toMatch(matchId, "duel_finished", { duel_id: matchId })]);
-      }
+      await Promise.all([received, broadcast([
+        toMatch(matchId, "submission_result", { seat, round, verdict: outcome.verdict, claimed }),
+        ...(!after || after.status === "finished" ? [toMatch(matchId, "duel_finished", { duel_id: matchId })] : []),
+      ])]);
 
       return NextResponse.json({ ok: true, ...outcome, claimed, state: recorded.data.state });
     }
@@ -470,6 +450,38 @@ async function runBotStep(token: string, matchId: string): Promise<Json> {
   }
 
   return { ok: true, moved: false, reason: "nothing_due" };
+}
+
+/* The caller's duel state, finishing a duel whose clock has run out.
+
+   A duel whose clock has run out is over, whether or not anyone submitted at
+   the end. Nothing used to say so: duel_finish ran only from
+   duel_record_submission, so a round nobody touched after the deadline left
+   the match 'active' forever -- the arena sat at 00:00 with no result, and the
+   players stayed "in a duel" for weeks (twelve such matches were found on
+   2026-09-17).
+
+   The deadline and the clock are both the database's own (ends_at and the
+   `now` duel_state returns), and duel_finish is idempotent, so two tabs asking
+   at once finish it once. Shared by `state` and `bot_step`, so the bot's beat
+   can hand the page its new state in the same response. */
+async function currentState(token: string) {
+  const result = await rpcAsUser<Json>(token, "duel_state");
+  if (!result.ok) return result;
+  const duel = result.data.duel as Json | null;
+  const now = Date.parse(asString(result.data.now));
+  if (duel && duel.status === "active" && Number.isFinite(now) && now >= Date.parse(asString(duel.ends_at))) {
+    const matchId = asString(duel.id);
+    const finished = await rpcAsService<Json>("duel_finish", { p_match: matchId, p_reason: "time" });
+    if (finished.ok && finished.data.ok && !finished.data.already_finished) {
+      await broadcast([toMatch(matchId, "duel_finished", {
+        duel_id: matchId, winner_id: finished.data.winner_id, reason: "time",
+      })]);
+    }
+    const after = await rpcAsUser<Json>(token, "duel_state");
+    if (after.ok) return after;
+  }
+  return result;
 }
 
 /* A short, fixed-length key for the rate limiter; the raw JWT is long and
