@@ -50,9 +50,11 @@ const duration = (seconds: number, t: (typeof T)["uz"], lang: Lang) => {
 /* Who is on the site right now (056), refreshed while the page is open. A
    dash-free empty state when nobody is; a note instead of the list until the
    migration has run. */
-function OnlineNow({ lang, t, onOpenPerson }: { lang: Lang; t: (typeof T)["uz"]; onOpenPerson: (username: string) => void }) {
+function OnlineNow({ t, onOpenPerson }: { lang: Lang; t: (typeof T)["uz"]; onOpenPerson: (username: string) => void }) {
   const [users, setUsers] = useState<OnlineUser[] | null>(null);
   const [missing, setMissing] = useState(false);
+  const [showAll, setShowAll] = useState(false);
+  const [showRecent, setShowRecent] = useState(false);
   useEffect(() => {
     let live = true;
     const pull = () => fetchOwnerOnline().then((r) => {
@@ -66,37 +68,48 @@ function OnlineNow({ lang, t, onOpenPerson }: { lang: Lang; t: (typeof T)["uz"];
   }, []);
   const online = (users || []).filter((u) => u.online);
   const recent = (users || []).filter((u) => !u.online);
-  const row = (u: OnlineUser) => (
-    <li key={u.id}>
-      <button className="os-online-person" onClick={() => onOpenPerson(u.username)}>
-        <span className={`os-online-dot${u.online ? " on" : ""}`} aria-hidden />
-        <span className="os-online-name">
-          <b>{u.display_name || u.username}</b>
-          <small>@{u.username}</small>
-        </span>
-        {u.in_duel && <i className="os-online-tag">{t.onlineInDuel}</i>}
-        {!u.online && <small className="muted">{t.onlineAgo.replace("{n}", String(Math.max(1, Math.round(u.seconds_ago / 60))))}</small>}
-        <span className="mono muted">{u.duel_rating}</span>
-      </button>
-    </li>
+  // Chips, not cards: thirty people fit in two or three lines. Past the cap
+  // the rest wait behind "+N", so a busy evening cannot push the statistics
+  // off the screen.
+  const CAP = 24;
+  const shown = showAll ? online : online.slice(0, CAP);
+  const chip = (u: OnlineUser, faded = false) => (
+    <button key={u.id} className={`os-chip${faded ? " faded" : ""}`} onClick={() => onOpenPerson(u.username)}
+      title={`@${u.username} · ${u.duel_rating}${u.in_duel ? ` · ${t.onlineInDuel}` : ""}`}>
+      <span className={`os-online-dot${faded ? "" : " on"}`} aria-hidden />
+      <span className="os-chip-name">{u.display_name || u.username}</span>
+      {u.in_duel && <span className="os-chip-duel" aria-label={t.onlineInDuel}>⚔</span>}
+      {faded && <span className="os-chip-ago">{t.onlineAgo.replace("{n}", String(Math.max(1, Math.round(u.seconds_ago / 60))))}</span>}
+    </button>
   );
   return (
-    <section className="os-section">
-      <div className="os-h2-row">
+    <section className="os-section os-online">
+      <div className="os-online-head">
         <h2 className="os-h2">{t.onlineNowTitle}</h2>
-        <span className="os-online-count"><span className="os-online-dot on" aria-hidden /> <b className="mono">{users ? online.length : "—"}</b> {t.onlineNowCount}</span>
+        <span className="os-online-badge" title={t.onlineNowHint}>
+          <span className="os-online-dot on" aria-hidden />
+          <b className="mono">{users ? online.length : "—"}</b> {t.onlineNowCount}
+        </span>
       </div>
-      <p className="muted os-footnote">{t.onlineNowHint}</p>
       {missing ? <div className="notice notice-info">{t.onlineNotMigrated}</div> : users && (
-        <div className="panel os-online">
-          {online.length ? <ul className="os-online-list">{online.map(row)}</ul> : <p className="muted">{t.onlineNowEmpty}</p>}
+        <>
+          <div className="os-chips">
+            {online.length ? shown.map((u) => chip(u)) : <span className="muted">{t.onlineNowEmpty}</span>}
+            {online.length > CAP && (
+              <button className="os-chip os-chip-more" onClick={() => setShowAll((v) => !v)}>
+                {showAll ? "−" : `+${online.length - CAP}`}
+              </button>
+            )}
+          </div>
           {recent.length > 0 && (
-            <>
-              <h3 className="os-online-sub">{t.onlineRecent}</h3>
-              <ul className="os-online-list">{recent.map(row)}</ul>
-            </>
+            <div className="os-recent">
+              <button className="os-recent-toggle" aria-expanded={showRecent} onClick={() => setShowRecent((v) => !v)}>
+                {t.onlineRecent}: <b>{recent.length}</b> <span aria-hidden>{showRecent ? "▴" : "▾"}</span>
+              </button>
+              {showRecent && <div className="os-chips">{recent.map((u) => chip(u, true))}</div>}
+            </div>
           )}
-        </div>
+        </>
       )}
     </section>
   );
