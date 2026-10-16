@@ -34,7 +34,8 @@ const titleFor = (key: string) => bankProblems.find((p) => p.judge === key)?.uz 
 type Json = Record<string, unknown>;
 type Action =
   | "state" | "result" | "heartbeat" | "search" | "tick" | "accept" | "decline"
-  | "cancel" | "bot" | "bot_step" | "submit" | "forfeit" | "history";
+  | "cancel" | "bot" | "bot_step" | "submit" | "forfeit" | "history"
+  | "invites" | "invite" | "invite_respond" | "invite_cancel";
 
 const bad = (error: string, status = 400) => NextResponse.json({ ok: false, error }, { status });
 
@@ -208,6 +209,60 @@ export async function POST(request: Request) {
         })),
       ]);
       return NextResponse.json(data);
+    }
+
+    // ------------------------------------------------------- friend duels
+    // The opponent is named, the problems' ratings and the length chosen by
+    // the sender (054). Every answer is broadcast to the other side, so the
+    // card appears and disappears without anyone waiting for a poll.
+    case "invites": {
+      const result = await rpcAsUser<Json>(token, "duel_invites_state");
+      return result.ok ? NextResponse.json(result.data) : bad(result.error, result.status);
+    }
+
+    case "invite": {
+      const ratings = Array.isArray(body.ratings) ? (body.ratings as unknown[]).map(Number) : [];
+      const result = await rpcAsUser<Json>(token, "duel_invite_friend", {
+        p_username: asString(body.username), p_ratings: ratings, p_minutes: Number(body.minutes),
+      });
+      if (!result.ok) return bad(result.error, result.status);
+      if (result.data.ok) {
+        const withdrawn = Array.isArray(result.data.cancelled) ? (result.data.cancelled as Json[]) : [];
+        await broadcast([
+          toUser(asString(result.data.receiver_id), "friend_invite", { invite_id: result.data.invite_id }),
+          ...withdrawn.map((w) => toUser(asString(w.receiver_id), "friend_invite_cancelled", { invite_id: w.invite_id })),
+        ]);
+      }
+      return NextResponse.json(result.data);
+    }
+
+    case "invite_respond": {
+      const inviteId = asString(body.invite_id);
+      if (!inviteId) return bad("missing_invite_id");
+      const result = await rpcAsUser<Json>(token, "duel_invite_respond", { p_invite: inviteId, p_accept: body.accept === true });
+      if (!result.ok) return bad(result.error, result.status);
+      const sender = asString(result.data.sender_id);
+      if (result.data.ok && result.data.accepted) {
+        const duelId = asString(result.data.duel_id);
+        const me = asString(await callerId(token));
+        await broadcast([
+          toUser(sender, "match_found", { duel_id: duelId, opponent_id: me, is_bot: false }),
+          toUser(me, "match_found", { duel_id: duelId, opponent_id: sender, is_bot: false }),
+          toMatch(duelId, "duel_started", { duel_id: duelId }),
+        ]);
+      } else if (sender) {
+        await broadcast([toUser(sender, "friend_invite_answered", { invite_id: inviteId })]);
+      }
+      return NextResponse.json(result.data);
+    }
+
+    case "invite_cancel": {
+      const inviteId = asString(body.invite_id);
+      if (!inviteId) return bad("missing_invite_id");
+      const result = await rpcAsUser<Json>(token, "duel_invite_cancel", { p_invite: inviteId });
+      if (!result.ok) return bad(result.error, result.status);
+      if (result.data.ok) await broadcast([toUser(asString(result.data.receiver_id), "friend_invite_cancelled", { invite_id: inviteId })]);
+      return NextResponse.json(result.data);
     }
 
     case "decline": {

@@ -33,6 +33,9 @@ export type DuelEventName =
   | "submission_received"
   | "submission_result"
   | "duel_finished"
+  | "friend_invite"
+  | "friend_invite_answered"
+  | "friend_invite_cancelled"
   // Not a duel event, but it rides the same per-user channel: the socket is
   // already open, so an inbox badge need not wait for its next poll.
   | "message_received";

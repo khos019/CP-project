@@ -2579,6 +2579,23 @@ a.editor-escape:hover{color:var(--ink);border-color:var(--line-strong);backgroun
 }
 .search-orb svg{transition:transform var(--dur-fast) var(--ease)}
 .matchmaking:hover .search-orb:not(.pulse) svg{transform:rotate(-8deg) scale(1.06)}
+/* Friend duel: the sender's form under the matchmaking card, and the terms on
+   the invitation card. Inputs match .field so the page reads as one form. */
+.friend-duel{max-width:640px;margin:0 auto var(--s8);padding:var(--s6);border-radius:var(--r-xl);display:grid;gap:var(--s3)}
+.friend-duel h2{margin:0;font-size:20px}
+.friend-duel > p{margin:0}
+.friend-field{display:grid;gap:6px;font-size:var(--t-xs);color:var(--muted)}
+.friend-field input,.friend-field select{background:var(--inset);border:1px solid var(--line);border-radius:var(--r-md);padding:10px var(--s3);color:var(--ink);font-size:var(--t-sm);width:100%}
+.friend-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--s3)}
+.friend-actions{display:flex;align-items:center;gap:var(--s4);flex-wrap:wrap}
+.friend-actions .muted{font-size:var(--t-xs)}
+.friend-wait{display:flex;align-items:center;gap:var(--s4);background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-md);padding:var(--s4)}
+.friend-wait > div{flex:1;min-width:0}
+.friend-wait p{margin:4px 0 0;font-size:var(--t-xs)}
+.friend-terms{display:flex;flex-wrap:wrap;gap:6px var(--s5);margin:var(--s4) 0 6px;font-size:var(--t-sm);color:var(--muted)}
+.friend-terms b{color:var(--ink)}
+.friend-note{font-size:var(--t-xs);margin:0 0 var(--s4)}
+@media (max-width:620px){.friend-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.friend-wait{flex-wrap:wrap}}
 .search-orb.pulse{color:var(--green);background:linear-gradient(150deg,color-mix(in srgb,var(--green) 16%,var(--surface)),color-mix(in srgb,var(--green) 6%,var(--surface)));box-shadow:0 12px 28px -8px color-mix(in srgb,var(--green) 45%,transparent),0 4px 10px color-mix(in srgb,var(--shadow-c) 18%,transparent)}
 .search-orb.pulse::after{box-shadow:0 0 0 0 color-mix(in srgb,var(--green) 40%,transparent);animation:orb-ripple 1.6s var(--ease) infinite}
 .radar-sweep{transform-origin:12px 12px;animation:radar 1.6s linear infinite}

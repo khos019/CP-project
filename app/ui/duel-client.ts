@@ -37,7 +37,7 @@ export type DuelRound = {
 };
 export type DuelActivity = { round: number; verdict: string; created_at: string };
 export type ActiveDuel = {
-  id: string; mode: "human" | "bot"; status: string; rounds: number;
+  id: string; mode: "human" | "bot" | "friend"; status: string; rounds: number;
   started_at: string; ends_at: string; my_seat: number;
   players: DuelPlayer[]; rounds_detail: DuelRound[];
   my_submissions: DuelActivity[]; opponent_activity: DuelActivity[];
@@ -82,7 +82,7 @@ export type DuelResultPlayer = {
   display_name: string; username: string | null;
 };
 export type DuelResult = {
-  id: string; mode: "human" | "bot"; my_seat: number; winner_id: string | null;
+  id: string; mode: "human" | "bot" | "friend"; my_seat: number; winner_id: string | null;
   outcome: "win" | "loss" | "draw"; finished_at: string; started_at: string;
   players: DuelResultPlayer[];
   rounds: { round: number; problem_key: string; points: number; claimed_by_seat: number | null }[];
@@ -90,7 +90,7 @@ export type DuelResult = {
 
 /** One finished duel, as the history list shows it. */
 export type DuelHistoryRow = {
-  id: string; mode: "human" | "bot"; rounds: number;
+  id: string; mode: "human" | "bot" | "friend"; rounds: number;
   my_seat: number; my_score: number; opp_score: number;
   outcome: "win" | "loss" | "draw";
   delta: number; rating_after: number;
@@ -112,6 +112,24 @@ export const duelTick = () => post<TickResult>({ action: "tick" });
 export const acceptChallenge = (id: string) =>
   post<{ ok: boolean; error?: string; duel_id?: string }>({ action: "accept", challenge_id: id });
 export const declineChallenge = (id: string) => post<{ ok: boolean }>({ action: "decline", challenge_id: id });
+
+/* Friend duels (migration 054). An invitation names the opponent, the rating of
+   each of the three problems and the duel's length; the duel itself is an
+   ordinary one with mode "friend", unrated. */
+export type FriendInvite = {
+  id: string; ratings: number[]; minutes: number; created_at: string; expires_at: string;
+  from?: { id: string; username: string; display_name: string; duel_rating: number };
+  to?: { id: string; username: string; display_name: string };
+  /** Outgoing only: pending until answered; kept for a few seconds after. */
+  status?: "pending" | "accepted" | "declined" | "cancelled" | "expired";
+};
+export type InvitesState = { incoming: FriendInvite | null; outgoing: FriendInvite | null; now: string };
+export const invitesState = () => post<InvitesState>({ action: "invites" });
+export const inviteFriend = (username: string, ratings: number[], minutes: number) =>
+  post<{ ok: boolean; error?: string; invite_id?: string }>({ action: "invite", username, ratings, minutes });
+export const respondInvite = (inviteId: string, accept: boolean) =>
+  post<{ ok: boolean; error?: string; accepted?: boolean; duel_id?: string }>({ action: "invite_respond", invite_id: inviteId, accept });
+export const cancelInvite = (inviteId: string) => post<{ ok: boolean }>({ action: "invite_cancel", invite_id: inviteId });
 export const forfeitDuel = (matchId: string) => post<{ ok: boolean }>({ action: "forfeit", match_id: matchId });
 
 /** Lets the bot play whatever its schedule says is due. Called by the player's

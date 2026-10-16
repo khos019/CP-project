@@ -300,7 +300,7 @@ export async function fetchRecentSubmissions(
 /** One finished duel, as somebody else's profile shows it. `rating_before` is
  *  the extra field the rating graph needs and the private history does not. */
 export type PublicDuelRow = {
-  id: string; mode: "human" | "bot"; rounds: number;
+  id: string; mode: "human" | "bot" | "friend"; rounds: number;
   my_seat: number; my_score: number; opp_score: number;
   outcome: "win" | "loss" | "draw";
   delta: number; rating_before: number; rating_after: number;

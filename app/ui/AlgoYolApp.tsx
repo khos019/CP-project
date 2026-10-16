@@ -17,11 +17,11 @@ import { ShopOrders } from "./ShopOrders";
 import { Playground } from "./Playground";
 import { ProblemStatement } from "./ProblemStatement";
 import { CodeEditor } from "./CodeEditor";
-import { ChallengeOverlay, DuelMatchmaking, DUEL_EVENT } from "./DuelArena";
+import { ChallengeOverlay, DuelMatchmaking, DUEL_EVENT, FriendInviteOverlay } from "./DuelArena";
 import { OnlineDot, onlineAmong } from "./presence";
 import { markSettledLocally, placementSettled, pushPlacementState, syncPlacementState } from "./placement-state";
 import { openDuelChannel, userTopic, matchTopic, type DuelChannel } from "./duel-realtime";
-import { acceptChallenge, declineChallenge, duelHeartbeat, duelState, type DuelState } from "./duel-client";
+import { acceptChallenge, declineChallenge, duelHeartbeat, duelState, invitesState, respondInvite, type DuelState, type InvitesState } from "./duel-client";
 import { recordHeartbeat, recordTopicDone } from "./coins";
 import { Placement } from "./Placement";
 import { AuthPage } from "./AuthPage";
@@ -129,6 +129,9 @@ export function AlgoYolApp(){
  // need one — "another player took this opponent" being the common one.
  const [duel,setDuel]=useState<DuelState|null>(null);
  const [duelAt,setDuelAt]=useState(()=>Date.now());
+ // Friend-duel invitations (054): the one waiting for me, drawn above every screen.
+ const [invites,setInvites]=useState<InvitesState|null>(null);
+ const [invitesAt,setInvitesAt]=useState(()=>Date.now());
  const [duelOnline,setDuelOnline]=useState(false);
  const [duelNotice,setDuelNotice]=useState("");
  const channelRef=useRef<DuelChannel|null>(null);
@@ -337,7 +340,9 @@ const wasDone=!!data.solved[lesson]&&(data.quizScores[lesson]||0)>=70;data.solve
   document.addEventListener("visibilitychange",wake);
   window.addEventListener("focus",wake);
   const pull=async()=>{const next=await duelState();if(live&&next&&"status" in next){setDuel(next);setDuelAt(Date.now())}};
+  const pullInv=async()=>{const next=await invitesState();if(live&&next&&"incoming" in next){setInvites(next);setInvitesAt(Date.now())}};
   void pull();
+  void pullInv();
   const channel=openDuelChannel(event=>{
    if(!live)return;
    // The payload is never the source of truth — it says something happened,
@@ -348,6 +353,7 @@ const wasDone=!!data.solved[lesson]&&(data.quizScores[lesson]||0)>=70;data.solve
    // badge updates now rather than on the next minute's poll. The event carries
    // no text — only that there is something to re-read.
    if(event.event==="message_received"){void refreshUnread();return}
+   if(event.event==="friend_invite"||event.event==="friend_invite_answered"||event.event==="friend_invite_cancelled"||event.event==="match_found")void pullInv();
    if(event.event==="match_found"){const id=String((event.payload as {duel_id?:string}).duel_id||"");if(id)channelRef.current?.join(matchTopic(id));go("duel")}
    void pull();
    window.dispatchEvent(new Event(DUEL_EVENT));
@@ -443,6 +449,16 @@ const wasDone=!!data.solved[lesson]&&(data.quizScores[lesson]||0)>=70;data.solve
   await pullDuel();
  };
  const onDeclineChallenge=async(id:string)=>{await declineChallenge(id);await pullDuel()};
+ const pullInvites=async()=>{const next=await invitesState();if(next&&"incoming" in next){setInvites(next);setInvitesAt(Date.now())}};
+ const onAcceptInvite=async(id:string)=>{
+  setDuelNotice("");
+  const outcome=await respondInvite(id,true);
+  await pullInvites();
+  if(outcome&&"ok" in outcome&&outcome.ok&&outcome.accepted){await pullDuel();window.dispatchEvent(new Event(DUEL_EVENT));go("duel");return}
+  const reason=outcome&&"error" in outcome?String(outcome.error):"";
+  setDuelNotice(reason==="expired"?tr(lang,"algoYolApp.chaqiriq_muddati_tugadi"):tr(lang,"algoYolApp.chaqiriqni_qabul_qilib_bolmadi"));
+ };
+ const onDeclineInvite=async(id:string)=>{await respondInvite(id,false);await pullInvites()};
  // OAuth / email-link return, consumed from the value captured at first render.
  useEffect(()=>{
   const ret=authReturn.current;
@@ -558,6 +574,8 @@ const wasDone=!!data.solved[lesson]&&(data.quizScores[lesson]||0)>=70;data.solve
  <ChallengeOverlay lang={lang} challenge={duel?.challenge||null} serverNow={duel?.now||new Date().toISOString()}
   drawnAt={duelAt} notice={duelNotice} onAccept={id=>{void onAcceptChallenge(id)}}
   onDecline={id=>{void onDeclineChallenge(id)}} onExpire={()=>{void pullDuel()}}/>
+ <FriendInviteOverlay lang={lang} invite={signed&&!duel?.duel?invites?.incoming||null:null} serverNow={invites?.now||new Date().toISOString()}
+  drawnAt={invitesAt} onAccept={id=>{void onAcceptInvite(id)}} onDecline={id=>{void onDeclineInvite(id)}} onExpire={()=>{void pullInvites()}}/>
  {signed&&duel?.status==="searching"&&!duelOnline&&<div className="duel-toast" role="status">{tr(lang,"algoYolApp.aloqa_uzildi_qayta_ulanmoqda")}</div>}
  </div>
 }

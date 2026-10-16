@@ -32,7 +32,10 @@ export type DuelEventName =
   | "duel_started"
   | "submission_received"
   | "submission_result"
-  | "duel_finished";
+  | "duel_finished"
+  | "friend_invite"
+  | "friend_invite_answered"
+  | "friend_invite_cancelled";
 
 export const userTopic = (userId: string) => `duel:user:${userId}`;
 export const matchTopic = (matchId: string) => `duel:match:${matchId}`;

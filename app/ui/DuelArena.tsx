@@ -30,8 +30,10 @@ import {
   // appear anywhere in the app, so the handlers live where it is rendered.
   botStep, cancelSearch, duelRecentResult, duelState, duelTick,
   forfeitDuel, secondsLeft, startSearch, submitToDuel,
-  type ActiveDuel, type DuelResult, type DuelState, type IncomingChallenge,
+  cancelInvite, inviteFriend, invitesState,
+  type ActiveDuel, type DuelResult, type DuelState, type FriendInvite, type IncomingChallenge,
 } from "./duel-client";
+import { fetchFriends, type FriendRow } from "./social";
 
 type Lang = "uz" | "en";
 type CodeLang = "cpp20" | "python3";
@@ -132,6 +134,22 @@ const T = {
     awayNow: "Duelga qayting",
     lostByLeaving: "Duel tabini tashlab ketganingiz uchun mag‘lub bo‘ldingiz.",
     modeBot: "AI bilan duel", modeHuman: "Reytingli duel", test: "test",
+    modeFriend: "Do‘stona duel",
+    friendTitle: "Do‘st bilan duel", friendSub: "Raqibni o‘zingiz tanlang: masalalar qiyinligi va vaqtni ham.",
+    friendUser: "Do‘stingizning nickname’i", friendUserPh: "masalan, tbdreamer",
+    friendRound: (n: number) => `${n}-masala reytingi`, friendMinutes: "Duel vaqti",
+    friendMin: (m: number) => `${m} daqiqa`, friendSend: "Taklif yuborish",
+    friendWaiting: (name: string) => `${name} javobini kutyapmiz…`, friendWithdraw: "Taklifni qaytarib olish",
+    friendDeclined: (name: string) => `${name} taklifni rad etdi.`, friendExpired: (name: string) => `${name} javob bermadi.`,
+    friendInvite: "Do‘stona duel taklifi", friendProblems: "Masalalar", friendLength: "Vaqt",
+    friendUnrated: "Do‘stona duel reytingga ta’sir qilmaydi.",
+    friendErrors: {
+      no_such_user: "Bunday nickname topilmadi.", self: "O‘zingizga taklif yubora olmaysiz.",
+      already_in_duel: "Siz hozir boshqa dueldasiz.", opponent_in_duel: "Do‘stingiz hozir boshqa duelda.",
+      bad_ratings: "Reytinglar 800 dan 2800 gacha bo‘lishi kerak.", bad_minutes: "Vaqt 5 dan 120 daqiqagacha.",
+      expired: "Taklif muddati tugagan.", in_another_duel: "Kimdir hozir boshqa duelda.",
+      not_migrated: "Bu imkoniyat hali yoqilmagan (054 migratsiyasi).",
+    } as Record<string, string>,
     diff: { easy: "OSON", medium: "O‘RTA", hard: "QIYIN", insane: "JUDA QIYIN" } as Record<string, string>,
   },
   en: {
@@ -170,6 +188,22 @@ const T = {
     awayNow: "Come back to the duel",
     lostByLeaving: "You lost because you left the duel tab.",
     modeBot: "AI duel", modeHuman: "Rated duel", test: "test",
+    modeFriend: "Friend duel",
+    friendTitle: "Duel a friend", friendSub: "Pick your opponent, the problems' difficulty and the time.",
+    friendUser: "Your friend's username", friendUserPh: "e.g. tbdreamer",
+    friendRound: (n: number) => `Problem ${n} rating`, friendMinutes: "Duel length",
+    friendMin: (m: number) => `${m} min`, friendSend: "Send invitation",
+    friendWaiting: (name: string) => `Waiting for ${name}…`, friendWithdraw: "Withdraw invitation",
+    friendDeclined: (name: string) => `${name} declined.`, friendExpired: (name: string) => `${name} did not answer.`,
+    friendInvite: "Friend duel invitation", friendProblems: "Problems", friendLength: "Length",
+    friendUnrated: "Friend duels do not change ratings.",
+    friendErrors: {
+      no_such_user: "No such username.", self: "You cannot invite yourself.",
+      already_in_duel: "You are already in a duel.", opponent_in_duel: "Your friend is in another duel.",
+      bad_ratings: "Ratings must be between 800 and 2800.", bad_minutes: "Length must be 5 to 120 minutes.",
+      expired: "The invitation has expired.", in_another_duel: "Someone is already in another duel.",
+      not_migrated: "Not switched on yet (migration 054).",
+    } as Record<string, string>,
     diff: { easy: "EASY", medium: "MEDIUM", hard: "HARD", insane: "INSANE" } as Record<string, string>,
   },
 };
@@ -454,9 +488,182 @@ export function DuelMatchmaking({
           </>
         )}
       </div>
+      {!searching && <FriendDuelPanel lang={lang} signed={signed} needAuth={needAuth} />}
     </>
   );
 }
+
+/* ------------------------------------------------------------- friend duels */
+const RATING_CHOICES = Array.from({ length: 21 }, (_, i) => 800 + i * 100);
+const MINUTE_CHOICES = [10, 15, 20, 30, 45, 60, 90, 120];
+
+/* The sender's side: name an opponent, choose three ratings and a length, and
+   see the invitation through to an answer. The opponent's card and the duel
+   that follows are the shell's (FriendInviteOverlay, then the ordinary arena). */
+function FriendDuelPanel({ lang, signed, needAuth }: { lang: Lang; signed: boolean; needAuth: () => void }) {
+  const t = T[lang];
+  const [username, setUsername] = useState("");
+  const [ratings, setRatings] = useState([1200, 1400, 1600]);
+  const [minutes, setMinutes] = useState(30);
+  const [friends, setFriends] = useState<FriendRow[]>([]);
+  const [outgoing, setOutgoing] = useState<FriendInvite | null>(null);
+  const [serverNow, setServerNow] = useState(() => new Date().toISOString());
+  const [drawnAt, setDrawnAt] = useState(() => Date.now());
+  const [, setTick] = useState(0);
+  const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  const pull = useCallback(async () => {
+    const next = await invitesState();
+    if (next && "outgoing" in next) { setOutgoing(next.outgoing); setServerNow(next.now); setDrawnAt(Date.now()); }
+  }, []);
+  useEffect(() => {
+    if (!signed) return;
+    void pull();
+    void fetchFriends().then((list) => setFriends(list || []));
+    const onEvent = () => { void pull(); };
+    window.addEventListener(DUEL_EVENT, onEvent);
+    return () => window.removeEventListener(DUEL_EVENT, onEvent);
+  }, [signed, pull]);
+
+  const pending = outgoing?.status === "pending";
+  const left = pending && outgoing ? secondsLeft(outgoing.expires_at, serverNow, drawnAt) : 0;
+  // A countdown to draw, and a re-read once it runs out in case the answer's
+  // broadcast was missed.
+  useEffect(() => {
+    if (!pending) return;
+    const id = window.setInterval(() => setTick((n) => n + 1), 1000);
+    return () => window.clearInterval(id);
+  }, [pending]);
+  useEffect(() => { if (pending && left <= 0) void pull(); }, [pending, left, pull]);
+
+  const send = async () => {
+    if (!signed) { needAuth(); return; }
+    setBusy(true); setError("");
+    const r = await inviteFriend(username.trim(), ratings, minutes);
+    setBusy(false);
+    if (r && "ok" in r && r.ok) { await pull(); return; }
+    const code = r && "error" in r ? String(r.error) : "";
+    setError(t.friendErrors[code] || code || "…");
+  };
+  const withdraw = async () => {
+    if (!outgoing) return;
+    setBusy(true); await cancelInvite(outgoing.id); await pull(); setBusy(false);
+  };
+
+  const name = outgoing?.to ? outgoing.to.display_name || outgoing.to.username : "";
+  return (
+    <div className="panel friend-duel">
+      <h2>{t.friendTitle}</h2>
+      <p className="muted">{t.friendSub}</p>
+      {pending && outgoing ? (
+        <div className="friend-wait" role="status">
+          <span className="spinner" aria-hidden />
+          <div>
+            <b>{t.friendWaiting(name)}</b>
+            <p className="muted mono">{outgoing.ratings.join(" · ")} · {t.friendMin(outgoing.minutes)} · {Math.max(0, Math.ceil(left))} s</p>
+          </div>
+          <button className="secondary" onClick={withdraw} disabled={busy}>{t.friendWithdraw}</button>
+        </div>
+      ) : (
+        <>
+          {outgoing && (outgoing.status === "declined" || outgoing.status === "expired") && (
+            <div className="notice notice-info">{outgoing.status === "declined" ? t.friendDeclined(name) : t.friendExpired(name)}</div>
+          )}
+          <label className="friend-field">
+            <span>{t.friendUser}</span>
+            <input value={username} onChange={(e) => setUsername(e.target.value)} placeholder={t.friendUserPh}
+              list="friend-duel-names" autoComplete="off" spellCheck={false} />
+            <datalist id="friend-duel-names">
+              {friends.map((f) => <option key={f.id} value={f.username}>{f.display_name}</option>)}
+            </datalist>
+          </label>
+          <div className="friend-grid">
+            {ratings.map((value, i) => (
+              <label key={i} className="friend-field">
+                <span>{t.friendRound(i + 1)}</span>
+                <select value={value} onChange={(e) => setRatings((rs) => rs.map((x, j) => (j === i ? Number(e.target.value) : x)))}>
+                  {RATING_CHOICES.map((r) => <option key={r} value={r}>{r}</option>)}
+                </select>
+              </label>
+            ))}
+            <label className="friend-field">
+              <span>{t.friendMinutes}</span>
+              <select value={minutes} onChange={(e) => setMinutes(Number(e.target.value))}>
+                {MINUTE_CHOICES.map((m) => <option key={m} value={m}>{t.friendMin(m)}</option>)}
+              </select>
+            </label>
+          </div>
+          {error && <div className="notice notice-error">{error}</div>}
+          <div className="friend-actions">
+            <button className="primary" onClick={send} disabled={busy || !username.trim()}>{t.friendSend}</button>
+            <span className="muted">{t.friendUnrated}</span>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* The opponent's side, above every screen like a matchmaking challenge: who,
+   which ratings, how long, and two buttons. */
+export function FriendInviteOverlay({
+  lang, invite, serverNow, drawnAt, onAccept, onDecline, onExpire,
+}: {
+  lang: Lang; invite: FriendInvite | null; serverNow: string; drawnAt: number;
+  onAccept: (id: string) => void; onDecline: (id: string) => void; onExpire: () => void;
+}) {
+  const t = T[lang];
+  const [, setTick] = useState(0);
+  const expired = useRef(false);
+  useEffect(() => {
+    if (!invite) return;
+    expired.current = false;
+    const id = window.setInterval(() => {
+      setTick((n) => n + 1);
+      if (secondsLeft(invite.expires_at, serverNow, drawnAt) <= 0 && !expired.current) { expired.current = true; onExpire(); }
+    }, 500);
+    return () => window.clearInterval(id);
+  }, [invite, serverNow, drawnAt, onExpire]);
+  if (!invite || !invite.from) return null;
+
+  const total = Math.max(1, (Date.parse(invite.expires_at) - Date.parse(invite.created_at)) / 1000);
+  const seconds = Math.max(0, secondsLeft(invite.expires_at, serverNow, drawnAt));
+  const circumference = 2 * Math.PI * 26;
+  const who = invite.from.display_name || invite.from.username;
+  return (
+    <div className="challenge-backdrop" role="dialog" aria-modal="true" aria-label={t.friendInvite}>
+      <div className="challenge-card">
+        <p className="eyebrow" style={{ color: "var(--green)" }}>🤝 {t.friendInvite}</p>
+        <div className="challenge-who">
+          <span className="avatar" aria-hidden>{who.slice(0, 1).toUpperCase()}</span>
+          <span>
+            <b>{who}</b>
+            <br />
+            <span className="muted">@{invite.from.username} · {invite.from.duel_rating} Elo</span>
+          </span>
+          <svg className="challenge-ring" viewBox="0 0 60 60" aria-hidden>
+            <circle cx="30" cy="30" r="26" fill="none" stroke="var(--line)" strokeWidth="5" />
+            <circle cx="30" cy="30" r="26" fill="none" stroke="var(--green)" strokeWidth="5" strokeLinecap="round"
+              strokeDasharray={circumference} strokeDashoffset={circumference * (1 - Math.min(1, seconds / total))}
+              transform="rotate(-90 30 30)" />
+            <text x="30" y="36" textAnchor="middle" fontSize="18" fontWeight="800" fill="var(--ink)">{Math.ceil(seconds)}</text>
+          </svg>
+        </div>
+        <p className="friend-terms">
+          <span>{t.friendProblems}: <b className="mono">{invite.ratings.join(" · ")}</b></span>
+          <span>{t.friendLength}: <b>{t.friendMin(invite.minutes)}</b></span>
+        </p>
+        <p className="muted friend-note">{t.friendUnrated}</p>
+        <div className="match-actions">
+          <button className="primary" onClick={() => onAccept(invite.id)}>{t.accept}</button>
+          <button className="secondary" onClick={() => onDecline(invite.id)}>{t.decline}</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 
 /* -------------------------------------------------------------------- arena */
 function Arena({
@@ -570,7 +777,7 @@ function Arena({
             <i style={{ width: `${Math.max(0, Math.min(100, (remaining / Math.max(1, (new Date(duel.ends_at).getTime() - new Date(duel.started_at).getTime()) / 1000)) * 100))}%` }} />
           </span>
           <span className="duel-mode">
-            {duel.mode === "bot" ? t.modeBot : t.modeHuman} · #{duel.id.slice(0, 8)}
+            {duel.mode === "bot" ? t.modeBot : duel.mode === "friend" ? t.modeFriend : t.modeHuman} · #{duel.id.slice(0, 8)}
           </span>
         </div>
 
@@ -961,7 +1168,7 @@ function ResultScreen({
 
   return (
     <div className="duel-result panel">
-      <p className="eyebrow" style={{ color: "var(--dim)" }}>{result.mode === "bot" ? "AI duel" : "Reytingli duel"}</p>
+      <p className="eyebrow" style={{ color: "var(--dim)" }}>{result.mode === "bot" ? t.modeBot : result.mode === "friend" ? t.modeFriend : t.modeHuman}</p>
       <h2>{outcome === "win" ? t.won : outcome === "loss" ? t.lost : t.draw}</h2>
       <div className="result-score">{myScore} : {theirScore}</div>
       {note && <p className="notice notice-error result-why">{note}</p>}
