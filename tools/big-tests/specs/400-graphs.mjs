@@ -31,6 +31,12 @@ const polygon = (k, head = "str(len(p))") => `p = convex(${k})\ns = r.int(0, len
 
 export default {
   "components-count": { tests: undirected(100000, 200000) },
+  // n m, the edges, then the pair u v asked about.
+  "graph-path-exists": { tests: [
+    t(1, "connected: a path exists", `n = 100000\ne = graph_edges(r, n, 200000)\nreturn line([n, len(e)]) + "\\n" + ${E("e")} + "\\n" + line(r.ints(2, 1, n))`),
+    t(2, "many components", `n = 100000\ne = graph_edges(r, n, 50000, connected=False)\nreturn line([n, len(e)]) + "\\n" + ${E("e")} + "\\n" + line(r.ints(2, 1, n))`),
+    t(3, "one long path, ends asked", `n = 100000\np = r.perm(n)\ne = [(p[i], p[i + 1]) for i in range(n - 1)]\nreturn line([n, len(e)]) + "\\n" + ${E("r.shuffle(e)")} + "\\n" + line([p[0], p[-1]])`),
+  ] },
   "tree-leaf-count": { tests: treeOnly(100000) },
   "bfs-levels": { tests: undirected(100000, 200000) },
   "cycle-detect-undirected": { tests: [
