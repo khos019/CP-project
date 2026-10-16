@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { tr, catalogue } from "./i18n";
 import { roadmapCatalog } from "./roadmap-data";
-import { fetchOwnerStats, fetchOwnerDuelStats, type OwnerStats as Stats, type OwnerDuelStats } from "./session";
+import { fetchOwnerStats, fetchOwnerDuelStats, fetchOwnerOnline, type OnlineUser, type OwnerStats as Stats, type OwnerDuelStats } from "./session";
 
 type Lang = "uz" | "en";
 
@@ -47,7 +47,64 @@ const duration = (seconds: number, t: (typeof T)["uz"], lang: Lang) => {
   return minutes ? `${join(hours, t.hour)} ${join(minutes, t.minute)}` : join(hours, t.hour);
 };
 
-export function OwnerStats({ lang, goProfile, onPickDay }: { lang: Lang; goProfile: () => void; onPickDay: (day: string) => void }) {
+/* Who is on the site right now (056), refreshed while the page is open. A
+   dash-free empty state when nobody is; a note instead of the list until the
+   migration has run. */
+function OnlineNow({ lang, t, onOpenPerson }: { lang: Lang; t: (typeof T)["uz"]; onOpenPerson: (username: string) => void }) {
+  const [users, setUsers] = useState<OnlineUser[] | null>(null);
+  const [missing, setMissing] = useState(false);
+  useEffect(() => {
+    let live = true;
+    const pull = () => fetchOwnerOnline().then((r) => {
+      if (!live) return;
+      if (r.ok) { setUsers(r.data.users || []); setMissing(false); }
+      else if (r.error === "not-migrated") setMissing(true);
+    });
+    void pull();
+    const id = window.setInterval(() => { if (document.visibilityState === "visible") void pull(); }, 20000);
+    return () => { live = false; window.clearInterval(id); };
+  }, []);
+  const online = (users || []).filter((u) => u.online);
+  const recent = (users || []).filter((u) => !u.online);
+  const row = (u: OnlineUser) => (
+    <li key={u.id}>
+      <button className="os-online-person" onClick={() => onOpenPerson(u.username)}>
+        <span className={`os-online-dot${u.online ? " on" : ""}`} aria-hidden />
+        <span className="os-online-name">
+          <b>{u.display_name || u.username}</b>
+          <small>@{u.username}</small>
+        </span>
+        {u.in_duel && <i className="os-online-tag">{t.onlineInDuel}</i>}
+        {!u.online && <small className="muted">{t.onlineAgo.replace("{n}", String(Math.max(1, Math.round(u.seconds_ago / 60))))}</small>}
+        <span className="mono muted">{u.duel_rating}</span>
+      </button>
+    </li>
+  );
+  return (
+    <section className="os-section">
+      <div className="os-h2-row">
+        <h2 className="os-h2">{t.onlineNowTitle}</h2>
+        <span className="os-online-count"><span className="os-online-dot on" aria-hidden /> <b className="mono">{users ? online.length : "—"}</b> {t.onlineNowCount}</span>
+      </div>
+      <p className="muted os-footnote">{t.onlineNowHint}</p>
+      {missing ? <div className="notice notice-info">{t.onlineNotMigrated}</div> : users && (
+        <div className="panel os-online">
+          {online.length ? <ul className="os-online-list">{online.map(row)}</ul> : <p className="muted">{t.onlineNowEmpty}</p>}
+          {recent.length > 0 && (
+            <>
+              <h3 className="os-online-sub">{t.onlineRecent}</h3>
+              <ul className="os-online-list">{recent.map(row)}</ul>
+            </>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
+export function OwnerStats({ lang, goProfile, onPickDay, onOpenPerson }: {
+  lang: Lang; goProfile: () => void; onPickDay: (day: string) => void; onOpenPerson: (username: string) => void;
+}) {
   const t = T[lang];
   const [stats, setStats] = useState<Stats | null>(null);
   const [state, setState] = useState<"loading" | "ready" | "not-migrated" | "forbidden" | "error">("loading");
@@ -120,6 +177,7 @@ export function OwnerStats({ lang, goProfile, onPickDay }: { lang: Lang; goProfi
         </div>
       )}
 
+      {state === "ready" && <OnlineNow lang={lang} t={t} onOpenPerson={onOpenPerson} />}
       {state === "ready" && stats && <StatsBody lang={lang} t={t} stats={stats} duels={duels} onPickDay={onPickDay} />}
     </>
   );

@@ -697,6 +697,12 @@ export const fetchUnreadCount = () => rpc<number>("my_unread_count");
 export const ownerBroadcastRecipients = () => rpc<number>("owner_broadcast_recipients");
 export const ownerBroadcast = (body: string, asSite: boolean) =>
   rpc<{ ok: boolean; sent?: number; error?: string }>("owner_broadcast", { p_body: body, p_as_site: asSite });
+/* Who is on the site now (migration 056), for the owner's statistics. */
+export type OnlineUser = {
+  id: string; username: string; display_name: string; duel_rating: number; role: string;
+  seconds_ago: number; online: boolean; in_duel: boolean;
+};
+export const fetchOwnerOnline = () => rpc<{ window_seconds: number; now: string; users: OnlineUser[] }>("owner_online_users");
 export const markThreadRead = (otherId: string) => rpc<number>("mark_thread_read", { p_other: otherId });
 
 /* A conversation is every message between the two of us, in either direction.
