@@ -137,8 +137,10 @@ export function RatingGraph({
   }, []);
   const { W, H } = narrow ? NARROW : WIDE;
 
+  /* Friend duels are unrated (054): they stay in the duel table but have no
+     place on a rating curve, where they would only draw flat steps. */
   const history = [...rows]
-    .filter((r) => r.finished_at)
+    .filter((r) => r.finished_at && r.mode !== "friend")
     .sort((a, b) => +new Date(a.finished_at) - +new Date(b.finished_at));
 
   const innerW = W - PAD.left - PAD.right;
