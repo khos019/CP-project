@@ -2597,6 +2597,18 @@ a.editor-escape:hover{color:var(--ink);border-color:var(--line-strong);backgroun
 .friend-field input,.friend-field select{background:var(--inset);border:1px solid var(--line);border-radius:var(--r-md);padding:10px var(--s3);color:var(--ink);font-size:var(--t-sm);width:100%}
 .friend-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--s3)}
 .friend-actions{display:flex;align-items:center;gap:var(--s4);flex-wrap:wrap}
+/* Username suggestions under the friend-duel field. */
+.friend-combo{position:relative}
+.friend-combo label{font-size:var(--t-xs);color:var(--muted)}
+.friend-suggest{position:absolute;left:0;right:0;top:calc(100% + 6px);z-index:30;margin:0;padding:6px;list-style:none;background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-md);box-shadow:0 18px 40px color-mix(in srgb,var(--shadow-c) 40%,transparent);max-height:320px;overflow:auto}
+.friend-suggest li{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:var(--r-sm);cursor:pointer;color:var(--ink)}
+.friend-suggest li.active{background:var(--surface-3)}
+.friend-suggest .avatar{width:30px;height:30px;font-size:13px;flex:none;margin:0;border:0}
+.friend-suggest-name{display:grid;flex:1;min-width:0}
+.friend-suggest-name b{font-size:var(--t-sm);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.friend-suggest-name small{color:var(--muted);font-size:12px}
+.friend-suggest-tag{font-style:normal;font-size:11px;font-weight:700;padding:2px 8px;border-radius:999px;color:var(--green);background:color-mix(in srgb,var(--green) 12%,transparent)}
+.friend-suggest li.friend-suggest-empty{color:var(--muted);cursor:default;font-size:var(--t-sm)}
 .friend-actions .muted{font-size:var(--t-xs)}
 .friend-wait{display:flex;align-items:center;gap:var(--s4);background:var(--surface-2);border:1px solid var(--line);border-radius:var(--r-md);padding:var(--s4)}
 .friend-wait > div{flex:1;min-width:0}

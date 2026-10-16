@@ -34,6 +34,7 @@ import {
   type ActiveDuel, type DuelResult, type DuelState, type FriendInvite, type IncomingChallenge,
 } from "./duel-client";
 import { fetchFriends, type FriendRow } from "./social";
+import { searchPeople } from "./session";
 
 type Lang = "uz" | "en";
 type CodeLang = "cpp20" | "python3";
@@ -144,7 +145,7 @@ const T = {
     modeBot: "AI bilan duel", modeHuman: "Reytingli duel", test: "test",
     modeFriend: "Do‘stona duel", tabSearch: "Tasodifiy raqib",
     friendTitle: "Do‘st bilan duel", friendSub: "Raqibni o‘zingiz tanlang: masalalar qiyinligi va vaqtni ham.",
-    friendUser: "Do‘stingizning nickname’i", friendUserPh: "masalan, tbdreamer",
+    friendUser: "Do‘stingizning nickname’i yoki ismi", friendUserPh: "masalan, khos", friendTag: "do‘st", friendNone: "Hech kim topilmadi",
     friendRound: (n: number) => `${n}-masala reytingi`, friendMinutes: "Duel vaqti",
     friendMin: (m: number) => `${m} daqiqa`, friendSend: "Taklif yuborish",
     friendWaiting: (name: string) => `${name} javobini kutyapmiz…`, friendWithdraw: "Taklifni qaytarib olish",
@@ -198,7 +199,7 @@ const T = {
     modeBot: "AI duel", modeHuman: "Rated duel", test: "test",
     modeFriend: "Friend duel", tabSearch: "Random opponent",
     friendTitle: "Duel a friend", friendSub: "Pick your opponent, the problems' difficulty and the time.",
-    friendUser: "Your friend's username", friendUserPh: "e.g. tbdreamer",
+    friendUser: "Your friend's username or name", friendUserPh: "e.g. khos", friendTag: "friend", friendNone: "Nobody found",
     friendRound: (n: number) => `Problem ${n} rating`, friendMinutes: "Duel length",
     friendMin: (m: number) => `${m} min`, friendSend: "Send invitation",
     friendWaiting: (name: string) => `Waiting for ${name}…`, friendWithdraw: "Withdraw invitation",
@@ -576,7 +577,17 @@ function FriendDuelPanel({ lang, signed, needAuth, onPending }: { lang: Lang; si
   const send = async () => {
     if (!signed) { needAuth(); return; }
     setBusy(true); setError("");
-    const r = await inviteFriend(username.trim(), ratings, minutes);
+    /* People know each other by the name on the profile at least as often as
+       by the username ("tbdreamer" is a display name). If nobody has this
+       exact username but exactly one person has this exact name, invite them. */
+    let handle = username.trim().replace(/^@/, "");
+    const lower = handle.toLowerCase();
+    const found = (await searchPeople(handle, 12)) || [];
+    if (!found.some((x) => x.username.toLowerCase() === lower)) {
+      const byName = found.filter((x) => (x.display_name || "").trim().toLowerCase() === lower);
+      if (byName.length === 1) handle = byName[0].username;
+    }
+    const r = await inviteFriend(handle, ratings, minutes);
     setBusy(false);
     if (r && "ok" in r && r.ok) { await pull(); return; }
     const code = r && "error" in r ? String(r.error) : "";
@@ -586,6 +597,46 @@ function FriendDuelPanel({ lang, signed, needAuth, onPending }: { lang: Lang; si
     if (!outgoing) return;
     setBusy(true); await cancelInvite(outgoing.id); await pull(); setBusy(false);
   };
+
+  /* Suggestions while typing: everyone on the site whose username or name
+     matches, not only friends. Exact match first, then names that start with
+     the text, then the rest; friends lead within each group. */
+  type Suggestion = { id: string; username: string; display_name: string; duel_rating: number; friend: boolean };
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([]);
+  const [open, setOpen] = useState(false);
+  const [active, setActive] = useState(-1);
+  const asked = useRef(0);
+  useEffect(() => {
+    const term = username.trim().replace(/^@/, "").toLowerCase();
+    if (!term || !open) { setSuggestions([]); return; }
+    const ticket = ++asked.current;
+    const id = window.setTimeout(async () => {
+      const people = (await searchPeople(term, 12)) || [];
+      if (ticket !== asked.current) return;
+      const friendIds = new Set(friends.map((f) => f.id));
+      const seen = new Set<string>();
+      const all: Suggestion[] = [];
+      for (const x of [...friends.filter((f) => (f.username + " " + f.display_name).toLowerCase().includes(term)), ...people]) {
+        if (!x.username || seen.has(x.id)) continue;
+        seen.add(x.id);
+        all.push({ id: x.id, username: x.username, display_name: x.display_name, duel_rating: x.duel_rating, friend: friendIds.has(x.id) });
+      }
+      const rank = (x: Suggestion) => (x.username.toLowerCase() === term ? 0 : x.username.toLowerCase().startsWith(term) ? 1 : 2);
+      all.sort((a, b) => rank(a) - rank(b) || Number(b.friend) - Number(a.friend) || a.username.localeCompare(b.username));
+      setSuggestions(all.slice(0, 8));
+      setActive(all.length ? 0 : -1);
+    }, 200);
+    return () => window.clearTimeout(id);
+  }, [username, open, friends]);
+  const pick = (x: Suggestion) => { setUsername(x.username); setOpen(false); setSuggestions([]); };
+  const onKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!open || !suggestions.length) return;
+    if (e.key === "ArrowDown") { e.preventDefault(); setActive((i) => (i + 1) % suggestions.length); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); setActive((i) => (i - 1 + suggestions.length) % suggestions.length); }
+    else if (e.key === "Enter" && active >= 0) { e.preventDefault(); pick(suggestions[active]); }
+    else if (e.key === "Escape") setOpen(false);
+  };
+  const showList = open && username.trim().replace(/^@/, "").length > 0;
 
   const name = outgoing?.to ? outgoing.to.display_name || outgoing.to.username : "";
   return (
@@ -609,14 +660,34 @@ function FriendDuelPanel({ lang, signed, needAuth, onPending }: { lang: Lang; si
           {outgoing && (outgoing.status === "declined" || outgoing.status === "expired") && (
             <div className="notice notice-info">{outgoing.status === "declined" ? t.friendDeclined(name) : t.friendExpired(name)}</div>
           )}
-          <label className="friend-field">
-            <span>{t.friendUser}</span>
-            <input value={username} onChange={(e) => setUsername(e.target.value)} placeholder={t.friendUserPh}
-              list="friend-duel-names" autoComplete="off" spellCheck={false} />
-            <datalist id="friend-duel-names">
-              {friends.map((f) => <option key={f.id} value={f.username}>{f.display_name}</option>)}
-            </datalist>
-          </label>
+          <div className="friend-field friend-combo">
+            <label htmlFor="friend-duel-user">{t.friendUser}</label>
+            <input id="friend-duel-user" value={username} placeholder={t.friendUserPh} autoComplete="off" spellCheck={false}
+              role="combobox" aria-expanded={showList} aria-controls="friend-duel-list" aria-autocomplete="list"
+              aria-activedescendant={showList && active >= 0 ? `friend-opt-${active}` : undefined}
+              onChange={(e) => { setUsername(e.target.value); setOpen(true); }}
+              onFocus={() => setOpen(true)}
+              // Closing waits a moment so a click on a suggestion lands first.
+              onBlur={() => window.setTimeout(() => setOpen(false), 150)}
+              onKeyDown={onKey} />
+            {showList && (
+              <ul className="friend-suggest" id="friend-duel-list" role="listbox">
+                {suggestions.length ? suggestions.map((x, i) => (
+                  <li key={x.id} id={`friend-opt-${i}`} role="option" aria-selected={i === active}
+                    className={i === active ? "active" : ""}
+                    onMouseDown={(e) => { e.preventDefault(); pick(x); }} onMouseEnter={() => setActive(i)}>
+                    <span className="avatar" aria-hidden>{(x.display_name || x.username).slice(0, 1).toUpperCase()}</span>
+                    <span className="friend-suggest-name">
+                      <b>{x.display_name || x.username}</b>
+                      <small>@{x.username}</small>
+                    </span>
+                    {x.friend && <i className="friend-suggest-tag">{t.friendTag}</i>}
+                    <span className="mono muted">{x.duel_rating}</span>
+                  </li>
+                )) : <li className="friend-suggest-empty">{t.friendNone}</li>}
+              </ul>
+            )}
+          </div>
           <div className="friend-grid">
             {ratings.map((value, i) => (
               <label key={i} className="friend-field">
