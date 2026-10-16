@@ -20,6 +20,8 @@
 import { tests, problemCpuSeconds } from "../judge/tests";
 import { serverEnv } from "./env";
 import { buildBatchSubmission, newBatchKey, parseBatchOutput } from "./judge-batch";
+import { bigTests } from "../judge/big-tests";
+import type { GeneratedTest } from "../judge/gen-lib";
 
 export type Language = "cpp20" | "python3";
 export const languageIds = { cpp20: 54, python3: 71 } as const;
@@ -322,8 +324,13 @@ export async function judgeSource(
   }));
 
   try {
-    const results = await judgeTests(language, sourceCode, cases, submissions, scale, onProgress);
-    const total = submissions.length;
+    const generated = bigTests[problemId] || [];
+    const results = await judgeTests(language, sourceCode, cases, generated, submissions, scale, onProgress);
+    // Normally stored + generated. Generated tests exist only on the batched
+    // path, so a submission the per-test fallback finished is judged on the
+    // stored ones alone and reports that many.
+    const total = results.length < submissions.length + generated.length && results.every((r) => r.status?.id === 3)
+      ? results.length : submissions.length + generated.length;
     const runtimeMs = Math.ceil(Math.max(0, ...results.map((r) => Number(r.time || 0))) * 1000);
     const memoryKb = Math.max(0, ...results.map((r) => r.memory || 0));
     const failedIndex = results.findIndex((r) => r.status?.id !== 3);
@@ -355,15 +362,17 @@ export async function judgeSource(
  * jobs would make it busier, so the timeout is reported as it always was. */
 async function judgeTests(
   language: Language, sourceCode: string, cases: ReadonlyArray<{ stdin: string; expected_output: string }>,
-  submissions: Submission[], scale: number, onProgress?: JudgeProgress,
+  generated: ReadonlyArray<GeneratedTest>, submissions: Submission[], scale: number, onProgress?: JudgeProgress,
 ): Promise<Result[]> {
-  const total = submissions.length;
+  // Stored tests first, then the large generated ones: a wrong answer shows
+  // on a small test before any time is spent building a big input.
+  const total = submissions.length + generated.length;
   let settled: Result[] = [];
   const key = newBatchKey();
   const budget = newBudget();
   try {
     onProgress?.(0, total);
-    const job = buildBatchSubmission(language, sourceCode, cases, {
+    const job = buildBatchSubmission(language, sourceCode, [...cases, ...generated], {
       cpu: limits[language].cpu * scale, wall: limits[language].wall * scale, memoryKb: 262144, outputKb: 1024,
     }, key);
     // The job is one token, so its own progress is 0/1 until the end. Every
@@ -386,6 +395,9 @@ async function judgeTests(
     console.warn(`judge: batched job failed (${error instanceof Error ? error.message : error}); judging per test`);
   }
   const offset = settled.length;
+  // The per-test path cannot build generated inputs; it finishes the stored
+  // tests only, and a batch that got past them has nothing left to give it.
+  if (offset >= submissions.length) return settled;
   const rest = await execute(submissions.slice(offset), onProgress && ((done, n) => onProgress(offset + done, offset + n)), budget);
   return settled.concat(rest);
 }

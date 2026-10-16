@@ -37,8 +37,13 @@
  * the old way, test by test.
  */
 
+import { GEN_PRELUDE, type GeneratedTest } from "../judge/gen-lib";
+
 export type BatchLanguage = "cpp20" | "python3";
-export type BatchTest = { stdin: string; expected_output: string };
+/* A stored test carries its input and expected output; a generated one
+   carries the Python that builds its input and the hash of the expected
+   output (see app/api/judge/gen-lib.ts). */
+export type BatchTest = { stdin: string; expected_output: string } | GeneratedTest;
 export type BatchLimits = { cpu: number; wall: number; memoryKb: number; outputKb: number };
 
 /** One settled test, in the shape judge.ts already reads from Judge0. */
@@ -53,7 +58,12 @@ export const MULTI_FILE_LANGUAGE_ID = 89;
    which enforces the real ones itself; they are kept at or under Judge0's
    stock maxima (15 s CPU, 20 s wall) so a default install accepts the job. A
    job cut short by them is judged the rest of the way test by test. */
-export const JOB_LIMITS = { cpu: 15, wall: 20 } as const;
+/* fileKb is the job's file-size cap, which also binds the runner writing a
+   test's input to t.in: at the program's 1 MB output cap a 1.07 MB generated
+   input killed the runner (water-container, 2026-10-16). The program's own
+   output stays capped per test by the runner's RLIMIT_FSIZE. 4096 KB is
+   Judge0's stock max_max_file_size. */
+export const JOB_LIMITS = { cpu: 15, wall: 20, fileKb: 4096 } as const;
 
 const DESCRIPTIONS: Record<number, string> = {
   3: "Accepted", 4: "Wrong Answer", 5: "Time Limit Exceeded", 7: "Runtime Error (SIGSEGV)",
@@ -115,8 +125,13 @@ def sweep():
                 pass
 
 for index, test in enumerate(job["tests"]):
+    # A generated test is built here, in the sandbox, from its code and seed
+    # (GEN_PRELUDE, prepended to this file). Building it before the fork keeps
+    # its cost off the program's clock.
+    data = build(test["gen"], test["seed"]).encode("utf-8") if "gen" in test else test["in"].encode("utf-8")
     with open("t.in", "wb") as f:
-        f.write(test["in"].encode("utf-8"))
+        f.write(data)
+    data = None
     pid = os.fork()
     if pid == 0:
         try:
@@ -155,7 +170,11 @@ for index, test in enumerate(job["tests"]):
         status = 11
     else:
         with open("t.out", "rb") as f:
-            status = 3 if strip(f.read()) == strip(test["out"].encode("utf-8")) else 4
+            got = strip(f.read())
+        if "sha" in test:
+            status = 3 if hashlib.sha256(got).hexdigest() == test["sha"] else 4
+        else:
+            status = 3 if got == strip(test["out"].encode("utf-8")) else 4
     for name in ("t.in", "t.out", "t.err"):
         try:
             os.remove(name)
@@ -244,7 +263,7 @@ export function buildBatchSubmission(
   const program = PROGRAMS[language];
   const files: Record<string, string> = {
     [program.file]: sourceCode,
-    "runner.py": RUNNER,
+    "runner.py": GEN_PRELUDE + "\n" + RUNNER,
     run: "/usr/local/python-3.8.1/bin/python3 runner.py\n",
   };
   if (program.compile) files.compile = program.compile;
@@ -254,10 +273,10 @@ export function buildBatchSubmission(
     stdin: JSON.stringify({
       key, cmd: program.cmd, env: program.env,
       cpu: limits.cpu, wall: limits.wall, mem: limits.memoryKb, fsize: limits.outputKb,
-      tests: tests.map((t) => ({ in: t.stdin, out: t.expected_output })),
+      tests: tests.map((t) => ("code" in t ? { gen: t.code, seed: t.seed, sha: t.sha } : { in: t.stdin, out: t.expected_output })),
     }),
     cpu_time_limit: JOB_LIMITS.cpu, wall_time_limit: JOB_LIMITS.wall,
-    memory_limit: limits.memoryKb, max_file_size: limits.outputKb,
+    memory_limit: limits.memoryKb, max_file_size: Math.max(limits.outputKb, JOB_LIMITS.fileKb),
     // Per process, as C++ is judged elsewhere: no cgroup, so the compile's
     // CPU and memory cannot be charged to the runner.
     enable_per_process_and_thread_time_limit: true,
