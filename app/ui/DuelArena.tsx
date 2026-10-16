@@ -81,6 +81,14 @@ const SwordsIcon = () => (
     <path d="m5 14 4 4M7 17l-3 3M3 19l2 2" />
   </svg>
 );
+const FriendsIcon = ({ size = 34 }: { size?: number }) => (
+  <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="9" cy="8" r="3.2" />
+    <path d="M3 19.5a6 6 0 0 1 12 0" />
+    <circle cx="17" cy="9" r="2.6" />
+    <path d="M15.5 14.2a5 5 0 0 1 5.5 5" />
+  </svg>
+);
 const RadarIcon = () => (
   <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
     <circle cx="12" cy="12" r="9" opacity=".35" />
@@ -134,7 +142,7 @@ const T = {
     awayNow: "Duelga qayting",
     lostByLeaving: "Duel tabini tashlab ketganingiz uchun mag‘lub bo‘ldingiz.",
     modeBot: "AI bilan duel", modeHuman: "Reytingli duel", test: "test",
-    modeFriend: "Do‘stona duel",
+    modeFriend: "Do‘stona duel", tabSearch: "Tasodifiy raqib",
     friendTitle: "Do‘st bilan duel", friendSub: "Raqibni o‘zingiz tanlang: masalalar qiyinligi va vaqtni ham.",
     friendUser: "Do‘stingizning nickname’i", friendUserPh: "masalan, tbdreamer",
     friendRound: (n: number) => `${n}-masala reytingi`, friendMinutes: "Duel vaqti",
@@ -188,7 +196,7 @@ const T = {
     awayNow: "Come back to the duel",
     lostByLeaving: "You lost because you left the duel tab.",
     modeBot: "AI duel", modeHuman: "Rated duel", test: "test",
-    modeFriend: "Friend duel",
+    modeFriend: "Friend duel", tabSearch: "Random opponent",
     friendTitle: "Duel a friend", friendSub: "Pick your opponent, the problems' difficulty and the time.",
     friendUser: "Your friend's username", friendUserPh: "e.g. tbdreamer",
     friendRound: (n: number) => `Problem ${n} rating`, friendMinutes: "Duel length",
@@ -313,6 +321,7 @@ export function DuelMatchmaking({
   const [tick, setTick] = useState<{ elapsed: number; radius: number; available: number; botDue: boolean }>(
     { elapsed: 0, radius: 100, available: 0, botDue: false });
   const [result, setResult] = useState<DuelResult | null>(null);
+  const [tab, setTab] = useState<"search" | "friend">("search");
   /* Why the duel ended, when the reason is one the server does not record. The
      forfeit reaches the database as an ordinary forfeit — it is one — so the
      result screen would otherwise say "you lost" and leave the player to guess
@@ -444,6 +453,9 @@ export function DuelMatchmaking({
 
   const searching = status === "searching" || status === "challenge_sent";
   const rating = state?.session?.rating;
+  // Which card the idle screen shows. A search in progress is always the
+  // search card; an invitation still waiting for an answer opens the friend one.
+  const showFriend = tab === "friend" && !searching;
 
   return (
     <>
@@ -455,7 +467,18 @@ export function DuelMatchmaking({
         {signed && rating !== undefined && <span className="tag">ELO {rating}</span>}
       </div>
 
-      <div className="matchmaking panel">
+      {!searching && (
+        <div className="duel-tabs" role="tablist" aria-label={t.title}>
+          <button role="tab" aria-selected={!showFriend} className={!showFriend ? "active" : ""} onClick={() => setTab("search")}>
+            <span aria-hidden>⚔</span> {t.tabSearch}
+          </button>
+          <button role="tab" aria-selected={showFriend} className={showFriend ? "active" : ""} onClick={() => setTab("friend")}>
+            <FriendsIcon size={16} /> {t.friendTitle}
+          </button>
+        </div>
+      )}
+
+      <div className="matchmaking panel" hidden={showFriend}>
         <div className={`search-orb ${searching ? "pulse" : ""}`} aria-hidden="true">
           {searching ? <RadarIcon /> : <SwordsIcon />}
         </div>
@@ -488,7 +511,13 @@ export function DuelMatchmaking({
           </>
         )}
       </div>
-      {!searching && <FriendDuelPanel lang={lang} signed={signed} needAuth={needAuth} />}
+      {/* Kept mounted while hidden, so an invitation sent earlier is still
+          followed — and can switch the tab when it is found pending. */}
+      {!searching && (
+        <div hidden={!showFriend}>
+          <FriendDuelPanel lang={lang} signed={signed} needAuth={needAuth} onPending={() => setTab("friend")} />
+        </div>
+      )}
     </>
   );
 }
@@ -500,7 +529,7 @@ const MINUTE_CHOICES = [10, 15, 20, 30, 45, 60, 90, 120];
 /* The sender's side: name an opponent, choose three ratings and a length, and
    see the invitation through to an answer. The opponent's card and the duel
    that follows are the shell's (FriendInviteOverlay, then the ordinary arena). */
-function FriendDuelPanel({ lang, signed, needAuth }: { lang: Lang; signed: boolean; needAuth: () => void }) {
+function FriendDuelPanel({ lang, signed, needAuth, onPending }: { lang: Lang; signed: boolean; needAuth: () => void; onPending: () => void }) {
   const t = T[lang];
   const [username, setUsername] = useState("");
   const [ratings, setRatings] = useState([1200, 1400, 1600]);
@@ -513,9 +542,16 @@ function FriendDuelPanel({ lang, signed, needAuth }: { lang: Lang; signed: boole
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
+  // Held in a ref: the parent passes a fresh arrow every render, and pull must
+  // stay the same function or the effect below would re-run (and re-fetch) forever.
+  const pendingRef = useRef(onPending);
+  pendingRef.current = onPending;
   const pull = useCallback(async () => {
     const next = await invitesState();
-    if (next && "outgoing" in next) { setOutgoing(next.outgoing); setServerNow(next.now); setDrawnAt(Date.now()); }
+    if (next && "outgoing" in next) {
+      setOutgoing(next.outgoing); setServerNow(next.now); setDrawnAt(Date.now());
+      if (next.outgoing?.status === "pending") pendingRef.current();
+    }
   }, []);
   useEffect(() => {
     if (!signed) return;
@@ -554,8 +590,11 @@ function FriendDuelPanel({ lang, signed, needAuth }: { lang: Lang; signed: boole
   const name = outgoing?.to ? outgoing.to.display_name || outgoing.to.username : "";
   return (
     <div className="panel friend-duel">
-      <h2>{t.friendTitle}</h2>
-      <p className="muted">{t.friendSub}</p>
+      <div className="friend-head">
+        <div className="search-orb friend-orb" aria-hidden="true"><FriendsIcon /></div>
+        <h2>{t.friendTitle}</h2>
+        <p className="muted">{t.friendSub}</p>
+      </div>
       {pending && outgoing ? (
         <div className="friend-wait" role="status">
           <span className="spinner" aria-hidden />

@@ -2581,9 +2581,18 @@ a.editor-escape:hover{color:var(--ink);border-color:var(--line-strong);backgroun
 .matchmaking:hover .search-orb:not(.pulse) svg{transform:rotate(-8deg) scale(1.06)}
 /* Friend duel: the sender's form under the matchmaking card, and the terms on
    the invitation card. Inputs match .field so the page reads as one form. */
-.friend-duel{max-width:640px;margin:0 auto var(--s8);padding:var(--s6);border-radius:var(--r-xl);display:grid;gap:var(--s3)}
-.friend-duel h2{margin:0;font-size:20px}
-.friend-duel > p{margin:0}
+/* The idle duel screen: a two-way switch, then one card. */
+.duel-tabs{display:flex;gap:4px;width:fit-content;max-width:100%;margin:var(--s6) auto 0;padding:4px;border-radius:999px;background:var(--surface-2);border:1px solid var(--line)}
+.duel-tabs button{display:inline-flex;align-items:center;gap:8px;border:0;background:transparent;color:var(--muted);font-weight:700;font-size:var(--t-sm);padding:9px 18px;border-radius:999px;cursor:pointer;transition:background var(--dur-fast) var(--ease),color var(--dur-fast) var(--ease)}
+.duel-tabs button:hover{color:var(--ink)}
+.duel-tabs button.active{background:var(--surface);color:var(--ink);box-shadow:0 2px 10px color-mix(in srgb,var(--shadow-c) 22%,transparent),inset 0 0 0 1px var(--line)}
+.duel-tabs ~ .matchmaking{margin-top:var(--s4)}
+.friend-duel{max-width:640px;margin:var(--s4) auto var(--s8);padding:var(--s8) var(--s6);border-radius:var(--r-xl);display:grid;gap:var(--s4);background:var(--surface);border:1px solid var(--line)}
+.friend-head{text-align:center}
+.friend-head h2{margin:0 0 6px;font-size:22px}
+.friend-head p{margin:0}
+.friend-orb{background:linear-gradient(150deg,color-mix(in srgb,var(--cyan) 18%,var(--surface)),color-mix(in srgb,var(--cyan) 6%,var(--surface)));color:var(--cyan);box-shadow:0 12px 28px -8px color-mix(in srgb,var(--cyan) 45%,transparent),0 4px 10px color-mix(in srgb,var(--shadow-c) 18%,transparent)}
+.friend-orb::after{box-shadow:0 0 0 0 color-mix(in srgb,var(--cyan) 22%,transparent),0 0 34px 6px color-mix(in srgb,var(--cyan) 16%,transparent)}
 .friend-field{display:grid;gap:6px;font-size:var(--t-xs);color:var(--muted)}
 .friend-field input,.friend-field select{background:var(--inset);border:1px solid var(--line);border-radius:var(--r-md);padding:10px var(--s3);color:var(--ink);font-size:var(--t-sm);width:100%}
 .friend-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--s3)}
@@ -2595,7 +2604,7 @@ a.editor-escape:hover{color:var(--ink);border-color:var(--line-strong);backgroun
 .friend-terms{display:flex;flex-wrap:wrap;gap:6px var(--s5);margin:var(--s4) 0 6px;font-size:var(--t-sm);color:var(--muted)}
 .friend-terms b{color:var(--ink)}
 .friend-note{font-size:var(--t-xs);margin:0 0 var(--s4)}
-@media (max-width:620px){.friend-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.friend-wait{flex-wrap:wrap}}
+@media (max-width:620px){.friend-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.friend-wait{flex-wrap:wrap}.duel-tabs button{padding:8px 12px;font-size:13px}}
 .search-orb.pulse{color:var(--green);background:linear-gradient(150deg,color-mix(in srgb,var(--green) 16%,var(--surface)),color-mix(in srgb,var(--green) 6%,var(--surface)));box-shadow:0 12px 28px -8px color-mix(in srgb,var(--green) 45%,transparent),0 4px 10px color-mix(in srgb,var(--shadow-c) 18%,transparent)}
 .search-orb.pulse::after{box-shadow:0 0 0 0 color-mix(in srgb,var(--green) 40%,transparent);animation:orb-ripple 1.6s var(--ease) infinite}
 .radar-sweep{transform-origin:12px 12px;animation:radar 1.6s linear infinite}
