@@ -1133,7 +1133,11 @@ for(auto x:h)s+=mx-x;cout<<s<<"\\n";`)],
     wrong: [cpp(`int n,m;cin>>n>>m;vector<int>p(n+1);for(int i=0;i<=n;++i)p[i]=i;function<int(int)>f=[&](int x){while(p[x]!=x)x=p[x]=p[p[x]];return x;};int c=0;for(int i=0;i<m;++i){int a,b;cin>>a>>b;if(f(a)!=f(b)){p[f(a)]=f(b);++c;}}cout<<c+1<<"\\n";`)],
   },
   "bit-fenwick-sum": {
-    solution: cpp(`int n,q;cin>>n>>q;vector<long long>a(n);for(auto&x:a)cin>>x;while(q--){int t;cin>>t;if(t==1){int i;long long x;cin>>i>>x;a[i-1]+=x;}else{int l,r;cin>>l>>r;long long s=0;for(int i=l-1;i<r;++i)s+=a[i];cout<<s<<"\\n";}}`),
+    solution: cpp(`int n,q;cin>>n>>q;vector<long long>f(n+1,0);
+auto add=[&](int i,long long v){for(;i<=n;i+=i&-i)f[i]+=v;};
+auto sum=[&](int i){long long s=0;for(;i>0;i-=i&-i)s+=f[i];return s;};
+for(int i=1;i<=n;++i){long long x;cin>>x;add(i,x);}
+while(q--){int t;cin>>t;if(t==1){int i;long long x;cin>>i>>x;add(i,x);}else{int l,r;cin>>l>>r;cout<<sum(r)-sum(l-1)<<'\\n';}}`),
     wrong: [cpp(`int n,q;cin>>n>>q;vector<long long>a(n);for(auto&x:a)cin>>x;while(q--){int t;cin>>t;if(t==1){int i;long long x;cin>>i>>x;a[i-1]=x;}else{int l,r;cin>>l>>r;long long s=0;for(int i=l-1;i<r;++i)s+=a[i];cout<<s<<"\\n";}}`)],
   },
   "graph-degree-max": {
@@ -1401,7 +1405,11 @@ for(auto x:h)s+=mx-x;cout<<s<<"\\n";`)],
     wrong: [cpp(`long long n;int k;cin>>n>>k;long long c=0;for(long long v=1;v<=n;++v){long long s=0,t=v;while(t){s+=t%10;t/=10;}if(s<=k)++c;}cout<<c<<"\\n";`)],
   },
   "sparse-min": {
-    solution: cpp(`int n,q;cin>>n>>q;vector<long long>a(n);for(auto&x:a)cin>>x;while(q--){int l,r;cin>>l>>r;long long m=LLONG_MAX;for(int i=l-1;i<r;++i)m=min(m,a[i]);cout<<m<<"\\n";}`),
+    solution: cpp(`int n,q;cin>>n>>q;int L=1;while((1<<L)<=n)++L;
+vector<vector<long long>>t(L,vector<long long>(n));
+for(auto&x:t[0])cin>>x;
+for(int j=1;j<L;++j)for(int i=0;i+(1<<j)<=n;++i)t[j][i]=min(t[j-1][i],t[j-1][i+(1<<(j-1))]);
+while(q--){int l,r;cin>>l>>r;--l;int j=31-__builtin_clz(r-l);cout<<min(t[j][l],t[j][r-(1<<j)])<<'\\n';}`),
     wrong: [cpp(`int n,q;cin>>n>>q;vector<long long>a(n);for(auto&x:a)cin>>x;while(q--){int l,r;cin>>l>>r;long long m=LLONG_MAX;for(int i=l;i<r&&i<n;++i)m=min(m,a[i]);cout<<(m==LLONG_MAX?a[n-1]:m)<<"\\n";}`)],
   },
   "game-nim": {
@@ -2423,60 +2431,25 @@ for(int v=1;v<=n;++v)cout<<ans[v]<<(v<n?" ":"\\n");`)],
     solution: cpp(`int n;long long k;cin>>n>>k;
 vector<vector<int>>g(n+1);
 for(int i=0;i<n-1;++i){int a,b;cin>>a>>b;g[a].push_back(b);g[b].push_back(a);}
-vector<char>dead(n+1,0);vector<int>sz(n+1,0);
-long long answer=0;
-vector<int>stack1,depths;
-auto calcSizes=[&](int root){
-stack1.clear();vector<pair<int,int>>st;st.push_back({root,0});
-vector<int>ord;
-{vector<int>s2{root};vector<int>par(1,0);
-vector<pair<int,int>>work;work.push_back({root,0});
-ord.clear();vector<int>pr(n+1,0);pr[root]=0;
-vector<int>simple{root};vector<char>vis(n+1,0);vis[root]=1;
-while(!simple.empty()){int u=simple.back();simple.pop_back();ord.push_back(u);
-for(int v:g[u])if(!dead[v]&&!vis[v]){vis[v]=1;pr[v]=u;simple.push_back(v);}}
-for(int i=(int)ord.size()-1;i>=0;--i){int u=ord[i];sz[u]=1;
-for(int v:g[u])if(!dead[v]&&v!=pr[u])sz[u]+=sz[v];}}
-return ord;};
-auto findCentroid=[&](int root,const vector<int>&ord){
-int total=sz[root];int best=root;long long bestVal=LLONG_MAX;
-vector<int>pr(n+1,0);vector<char>vis(n+1,0);
-vector<int>simple{root};vis[root]=1;
-while(!simple.empty()){int u=simple.back();simple.pop_back();
-for(int v:g[u])if(!dead[v]&&!vis[v]){vis[v]=1;pr[v]=u;simple.push_back(v);}}
-for(int u:ord){long long worst=total-sz[u];
-for(int v:g[u])if(!dead[v]&&v!=pr[u])worst=max(worst,(long long)sz[v]);
-if(worst<bestVal){bestVal=worst;best=u;}}
-return best;};
-auto gather=[&](int start,int banned){
-depths.clear();
-vector<pair<int,int>>st;st.push_back({start,1});
-vector<char>vis(0);
-vector<int>pr(n+1,-1);pr[start]=banned;
-vector<pair<int,int>>simple;simple.push_back({start,1});
-while(!simple.empty()){auto[u,d]=simple.back();simple.pop_back();
-depths.push_back(d);
-for(int v:g[u])if(!dead[v]&&v!=pr[u]){pr[v]=u;simple.push_back({v,d+1});}}};
-auto countPairs=[&](vector<int>&d)->long long{
-sort(d.begin(),d.end());
-long long total=0;int j=(int)d.size()-1;
-for(int i=0;i<(int)d.size();++i){if(j>i&&d[i]+d[j]>k){}
-while(j>i&&d[i]+d[j]>k)--j;
-if(j>i)total+=j-i;else break;}
-return total;};
-vector<int>queueC{1};
-while(!queueC.empty()){int root=queueC.back();queueC.pop_back();
-vector<int>ord=calcSizes(root);
-int c=findCentroid(root,ord);
-vector<int>all;all.push_back(0);
-for(int v:g[c])if(!dead[v]){gather(v,c);
-vector<int>part=depths;
-answer-=countPairs(part);
-for(int d:part)all.push_back(d);}
-answer+=countPairs(all);
-dead[c]=1;
-for(int v:g[c])if(!dead[v])queueC.push_back(v);}
-cout<<answer<<"\\n";`),
+// Centroid decomposition with every buffer allocated once: counting pairs at
+// distance <= k through each centroid, minus those inside one child subtree.
+vector<char>dead(n+1,0);vector<int>sz(n+1,0),par(n+1,0),ord,stk,all,part,roots{1};
+vector<pair<int,int>>st2;long long answer=0;
+auto countPairs=[&](vector<int>&d)->long long{sort(d.begin(),d.end());long long total=0;int i=0,j=(int)d.size()-1;
+while(i<j){if(d[i]+d[j]<=k){total+=j-i;++i;}else --j;}return total;};
+while(!roots.empty()){int root=roots.back();roots.pop_back();
+ord.clear();par[root]=0;stk.assign(1,root);
+while(!stk.empty()){int u=stk.back();stk.pop_back();ord.push_back(u);for(int v:g[u])if(!dead[v]&&v!=par[u]){par[v]=u;stk.push_back(v);}}
+for(int i=(int)ord.size()-1;i>=0;--i){int u=ord[i];sz[u]=1;for(int v:g[u])if(!dead[v]&&v!=par[u])sz[u]+=sz[v];}
+int total=(int)ord.size(),c=root;
+for(int u:ord){int worst=total-sz[u];for(int v:g[u])if(!dead[v]&&v!=par[u])worst=max(worst,sz[v]);if(2*worst<=total){c=u;break;}}
+all.assign(1,0);
+for(int v:g[c])if(!dead[v]){part.clear();par[v]=c;st2.assign(1,{v,1});
+while(!st2.empty()){auto[u,d]=st2.back();st2.pop_back();part.push_back(d);for(int w:g[u])if(!dead[w]&&w!=par[u]){par[w]=u;st2.push_back({w,d+1});}}
+answer-=countPairs(part);all.insert(all.end(),part.begin(),part.end());}
+answer+=countPairs(all);dead[c]=1;
+for(int v:g[c])if(!dead[v])roots.push_back(v);}
+cout<<answer<<'\\n';`),
     // Counting the pairs inside one branch twice instead of subtracting them: without the correction, two vertices in the same subtree of the centroid are measured as if the path went through it.
     wrong: [cpp(`int n;long long k;cin>>n>>k;
 vector<vector<int>>g(n+1);
@@ -4242,17 +4215,13 @@ while(q--){int l,r;cin>>l>>r;--l;--r;
   },
   "count-binary-no-k-ones": {
     solution: cpp(`long long n,k;cin>>n>>k;const long long M=1000000007;
-// d[i] -- strings of length i with no run of k ones. Subtract the ones that
-// place the first forbidden run starting right after a zero.
-vector<long long>d(n+1,0),pre(n+2,0);
-d[0]=1;pre[1]=1;
-for(long long i=1;i<=n;++i){
- long long v=d[i-1];                 // put a 0 at the end
- // a tail of j ones (1 <= j <= min(i, k-1)) preceded by a 0 or the string start
- for(long long j=1;j<=k-1&&j<=i;++j){
-  if(i-j-1>=0)v=(v+d[i-j-1])%M; else if(i-j==0)v=(v+1)%M;}
- d[i]=v;}
-cout<<d[n]%M<<"\\n";`),
+// E[t+1] = strings of length t with no run of k ones; E[0] = 1 stands for the
+// start of the string. A string of length i ends in a run of j < k ones after
+// a zero (or the start), so E[i+1] is the sum of E[i-m .. i], m = min(i, k-1):
+// a sliding window over prefix sums instead of the O(n*k) inner loop.
+vector<long long>E(n+2,0),P(n+3,0);E[0]=1;E[1]=1;P[1]=1;P[2]=2;
+for(long long i=1;i<=n;++i){long long m=min(i,k-1);E[i+1]=((P[i+1]-P[i-m])%M+M)%M;P[i+2]=(P[i+1]+E[i+1])%M;}
+cout<<E[n+1]%M<<'\\n';`),
     // Forbidding exactly k ones but allowing longer runs, and the plain Fibonacci recurrence that only happens to be right when k is 2.
     wrong: [cpp(`long long n,k;cin>>n>>k;const long long M=1000000007;
 vector<long long>d(n+1,0);d[0]=1;
@@ -6399,18 +6368,19 @@ for(char ch:s){
 cout<<c<<"\\n";`)],
   },
   "dp-count-dice-sums": {
-    solution: cpp(`long long n,f,s;cin>>n>>f>>s;const long long M=1000000007;
-vector<long long>dp(s+1,0);dp[0]=1;
-for(long long i=0;i<n;++i){
- vector<long long>pre(s+2,0);
- for(long long v=0;v<=s;++v)pre[v+1]=(pre[v]+dp[v])%M;
- vector<long long>nd(s+1,0);
- for(long long v=1;v<=s;++v){
-  long long lo=max(0LL,v-f),hi=v-1;
-  if(lo>hi)continue;
-  nd[v]=((pre[hi+1]-pre[lo])%M+M)%M;}
- dp=nd;}
-cout<<dp[s]<<"\\n";`),
+    solution: cpp(`long long n,f,s;cin>>n>>f>>s;const unsigned M=1000000007u;
+// The same prefix-sum DP, with both buffers allocated once, 32-bit cells, a
+// conditional subtraction in place of each modulo, and each round limited to
+// the sums it can reach: the judge compiles without -O2, and at n = f = 500,
+// s = 10^5 the plain version needed most of the time limit.
+if(s<n||s>n*f){cout<<0<<'\\n';return 0;}
+vector<unsigned>dp(s+1,0),pre(s+2,0);dp[0]=1;
+for(long long i=0;i<n;++i){long long top=min(s,i*f);
+ pre[0]=0;for(long long v=0;v<=top;++v){unsigned x=pre[v]+dp[v];pre[v+1]=x>=M?x-M:x;}
+ long long ntop=min(s,(i+1)*f);
+ for(long long v=ntop;v>=0;--v){long long lo=max(0LL,v-f),hi=min(v-1,top);
+  if(hi<lo){dp[v]=0;continue;}unsigned a=pre[hi+1],b=pre[lo];dp[v]=a>=b?a-b:a+M-b;}}
+cout<<dp[s]<<'\\n';`),
     // Letting a die show zero adds outcomes no die can produce; treating the top face as out of reach shrinks every die to f − 1 faces.
     wrong: [cpp(`long long n,f,s;cin>>n>>f>>s;const long long M=1000000007;
 vector<long long>dp(s+1,0);dp[0]=1;

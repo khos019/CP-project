@@ -50,8 +50,80 @@ class R:
 def line(xs):
     return " ".join(map(str, xs))
 
+def text(r, n, alphabet):
+    # Eight characters per 64-bit draw: a million-letter string in a fraction
+    # of a second even on the sandbox's Python. (Appended to the prelude after
+    # the first hashes were stored; R itself is unchanged, so they still hold.)
+    out = []
+    k = len(alphabet)
+    while len(out) < n:
+        x = r.next()
+        for _ in range(8):
+            out.append(alphabet[(x & 255) % k])
+            x >>= 8
+    return "".join(out[:n])
+
+def tree_edges(r, n, kind="random", root_one=False):
+    # A tree on 1..n as (a, b) pairs, labels and edge order shuffled.
+    # random: each vertex hangs off an earlier one (shallow, ~log n deep);
+    # path: one chain (as deep as a tree gets); star; binary.
+    par = [0, 0]
+    for i in range(2, n + 1):
+        if kind == "path":
+            par.append(i - 1)
+        elif kind == "star":
+            par.append(1)
+        elif kind == "binary":
+            par.append(i // 2)
+        else:
+            par.append(r.int(1, i - 1))
+    lab = [0] + ([1] + r.shuffle(list(range(2, n + 1))) if root_one else r.perm(n))
+    edges = []
+    for i in range(2, n + 1):
+        a, b = lab[i], lab[par[i]]
+        edges.append((a, b) if r.int(0, 1) else (b, a))
+    return r.shuffle(edges)
+
+def graph_edges(r, n, m, directed=False, dag=False, connected=True):
+    # m distinct edges, no loops; connected (a spanning tree first) when asked
+    # and when m allows; for a DAG every edge runs forward in a hidden order.
+    order = r.perm(n)
+    seen = set()
+    edges = []
+    def add(a, b):
+        key = (a, b) if directed or dag else (min(a, b), max(a, b))
+        if a == b or key in seen:
+            return False
+        seen.add(key)
+        edges.append((a, b))
+        return True
+    if connected:
+        for i in range(1, n):
+            j = r.int(0, i - 1)
+            a, b = order[j], order[i]
+            if not (directed or dag) and r.int(0, 1):
+                a, b = b, a
+            add(a, b)
+    limit = n * (n - 1) // (1 if directed and not dag else 2)
+    m = min(m, limit)
+    while len(edges) < m:
+        i, j = r.int(0, n - 1), r.int(0, n - 1)
+        if dag:
+            if i == j:
+                continue
+            i, j = min(i, j), max(i, j)
+        add(order[i], order[j])
+    return r.shuffle(edges)
+
+def convex(k):
+    # A strictly convex lattice polygon, counter-clockwise: the arc
+    # y = x² − k² from x = −k to k, then y = k² − x² back. 4k vertices.
+    low = [(x, x * x - k * k) for x in range(-k, k + 1)]
+    high = [(x, k * k - x * x) for x in range(k - 1, -k, -1)]
+    return low + high
+
 def build(code, seed):
-    env = {"R": R, "line": line}
+    env = {"R": R, "line": line, "text": text, "tree_edges": tree_edges, "graph_edges": graph_edges, "convex": convex}
     exec("def gen(r):\n" + "\n".join("    " + l for l in code.split("\n")), env)
     out = env["gen"](R(seed))
     return out if out.endswith("\n") else out + "\n"

@@ -19,8 +19,8 @@
  * there because the judge's VPS is not this machine. */
 
 import { createHash } from "node:crypto";
-import { execFileSync, spawnSync } from "node:child_process";
-import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { spawn } from "node:child_process";
+import { existsSync, mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -62,65 +62,106 @@ function strip(buf) {
 }
 const sha = (buf) => createHash("sha256").update(strip(buf)).digest("hex");
 
-function generate(code, seed) {
-  const script = join(WORK, "gen.py");
+/* Child processes, run asynchronously so several problems are checked at
+   once (JOBS, default 6). Timings are taken per process, so parallel work
+   inflates them a little; MARGIN leaves room for that, and a problem refused
+   for speed can be re-checked alone with --only. */
+function exec(cmd, cmdArgs, { input, timeoutSec } = {}) {
+  return new Promise((resolve) => {
+    const t = process.hrtime.bigint();
+    const child = spawn(cmd, cmdArgs, { stdio: ["pipe", "pipe", "pipe"] });
+    const out = [], err = [];
+    let timedOut = false;
+    const timer = timeoutSec ? setTimeout(() => { timedOut = true; child.kill("SIGKILL"); }, timeoutSec * 1000) : null;
+    child.stdout.on("data", (d) => out.push(d));
+    child.stderr.on("data", (d) => err.push(d));
+    child.stdin.on("error", () => {});
+    child.on("close", (code) => {
+      if (timer) clearTimeout(timer);
+      resolve({ code, timedOut, out: Buffer.concat(out), err: Buffer.concat(err).toString(), seconds: Number(process.hrtime.bigint() - t) / 1e9 });
+    });
+    child.stdin.end(input ?? "");
+  });
+}
+
+let scriptId = 0;
+async function generate(code, seed) {
+  const script = join(WORK, `gen-${process.pid}-${scriptId++}.py`);
   writeFileSync(script, `${GEN_PRELUDE}\nimport sys\nsys.stdout.buffer.write(build(${JSON.stringify(code)}, ${seed}).encode("utf-8"))\n`);
-  return execFileSync("python", ["-I", script], { maxBuffer: 1 << 30 });
+  const r = await exec("python", ["-I", script]);
+  rmSync(script, { force: true });
+  if (r.code !== 0) throw new Error(`generator failed: ${r.err.slice(-400)}`);
+  return r.out;
 }
 
 const compiled = new Map();
 function compile(name, source) {
-  if (compiled.has(source)) return compiled.get(source);
-  const src = join(WORK, `${name}.cpp`), exe = join(WORK, `${name}.exe`);
-  writeFileSync(src, source);
-  execFileSync("g++", ["-std=gnu++17", src, "-o", exe], { stdio: ["ignore", "ignore", "pipe"] });
-  compiled.set(source, exe);
-  return exe;
+  if (!compiled.has(source)) {
+    const src = join(WORK, `${name}.cpp`), exe = join(WORK, `${name}.exe`);
+    writeFileSync(src, source);
+    compiled.set(source, exec("g++", ["-std=gnu++17", src, "-o", exe]).then((r) => {
+      if (r.code !== 0) throw new Error(`${name} does not compile: ${r.err.slice(0, 400)}`);
+      return exe;
+    }));
+  }
+  return compiled.get(source);
 }
 
-function run(exe, input, timeoutSec) {
-  const t = process.hrtime.bigint();
-  const r = spawnSync(exe, [], { input, maxBuffer: 1 << 30, timeout: timeoutSec * 1000 });
-  const seconds = Number(process.hrtime.bigint() - t) / 1e9;
-  return { seconds, out: r.stdout || Buffer.alloc(0), timedOut: r.error?.code === "ETIMEDOUT" || r.signal === "SIGTERM", code: r.status };
-}
+const run = (exe, input, timeoutSec) => exec(exe, [], { input, timeoutSec });
 
 const existing = existsSync(OUT)
   ? Object.fromEntries([...readFileSync(OUT, "utf8").matchAll(/^  ("[^"]+"): (\[.*\]),$/gm)].map((m) => [JSON.parse(m[1]), m[2]]))
   : {};
-const result = { ...existing };
+// A full run rebuilds from the specs alone, so a problem dropped from them is dropped here too.
+const result = only.length ? { ...existing } : {};
 let failed = 0;
 
-for (const [key, spec] of Object.entries(specs)) {
-  if (only.length && !only.includes(key)) continue;
+async function check(key, spec) {
+  const log = [];
   const reference = solutions[key]?.solution;
-  if (!reference) { console.log(`✗ ${key}: no reference solution`); failed++; continue; }
+  if (!reference) return { ok: false, log: [`✗ ${key}: no reference solution`] };
   const limit = CPP_CPU * ((problemCpuSeconds[key] ?? CPP_CPU) / CPP_CPU);
-  const refExe = compile(`ref-${key}`, reference);
-  const slowExes = (spec.slow || []).map((source, i) => compile(`slow-${key}-${i}`, source));
+  const refExe = await compile(`ref-${key}`, reference);
+  const slowExes = await Promise.all((spec.slow || []).map((source, i) => compile(`slow-${key}-${i}`, source)));
   const rows = [];
   let ok = true;
   for (const [i, t] of spec.tests.entries()) {
-    const input = generate(t.code, t.seed);
-    const ref = run(refExe, input, limit * 10);
+    const input = await generate(t.code, t.seed);
+    const ref = await run(refExe, input, limit * 10);
     const digest = sha(ref.out);
     const fast = ref.seconds <= limit * MARGIN;
-    const verdicts = slowExes.map((exe) => {
-      const s = run(exe, input, limit * 3);
-      return s.timedOut || s.seconds > limit ? `TLE ${s.seconds.toFixed(2)}s` : sha(s.out) !== digest ? "WA" : `passes ${s.seconds.toFixed(2)}s`;
-    });
-    console.log(`${fast && ref.code === 0 ? "✓" : "✗"} ${key} #${i + 1}  input ${(input.length / 1024).toFixed(0)} KB  reference ${ref.seconds.toFixed(3)}s / ${limit}s` +
-      (verdicts.length ? `  slow: ${verdicts.join(", ")}` : "") + (t.note ? `  (${t.note})` : ""));
-    if (!fast || ref.code !== 0) ok = false;
+    // The sandbox caps a program's output at 1024 KB; a test whose correct
+    // answer is longer would fail the reference itself.
+    const fits = ref.out.length <= 900 * 1024;
+    const verdicts = [];
+    for (const exe of slowExes) {
+      const s = await run(exe, input, limit * 3);
+      verdicts.push(s.timedOut || s.seconds > limit ? `TLE ${s.seconds.toFixed(2)}s` : sha(s.out) !== digest ? "WA" : `passes ${s.seconds.toFixed(2)}s`);
+    }
+    log.push(`${fast && fits && ref.code === 0 ? "✓" : "✗"} ${key} #${i + 1}  input ${(input.length / 1024).toFixed(0)} KB  output ${(ref.out.length / 1024).toFixed(0)} KB  reference ${ref.seconds.toFixed(3)}s / ${limit}s` +
+      (ref.code !== 0 ? `  exit ${ref.code}` : "") + (verdicts.length ? `  slow: ${verdicts.join(", ")}` : "") + (t.note ? `  (${t.note})` : ""));
+    if (!fast || !fits || ref.code !== 0) ok = false;
     rows.push({ code: t.code, seed: t.seed, sha: digest, passes: verdicts.map((v) => v.startsWith("passes")) });
   }
   // Each slow solution has to fail at least one test, or the tests did not do their job.
   slowExes.forEach((_, j) => {
-    if (rows.every((r) => r.passes[j])) { console.log(`✗ ${key}: slow solution #${j + 1} still passes every generated test`); ok = false; }
+    if (rows.every((r) => r.passes[j])) { log.push(`✗ ${key}: slow solution #${j + 1} still passes every generated test`); ok = false; }
   });
-  if (!ok) { failed++; continue; }
-  result[key] = JSON.stringify(rows.map(({ code, seed, sha }) => ({ code, seed, sha })));
+  return { ok, log, rows };
 }
+
+const queue = Object.entries(specs).filter(([key]) => !only.length || only.includes(key));
+const JOBS = Number(process.env.JOBS) || 6;
+await Promise.all(Array.from({ length: JOBS }, async () => {
+  while (queue.length) {
+    const [key, spec] = queue.shift();
+    let res;
+    try { res = await check(key, spec); } catch (error) { res = { ok: false, log: [`✗ ${key}: ${error.message}`] }; }
+    console.log(res.log.join("\n"));
+    if (!res.ok) { failed++; continue; }
+    result[key] = JSON.stringify(res.rows.map(({ code, seed, sha }) => ({ code, seed, sha })));
+  }
+}));
 
 if (failed) console.log(`\n${failed} problem(s) not written.`);
 if (!checkOnly) {
