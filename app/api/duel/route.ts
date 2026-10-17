@@ -44,6 +44,19 @@ const bad = (error: string, status = 400) => NextResponse.json({ ok: false, erro
    roll back something that already committed. */
 const asString = (value: unknown) => (typeof value === "string" ? value : "");
 
+/* The tab rule, asked of the server (059). The page reports when it leaves the
+   duel screen and when it is back, and the database keeps the account on its
+   own clock — silence counts as absence. This asks it before a submission is
+   judged and on every bot step: over the allowance, the caller forfeits there
+   and then. Anything else — 059 not applied yet, a database hiccup — lets the
+   request through, so the rule can never stop an honest submission. */
+async function awayGate(token: string, matchId: string): Promise<boolean> {
+  const gate = await rpcAsUser<Json>(token, "duel_away_gate", { p_match: matchId });
+  if (!gate.ok || gate.data?.lost !== true) return false;
+  await broadcast([toMatch(matchId, "duel_finished", { duel_id: matchId, reason: "left_tab" })]);
+  return true;
+}
+
 export async function POST(request: Request) {
   const token = bearerFrom(request);
   if (!token) return bad("not_authenticated", 401);
@@ -294,6 +307,10 @@ export async function POST(request: Request) {
       // due by now? An isolate dying between two rounds costs nothing.
       const matchId = asString(body.match_id);
       if (!matchId) return bad("missing_match_id");
+      if (await awayGate(token, matchId)) {
+        const after = await currentState(token);
+        return NextResponse.json({ ok: true, lost: true, ...(after.ok ? { state: after.data } : {}) });
+      }
       const moved = await runBotStep(token, matchId);
       /* The page polls this every few seconds of a bot duel and used to follow
          every answer with a separate `state` request. Answering both in one
@@ -325,6 +342,12 @@ export async function POST(request: Request) {
       if (target.claimed_by_seat !== null && target.claimed_by_seat !== undefined) return bad("round_closed");
       const problemKey = asString(target.problem_key);
       if (!isJudgeableProblem(problemKey)) return bad("problem_not_judgeable", 500);
+
+      // Past the tab allowance the submission is not judged: the duel ends here.
+      if (await awayGate(token, matchId)) {
+        const after = await currentState(token);
+        return NextResponse.json({ ok: false, error: "left_tab", lost: true, ...(after.ok ? { state: after.data } : {}) });
+      }
 
       const seat = Number(duel.my_seat);
       // Sent while the judge works rather than before it: the opponent's

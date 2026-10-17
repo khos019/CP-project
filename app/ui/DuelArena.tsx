@@ -28,7 +28,7 @@ import {
   // Accept and decline are the shell's job, not this screen's: the card can
   // appear anywhere in the app, so the handlers live where it is rendered.
   botStep, cancelSearch, duelRecentResult, duelState, duelTick,
-  forfeitDuel, secondsLeft, startSearch, submitToDuel,
+  forfeitDuel, reportPresence, secondsLeft, startSearch, submitToDuel,
   cancelInvite, inviteFriend, invitesState,
   type ActiveDuel, type DuelResult, type DuelState, type FriendInvite, type IncomingChallenge,
 } from "./duel-client";
@@ -854,6 +854,13 @@ function Arena({
     active: !over,
     graceMs: AWAY_GRACE_MS,
     storageKey: `algoyol-duel-away:${duel.id}`,
+    // The server keeps the real account (059); when it ends the duel the next
+    // state read shows the result.
+    report: useCallback(async (state: "here" | "away" | "back") => {
+      const r = await reportPresence(duel.id, state);
+      if (r?.lost) void refresh();
+      return r;
+    }, [duel.id, refresh]),
     onLose: useCallback(() => {
       onLeftTab();
       void (async () => { await forfeitDuel(duel.id); await refresh(); })();
@@ -1152,7 +1159,8 @@ function RoundEditor({
     const outcome = await submitToDuel(duelId, round, codeLang, code);
     setSending(false);
     if (!outcome || !("verdict" in outcome) || !outcome.verdict) {
-      setVerdict(outcome && "error" in outcome && outcome.error ? String(outcome.error) : "network");
+      setVerdict(outcome && "error" in outcome && outcome.error === "left_tab" ? `⚠ ${t.ruleShort}`
+        : outcome && "error" in outcome && outcome.error ? String(outcome.error) : "network");
       await refresh();
       return;
     }

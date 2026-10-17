@@ -60,6 +60,14 @@
  * left the marker (sessionStorage survives a reload of one tab and nothing
  * else), the page came back in front and focused, and quickly. Close-and-
  * reopen, or switching away while it loads, is charged like any absence.
+ *
+ * THE SERVER KEEPS THE ACCOUNT (059). Everything above runs in the browser,
+ * where localStorage can be edited and the forfeit request blocked. So the tab
+ * that owns the duel also reports to the server — 'away' when it leaves,
+ * 'back' when it returns, 'here' every few seconds while it is on screen — and
+ * the server adds up the absences on its own clock, treats long silence as
+ * absence, and refuses to judge a submission past the allowance. What this hook
+ * decides is now only what the page shows; the server decides the duel.
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -98,7 +106,7 @@ type Shared = {
 const RELOAD_FREE_MS = 15_000;
 
 export function useTabGuard({
-  active, graceMs, onLose, storageKey,
+  active, graceMs, onLose, storageKey, report,
 }: {
   /** Only guards while this is true — a finished duel is not a duel. */
   active: boolean;
@@ -107,6 +115,8 @@ export function useTabGuard({
   onLose: (awaySeconds: number) => void;
   /** Where the shared state lives, in localStorage -- one key per duel. */
   storageKey?: string;
+  /** Tells the server (059). Resolves lost = true once it has ended the duel. */
+  report?: (state: "here" | "away" | "back") => Promise<{ lost: boolean } | null>;
 }): TabGuard {
   const [away, setAway] = useState(false);
   const [strays, setStrays] = useState(0);
@@ -127,6 +137,8 @@ export function useTabGuard({
   // effect below can reach for it.
   const lose = useRef(onLose);
   useEffect(() => { lose.current = onLose; }, [onLose]);
+  const reportRef = useRef(report);
+  useEffect(() => { reportRef.current = report; }, [report]);
 
   useEffect(() => {
     if (!active) return;
@@ -166,6 +178,22 @@ export function useTabGuard({
       lose.current(seconds);
     };
 
+    // The server's answer is the one that counts: when it says the duel is
+    // lost, it is, whatever the local account says.
+    const tell = (state: "here" | "away" | "back") => {
+      const send = reportRef.current;
+      if (!send) return;
+      void send(state).then((r) => { if (r?.lost) give(Math.round(spent.current / 1000)); });
+    };
+
+    /* 'away' goes out after a short delay, and not at all if the page unloads
+       first: unloading raises the same events as leaving, and a reload must not
+       be charged on the server. A reload is short silence, which the server
+       forgives; a closed tab is long silence, which it does not. */
+    let awayNote: number | null = null;
+    const cancelAway = () => { if (awayNote !== null) { window.clearTimeout(awayNote); awayNote = null; return true; } return false; };
+    const noteAway = () => { cancelAway(); awayNote = window.setTimeout(() => { awayNote = null; tell("away"); }, 700); };
+
     const stopTimer = () => {
       if (timer.current !== null) { window.clearTimeout(timer.current); timer.current = null; }
     };
@@ -199,6 +227,7 @@ export function useTabGuard({
       setUsedMs(s.spent);
       setAway(false);
       setElsewhere(false);
+      tell("back");
       if (s.spent >= graceMs) give(Math.round(s.spent / 1000));
     };
     claimRef.current = () => claim();
@@ -228,6 +257,7 @@ export function useTabGuard({
       const now = Date.now();
       leftAt.current = now;
       write({ ...read(), leftAt: now });
+      noteAway();
       setAway(true);
       setAwaySeconds(0);
       startTimer();
@@ -249,6 +279,8 @@ export function useTabGuard({
       leftAt.current = null;
       setAway(false);
       if (at === null || lost.current) return;
+      // A blip shorter than the delay never reached the server; nothing to end.
+      if (!cancelAway()) tell("back");
       const gone = Date.now() - at;
       const s = read();
       spent.current = s.spent + gone;
@@ -298,6 +330,7 @@ export function useTabGuard({
       const now = Date.now();
       const real = leftAt.current !== null && now - leftAt.current > 500 ? s.leftAt : null;
       write({ ...s, owner: null, leftAt: real, pausedAt: now });
+      cancelAway();
       if (reloadKey) try { window.sessionStorage.setItem(reloadKey, String(now)); } catch { /* storage blocked */ }
     };
 
@@ -308,6 +341,13 @@ export function useTabGuard({
     window.addEventListener("pagehide", onPageHide);
 
     // Ticks the visible counter. One second is fine: this only feeds a label.
+    // 'here' while the duel is really in front of the player. The server
+    // treats a long silence as time away, so this is what keeps an honest
+    // player's account clean -- and stopping it is not a way out.
+    const beat = window.setInterval(() => {
+      if (mine && leftAt.current === null && !document.hidden && document.hasFocus()) tell("here");
+    }, 5000);
+
     const tick = window.setInterval(() => {
       if (mine && leftAt.current !== null) {
         const now = Date.now() - leftAt.current;
@@ -346,6 +386,8 @@ export function useTabGuard({
       window.removeEventListener("storage", onStorage);
       window.removeEventListener("pagehide", onPageHide);
       window.clearInterval(tick);
+      window.clearInterval(beat);
+      cancelAway();
       stopTimer();
       // Leaving the arena without leaving the tab is still leaving the duel:
       // free it for whichever tab shows it next, and charge the gap there.

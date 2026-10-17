@@ -12,7 +12,7 @@
  * reconnect all agree without any of them coordinating.
  */
 
-import { ensureFreshToken } from "./session";
+import { ensureFreshToken, supabaseConfig } from "./session";
 
 export type DuelStatus = "idle" | "searching" | "challenge_sent" | "duel_found" | "duel_active";
 
@@ -131,6 +131,32 @@ export const respondInvite = (inviteId: string, accept: boolean) =>
   post<{ ok: boolean; error?: string; accepted?: boolean; duel_id?: string }>({ action: "invite_respond", invite_id: inviteId, accept });
 export const cancelInvite = (inviteId: string) => post<{ ok: boolean }>({ action: "invite_cancel", invite_id: inviteId });
 export const forfeitDuel = (matchId: string) => post<{ ok: boolean }>({ action: "forfeit", match_id: matchId });
+
+/* The tab rule's report to the server (059): 'here' every few seconds while the
+   duel is on screen, 'away' when it leaves, 'back' when it returns. Straight to
+   the database rather than through /api/duel — it is the most frequent call a
+   duel makes, and the Worker has a daily request budget. The database keeps
+   the account on its own clock and answers `lost` once the allowance is gone.
+   keepalive lets an 'away' sent while the page unloads still arrive. Null on
+   any failure, including 059 not applied: the report is best effort, and
+   silence is what the server charges for anyway. */
+export async function reportPresence(matchId: string, state: "here" | "away" | "back"): Promise<{ lost: boolean } | null> {
+  const { url, key } = supabaseConfig();
+  const token = await ensureFreshToken();
+  if (!url || !key || !token) return null;
+  try {
+    const response = await fetch(`${url}/rest/v1/rpc/duel_presence`, {
+      method: "POST", keepalive: true,
+      headers: { apikey: key, Authorization: `Bearer ${token}`, "content-type": "application/json" },
+      body: JSON.stringify({ p_match: matchId, p_state: state }),
+    });
+    if (!response.ok) return null;
+    const data = (await response.json()) as { lost?: boolean };
+    return { lost: data?.lost === true };
+  } catch {
+    return null;
+  }
+}
 
 /** Lets the bot play whatever its schedule says is due. Called by the player's
  *  own polling because Workers cannot hold a timer for twenty minutes — the
