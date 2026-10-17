@@ -345,7 +345,10 @@ export function useTabGuard({
     // treats a long silence as time away, so this is what keeps an honest
     // player's account clean -- and stopping it is not a way out.
     const beat = window.setInterval(() => {
-      if (mine && leftAt.current === null && !document.hidden && document.hasFocus()) tell("here");
+      // Not gated on document.hasFocus(): leaving the window is reported as
+      // 'away' by its own event, and a focus check here only risked silence
+      // -- which the server charges -- for a player still looking at the duel.
+      if (mine && leftAt.current === null && !document.hidden) tell("here");
     }, 5000);
 
     const tick = window.setInterval(() => {

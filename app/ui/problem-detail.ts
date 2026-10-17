@@ -49,14 +49,25 @@ export function fetchProblemDetail(id: string): Promise<ProblemDetail | null> {
   const running = inFlight.get(id);
   if (running) return running;
 
+  /* Three tries, a moment apart. A duel starts the clock the moment it
+     opens, and one dropped request on a school network used to leave its
+     statement unreadable until the player reloaded -- which a duel player is
+     told not to do. A 404 is an answer, not a hiccup, and is not retried. */
   const request = (async () => {
     try {
-      const response = await fetch(`/api/problem?id=${encodeURIComponent(id)}&r=${PROSE_REVISION}`);
-      if (!response.ok) return null;
-      const detail = (await response.json()) as ProblemDetail;
-      cache.set(id, detail);
-      return detail;
-    } catch {
+      for (let attempt = 0; attempt < 3; attempt++) {
+        if (attempt) await new Promise((r) => setTimeout(r, attempt * 1200));
+        try {
+          const response = await fetch(`/api/problem?id=${encodeURIComponent(id)}&r=${PROSE_REVISION}`);
+          if (response.status === 404) return null;
+          if (!response.ok) continue;
+          const detail = (await response.json()) as ProblemDetail;
+          cache.set(id, detail);
+          return detail;
+        } catch {
+          /* network: try again */
+        }
+      }
       return null;
     } finally {
       inFlight.delete(id);
@@ -68,9 +79,9 @@ export function fetchProblemDetail(id: string): Promise<ProblemDetail | null> {
 }
 
 export type DetailState =
-  | { status: "loading"; detail: undefined }
-  | { status: "ready"; detail: ProblemDetail }
-  | { status: "failed"; detail: undefined };
+  | { status: "loading"; detail: undefined; retry: () => void }
+  | { status: "ready"; detail: ProblemDetail; retry: () => void }
+  | { status: "failed"; detail: undefined; retry: () => void };
 
 /* The three states are spelled out rather than collapsed into `detail | null`
    because the page renders each differently: a spinner, the statement, and a
@@ -135,6 +146,7 @@ export function useBankProblem(key: string | null): { problem: BankProblem | und
 
 export function useProblemDetail(id: string | null): DetailState {
   const [settled, setSettled] = useState<{ id: string; ok: boolean } | null>(null);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     if (!id || cache.has(id)) return;
@@ -145,10 +157,12 @@ export function useProblemDetail(id: string | null): DetailState {
       if (live) setSettled({ id, ok: detail !== null });
     });
     return () => { live = false; };
-  }, [id]);
+  }, [id, attempt]);
 
+  // Asked from a "try again" button: forget the failure and fetch afresh.
+  const retry = () => { setSettled(null); setAttempt((n) => n + 1); };
   const held = id ? cache.get(id) : undefined;
-  if (held) return { status: "ready", detail: held };
-  if (id && settled?.id === id && !settled.ok) return { status: "failed", detail: undefined };
-  return { status: "loading", detail: undefined };
+  if (held) return { status: "ready", detail: held, retry };
+  if (id && settled?.id === id && !settled.ok) return { status: "failed", detail: undefined, retry };
+  return { status: "loading", detail: undefined, retry };
 }

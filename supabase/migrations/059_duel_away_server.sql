@@ -16,8 +16,9 @@
 --
 -- Silence counts as absence. A page that stops reporting — a blocked request,
 -- a closed tab, a different site in front — leaves a gap since the last 'here'.
--- A gap longer than presence_gap_ms (20 s, generous enough for a slow
--- connection or a reload) is charged in full, minus the heartbeat interval.
+-- A gap longer than presence_gap_ms (60 s — first shipped as 20 s, raised the
+-- same day after a player was forfeited by a 25 s gap in reports while still
+-- on the page) is charged in full, minus the heartbeat interval.
 -- So blocking the reports does not hide the absence; it creates one. The
 -- one exception is the start: a duel can begin while the player is looking
 -- at another tab (the search ran there), so before the first report the page
@@ -43,7 +44,7 @@ alter table public.duel_match_players
 insert into public.duel_config(key, value, note) values
   ('away_grace_ms',    '5000'::jsonb,  'total time a player may spend off the duel screen'),
   ('presence_beat_ms', '5000'::jsonb,  'how often the duel page reports that it is on screen'),
-  ('presence_gap_ms',  '20000'::jsonb, 'silence longer than this is charged as time away'),
+  ('presence_gap_ms',  '60000'::jsonb, 'silence longer than this is charged as time away'),
   ('presence_first_ms', '60000'::jsonb, 'before the first report, silence is forgiven this long')
 on conflict (key) do nothing;
 

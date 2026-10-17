@@ -1014,7 +1014,10 @@ function Arena({
               {statement.status === "loading" ? (
                 <p className="muted">{tr(lang,"algoYolApp.yuklanmoqda")}</p>
               ) : statement.status === "failed" ? (
-                <p className="muted">{tr(lang,"problem.statementFailed")}</p>
+                <p className="muted">
+                  {lang === "uz" ? "Masala shartini yuklab bo‘lmadi." : "The statement did not load."}{" "}
+                  <button className="secondary" onClick={statement.retry}>{lang === "uz" ? "Qayta yuklash" : "Try again"}</button>
+                </p>
               ) : (
                 <>
                   <p><MathText text={(lang === "uz" ? prose?.statementUz : prose?.statementEn) || ""} /></p>
