@@ -35,7 +35,7 @@ type Json = Record<string, unknown>;
 type Action =
   | "state" | "result" | "heartbeat" | "search" | "tick" | "accept" | "decline"
   | "cancel" | "bot" | "bot_step" | "submit" | "forfeit" | "history"
-  | "invites" | "invite" | "invite_respond" | "invite_cancel";
+  | "invites" | "invite" | "invite_respond" | "invite_cancel" | "end_offer";
 
 const bad = (error: string, status = 400) => NextResponse.json({ ok: false, error }, { status });
 
@@ -389,6 +389,23 @@ export async function POST(request: Request) {
         })]);
       }
       return NextResponse.json(result.data);
+    }
+
+    case "end_offer": {
+      // Ending by agreement (060): offer, accept, decline or withdraw. The
+      // database decides everything; this only tells the other player.
+      const matchId = asString(body.match_id);
+      const act = asString(body.act);
+      if (!matchId || !["offer", "accept", "decline", "cancel"].includes(act)) return bad("invalid_end_offer");
+      const result = await rpcAsUser<Json>(token, "duel_end_offer", { p_match: matchId, p_action: act });
+      if (!result.ok) return bad(result.error, result.status);
+      if (result.data.ok) {
+        await broadcast([result.data.finished
+          ? toMatch(matchId, "duel_finished", { duel_id: matchId, winner_id: result.data.winner_id, reason: "agreed" })
+          : toMatch(matchId, "duel_end_offer", { act })]);
+      }
+      const after = await currentState(token);
+      return NextResponse.json({ ...result.data, ...(after.ok ? { state: after.data } : {}) });
     }
 
     default:

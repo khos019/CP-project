@@ -33,6 +33,7 @@ export type DuelEventName =
   | "submission_received"
   | "submission_result"
   | "duel_finished"
+  | "duel_end_offer"
   | "friend_invite"
   | "friend_invite_answered"
   | "friend_invite_cancelled"

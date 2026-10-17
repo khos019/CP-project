@@ -3202,6 +3202,11 @@ a.editor-escape:hover{color:var(--ink);border-color:var(--line-strong);backgroun
  border-radius:var(--r-lg);padding:var(--s4);display:grid;gap:var(--s2);
 }
 .duel-card h3{margin:0 0 var(--s2);font-size:var(--t-xs);color:var(--dim);font-weight:500}
+/* Ending by agreement (060): an incoming offer is the one card that asks for an answer. */
+.end-offer p{margin:0;font-size:var(--t-xs);line-height:1.5}
+.end-offer.incoming{border-color:color-mix(in srgb,var(--orange) 55%,var(--line));box-shadow:0 0 0 3px color-mix(in srgb,var(--orange) 14%,transparent)}
+.end-offer.incoming b{font-size:var(--t-sm);line-height:1.45}
+.end-offer-actions{display:grid;grid-template-columns:1fr 1fr;gap:var(--s2)}
 .status-line{font-size:var(--t-xs);color:var(--muted);line-height:1.5}
 .feed-time{font-family:var(--font-mono);color:var(--dim)}
 

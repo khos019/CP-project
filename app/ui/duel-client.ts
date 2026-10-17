@@ -41,6 +41,10 @@ export type ActiveDuel = {
   started_at: string; ends_at: string; my_seat: number;
   players: DuelPlayer[]; rounds_detail: DuelRound[];
   my_submissions: DuelActivity[]; opponent_activity: DuelActivity[];
+  /** 060: a standing offer to end the duel by agreement, and when this
+      player may offer again after a declined one. Absent before 060. */
+  end_offer?: { seat: number; at: string } | null;
+  end_blocked_until?: string | null;
 };
 export type DuelState = {
   status: DuelStatus;
@@ -131,6 +135,8 @@ export const respondInvite = (inviteId: string, accept: boolean) =>
   post<{ ok: boolean; error?: string; accepted?: boolean; duel_id?: string }>({ action: "invite_respond", invite_id: inviteId, accept });
 export const cancelInvite = (inviteId: string) => post<{ ok: boolean }>({ action: "invite_cancel", invite_id: inviteId });
 export const forfeitDuel = (matchId: string) => post<{ ok: boolean }>({ action: "forfeit", match_id: matchId });
+export const endOffer = (matchId: string, act: "offer" | "accept" | "decline" | "cancel") =>
+  post<{ ok: boolean; error?: string; until?: string; finished?: boolean; state?: DuelState }>({ action: "end_offer", match_id: matchId, act });
 
 /* The tab rule's report to the server (059): 'here' every few seconds while the
    duel is on screen, 'away' when it leaves, 'back' when it returns. Straight to

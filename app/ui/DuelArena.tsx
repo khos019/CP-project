@@ -28,7 +28,7 @@ import {
   // Accept and decline are the shell's job, not this screen's: the card can
   // appear anywhere in the app, so the handlers live where it is rendered.
   botStep, cancelSearch, duelRecentResult, duelState, duelTick,
-  forfeitDuel, reportPresence, secondsLeft, startSearch, submitToDuel,
+  endOffer, forfeitDuel, reportPresence, secondsLeft, startSearch, submitToDuel,
   cancelInvite, inviteFriend, invitesState,
   type ActiveDuel, type DuelResult, type DuelState, type FriendInvite, type IncomingChallenge,
 } from "./duel-client";
@@ -118,6 +118,11 @@ const T = {
     tooLate: "Kech qoldingiz — raqibni boshqa o‘yinchi oldi.", expired: "Chaqiriq muddati tugadi.",
     vs: "qarshi", you: "Siz", bot: BOT_NAME, points: "ball", locked: "Qulflangan", open: "Ochiq",
     submit: "Yuborish", judging: "Tekshirilmoqda…", forfeit: "Taslim bo‘lish",
+    endOffer: "Duelni tugatishni taklif qilish", endHint: "Ikkalangiz rozi bo‘lsangiz, duel hozirgi hisob bilan tugaydi.",
+    endOffered: "Taklif yuborildi — raqib javobini kutyapmiz.", endCancel: "Taklifni qaytarib olish",
+    endIncoming: "Raqib duelni shu holatda tugatishni taklif qilyapti.", endAccept: "Qabul qilish", endDecline: "Rad etish",
+    endIf: (me: number, them: number) => `Hozirgi hisob ${me} : ${them} — qabul qilsangiz, ${me > them ? "siz yutasiz" : me < them ? "siz yutqazasiz" : "durang bo‘ladi"}.`,
+    endCooldown: (sec: number) => `Taklif rad etildi. Qayta taklif qilish ${sec} soniyadan keyin.`,
     won: "G‘alaba!", lost: "Mag‘lubiyat", draw: "Durang", rematch: "Yangi duel", leave: "Chiqish",
     ratingChange: "Reyting o‘zgarishi", unrated: "Bu duel reytingga ta’sir qilmadi",
     opponentSolved: "raqib yechdi", youSolved: "siz yechdingiz", opponentTried: "raqib urinib ko‘rdi",
@@ -172,6 +177,11 @@ const T = {
     tooLate: "Too slow — another player took this opponent.", expired: "The challenge expired.",
     vs: "vs", you: "You", bot: BOT_NAME, points: "points", locked: "Locked", open: "Open",
     submit: "Submit", judging: "Judging…", forfeit: "Forfeit",
+    endOffer: "Offer to end the duel", endHint: "If you both agree, the duel ends on the current score.",
+    endOffered: "Offer sent — waiting for your opponent.", endCancel: "Withdraw the offer",
+    endIncoming: "Your opponent offers to end the duel as it stands.", endAccept: "Accept", endDecline: "Decline",
+    endIf: (me: number, them: number) => `The score is ${me} : ${them} — accept and ${me > them ? "you win" : me < them ? "you lose" : "it is a draw"}.`,
+    endCooldown: (sec: number) => `Offer declined. You can offer again in ${sec} s.`,
     won: "You won!", lost: "You lost", draw: "Draw", rematch: "New duel", leave: "Leave",
     ratingChange: "Rating change", unrated: "This duel did not affect your rating",
     opponentSolved: "opponent solved", youSolved: "you solved", opponentTried: "opponent attempted",
@@ -1065,6 +1075,9 @@ function Arena({
               <p className="muted" style={{ fontSize: 13 }}>—</p>
             )}
           </div>
+          {duel.mode !== "bot" && !over && (
+            <EndOfferCard lang={lang} duel={duel} myScore={me?.score ?? 0} theirScore={them?.score ?? 0} refresh={refresh} />
+          )}
           <div className="duel-card">
             <button className="secondary" onClick={async () => { await forfeitDuel(duel.id); await refresh(); }}>
               {t.forfeit}
@@ -1073,6 +1086,66 @@ function Arena({
         </aside>
       </div>
     </>
+  );
+}
+
+/* Ending a duel by agreement (060), like a draw offer in chess: one player
+ * offers, the other accepts or declines. Accepted, the duel finishes on the
+ * score as it stands — so the card says what accepting would mean before
+ * anyone presses it. A declined offer locks its author out for two minutes,
+ * shown as a countdown. Only between two people: the bot has no say. */
+function EndOfferCard({ lang, duel, myScore, theirScore, refresh }: {
+  lang: Lang; duel: ActiveDuel; myScore: number; theirScore: number; refresh: (known?: DuelState) => Promise<void>;
+}) {
+  const t = T[lang];
+  const [busy, setBusy] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
+  const blockedUntil = duel.end_blocked_until ? Date.parse(duel.end_blocked_until) : 0;
+  const wait = Math.max(0, Math.ceil((blockedUntil - now) / 1000));
+  useEffect(() => {
+    if (wait <= 0) return;
+    const id = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(id);
+  }, [wait]);
+  // 060 not applied: the state has no such fields and the card stays away.
+  if (duel.end_offer === undefined) return null;
+  const offer = duel.end_offer;
+  const send = async (act: "offer" | "accept" | "decline" | "cancel") => {
+    if (busy) return;
+    setBusy(true);
+    try {
+      const r = await endOffer(duel.id, act);
+      await refresh(r && "state" in r && r.state ? r.state : undefined);
+    } finally {
+      setBusy(false);
+      setNow(Date.now());
+    }
+  };
+  if (offer && offer.seat !== duel.my_seat) {
+    return (
+      <div className="duel-card end-offer incoming" role="alert">
+        <b>{t.endIncoming}</b>
+        <p className="muted">{t.endIf(myScore, theirScore)}</p>
+        <div className="end-offer-actions">
+          <button className="primary" disabled={busy} onClick={() => void send("accept")}>{t.endAccept}</button>
+          <button className="secondary" disabled={busy} onClick={() => void send("decline")}>{t.endDecline}</button>
+        </div>
+      </div>
+    );
+  }
+  if (offer) {
+    return (
+      <div className="duel-card end-offer">
+        <p className="muted">{t.endOffered}</p>
+        <button className="secondary" disabled={busy} onClick={() => void send("cancel")}>{t.endCancel}</button>
+      </div>
+    );
+  }
+  return (
+    <div className="duel-card end-offer">
+      <button className="secondary" disabled={busy || wait > 0} onClick={() => void send("offer")}>{t.endOffer}</button>
+      <p className="muted">{wait > 0 ? t.endCooldown(wait) : t.endHint}</p>
+    </div>
   );
 }
 
