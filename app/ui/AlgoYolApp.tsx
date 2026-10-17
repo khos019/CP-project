@@ -52,6 +52,7 @@ import {
  fetchProfile, fetchUnreadCount, readScoped, readStoredUserId, readToken, removeScoped, searchPeople, setScope,
  verifyStoredSession,
  storeSession, supabaseReady, writeScoped, type LeaderRow, type Profile, type Role,
+  logPageView,
 } from "./session";
 
 type Lang="uz"|"en"; type View="home"|"roadmaps"|"roadmap"|"problems"|"problem"|"problem-submissions"|"duel"|"leaderboard"|"profile"|"auth"|"admin"|"placement"|"stats"|"users"|"messages"|"person"|"shop"|"friends"|"submissions"|"person-submissions"|"person-duels"|"person-friends"|"site-submissions"|"shop-orders"|"duel-history"|"playground"|"contests"|"notfound";
@@ -302,7 +303,12 @@ const wasDone=!!data.solved[lesson]&&(data.quizScores[lesson]||0)>=70;data.solve
  useEffect(()=>{activeProblemRef.current=activeProblem},[activeProblem]);
  useEffect(()=>{codeLangRef.current=codeLang},[codeLang]);
  const screenRef=useRef<Screen>(typeof window==="undefined"?{view:"home",roadmap:"foundations",unit:null,person:null,problem:null}:pathToScreen(window.location.pathname)),navDepth=useRef(0);
+ /* One page view per screen opened (058). The same address twice in a row — a
+    re-apply of the screen already showing — is not a second view. */
+ const lastViewed=useRef<string|null>(null);
+ const countView=(path:string)=>{if(path===lastViewed.current)return;lastViewed.current=path;logPageView()};
  const applyScreen=(s:Screen)=>{
+  countView(screenToPath(s));
   screenRef.current=s;setView(s.view);setSelectedRoadmap(s.roadmap);setSelectedUnit(s.unit);setPerson(s.person);setContest(s.contest??null);setContestTab(s.contestTab??"problems");
   /* The address names the problem, so a reload lands on it with its draft.
      Without this the problem screen restored to problems[0] and quietly threw
@@ -383,7 +389,7 @@ const wasDone=!!data.solved[lesson]&&(data.quizScores[lesson]||0)>=70;data.solve
      can be shared, and this replaceState — which runs first, on mount — used
      to drop them: /problems?difficulty=insane&q=fib arrived as a plain,
      unfiltered /problems before the list could read either one. */
-  const landing=screenToPath(screenRef.current);
+  const landing=screenToPath(screenRef.current);countView(landing);
   window.history.replaceState(screenRef.current,"",
    landing===window.location.pathname?landing+window.location.search:landing);const onPop=(e:PopStateEvent)=>{const st=e.state as Screen|null;applyScreen(st&&typeof st==="object"&&"view" in st?st:pathToScreen(window.location.pathname));navDepth.current=Math.max(0,navDepth.current-1)};window.addEventListener("popstate",onPop);return()=>window.removeEventListener("popstate",onPop)},[]); const applyLang=(n:Lang)=>{setLang(n);localStorage.setItem("algoyol-lang",n)};
 

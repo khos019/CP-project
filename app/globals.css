@@ -4561,6 +4561,7 @@ a.cx-prow:hover .cx-pname b{text-decoration:underline;text-underline-offset:3px}
 .os-tile.tone-orange{--tone:var(--orange)}
 .os-tile.tone-violet{--tone:#9b6bff}
 .os-footnote{font-size:12.5px;line-height:1.6;margin:var(--s2) 0 0;max-width:80ch}
+.os-views-chart{margin-top:var(--s3)}
 .os-footnote b{color:var(--muted)}
 
 .os-charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(380px,1fr));gap:var(--s4);margin-bottom:var(--s6)}

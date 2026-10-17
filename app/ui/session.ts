@@ -702,6 +702,25 @@ export type OnlineUser = {
   id: string; username: string; display_name: string; duel_rating: number; role: string;
   seconds_ago: number; online: boolean; in_duel: boolean;
 };
+/* One screen opened (058). Fire-and-forget with the public key, so visitors
+   who never sign in count too; a failure (058 not applied, offline) is
+   dropped rather than retried — a missed view is not worth a second request.
+   keepalive lets the request finish when the screen change is a page unload. */
+export function logPageView(): void {
+  const { url, key } = supabaseConfig();
+  if (!url || !key || typeof window === "undefined") return;
+  void fetch(`${url}/rest/v1/rpc/log_page_view`, {
+    method: "POST", keepalive: true,
+    headers: { apikey: key, Authorization: `Bearer ${key}`, "content-type": "application/json" },
+    body: "{}",
+  }).catch(() => {});
+}
+
+export type OwnerPageViews = {
+  today: number; d7: number; d30: number; all: number; since: string | null;
+  daily: { day: string; views: number }[];
+};
+export const fetchOwnerPageViews = () => rpc<OwnerPageViews>("owner_page_views");
 export const fetchOwnerOnline = () => rpc<{ window_seconds: number; now: string; users: OnlineUser[] }>("owner_online_users");
 export const markThreadRead = (otherId: string) => rpc<number>("mark_thread_read", { p_other: otherId });
 

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { tr, catalogue } from "./i18n";
 import { roadmapCatalog } from "./roadmap-data";
-import { fetchOwnerStats, fetchOwnerDuelStats, fetchOwnerOnline, type OnlineUser, type OwnerStats as Stats, type OwnerDuelStats } from "./session";
+import { fetchOwnerStats, fetchOwnerDuelStats, fetchOwnerOnline, fetchOwnerPageViews, type OnlineUser, type OwnerStats as Stats, type OwnerDuelStats, type OwnerPageViews } from "./session";
 
 type Lang = "uz" | "en";
 
@@ -123,12 +123,15 @@ export function OwnerStats({ lang, goProfile, onPickDay, onOpenPerson }: {
   const [state, setState] = useState<"loading" | "ready" | "not-migrated" | "forbidden" | "error">("loading");
   /* undefined while loading, null when 053 is not applied (or the read failed). */
   const [duels, setDuels] = useState<OwnerDuelStats | null | undefined>(undefined);
+  /* undefined while loading, null when 058 is not applied. */
+  const [views, setViews] = useState<OwnerPageViews | null | undefined>(undefined);
 
   /* The read is shared by the first load and the refresh button, but only the
      button needs to announce it: on mount the screen is already in "loading",
      so setting it again was a second render that painted the same thing. */
   const read = () => {
     void fetchOwnerDuelStats().then(setDuels);
+    void fetchOwnerPageViews().then((r) => setViews(r.ok ? r.data : null));
     return fetchOwnerStats().then((result) => {
       if (result.ok) {
         setStats(result.stats);
@@ -191,7 +194,7 @@ export function OwnerStats({ lang, goProfile, onPickDay, onOpenPerson }: {
       )}
 
       {state === "ready" && <OnlineNow lang={lang} t={t} onOpenPerson={onOpenPerson} />}
-      {state === "ready" && stats && <StatsBody lang={lang} t={t} stats={stats} duels={duels} onPickDay={onPickDay} />}
+      {state === "ready" && stats && <StatsBody lang={lang} t={t} stats={stats} duels={duels} views={views} onPickDay={onPickDay} />}
     </>
   );
 }
@@ -215,8 +218,9 @@ const IC: Record<string, string> = {
   swords: "M14.5 17.5 3 6V3h3l11.5 11.5M13 19l6-6M16 16l4 4M19 21l2-2M9.5 14.5 6 18M5 17l2 2",
 };
 
-function StatsBody({ lang, t, stats, duels, onPickDay }: {
-  lang: Lang; t: (typeof T)["uz"]; stats: Stats; duels: OwnerDuelStats | null | undefined; onPickDay: (day: string) => void;
+function StatsBody({ lang, t, stats, duels, views, onPickDay }: {
+  lang: Lang; t: (typeof T)["uz"]; stats: Stats; duels: OwnerDuelStats | null | undefined;
+  views: OwnerPageViews | null | undefined; onPickDay: (day: string) => void;
 }) {
   const langRows = useMemo(
     () => Object.entries(stats.by_language || {}).sort((a, b) => b[1] - a[1]),
@@ -293,6 +297,26 @@ function StatsBody({ lang, t, stats, duels, onPickDay }: {
           })}
         </div>
         <p className="muted os-footnote">{t.duelsNote}</p>
+      </section>
+
+      {/* Page views (058): one per screen opened. A dash until it is known. */}
+      <section className="os-section">
+        <h2 className="os-h2">{t.views}</h2>
+        {views === null && <div className="notice notice-info">{t.viewsNotMigrated}</div>}
+        <div className="os-tiles">
+          <Tile icon="eye" label={t.viewsToday} value={views ? views.today : "—"} />
+          <Tile icon="eye" label={t.views7} value={views ? views.d7 : "—"} />
+          <Tile icon="eye" label={t.views30} value={views ? views.d30 : "—"} />
+          <Tile icon="eye" label={t.viewsAll} value={views ? views.all : "—"}
+            hint={views?.since ? fill(t.viewsSince, { d: dayLabel(views.since, lang) }) : undefined} />
+        </div>
+        {views && views.daily?.length > 0 && (
+          <div className="panel os-views-chart">
+            <DayBars lang={lang} t={t} title={t.viewsChart} hint={t.viewsChartHint} emptyText={t.viewsNone}
+              series={views.daily.map((d) => ({ day: d.day, value: d.views }))} format={(v) => String(v)} />
+          </div>
+        )}
+        <p className="muted os-footnote">{t.viewsNote}</p>
       </section>
 
       <div className="os-charts">
