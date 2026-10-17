@@ -1418,8 +1418,12 @@ body{background:var(--bg);min-height:calc(100 * var(--vh))}
    The overlay and the textarea must agree on every metric that affects glyph
    position — font, size, line-height, padding, tab-size, wrapping, border —
    or the colours drift away from the characters. Both inherit .ide-layer. */
-.ide-stack{position:relative;flex:1;min-width:0;min-height:340px;display:grid}
-.ide-layer{grid-area:1/1;margin:0;padding:14px 16px;border:0;
+/* Both layers are white-space:pre, so their min-content width is the longest
+   line of code. Left at min-width:auto, one long line widened the whole editor
+   past its column — in a duel, under the live feed beside it. The stack and its
+   layers are pinned to the column; a long line scrolls inside the editor. */
+.ide-stack{position:relative;flex:1;min-width:0;min-height:340px;display:grid;grid-template-columns:minmax(0,1fr)}
+.ide-layer{grid-area:1/1;min-width:0;margin:0;padding:14px 16px;border:0;
  font-family:var(--font-mono);font-size:13px;line-height:1.65;letter-spacing:normal;
  white-space:pre;tab-size:4;overflow:auto}
 .ide-highlight{pointer-events:none;color:color-mix(in srgb,var(--muted) 24%,var(--ink));background:transparent;z-index:0}
@@ -1456,7 +1460,7 @@ body{background:var(--bg);min-height:calc(100 * var(--vh))}
    width:var(--duel-w);margin-left:calc((min(1240px,calc(100 * var(--vw))) - 48px - var(--duel-w)) / 2)}
 }
 
-.duel-code{display:grid;gap:12px;min-width:0}
+.duel-code{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;min-width:0}
 .duel-code .ide{margin:0}
 .duel-console{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .dc-pane{background:var(--bg);border:1px solid var(--line);border-radius:13px;padding:11px 12px;min-width:0}

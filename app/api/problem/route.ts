@@ -21,9 +21,25 @@ import { NextResponse } from "next/server";
  * a day behind the old one. Bump it there when the prose changes.
  */
 import { problemDetails } from "./details";
+import { bankProblems } from "../../ui/problem-bank";
 
+/* `?key=<judge key>` answers with the problem's index row as well as its prose.
+ * A duel hands out problems by judge key, and a tab opened before a deploy
+ * carries the old bundled index: when the round's key is newer than that tab,
+ * the arena used to say "problem not found" in the middle of a duel. It asks
+ * here instead. Not cached at the edge for long, because "a key the bundle does
+ * not know" is exactly the moment the bank has just changed. */
 export async function GET(request: Request) {
-  const id = new URL(request.url).searchParams.get("id");
+  const params = new URL(request.url).searchParams;
+  const key = params.get("key");
+  if (key) {
+    const row = bankProblems.find((p) => p.judge === key);
+    const detail = row ? problemDetails[row.id] : undefined;
+    if (!row || !detail) return NextResponse.json({ error: "No such problem" }, { status: 404 });
+    return NextResponse.json({ row, detail }, { headers: { "cache-control": "public, max-age=300" } });
+  }
+
+  const id = params.get("id");
   const detail = id ? problemDetails[id] : undefined;
 
   if (!detail) {

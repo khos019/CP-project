@@ -20,7 +20,8 @@
  */
 
 import { useEffect, useState } from "react";
-import type { ProblemDetail } from "./problem-bank";
+import { bankProblems } from "./problem-bank";
+import type { BankProblem, ProblemDetail } from "./problem-bank";
 
 /* The statement of a problem is cached by the browser for a day
    (`cache-control: max-age=86400` on /api/problem), which is right for prose
@@ -88,6 +89,50 @@ export type DetailState =
    `id` may be null: the duel asks for its round's problem, and there is a
    render before the round is known. That reads as "loading", which is what it
    is — the caller has nothing to show either way. */
+/* A problem by judge key, the way a duel hands it out. Normally it is in the
+   bundled index; a tab opened before a deploy that added problems does not
+   have the newer ones, and that tab used to show "problem not found" mid-duel.
+   Such a key is fetched from /api/problem?key=, which returns the index row and
+   the statement together, so the statement is cached on the way. */
+const fetchedRows = new Map<string, BankProblem>();
+const rowsInFlight = new Map<string, Promise<void>>();
+
+export function knownProblem(key: string): BankProblem | undefined {
+  return bankProblems.find((p) => p.judge === key) ?? fetchedRows.get(key);
+}
+
+export function useBankProblem(key: string | null): { problem: BankProblem | undefined; missing: boolean } {
+  const [failed, setFailed] = useState<string | null>(null);
+  const [, bump] = useState(0);
+  const problem = key ? knownProblem(key) : undefined;
+
+  useEffect(() => {
+    if (!key || knownProblem(key)) return;
+    let live = true;
+    let request = rowsInFlight.get(key);
+    if (!request) {
+      request = (async () => {
+        try {
+          const response = await fetch(`/api/problem?key=${encodeURIComponent(key)}`);
+          if (!response.ok) return;
+          const body = (await response.json()) as { row: BankProblem; detail: ProblemDetail };
+          fetchedRows.set(key, body.row);
+          cache.set(body.row.id, body.detail);
+        } catch {
+          /* reported below as missing */
+        } finally {
+          rowsInFlight.delete(key);
+        }
+      })();
+      rowsInFlight.set(key, request);
+    }
+    void request.then(() => { if (!live) return; if (knownProblem(key)) bump((n) => n + 1); else setFailed(key); });
+    return () => { live = false; };
+  }, [key]);
+
+  return { problem, missing: !!key && !problem && failed === key };
+}
+
 export function useProblemDetail(id: string | null): DetailState {
   const [settled, setSettled] = useState<{ id: string; ok: boolean } | null>(null);
 

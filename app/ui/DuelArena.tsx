@@ -16,8 +16,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { tr } from "./i18n";
-import { bankProblems } from "./problem-bank";
-import { useProblemDetail } from "./problem-detail";
+import { knownProblem, useBankProblem, useProblemDetail } from "./problem-detail";
 import { CodeEditor } from "./CodeEditor";
 import { readDraft, writeDraft } from "./drafts";
 import { useTabGuard } from "./duel-guard";
@@ -60,7 +59,7 @@ const AWAY_GRACE_MS = 5_000;
 const clock = (total: number) =>
   `${String(Math.floor(Math.max(0, total) / 60)).padStart(2, "0")}:${String(Math.floor(Math.max(0, total)) % 60).padStart(2, "0")}`;
 
-const problemFor = (key: string) => bankProblems.find((p) => p.judge === key);
+const problemFor = (key: string) => knownProblem(key);
 const seatOf = (duel: ActiveDuel, seat: number) => duel.players.find((p) => p.seat === seat);
 /* The bot has a name now. It used to appear as "🤖 AI raqib" — a label with
    an emoji where an opponent's name goes, which reads like a placeholder that
@@ -836,7 +835,7 @@ function Arena({
     return () => { live = false; window.clearInterval(id); };
   }, [duel.id, duel.mode, refresh]);
 
-  const problem = round ? problemFor(round.problem_key) : undefined;
+  const { problem, missing: problemMissing } = useBankProblem(round ? round.problem_key : null);
   /* The bank index knows the title, rating and difficulty of every problem;
      the statement itself is fetched one at a time from /api/problem, so a duel
      no longer costs the reader every other statement in the bank. The round is
@@ -1037,7 +1036,7 @@ function Arena({
               />
             </div>
           ) : (
-            <p className="muted">{t.noProblem}</p>
+            <p className="muted">{problemMissing || !round ? t.noProblem : tr(lang,"algoYolApp.yuklanmoqda")}</p>
           )}
         </section>
 
