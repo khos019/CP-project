@@ -245,3 +245,9 @@ export function clearedUnits(slug:string):number{
  const p=loadPlacement();
  return p?Math.max(0,p.cleared[slug]||0):0;
 }
+
+/* Every roadmap section and every stage inside it is open to everyone
+   (2026-10-17, at the owner's request). Mastery and the prerequisite order
+   still drive the suggestions and the progress shown; they no longer lock
+   anything. Set to false to bring the locks back. */
+export const ALL_SECTIONS_OPEN = true;

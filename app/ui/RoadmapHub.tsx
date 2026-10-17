@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { tr, catalogue } from "./i18n";
 import { LockIcon } from "./icons";
 import { roadmapCatalog, type LessonUnit, type MasteryRoadmap } from "./roadmap-data";
-import { MASTERY_CONFIG, useMastery, type MasteryStore } from "./mastery";
+import { MASTERY_CONFIG, ALL_SECTIONS_OPEN, useMastery, type MasteryStore } from "./mastery";
 import { readLocal } from "./progress";
 import { can } from "./permissions";
 import type { Role } from "./AlgoYolApp";
@@ -32,7 +32,11 @@ export const sectionValidatedOnly=(r:MasteryRoadmap,p:Progress,m:MasteryView)=>!
 export const roadmapStatus=(r:MasteryRoadmap,p:Progress,m:MasteryView,canReviewAll=false):Status=>{
  if(sectionDone(r,p,m))return "completed";
  const open=r.prereqs.every(s=>{const pre=bySlug(s);return !pre||sectionDone(pre,p,m)});
- if(!canReviewAll&&!open&&(m.scores[r.slug]||0)<MASTERY_CONFIG.unlock)return "locked";
+ /* Every section is open to everyone (2026-10-17): the owner asked that the
+    whole map be readable without clearing the sections before it. The
+    prerequisite order still shapes the map and the suggestions; it no longer
+    locks anything. Flip ALL_SECTIONS_OPEN to bring the locks back. */
+ if(!ALL_SECTIONS_OPEN&&!canReviewAll&&!open&&(m.scores[r.slug]||0)<MASTERY_CONFIG.unlock)return "locked";
  return r.units.some(u=>unitDone(p,u)||(p.quizScores[u.id]||0)>0)?"in-progress":"available";
 };
 
@@ -87,7 +91,7 @@ export function RoadmapHub({lang,role,openRoadmap}:{lang:Lang;role:Role;openRoad
   </div>
   <div className="rm-toolbar">
    <input className="rm-search" value={query} onChange={e=>setQuery(e.target.value)} placeholder={t.search} aria-label={t.search}/>
-   <div className="filters">{(["all","completed","in-progress","available","locked"] as const).map(f=><button key={f} className={statusFilter===f?"active":""} onClick={()=>setStatusFilter(f)}>{f==="all"?t.all:statusLabel(f,lang)}</button>)}</div>
+   <div className="filters">{(["all","completed","in-progress","available","locked"] as const).filter(f=>!(ALL_SECTIONS_OPEN&&f==="locked")).map(f=><button key={f} className={statusFilter===f?"active":""} onClick={()=>setStatusFilter(f)}>{f==="all"?t.all:statusLabel(f,lang)}</button>)}</div>
    <div className="rm-toggle"><button className={view==="path"?"active":""} onClick={()=>setView("path")}>{t.path}</button><button className={view==="map"?"active":""} onClick={()=>setView("map")}>{t.map}</button></div>
   </div>
   {view==="path"?<div className="rm-tree">
