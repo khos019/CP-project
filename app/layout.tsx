@@ -22,6 +22,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     // data-theme is rewritten by the head script before first paint when a dark
     // choice is stored, so the server's "light" may differ from the attribute
     // React hydrates against — hence suppressHydrationWarning on <html> only.
+    // trash
     <html lang="uz" data-theme="light" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
