@@ -163,7 +163,7 @@ export const dataStructuresLessons: Record<string, DeepLesson> = {
         en: "Popping an empty stack crashes the program. If a closing bracket arrives with an empty stack the answer is immediately no: there is nothing to close." },
       { from: 10, to: 12, uz: "Turlarni solishtirish. ( ni ] bilan yopib bo‘lmaydi — shuning uchun faqat «bo‘shmi» emas, «MOSMI» degan savol ham beriladi.",
         en: "Comparing the kinds. A ( cannot be closed by a ], so the question is not only “is it empty” but “does it MATCH”." },
-      { from: 16, uz: "Oxirgi tekshiruv shart: «(((» satrida hech qanday xato yuz bermaydi, lekin stek bo‘sh qolmaydi — demak javob «yo‘q».",
+      { from: 15, uz: "Oxirgi tekshiruv shart: «(((» satrida hech qanday xato yuz bermaydi, lekin stek bo‘sh qolmaydi — demak javob «yo‘q».",
         en: "The final check is essential: the string “(((” triggers no error along the way, yet leaves the stack non-empty — so the answer is no." },
     ]},
   { t: "exercise",

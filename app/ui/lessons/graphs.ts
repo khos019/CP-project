@@ -1094,7 +1094,7 @@ export const graphsLessons: Record<string, DeepLesson> = {
 "graphs-15": { sections: [
  { titleUz: "DAG — DP ning tabiiy uyi", titleEn: "A DAG is DP's natural home", blocks: [
   { t: "p",
-    uz: "Yo‘naltirilgan asiklik grafda (DAG) bir narsa kafolatlangan: qaerdan boshlasangiz ham, orqaga qaytmaysiz. Bu esa DP uchun ideal shart — «kichikroq masalalar avval hal bo‘ladi» degan tartib grafning O‘ZIDA mavjud. Topologik tartib bo‘yicha yursangiz, har tugunga kelganda uning barcha «oldingilari» allaqachon hisoblangan bo‘ladi.",
+    uz: "Yo‘naltirilgan asiklik grafda (DAG) bir narsa kafolatlangan: qayerdan boshlasangiz ham, orqaga qaytmaysiz. Bu esa DP uchun ideal shart — «kichikroq masalalar avval hal bo‘ladi» degan tartib grafning O‘ZIDA mavjud. Topologik tartib bo‘yicha yursangiz, har tugunga kelganda uning barcha «oldingilari» allaqachon hisoblangan bo‘ladi.",
     en: "In a directed acyclic graph one thing is guaranteed: wherever you start, you never come back. That is the ideal condition for DP — the order “smaller subproblems first” is built into the graph itself. Walk in topological order and, on reaching a vertex, all its predecessors are already computed." },
   { t: "note", kind: "key",
     uz: "Bu ikki tomonlama fikr: DAG masalasini DP bilan yechish mumkin, VA har qanday DP masalasi aslida DAG bo‘ylab yurish. dp[i] ni tugun, «dp[i] dp[j] ga bog‘liq» munosabatini qirra deb qarasangiz, DP jadvali — bu DAG. Shuning uchun bu bosqich dinamik dasturlash bo‘limining ko‘prigi.",

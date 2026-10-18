@@ -896,7 +896,7 @@ export const programmingBasicsLessons: Record<string, DeepLesson> = {
     captionUz: "1 << k — «k-o‘rinda bitta bit yoqilgan son». Bu barcha bit naqshlarining asosi.",
     captionEn: "1 << k means “the number with a single bit set at position k”. It is the basis of every idiom here." },
   { t: "note", kind: "warn",
-    uz: "1 << k da k ≥ 31 bo‘lsa int dan toshadi. Katta suriishlar uchun 1LL << k yozing. Bu ayniqsa n ≤ 40 bo‘lgan bitmask masalalarida muhim.",
+    uz: "1 << k da k ≥ 31 bo‘lsa int dan toshadi. Katta surishlar uchun 1LL << k yozing. Bu ayniqsa n ≤ 40 bo‘lgan bitmask masalalarida muhim.",
     en: "In 1 << k, a k of 31 or more overflows the int. For large shifts write 1LL << k. This matters most in bitmask problems where n can reach 40." },
   { t: "p",
     uz: "XOR ning ikkita ajoyib xossasi bor: x ^ x = 0 va x ^ 0 = x. Shundan mashhur masala kelib chiqadi: massivda har bir son ikki martadan uchraydi, faqat bittasi bitta marta — o‘shani toping. Hammasini XOR qilsangiz, juftlar o‘zaro yo‘q bo‘ladi va faqat yolg‘iz son qoladi. Xotira O(1), vaqt O(n).",

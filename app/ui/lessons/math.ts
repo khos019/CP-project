@@ -154,9 +154,9 @@ export const mathLessons: Record<string, DeepLesson> = {
     en: "Plain Euclid finds gcd(a, b). The extended version gives more: it finds integers x and y with a·x + b·y = gcd(a, b). This is Bézout's identity, and it is the key to both modular inverses and Diophantine equations." },
   { t: "math", uz: "a·x + b·y = gcd(a, b)   —   masalan  48·(−1) + 18·3 = 6" },
   { t: "p",
-    uz: "G‘oya: rekursiya pastdan qaytayotganda koeffitsientlarni ham qayta hisoblash. Baza holatida gcd(a, 0) = a, va bu a·1 + 0·0 ko‘rinishida yoziladi — ya’ni x = 1, y = 0. Keyin har qaytishda koeffitsientlar yangilanadi.",
+    uz: "G‘oya: rekursiya pastdan qaytayotganda koeffitsiyentlarni ham qayta hisoblash. Baza holatida gcd(a, 0) = a, va bu a·1 + 0·0 ko‘rinishida yoziladi — ya’ni x = 1, y = 0. Keyin har qaytishda koeffitsiyentlar yangilanadi.",
     en: "The idea: recompute the coefficients as the recursion returns. At the base, gcd(a, 0) = a can be written as a·1 + 0·0 — that is, x = 1 and y = 0. Then the coefficients are updated on each way back up." },
-  { t: "sim", titleUz: "extgcd(48, 18) — pastga tushib, koeffitsient bilan qaytish", titleEn: "extgcd(48, 18) — down, then back with coefficients", frames: [
+  { t: "sim", titleUz: "extgcd(48, 18) — pastga tushib, koeffitsiyent bilan qaytish", titleEn: "extgcd(48, 18) — down, then back with coefficients", frames: [
     { spec: { kind: "table", label: "pastga tushamiz", rows: [["a", "b"], ["48", "18"], ["18", "12"]], hi: [2, 1], note: "gcd(48,18) → gcd(18,12) → …" },
       uz: "Avval oddiy Evklid kabi pastga tushamiz: (48, 18) → (18, 12) → (12, 6) → (6, 0). Bu qism o‘zgarmadi.",
       en: "First we descend exactly as in plain Euclid: (48, 18) → (18, 12) → (12, 6) → (6, 0). That part is unchanged." },
@@ -164,7 +164,7 @@ export const mathLessons: Record<string, DeepLesson> = {
       uz: "Baza holatiga yetdik: gcd(6, 0) = 6, va uni 6·1 + 0·0 deb yozamiz. Demak x = 1, y = 0.",
       en: "We reach the base: gcd(6, 0) = 6, written as 6·1 + 0·0. So x = 1 and y = 0." },
     { spec: { kind: "table", label: "birinchi qaytish", rows: [["a", "b", "x", "y"], ["12", "6", "0", "1"]], hi: [1, 3], note: "6 = 12·0 + 6·1" },
-      uz: "Bir qavat yuqoriga qaytamiz. Yangi koeffitsientlar formulasi: x' = y, y' = x − (a / b)·y. Bu yerda 6 = 12·0 + 6·1 — to‘g‘ri.",
+      uz: "Bir qavat yuqoriga qaytamiz. Yangi koeffitsiyentlar formulasi: x' = y, y' = x − (a / b)·y. Bu yerda 6 = 12·0 + 6·1 — to‘g‘ri.",
       en: "One level up. The update rule is x' = y and y' = x − (a / b)·y. Here 6 = 12·0 + 6·1 — correct." },
     { spec: { kind: "table", label: "yakuniy natija", rows: [["a", "b", "x", "y"], ["48", "18", "-1", "3"]], hi: [1, 2], note: "48·(−1) + 18·3 = 6 ✓" },
       uz: "Yuqoriga chiqib borib, oxirida x = −1, y = 3 ni olamiz. Tekshiramiz: 48·(−1) + 18·3 = −48 + 54 = 6. To‘g‘ri.",
@@ -174,11 +174,11 @@ export const mathLessons: Record<string, DeepLesson> = {
     notes: [
       { from: 2, uz: "Baza holati: b = 0 bo‘lsa gcd — a, va a = a·1 + 0·0. Koeffitsientlar shu yerda tug‘iladi.",
         en: "The base case: with b = 0 the gcd is a, and a = a·1 + 0·0. This is where the coefficients are born." },
-      { from: 4, to: 5, uz: "Rekursiv chaqiruv KICHIKROQ juftlik uchun koeffitsientlarni (x1, y1) qaytaradi: b·x1 + (a mod b)·y1 = g.",
+      { from: 4, to: 5, uz: "Rekursiv chaqiruv KICHIKROQ juftlik uchun koeffitsiyentlarni (x1, y1) qaytaradi: b·x1 + (a mod b)·y1 = g.",
         en: "The recursive call returns the coefficients (x1, y1) for the SMALLER pair: b·x1 + (a mod b)·y1 = g." },
       { from: 7, to: 8, uz: "Kalit qadam. a mod b = a − (a/b)·b ekanini o‘rniga qo‘yamiz: b·x1 + (a − (a/b)·b)·y1 = a·y1 + b·(x1 − (a/b)·y1). Demak yangi x = y1, yangi y = x1 − (a/b)·y1. Formulani yodlash shart emas — bu bir qatorlik almashtirishdan chiqadi.",
         en: "The key step. Substitute a mod b = a − (a/b)·b: b·x1 + (a − (a/b)·b)·y1 = a·y1 + b·(x1 − (a/b)·y1). So the new x is y1 and the new y is x1 − (a/b)·y1. There is nothing to memorise — it falls out of one substitution." },
-      { from: 1, uz: "x va y HAVOLA orqali uzatilyapti (&). Shuning uchun funksiya bir vaqtda uchta narsani qaytaradi: gcd (return orqali) va ikkita koeffitsient (parametrlar orqali).",
+      { from: 1, uz: "x va y HAVOLA orqali uzatilyapti (&). Shuning uchun funksiya bir vaqtda uchta narsani qaytaradi: gcd (return orqali) va ikkita koeffitsiyent (parametrlar orqali).",
         en: "x and y are passed by REFERENCE (&), which lets the function return three things at once: the gcd through return, and the two coefficients through the parameters." },
     ]},
  ]},
@@ -662,7 +662,7 @@ export const mathLessons: Record<string, DeepLesson> = {
     en: "Why? Increasing x by b/g raises the left side by a·(b/g); decreasing y by a/g lowers it by b·(a/g). Those two amounts are equal, so the total is unchanged. This family gives every integer solution of the equation." },
   { t: "codewalk", code: "bool solve(long long a, long long b, long long c,\n           long long &x0, long long &y0, long long &g) {\n    g = extgcd(llabs(a), llabs(b), x0, y0);\n    if (c % g) return false;              // yechim yo‘q\n\n    x0 *= c / g;\n    y0 *= c / g;\n    if (a < 0) x0 = -x0;\n    if (b < 0) y0 = -y0;\n    return true;\n}",
     notes: [
-      { from: 3, uz: "extgcd modulli qiymatlar bilan chaqirilyapti — ishorani keyin qo‘lda tuzatamiz. Bu manfiy koeffitsientlar bilan ishlashning eng oson yo‘li.",
+      { from: 3, uz: "extgcd modulli qiymatlar bilan chaqirilyapti — ishorani keyin qo‘lda tuzatamiz. Bu manfiy koeffitsiyentlar bilan ishlashning eng oson yo‘li.",
         en: "extgcd is called with absolute values and the signs are fixed afterwards. That is the simplest way to handle negative coefficients." },
       { from: 4, uz: "Mavjudlik sharti. Bu qatorni unutish eng ko‘p uchraydigan xato: kod yechim qaytaradi, lekin u tenglamani qanoatlantirmaydi.",
         en: "The existence test. Forgetting this line is the most common bug: the code returns a solution that does not satisfy the equation." },
@@ -1058,7 +1058,7 @@ export const mathLessons: Record<string, DeepLesson> = {
 "math-18": { sections: [
  { titleUz: "Masaladagi so‘zlardan vositaga", titleEn: "From the words in the problem to the tool", blocks: [
   { t: "p",
-    uz: "Bu bo‘limda o‘nlab vosita o‘rgandik. Masalani ko‘rganda qaysi birini olish kerakligini bilish — alohida mahorat. Yaxshi xabar shuki, matematik masalalar odatda o‘zini OSHKOR qiladi: shartdagi bir necha so‘z yechim yo‘nalishini deyarli aniq ko‘rsatadi.",
+    uz: "Bu bo‘limda o‘nlab vosita o‘rgandik. Masalani ko‘rganda qaysi birini olish kerakligini bilish — alohida mahorat. Yaxshi xabar shundaki, matematik masalalar odatda o‘zini OSHKOR qiladi: shartdagi bir necha so‘z yechim yo‘nalishini deyarli aniq ko‘rsatadi.",
     en: "This track covered a dozen tools, and knowing which to reach for is a separate skill. The good news is that mathematical problems usually ANNOUNCE themselves: a few words in the statement point almost unambiguously at the route." },
   { t: "table", headUz: ["Shartdagi belgi", "Vosita"], headEn: ["Signal in the statement", "Tool"],
     rows: [

@@ -378,7 +378,7 @@ export const greedyLessons: Record<string, DeepLesson> = {
     captionUz: "Sodda variant O(n·d). DSU bilan «keyingi bo‘sh slot» ni topsak, O(n α(n)) bo‘ladi.",
     captionEn: "The simple version is O(n·d). Finding “the next free slot” with a DSU brings it to O(n α(n))." },
   { t: "p",
-    uz: "Nega ishni imkon qadar KECH slotga qo‘yamiz? Chunki erta slotlarni bo‘sh qoldirish keyingi (kamroq foydali, lekin qattiqroq muddatli) ishlarga imkon beradi. Yana o‘sha printsip: kelajakni maksimal ochiq qoldir.",
+    uz: "Nega ishni imkon qadar KECH slotga qo‘yamiz? Chunki erta slotlarni bo‘sh qoldirish keyingi (kamroq foydali, lekin qattiqroq muddatli) ishlarga imkon beradi. Yana o‘sha prinsip: kelajakni maksimal ochiq qoldir.",
     en: "Why place each job as LATE as possible? Because leaving the early slots free gives room to later jobs — less profitable but with tighter deadlines. The same principle again: leave the future as open as possible." },
   { t: "note", kind: "tip",
     uz: "Bu masalaning ikkinchi yechimi ham bor va u 11-bosqichda o‘rganiladi: ishlarni muddat bo‘yicha yurib, foydalarni min-heap ga tashlaymiz, slot yetmay qolganda eng kam foydalisini CHIQARIB TASHLAYMIZ. Bu «regret greedy» deb ataladi va ko‘pincha yozish osonroq.",
@@ -560,7 +560,7 @@ export const greedyLessons: Record<string, DeepLesson> = {
     swap: [1, 2], optName: "yomonroq", greedyName: "yaxshiroq",
     note: "w_b·t_a < w_a·t_b bo‘lsa, a oldin turishi kerak" } },
   { t: "note", kind: "key",
-    uz: "Nega qo‘shni juftni tekshirish yetarli? Chunki istalgan tartibni qo‘shni almashtirishlar ketma-ketligi bilan boshqa istalgan tartibga keltirish mumkin (bu — bubble sort ning ishlash printsipi). Agar hech bir qo‘shni almashtirish natijani yaxshilamasa, demak biz allaqachon optimaldamiz.",
+    uz: "Nega qo‘shni juftni tekshirish yetarli? Chunki istalgan tartibni qo‘shni almashtirishlar ketma-ketligi bilan boshqa istalgan tartibga keltirish mumkin (bu — bubble sort ning ishlash prinsipi). Agar hech bir qo‘shni almashtirish natijani yaxshilamasa, demak biz allaqachon optimaldamiz.",
     en: "Why is checking adjacent pairs enough? Because any order can be turned into any other by a sequence of adjacent swaps — that is how bubble sort works. If no adjacent swap improves the result, we are already at the optimum." },
   { t: "codewalk", code: "sort(job.begin(), job.end(), [](const Job& a, const Job& b) {\n    return a.t * b.w < b.t * a.w;          // t_a/w_a < t_b/w_b\n});\n\nlong long time = 0, cost = 0;\nfor (const Job& j : job) {\n    time += j.t;\n    cost += j.w * time;\n}",
     notes: [

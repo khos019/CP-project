@@ -162,7 +162,8 @@ function Lesson({roadmap,unit,index,lang,progress,setProgress,onBack,onPractice,
  const unitLo=parseInt(unit.rating,10)||0;
  const rest=bankProblems.filter(p=>p.topic===roadmap.slug&&!own.includes(p)).sort((a,b)=>Math.abs(a.rating-unitLo)-Math.abs(b.rating-unitLo)||a.rating-b.rating);
  const practice=[...own,...rest].slice(0,8);
- const saveQuiz=()=>{if(answer===null)return;setChecked(true);const score=answer===quiz.correct?100:0;saveUnit(progress,unit.id,{quizScore:score}).then(setProgress);
+ const saveQuiz=()=>{if(answer===null)return;setChecked(true);const score=answer===quiz.correct?100:0;// a wrong retry must not undo a quiz already passed
+saveUnit(progress,unit.id,{quizScore:Math.max(score,progress.quizScores[unit.id]||0)}).then(setProgress);
   if(score>=70){const gain=recordEvidence(roadmap.slug,"quiz",`quiz:${unit.id}`,MASTERY_CONFIG.weights.quiz);setResult(lang==="uz"?`To‘g‘ri — quizdan o‘tdingiz! +${gain.delta} mahorat`:`Correct — quiz passed! +${gain.delta} mastery`)}
   else setResult(tr(lang,"roadmapExperience.notogri_nazariyani_qayta_korib_chiqing"))};
  // Left/right move between units, but not while typing in the editor or a

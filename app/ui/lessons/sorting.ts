@@ -152,7 +152,7 @@ export const sortingLessons: Record<string, DeepLesson> = {
       uz: "Massiv [1, 5, 4, 2] bo‘ldi. Endi 5 va 4 ni solishtiramiz — yana almashtirish kerak. E’tibor bering: 5 o‘ngga «suzib» bormoqda.",
       en: "The array is now [1, 5, 4, 2]. Compare 5 and 4 — another swap. Notice how 5 keeps drifting to the right." },
     { spec: { kind: "bars", label: "uchinchi juftlik", values: [1, 4, 5, 2], state: { 2: "cmp", 3: "cmp" }, note: "5 > 2 → almashtiramiz" },
-      uz: "5 va 2 ni solishtiramiz. Yana almashtirish. 5 har bir solishtirshda bir qadam o‘ngga siljidi.",
+      uz: "5 va 2 ni solishtiramiz. Yana almashtirish. 5 har bir solishtirishda bir qadam o‘ngga siljidi.",
       en: "Compare 5 and 2 — swap again. With every comparison, 5 has moved one step to the right." },
     { spec: { kind: "bars", label: "birinchi yurish tugadi", values: [1, 4, 2, 5], state: { 3: "sorted" }, note: "eng katta element joyida" },
       uz: "Birinchi yurish tugadi va eng katta element o‘z joyiga yetib keldi. Bu KAFOLAT: bitta yurish har doim eng kattasini oxiriga olib chiqadi.",

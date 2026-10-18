@@ -1360,7 +1360,7 @@ export const dynamicProgrammingLessons: Record<string, DeepLesson> = {
                ["2", "1", "3", "6", "7"]],
         path: [[3, 4], [3, 3], [2, 3], [2, 2]],
         note: "har qadamda bitta tekshiruv — jami O(n + m)" },
-      uz: "Shu tarzda oxirgi katakdan boshlangich katakka yetguncha yuramiz. Har qadamda bir necha tekshiruv, jami O(yo‘l uzunligi) — juda arzon.",
+      uz: "Shu tarzda oxirgi katakdan boshlang‘ich katakka yetguncha yuramiz. Har qadamda bir necha tekshiruv, jami O(yo‘l uzunligi) — juda arzon.",
       en: "We continue like this until we reach the starting cell. Each step costs a couple of comparisons, so the whole recovery is O(path length) — very cheap." },
     { spec: { kind: "dptable", label: "yo‘lni teskari o‘giramiz",
         rows: [["", "0", "1", "2", "3"], ["0", "1", "1", "1", "1"], ["1", "1", "2", "3", "4"],
