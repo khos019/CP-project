@@ -1,27 +1,22 @@
--- 061: a harder bot for the leaderboard's top players.
+-- 061: a stronger bot for the leaderboard's top players.
 --
 -- The bot's strength comes from duel_player_strength (021), and the round's
--- problems are picked around it. The players at the very top had outgrown
--- that: they beat the bot routinely. Now, for a player ranked within
--- bot_top_n (4) by duel rating among real accounts:
---
---   * the problems are picked bot_top_bonus (150) higher, so the rounds are
---     harder for them;
---   * the bot that plays them is a further bot_top_edge (100) above the
---     problems, so it solves them faster and with fewer wrong attempts
---     (app/api/_lib/bot.ts plays to the bot's rating against each problem's).
---
--- Losing to that stronger bot costs less rating and beating it pays more,
--- because the bot's rating is what the Elo update uses. Everyone else is
--- unchanged. The three numbers live in duel_config and can be tuned there.
+-- problems are picked around it. The players at the very top beat that bot
+-- routinely. Now, for a player ranked within bot_top_n (4) by duel rating
+-- among real accounts, the bot plays bot_top_edge (150) above its usual
+-- level. The problems are the same as anyone at that level would get; only
+-- the bot is better at them — it solves them faster and with fewer wrong
+-- attempts (app/api/_lib/bot.ts plays to the bot's rating against each
+-- problem's). Losing to the stronger bot costs less rating and beating it
+-- pays more, since the bot's rating is what the Elo update uses. Everyone
+-- else is unchanged. Both numbers live in duel_config.
 --
 -- duel_start_bot_match is the function from 021 with only these lines added.
 -- Run AFTER 001-060. Safe to re-run.
 
 insert into public.duel_config(key, value, note) values
-  ('bot_top_n',     '4'::jsonb,   'players ranked this high or better get the harder bot'),
-  ('bot_top_bonus', '150'::jsonb, 'how much harder the problems are for them'),
-  ('bot_top_edge',  '100'::jsonb, 'how far above those problems the bot itself plays')
+  ('bot_top_n',    '4'::jsonb,   'players ranked this high or better get the stronger bot'),
+  ('bot_top_edge', '150'::jsonb, 'how far above its usual level the bot plays them')
 on conflict (key) do nothing;
 
 create or replace function public.duel_start_bot_match()
@@ -55,20 +50,16 @@ begin
            least(duel_cfg('bot_max_rating', 2000)::int,
              (v_strength ->> 'strength')::int + (floor(random() * (2 * v_jitter + 1)) - v_jitter)::int));
 
-  -- 061: the leaderboard's top players get a harder bot. Their place is counted
+  -- 061: the leaderboard's top players get a stronger bot. Their place is counted
   -- among real accounts (the seeded contest-archive accounts are not players).
   select count(*) + 1 into v_rank from profiles p
    where p.duel_rating > v_rating
      and not exists (select 1 from bot_accounts b where b.user_id = p.id);
   v_top := v_rank <= duel_cfg('bot_top_n', 4);
-  -- v_bot picks the problems; v_play is the bot that plays them. For the top
-  -- players the problems are harder and the bot is stronger than the problems.
+  -- v_bot picks the problems; v_play is the bot that plays them. The top
+  -- players get the usual problems and a stronger bot.
   v_play := v_bot;
-  if v_top then
-    v_bot := least(duel_cfg('bot_max_rating', 2000)::int + duel_cfg('bot_top_bonus', 150)::int,
-                   v_bot + duel_cfg('bot_top_bonus', 150)::int);
-    v_play := v_bot + duel_cfg('bot_top_edge', 100)::int;
-  end if;
+  if v_top then v_play := v_bot + duel_cfg('bot_top_edge', 150)::int; end if;
   v_rounds := duel_cfg('duel_rounds', 3);
 
   insert into duel_matches(mode, rounds, ends_at)
