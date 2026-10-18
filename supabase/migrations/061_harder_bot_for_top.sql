@@ -4,11 +4,12 @@
 -- ranked within bot_top_n (4) by duel rating among real accounts, the bot is
 -- made better at SOLVING, while its rating moves only a little:
 --
---   bot_top_skill  (200) — how much better it plays rounds B and C (round A
+--   bot_top_skill  (75) — how much better it plays rounds B and C (round A
 --                  stays at the usual pace): the Worker plans the bot's
 --                  attempts there (app/api/_lib/bot.ts) at this level, so it
---                  thinks ~30% faster and solves more often (a problem at its
---                  own level: 67% -> 86%; one 200 above: 39% -> 67%). Not
+--                  thinks ~13% faster and solves more often (a problem at its
+--                  own level: 78% -> 85%; one 200 above: 51% -> 62%). Was 200 until
+--                  18 Oct 2026, which made it too strong. Not
 --                  unbeatable: a strong player still wins often.
 --   bot_top_rating_min / _max (30 / 50) — how much higher its rating is, drawn
 --                  afresh for every duel between the two, so the bot's rating
@@ -26,7 +27,7 @@
 
 insert into public.duel_config(key, value, note) values
   ('bot_top_n',      '4'::jsonb,   'players ranked this high or better get the stronger bot'),
-  ('bot_top_skill',  '200'::jsonb, 'how much better the bot solves against them'),
+  ('bot_top_skill',  '75'::jsonb, 'how much better the bot solves against them'),
   ('bot_top_rating_min', '30'::jsonb, 'the bot is rated at least this much higher against them'),
   ('bot_top_rating_max', '50'::jsonb, '... and at most this much higher, drawn per duel')
 on conflict (key) do nothing;
@@ -74,7 +75,7 @@ begin
   if v_top then
     v_play  := v_bot + duel_cfg('bot_top_rating_min', 30)::int
              + floor(random() * (duel_cfg('bot_top_rating_max', 50) - duel_cfg('bot_top_rating_min', 30) + 1))::int;
-    v_skill := v_bot + duel_cfg('bot_top_skill', 200)::int;
+    v_skill := v_bot + duel_cfg('bot_top_skill', 75)::int;
   end if;
   v_rounds := duel_cfg('duel_rounds', 3);
 
