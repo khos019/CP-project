@@ -27,10 +27,10 @@ export const foundationsLessons: Record<string, DeepLesson> = {
   { t: "table", headUz: ["Yechim", "Amallar soni", "Taxminiy vaqt", "Verdikt"], headEn: ["Solution", "Operations", "Rough time", "Verdict"],
     rows: [
       ["Barcha juftliklarni ko‘rish — O(n²)", "2·10¹⁰", "~20 sekund", "TLE"],
-      ["Tartiblab, bir yurish — O(n log n)", "3.5·10⁶", "~0.01 sekund", "AC"],
+      ["Tartiblab, bir yurish — O(n log n)", "3.5·10⁶", "~0.04 sekund", "AC"],
     ],
-    captionUz: "Farq 2000 barobar. Dunyodagi eng tez kompyuter ham birinchi yechimni ikkinchisining o‘rniga qo‘ya olmaydi.",
-    captionEn: "A factor of 2000. No computer on earth turns the first solution into the second." },
+    captionUz: "Farq 5000 barobardan ortiq. Dunyodagi eng tez kompyuter ham birinchi yechimni ikkinchisining o‘rniga qo‘ya olmaydi.",
+    captionEn: "A factor of more than 5000. No computer on earth turns the first solution into the second." },
   { t: "note", kind: "key",
     uz: "Murakkablik tahlili — bu kod yozib bo‘lgandan keyin qilinadigan nazariy mashq emas. Bu kod yozishdan OLDIN qilinadigan qaror: «bu yo‘l bilan yursam, vaqtga sig‘amanmi?» Sig‘masangiz, kod yozish behuda mehnat.",
     en: "Complexity analysis is not a theoretical exercise you perform after writing the code. It is a decision you make BEFORE writing it: “if I go down this road, do I fit in the time?” If you do not, writing the code is wasted work." },
@@ -83,7 +83,7 @@ export const foundationsLessons: Record<string, DeepLesson> = {
     rows: [
       ["n ≤ 10–12", "O(n!)", "barcha o‘rin almashtirishlar"],
       ["n ≤ 20–25", "O(2ⁿ) yoki O(2ⁿ·n)", "bitmask, qism to‘plamlar"],
-      ["n ≤ 100", "O(n³)", "Floyd–Warshall, interval DP"],
+      ["n ≤ 500", "O(n³)", "Floyd–Warshall, interval DP"],
       ["n ≤ 5000", "O(n²)", "oddiy DP, barcha juftliklar"],
       ["n ≤ 2·10⁵", "O(n log n)", "sorting, set/map, segment tree"],
       ["n ≤ 10⁷", "O(n)", "bir yurish, prefix sum, ikki ko‘rsatkich"],
@@ -173,7 +173,7 @@ export const foundationsLessons: Record<string, DeepLesson> = {
  { titleUz: "O‘sish tartiblari zinapoyasi", titleEn: "The ladder of growth rates", blocks: [
   { t: "math", uz: "1 < log n < √n < n < n log n < n² < n³ < 2ⁿ < n!" },
   { t: "p",
-    uz: "Bu zinapoyani yoddan bilish kerak — u har bir tahlilda ishlatiladi. Har bir qadam oldingisidan sezilarli tezroq o‘sadi. Ayniqsa n va n log n orasidagi farq kichik (log n atigi 20 chi), n² va 2ⁿ orasidagi farq esa bepoyon.",
+    uz: "Bu zinapoyani yoddan bilish kerak — u har bir tahlilda ishlatiladi. Har bir qadam oldingisidan sezilarli tezroq o‘sadi. Ayniqsa n va n log n orasidagi farq kichik (log n atigi 20 chamasi), n² va 2ⁿ orasidagi farq esa bepoyon.",
     en: "This ladder is worth knowing by heart — every analysis uses it. Each step grows noticeably faster than the one before. The gap between n and n log n is small (log n is only about 20), while the gap between n² and 2ⁿ is bottomless." },
   { t: "table", headUz: ["f(n)", "n = 10⁶ da qiymati", "Sig‘adimi (10⁸)"], headEn: ["f(n)", "value at n = 10⁶", "Fits in 10⁸?"],
     rows: [
@@ -262,8 +262,8 @@ export const foundationsLessons: Record<string, DeepLesson> = {
  ]},
  { titleUz: "Bir yurishda ko‘p ish bajarish", titleEn: "Doing more work in a single pass", blocks: [
   { t: "p",
-    uz: "Ko‘pincha ikkita alohida savolga bitta yurishda javob berish mumkin. Bu murakkablikni o‘zgartirmaydi (2n ham, n ham O(n)), lekin real vaqtni ikki barobar kamaytiradi va kodni qisqartiradi.",
-    en: "Two separate questions can often be answered in one pass. That does not change the complexity (2n and n are both O(n)), but it halves the real time and shortens the code." },
+    uz: "Ko‘pincha ikkita alohida savolga bitta yurishda javob berish mumkin. Bu murakkablikni o‘zgartirmaydi (2n ham, n ham O(n)), lekin ko‘pincha real vaqtni kamaytiradi va kodni qisqartiradi.",
+    en: "Two separate questions can often be answered in one pass. That does not change the complexity (2n and n are both O(n)), but it often cuts the real time and shortens the code." },
   { t: "codewalk", code: "long long sum = 0;\nint mx = INT_MIN, mn = INT_MAX, cntPos = 0;\n\nfor (int i = 0; i < n; ++i) {\n    sum += a[i];\n    mx = max(mx, a[i]);\n    mn = min(mn, a[i]);\n    if (a[i] > 0) ++cntPos;\n}",
     notes: [
       { from: 2, uz: "Boshlang‘ich qiymatlar diqqat bilan tanlangan: maksimum uchun eng kichik mumkin bo‘lgan son, minimum uchun eng kattasi. Nol bilan boshlash barcha sonlar manfiy bo‘lganda xato beradi.",
@@ -287,8 +287,8 @@ export const foundationsLessons: Record<string, DeepLesson> = {
       uz: "Bir milliard variantdan boshlaymiz. Ularni birma-bir ko‘rish 10 sekunddan ko‘p vaqt oladi.",
       en: "We start with a billion candidates. Checking them one by one takes more than ten seconds." },
     { spec: { kind: "table", label: "10 qadam", rows: [["qadam", "qolgan"], ["10", "~10⁶"]], hi: [1, 1], note: "1024 marta kamaydi" },
-      uz: "Atigi 10 qadamdan keyin milliondan bittasi qoldi: har qadam ikkiga bo‘lgani uchun 2¹⁰ = 1024 barobar kamaydi.",
-      en: "After just ten steps a millionth remains: each step halves, so 2¹⁰ = 1024 times fewer." },
+      uz: "Atigi 10 qadamdan keyin milliontacha variant qoldi: har qadam ikkiga bo‘lgani uchun 2¹⁰ = 1024 barobar kamaydi.",
+      en: "After just ten steps about a million remain: each step halves, so 2¹⁰ = 1024 times fewer." },
     { spec: { kind: "table", label: "20 qadam", rows: [["qadam", "qolgan"], ["20", "~1000"]], hi: [1, 1], note: "2²⁰ ≈ 10⁶" },
       uz: "20 qadamdan keyin mingtacha qoldi. E’tibor bering: qolgan variantlar soni kamayishi bilan tezlik «sekinlashmayapti» — har qadam baribir yarmini olib tashlaydi.",
       en: "After twenty steps about a thousand remain. Note that the process does not “slow down” as the candidates thin out — every step still removes half of what is left." },
@@ -379,11 +379,11 @@ export const foundationsLessons: Record<string, DeepLesson> = {
     en: "This is a small, elegant result. There are n! possible orderings of n elements. Each comparison (“is a[i] < a[j]?”) yields one bit of information, so at best it halves the number of remaining candidates. Distinguishing all n! orderings therefore needs at least log₂(n!) comparisons." },
   { t: "math", uz: "log₂(n!) ≈ n·log₂(n) − 1.44n = Θ(n log n)" },
   { t: "p",
-    uz: "Shuning uchun faqat solishtirishga tayanadigan HECH QANDAY algoritm n log n dan tez bo‘lolmaydi. Bu Ω(n log n) quyi chegarasi — o‘tgan bosqichda ko‘rgan Ω belgisining haqiqiy ishlatilishi. Counting sort esa O(n) ishlaydi, chunki u elementlarni solishtirmaydi — ularni qiymat bo‘yicha to‘g‘ridan-to‘g‘ri joyiga qo‘yadi, ya’ni bu chegara unga taalluqli emas.",
-    en: "So NO algorithm that relies only on comparisons can beat n log n. That is the Ω(n log n) lower bound — a genuine use of the Ω symbol from the previous stage. Counting sort runs in O(n) precisely because it never compares elements: it places them directly by value, so the bound does not apply to it." },
+    uz: "Shuning uchun faqat solishtirishga tayanadigan HECH QANDAY algoritm n log n dan tez bo‘lolmaydi. Bu Ω(n log n) quyi chegarasi — o‘tgan bosqichda ko‘rgan Ω belgisining haqiqiy ishlatilishi. Counting sort esa O(n + k) ishlaydi (k — qiymatlar oralig‘i), chunki u elementlarni solishtirmaydi — ularni qiymat bo‘yicha to‘g‘ridan-to‘g‘ri joyiga qo‘yadi, ya’ni bu chegara unga taalluqli emas.",
+    en: "So NO algorithm that relies only on comparisons can beat n log n. That is the Ω(n log n) lower bound — a genuine use of the Ω symbol from the previous stage. Counting sort runs in O(n + k) (k is the range of values) precisely because it never compares elements: it places them directly by value, so the bound does not apply to it." },
   { t: "note", kind: "tip",
-    uz: "Amaliy xulosa: agar masalada qiymatlar kichik bo‘lsa (aᵢ ≤ 10⁶), sortlashni O(n) ga tushirish mumkin. Bu tez-tez qo‘l keladigan hiyla.",
-    en: "The practical takeaway: when the values are small (aᵢ ≤ 10⁶), sorting can be brought down to O(n). That trick pays off surprisingly often." },
+    uz: "Amaliy xulosa: agar masalada qiymatlar kichik bo‘lsa (aᵢ ≤ 10⁶), sortlashni O(n + maxA) ga tushirish mumkin. Bu tez-tez qo‘l keladigan hiyla.",
+    en: "The practical takeaway: when the values are small (aᵢ ≤ 10⁶), sorting can be brought down to O(n + maxA). That trick pays off surprisingly often." },
  ]},
 ]},
 
@@ -469,8 +469,8 @@ export const foundationsLessons: Record<string, DeepLesson> = {
     en: "Where does O(2ⁿ) come from? If each of n items gets a binary decision — take it or leave it — the number of combinations is 2 × 2 × … × 2 = 2ⁿ. That is the number of subsets. n! is different: it counts the ways to arrange n items in a row, the permutations." },
   { t: "sim", titleUz: "Eksponensial o‘sish qanchalik shafqatsiz", titleEn: "How merciless exponential growth is", frames: [
     { spec: { kind: "table", label: "n = 20", rows: [["2ⁿ", "n!"], ["10⁶", "2·10¹⁸"]], hi: [1, 0], note: "2ⁿ bemalol, n! imkonsiz" },
-      uz: "n = 20 da 2ⁿ = 10⁶ — bu bemalol sig‘adi. Lekin n! allaqachon 2·10¹⁸: bu bir necha ming yil.",
-      en: "At n = 20, 2ⁿ = 10⁶ and fits comfortably. But n! is already 2·10¹⁸ — several thousand years." },
+      uz: "n = 20 da 2ⁿ = 10⁶ — bu bemalol sig‘adi. Lekin n! allaqachon 2·10¹⁸: bu bir necha yuz yil.",
+      en: "At n = 20, 2ⁿ = 10⁶ and fits comfortably. But n! is already 2·10¹⁸ — several centuries." },
     { spec: { kind: "table", label: "n = 30", rows: [["2ⁿ", "n!"], ["10⁹", "2.6·10³²"]], hi: [1, 0], note: "2ⁿ chegaradan chiqdi" },
       uz: "n = 30 da 2ⁿ ham 10⁹ ga chiqdi — 10 sekunddan ko‘p. Har bir qo‘shilgan element vaqtni IKKI BAROBAR oshiradi.",
       en: "At n = 30, 2ⁿ has reached 10⁹ — over ten seconds. Every single extra element DOUBLES the time." },
@@ -681,8 +681,8 @@ export const foundationsLessons: Record<string, DeepLesson> = {
     captionUz: "Teskari savdo ham bor: xotira yetmasa, qayta hisoblash mumkin (masalan rolling array).",
     captionEn: "The reverse trade exists too: when memory runs short, recompute instead (a rolling array, for example)." },
   { t: "p",
-    uz: "Alohida vosita — bitset. U har bir bool ni bitta BITDA saqlaydi, ya’ni bool massividan 8 barobar, int dan 32 barobar kichik. Bundan tashqari bitset ustidagi amallar (& | ^) bir vaqtda 64 ta bit bilan ishlaydi, shuning uchun O(n²/64) murakkablikdagi yechimlar paydo bo‘ladi — n = 10⁵ da bu 1.5·10⁸ o‘rniga 2.5·10⁶ demak.",
-    en: "One tool deserves its own mention: bitset. It stores each bool in a single BIT — eight times smaller than an array of bool and thirty-two times smaller than ints. Operations on it (& | ^) also work on 64 bits at a time, which produces solutions of complexity O(n²/64): at n = 10⁵ that turns 1.5·10⁸ into 2.5·10⁶." },
+    uz: "Alohida vosita — bitset. U har bir bool ni bitta BITDA saqlaydi, ya’ni bool massividan 8 barobar, int dan 32 barobar kichik. Bundan tashqari bitset ustidagi amallar (& | ^) bir vaqtda 64 ta bit bilan ishlaydi, shuning uchun O(n²/64) murakkablikdagi yechimlar paydo bo‘ladi — n = 10⁵ da bu 10¹⁰ o‘rniga 1.5·10⁸ demak.",
+    en: "One tool deserves its own mention: bitset. It stores each bool in a single BIT — eight times smaller than an array of bool and thirty-two times smaller than ints. Operations on it (& | ^) also work on 64 bits at a time, which produces solutions of complexity O(n²/64): at n = 10⁵ that turns 10¹⁰ into 1.5·10⁸." },
   { t: "code", cpp: "bitset<100005> b;      // 100005 bit = ~12 KB (bool massivi 100 KB bo‘lardi)\nb.set(i);              // i-bitni yoqish\nif (b.test(i)) { }     // tekshirish\nb |= other;            // 64 bitdan tez birlashtirish\ncout << b.count();     // yoqilgan bitlar soni" },
   { t: "exercise",
     qUz: "n ≤ 10⁵ va sizga «har bir juftlik uchun mumkinmi» degan n×n jadval kerak. bool bilan qancha xotira ketadi, bitset bilan-chi?",
@@ -704,9 +704,9 @@ export const foundationsLessons: Record<string, DeepLesson> = {
     { spec: { kind: "table", label: "boshlanish", rows: [["sig‘im", "ko‘chirish"], ["1", "0"]], hi: [1, 0], note: "1-element: joy bor" },
       uz: "Birinchi element qo‘shildi, sig‘im 1. Hali hech narsa ko‘chirilmadi.",
       en: "The first element goes in; capacity is 1. Nothing has been copied yet." },
-    { spec: { kind: "table", label: "2, 3, 5, 9-elementlar", rows: [["sig‘im", "jami ko‘chirish"], ["8", "1+2+4 = 7"]], hi: [1, 1], note: "faqat 2 ning darajalarida" },
-      uz: "Ko‘chirish faqat 2, 3, 5, 9-elementlarda sodir bo‘ldi — ya’ni sig‘im to‘lganda. Bugungacha jami 1+2+4 = 7 ta ko‘chirish.",
-      en: "Copying happened only at elements 2, 3, 5 and 9 — that is, when the capacity filled up. So far 1+2+4 = 7 copies in total." },
+    { spec: { kind: "table", label: "2, 3, 5-elementlar", rows: [["sig‘im", "jami ko‘chirish"], ["8", "1+2+4 = 7"]], hi: [1, 1], note: "faqat 2 ning darajalarida" },
+      uz: "Ko‘chirish faqat 2, 3, 5-elementlarda sodir bo‘ldi — ya’ni sig‘im to‘lganda. Bugungacha jami 1+2+4 = 7 ta ko‘chirish.",
+      en: "Copying happened only at elements 2, 3 and 5 — that is, when the capacity filled up. So far 1+2+4 = 7 copies in total." },
     { spec: { kind: "table", label: "16 ta elementdan keyin", rows: [["elementlar", "jami ko‘chirish"], ["16", "15"]], hi: [1, 1], note: "1+2+4+8 = 15 < 16" },
       uz: "16 ta element qo‘shildi, jami ko‘chirishlar 1+2+4+8 = 15. Ya’ni ko‘chirishlar soni elementlar sonidan KAM. Har bir push_back o‘rtacha bittadan kamroq ko‘chirishga to‘g‘ri keldi.",
       en: "Sixteen elements added, 1+2+4+8 = 15 copies in total — FEWER copies than elements. On average each push_back caused less than one copy." },
@@ -872,8 +872,8 @@ export const foundationsLessons: Record<string, DeepLesson> = {
   { t: "exercise",
     qUz: "T(n) = 4T(n/2) + O(n) ni yeching.",
     qEn: "Solve T(n) = 4T(n/2) + O(n).",
-    aUz: "a = 4, b = 2 → barglar n^(log₂4) = n². f(n) = n bundan kichik → 1-holat. Javob: Θ(n²). Bu oddiy matritsa ko‘paytirishning rekursiv varianti; Strassen esa a ni 7 ga tushirib, n^(log₂7) ≈ n^2.81 ga erishadi.",
-    aEn: "a = 4, b = 2 → the leaves number n^(log₂4) = n². f(n) = n is smaller → case 1. The answer is Θ(n²). This is the recursive form of ordinary matrix multiplication; Strassen lowers a to 7 and reaches n^(log₂7) ≈ n^2.81." },
+    aUz: "a = 4, b = 2 → barglar n^(log₂4) = n². f(n) = n bundan kichik → 1-holat. Javob: Θ(n²). Bu katta sonlarni to‘rtta yarim o‘lchamli ko‘paytma orqali ko‘paytirishning sodda bo‘lib-yengish varianti; Karatsuba esa a ni 3 ga tushirib, n^(log₂3) ≈ n^1.585 ga erishadi.",
+    aEn: "a = 4, b = 2 → the leaves number n^(log₂4) = n². f(n) = n is smaller → case 1. The answer is Θ(n²). This is naive divide-and-conquer multiplication of big numbers, with four half-size products; Karatsuba lowers a to 3 and reaches n^(log₂3) ≈ n^1.585." },
  ]},
 ]},
 /* ── 16. Konstanta omillar va kesh ───────────────────────────────────── */
@@ -951,10 +951,10 @@ export const foundationsLessons: Record<string, DeepLesson> = {
 
 /* ── 17. Yakuniy tahlil ──────────────────────────────────────────────── */
 "foundations-17": { sections: [
- { titleUz: "Butun yechimni baholash: uchta qism", titleEn: "Judging the whole solution: three parts", blocks: [
+ { titleUz: "Butun yechimni baholash: to‘rt qism", titleEn: "Judging the whole solution: four parts", blocks: [
   { t: "p",
-    uz: "Endi hamma narsani birlashtiramiz. Yechim faqat asosiy algoritmdan iborat emas: kiritishni o‘qish, oldindan hisoblash va chiqarish ham vaqt oladi. Yakuniy baho — shu uchtasining yig‘indisi, va odatda eng kattasi hukmronlik qiladi.",
-    en: "Now we put it all together. A solution is not only its main algorithm: reading the input, precomputing, and printing the output all take time. The final estimate is the sum of the three, and usually the largest term dominates." },
+    uz: "Endi hamma narsani birlashtiramiz. Yechim faqat asosiy algoritmdan iborat emas: kiritishni o‘qish, oldindan hisoblash va chiqarish ham vaqt oladi. Yakuniy baho — asosiy algoritm bilan birga shu to‘rt qismning yig‘indisi, va odatda eng kattasi hukmronlik qiladi.",
+    en: "Now we put it all together. A solution is not only its main algorithm: reading the input, precomputing, and printing the output all take time. The final estimate is the sum of all four parts, main algorithm included, and usually the largest term dominates." },
   { t: "table", headUz: ["Qism", "Odatdagi narxi", "Qachon muhim bo‘ladi"], headEn: ["Part", "Typical cost", "When it matters"],
     rows: [
       ["kiritishni o‘qish", "O(n)", "n ≥ 10⁶ — tezkor kiritish shart"],

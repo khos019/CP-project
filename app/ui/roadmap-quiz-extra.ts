@@ -184,7 +184,7 @@ export const extraQuiz: Record<string, ExtraQuiz[]> = {
   ["The same — bases differ by a constant","O(n·log₁₀ n) is asymptotically faster","O(n log n) is asymptotically faster","Big O cannot compare them"], 0),
 ],
 "foundations-4": [
- q("Saralangan massivda chiziqli qidiruvning eng yaxshi holati qanday?", "What is linear search's best case?",
+ q("Chiziqli qidiruvning eng yaxshi holati qanday?", "What is linear search's best case?",
   ["O(1)","O(log n)","O(n)","O(n²)"],
   ["O(1)","O(log n)","O(n)","O(n²)"], 0),
  q("Tasodifiy pivotli quicksort uchun «o‘rtacha O(n log n)» qaysi tasodifiylik ustidan olinadi?", "For random-pivot quicksort, “O(n log n) on average” is averaged over what?",
