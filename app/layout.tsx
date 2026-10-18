@@ -25,7 +25,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="uz" data-theme="light" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
-        <!-- Yandex Autoplacement 20242049 -->
         <script src="https://yandex.ru/ads/system/context.js" async></script>
         <script data-page-id="20242049" src="https://yandex.ru/ads/system/ap-loader.js" async></script>
       </head>
