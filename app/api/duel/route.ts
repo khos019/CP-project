@@ -168,7 +168,7 @@ export async function POST(request: Request) {
         const bot = await rpcAsUser<Json>(token, "duel_start_bot_match");
         if (bot.ok && bot.data.ok) {
           const duelId = asString(bot.data.duel_id);
-          await givePlan(duelId, Number(bot.data.bot_rating) || 1200);
+          await givePlan(duelId, Number(bot.data.bot_skill ?? bot.data.bot_rating) || 1200);
           const fresh = await rpcAsUser<Json>(token, "duel_state");
           await broadcast([
             toUser(asString(await callerId(token)), "match_found", { duel_id: duelId, is_bot: true }),
@@ -291,7 +291,7 @@ export async function POST(request: Request) {
       if (!result.ok) return bad(result.error, result.status);
       if (result.data.ok) {
         const duelId = asString(result.data.duel_id);
-        await givePlan(duelId, Number(result.data.bot_rating) || 1200);
+        await givePlan(duelId, Number(result.data.bot_skill ?? result.data.bot_rating) || 1200);
         await broadcast([
           toUser(asString(await callerId(token)), "match_found", { duel_id: duelId, is_bot: true }),
           toMatch(duelId, "duel_started", { duel_id: duelId }),
@@ -428,6 +428,10 @@ export async function POST(request: Request) {
 
 /** Writes the bot's schedule for a freshly created duel. Runs as the service
  *  role: a learner's token must not be able to write their opponent's plan. */
+/* `botRating` here is how well the bot plays. It is the bot's rating, except
+   against the leaderboard's top players, where 061 hands back a separate,
+   higher `bot_skill` so the bot solves better while its rating -- what the
+   Elo update reads -- moves only a little. */
 async function givePlan(matchId: string, botRating: number): Promise<void> {
   const status = await rpcAsService<Json>("duel_bot_status", { p_match: matchId });
   if (!status.ok || !status.data?.ok) return;

@@ -1,22 +1,30 @@
 -- 061: a stronger bot for the leaderboard's top players.
 --
--- The bot's strength comes from duel_player_strength (021), and the round's
--- problems are picked around it. The players at the very top beat that bot
--- routinely. Now, for a player ranked within bot_top_n (4) by duel rating
--- among real accounts, the bot plays bot_top_edge (150) above its usual
--- level. The problems are the same as anyone at that level would get; only
--- the bot is better at them — it solves them faster and with fewer wrong
--- attempts (app/api/_lib/bot.ts plays to the bot's rating against each
--- problem's). Losing to the stronger bot costs less rating and beating it
--- pays more, since the bot's rating is what the Elo update uses. Everyone
--- else is unchanged. Both numbers live in duel_config.
+-- The players at the very top beat the bot routinely. Now, for a player
+-- ranked within bot_top_n (4) by duel rating among real accounts, the bot is
+-- made better at SOLVING, while its rating moves only a little:
+--
+--   bot_top_skill  (200) — how much better it plays: the Worker plans the
+--                  bot's attempts (app/api/_lib/bot.ts) at this level, so it
+--                  thinks ~30% faster and solves more often (a problem at its
+--                  own level: 67% -> 86%; one 200 above: 39% -> 67%). Not
+--                  unbeatable: a strong player still wins often.
+--   bot_top_rating (40)  — how much higher its rating is, which is what the Elo
+--                  update uses: losing to it costs a little less, beating it
+--                  pays a little more.
+--
+-- The problems are the same as anyone at that level gets. The function
+-- returns `bot_skill` beside `bot_rating`; the Worker plans with bot_skill
+-- when it is there. Everyone else is unchanged. All three numbers live in
+-- duel_config.
 --
 -- duel_start_bot_match is the function from 021 with only these lines added.
 -- Run AFTER 001-060. Safe to re-run.
 
 insert into public.duel_config(key, value, note) values
-  ('bot_top_n',    '4'::jsonb,   'players ranked this high or better get the stronger bot'),
-  ('bot_top_edge', '150'::jsonb, 'how far above its usual level the bot plays them')
+  ('bot_top_n',      '4'::jsonb,   'players ranked this high or better get the stronger bot'),
+  ('bot_top_skill',  '200'::jsonb, 'how much better the bot solves against them'),
+  ('bot_top_rating', '40'::jsonb,  'how much higher the bot is rated against them')
 on conflict (key) do nothing;
 
 create or replace function public.duel_start_bot_match()
@@ -24,7 +32,7 @@ returns jsonb language plpgsql security definer set search_path = public as $$
 declare
   v_me uuid := auth.uid(); v_session duel_matchmaking_sessions;
   v_match uuid; v_rating int; v_strength jsonb; v_bot int; v_jitter int;
-  v_rounds int; v_row record; v_rank int; v_top boolean := false; v_play int;
+  v_rounds int; v_row record; v_rank int; v_top boolean := false; v_play int; v_skill int;
 begin
   if v_me is null then return jsonb_build_object('ok', false, 'error', 'not_authenticated'); end if;
   if not duel_cfg_bool('bot_enabled', false) then
@@ -56,10 +64,13 @@ begin
    where p.duel_rating > v_rating
      and not exists (select 1 from bot_accounts b where b.user_id = p.id);
   v_top := v_rank <= duel_cfg('bot_top_n', 4);
-  -- v_bot picks the problems; v_play is the bot that plays them. The top
-  -- players get the usual problems and a stronger bot.
-  v_play := v_bot;
-  if v_top then v_play := v_bot + duel_cfg('bot_top_edge', 150)::int; end if;
+  -- v_bot picks the problems, v_play is the bot's rating, v_skill how well it
+  -- solves. The top players get the usual problems and a better solver.
+  v_play := v_bot; v_skill := v_bot;
+  if v_top then
+    v_play  := v_bot + duel_cfg('bot_top_rating', 40)::int;
+    v_skill := v_bot + duel_cfg('bot_top_skill', 200)::int;
+  end if;
   v_rounds := duel_cfg('duel_rounds', 3);
 
   insert into duel_matches(mode, rounds, ends_at)
@@ -83,5 +94,5 @@ begin
      set status = 'duel_found', match_id = v_match, ended_at = now() where id = v_session.id;
 
   return jsonb_build_object('ok', true, 'duel_id', v_match, 'bot_rating', v_play,
-                            'strength', v_strength, 'top', v_top);
+                            'bot_skill', v_skill, 'strength', v_strength, 'top', v_top);
 end $$;
