@@ -107,7 +107,7 @@ export const greedyLessons: Record<string, DeepLesson> = {
     uz: "Exchange argument ni yozishning uch qadami: (1) OPT greedy dan birinchi marta qayerda farq qilishini toping; (2) o‘sha joyda bitta almashtirish qiling; (3) almashtirish yechimni buzmasligini VA yomonlashtirmasligini ko‘rsating. Uchinchi qadam odatda masalaning tartiblash mezoniga tayanadi — aynan shu yerda «nega bu mezon?» degan savolga javob topiladi.",
     en: "Writing an exchange argument takes three steps: (1) find the first place where OPT differs from greedy; (2) make one swap there; (3) show the swap keeps the solution valid AND does not make it worse. Step three usually leans on the sorting criterion — which is exactly where “why this criterion?” gets its answer." },
   { t: "p",
-    uz: "Amaliy misol. Faoliyat tanlash masalasida greedy eng erta TUGAYDIGAN ishni oladi. OPT boshqa ish bilan boshlansin, uning tugash vaqti f' bo‘lsin. Greedy olgan ishning tugash vaqti f ≤ f' (chunki greedy eng ertasini oldi). OPT dagi o‘sha ishni greedy nikiga almashtirsak: yangi ish oldinroq tugaydi, demak qolgan ishlarga HALAQIT BERMAYDI — hammasi joyida qoladi. Ishlar soni ham o‘zgarmadi. Isbot tayyor.",
+    uz: "Amaliy misol. Faoliyat tanlash masalasida greedy eng erta TUGAYDIGAN ishni oladi. OPT boshqa ish bilan boshlansin, uning tugash vaqti f' bo‘lsin. Greedy olgan ishning tugash vaqti f ≤ f' (chunki greedy eng ertasini oldi). OPT dagi o‘sha ishni greedy tanlagan ishga almashtirsak: yangi ish oldinroq tugaydi, demak qolgan ishlarga HALAQIT BERMAYDI — hammasi joyida qoladi. Ishlar soni ham o‘zgarmadi. Isbot tayyor.",
     en: "A concrete case. In activity selection, greedy takes the job that FINISHES earliest. Let OPT start with a different job finishing at f'. The greedy job finishes at f ≤ f', since greedy took the earliest. Swap that job in OPT for greedy's: the new job ends sooner, so it CONFLICTS WITH NOTHING that followed — everything still fits, and the count is unchanged. The proof is complete." },
  ]},
  { titleUz: "Stays-ahead: greedy hech qachon orqada qolmaydi", titleEn: "Stays-ahead: greedy never falls behind", blocks: [
@@ -143,7 +143,7 @@ export const greedyLessons: Record<string, DeepLesson> = {
   { t: "exercise",
     qUz: "«Har qadamda eng qimmat buyumni ol» degan greedy 0/1 knapsack uchun. Exchange argument nima uchun ishlamaydi?",
     qEn: "Consider the greedy “take the most valuable item each step” for 0/1 knapsack. Why does the exchange argument fail?",
-    aUz: "Chunki almashtirish YARAOQLILIKNI buzishi mumkin. OPT dagi arzon buyumni greedy ning qimmat buyumiga almashtirsak, og‘irlik oshib ketib, sumka sig‘imidan chiqishi mumkin. Uchinchi qadam («almashtirish yechimni buzmaydi») bajarilmaydi — demak isbot yo‘q, va haqiqatan ham bu greedy noto‘g‘ri.",
+    aUz: "Chunki almashtirish YAROQLILIKNI buzishi mumkin. OPT dagi arzon buyumni greedy ning qimmat buyumiga almashtirsak, og‘irlik oshib ketib, sumka sig‘imidan chiqishi mumkin. Uchinchi qadam («almashtirish yechimni buzmaydi») bajarilmaydi — demak isbot yo‘q, va haqiqatan ham bu greedy noto‘g‘ri.",
     aEn: "Because the swap can break FEASIBILITY. Exchanging a cheap item in OPT for greedy's expensive one may increase the weight past the knapsack's capacity. Step three — “the swap keeps the solution valid” — fails, so there is no proof, and indeed this greedy is wrong." },
  ]},
 ]},
@@ -876,8 +876,8 @@ export const greedyLessons: Record<string, DeepLesson> = {
   { t: "exercise",
     qUz: "«1432219» dan 3 ta raqam o‘chirib eng KATTA sonni hosil qiling. Kodda nimani o‘zgartirasiz va javob nima?",
     qEn: "Delete three digits from “1432219” to make the LARGEST number. What changes in the code, and what is the answer?",
-    aUz: "Faqat bitta belgi: st.back() > c o‘rniga st.back() < c. Endi stek kamayuvchi bo‘ladi — chapda kichik raqam turishi zarar. Yurish: 1 chiqadi (4 kelganda), keyin 4 qoladi, 3 va 2 lardan ikkitasi chiqadi... natija «4329». Tekshiring: 7 ta raqamdan 3 tasini o‘chirdik, 4 tasi qoldi. ✓",
-    aEn: "One character: st.back() < c instead of st.back() > c. The stack now stays decreasing, since a small digit on the left is harmful. Walking through: the 1 is popped when 4 arrives, 4 stays, two of the 3 and 2 are popped, giving “4329”. Check the length: three of seven digits deleted leaves four. ✓" },
+    aUz: "Faqat bitta belgi: st.back() > c o‘rniga st.back() < c. Endi stek kamayuvchi bo‘ladi — chapda kichik raqam turishi zarar. Yurish: 4 kelganda 1 chiqadi (k = 2); 3, 2, 2, 1 kamayuvchi tartibda stekka tushadi; 9 kelganda oxirgi 1 va 2 chiqadi (k = 0) → «4329». Tekshiring: 7 ta raqamdan 3 tasini o‘chirdik, 4 tasi qoldi. ✓",
+    aEn: "One character: st.back() < c instead of st.back() > c. The stack now stays decreasing, since a small digit on the left is harmful. Walking through: 4 pops the 1 (k = 2); 3, 2, 2, 1 go on in decreasing order; 9 pops the last 1 and a 2 (k = 0), giving “4329”. Check the length: three of seven digits deleted leaves four. ✓" },
  ]},
 ]},
 

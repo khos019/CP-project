@@ -560,11 +560,11 @@ export const backtrackingLessons: Record<string, DeepLesson> = {
     aEn: "No. The shortest path calls for BFS: it visits cells in layers by distance, so the first path found is automatically the shortest, at O(n·m). Backtracking would have to enumerate every path and pick the shortest — exponential. Backtracking is for “count all paths” or “construct a path with constraints” problems." },
  ]},
 ]},
-/* ── 10. Pruning: budnik kesish ──────────────────────────────────────── */
+/* ── 10. Pruning: shoxlarni kesish ──────────────────────────────────────── */
 "backtracking-10": { sections: [
  { titleUz: "Bitta tekshiruv million holatni o‘chiradi", titleEn: "One check erases a million states", blocks: [
   { t: "p",
-    uz: "Backtracking daraxti eksponensial o‘sadi, lekin uning katta qismi BEFOYDA: shunday shoxlar borki, ulardan hech qachon yechim chiqmaydi, va buni oldindan bilish mumkin. Pruning (budnik kesish) — shu shoxlarni ILDIZIGA YAQIN joyda kesib tashlash san’ati.",
+    uz: "Backtracking daraxti eksponensial o‘sadi, lekin uning katta qismi BEFOYDA: shunday shoxlar borki, ulardan hech qachon yechim chiqmaydi, va buni oldindan bilish mumkin. Pruning (shoxlarni kesish) — shu shoxlarni ILDIZIGA YAQIN joyda kesib tashlash san’ati.",
     en: "A backtracking tree grows exponentially, but much of it is USELESS: some branches can never produce a solution, and that can be known in advance. Pruning is the art of cutting those branches CLOSE TO THE ROOT." },
   { t: "p",
     uz: "Nima uchun «ildizga yaqin» muhim? Chunki daraxtda tugunlar soni pastga tushgan sari ikki (yoki k) baravar ko‘payadi. Ildizdan bir qavat pastdagi shoxni kessangiz, butun yarim daraxtni — millionlab holatni — bir vaqtda o‘chirasiz. Eng pastki qavatda kesish esa deyarli hech narsa bermaydi.",

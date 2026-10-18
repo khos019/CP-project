@@ -1428,7 +1428,7 @@ export const graphsLessons: Record<string, DeepLesson> = {
   { t: "exercise",
     qUz: "«x, y, z dan kamida ikkitasi rost bo‘lsin» shartini 2-SAT bilan yozib bo‘ladimi?",
     qEn: "Can “at least two of x, y and z are true” be written in 2-SAT?",
-    aUz: "Ha, va bu chiroyli hiyla. «Kamida ikkitasi rost» ⟺ «ko‘pi bilan bittasi yolg‘on» ⟺ har juftlik uchun «ikkalasi birdan yolg‘on bo‘lmasin»: (x ∨ y), (y ∨ z), (x ∨ z). Uchta shart, har biri ikkita o‘zgaruvchi haqida — 2-SAT ga to‘g‘ri keladi. Diqqat: «kamida bittasi» ham oson ((x ∨ y ∨ z) emas... aslida bu 3-SAT va uni 2-SAT ga keltirib bo‘lmaydi). Chegara juda nozik.",
+    aUz: "Ha, va bu chiroyli hiyla. «Kamida ikkitasi rost» ⟺ «ko‘pi bilan bittasi yolg‘on» ⟺ har juftlik uchun «ikkalasi birdan yolg‘on bo‘lmasin»: (x ∨ y), (y ∨ z), (x ∨ z). Uchta shart, har biri ikkita o‘zgaruvchi haqida — 2-SAT ga to‘g‘ri keladi. Farqiga e’tibor bering: «kamida bittasi rost» esa (x ∨ y ∨ z) — uch o‘zgaruvchili shart, ya’ni 3-SAT, va uni 2-SAT ga keltirib bo‘lmaydi. Chegara juda nozik.",
     aEn: "Yes, and it is a neat trick. “At least two are true” ⟺ “at most one is false” ⟺ for each pair, “not both false”: (x ∨ y), (y ∨ z), (x ∨ z). Three clauses, each over two variables — genuine 2-SAT. Note the contrast: “at least one” is (x ∨ y ∨ z), which is 3-SAT and cannot be reduced to 2-SAT. The boundary is delicate." },
  ]},
 ]},
