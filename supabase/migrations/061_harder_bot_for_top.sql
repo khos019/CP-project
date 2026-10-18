@@ -4,8 +4,9 @@
 -- ranked within bot_top_n (4) by duel rating among real accounts, the bot is
 -- made better at SOLVING, while its rating moves only a little:
 --
---   bot_top_skill  (200) — how much better it plays: the Worker plans the
---                  bot's attempts (app/api/_lib/bot.ts) at this level, so it
+--   bot_top_skill  (200) — how much better it plays rounds B and C (round A
+--                  stays at the usual pace): the Worker plans the bot's
+--                  attempts there (app/api/_lib/bot.ts) at this level, so it
 --                  thinks ~30% faster and solves more often (a problem at its
 --                  own level: 67% -> 86%; one 200 above: 39% -> 67%). Not
 --                  unbeatable: a strong player still wins often.
@@ -98,5 +99,5 @@ begin
      set status = 'duel_found', match_id = v_match, ended_at = now() where id = v_session.id;
 
   return jsonb_build_object('ok', true, 'duel_id', v_match, 'bot_rating', v_play,
-                            'bot_skill', v_skill, 'strength', v_strength, 'top', v_top);
+                            'bot_base', v_bot, 'bot_skill', v_skill, 'strength', v_strength, 'top', v_top);
 end $$;

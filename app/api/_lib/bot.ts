@@ -185,6 +185,9 @@ export function planDuel(
      *  byte-identical program twice and collecting the same verdict twice —
      *  which is the one thing no person has ever done. */
     wrongVariants?: number;
+    /** How well the bot plays this round, when it differs from `botRating`
+     *  (061: against the top players only rounds B and C get the stronger bot). */
+    botRating?: number;
   }[],
   duelSeconds: number, config = DEFAULT_BOT_CONFIG,
 ): BotPlan {
@@ -198,7 +201,7 @@ export function planDuel(
     const seed = `${matchId}:${round.round}`;
     const timing = seeded(`${seed}:timing`);
     const mistakes = seeded(`${seed}:mistakes`);
-    const behaviour = getBotSubmissionBehavior(botRating, round.problemRating, seed, config);
+    const behaviour = getBotSubmissionBehavior(round.botRating ?? botRating, round.problemRating, seed, config);
 
     // Lognormal-ish jitter so two duels at the same rating do not look identical.
     const jitter = Math.exp((timing() - 0.5) * 0.7);
