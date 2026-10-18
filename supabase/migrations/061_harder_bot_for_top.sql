@@ -9,13 +9,15 @@
 --                  thinks ~30% faster and solves more often (a problem at its
 --                  own level: 67% -> 86%; one 200 above: 39% -> 67%). Not
 --                  unbeatable: a strong player still wins often.
---   bot_top_rating (40)  — how much higher its rating is, which is what the Elo
---                  update uses: losing to it costs a little less, beating it
---                  pays a little more.
+--   bot_top_rating_min / _max (30 / 50) — how much higher its rating is, drawn
+--                  afresh for every duel between the two, so the bot's rating
+--                  differs from duel to duel. The rating is what the Elo update
+--                  uses: losing to it costs a little less, beating it pays a
+--                  little more.
 --
 -- The problems are the same as anyone at that level gets. The function
 -- returns `bot_skill` beside `bot_rating`; the Worker plans with bot_skill
--- when it is there. Everyone else is unchanged. All three numbers live in
+-- when it is there. Everyone else is unchanged. All the numbers live in
 -- duel_config.
 --
 -- duel_start_bot_match is the function from 021 with only these lines added.
@@ -24,7 +26,8 @@
 insert into public.duel_config(key, value, note) values
   ('bot_top_n',      '4'::jsonb,   'players ranked this high or better get the stronger bot'),
   ('bot_top_skill',  '200'::jsonb, 'how much better the bot solves against them'),
-  ('bot_top_rating', '40'::jsonb,  'how much higher the bot is rated against them')
+  ('bot_top_rating_min', '30'::jsonb, 'the bot is rated at least this much higher against them'),
+  ('bot_top_rating_max', '50'::jsonb, '... and at most this much higher, drawn per duel')
 on conflict (key) do nothing;
 
 create or replace function public.duel_start_bot_match()
@@ -68,7 +71,8 @@ begin
   -- solves. The top players get the usual problems and a better solver.
   v_play := v_bot; v_skill := v_bot;
   if v_top then
-    v_play  := v_bot + duel_cfg('bot_top_rating', 40)::int;
+    v_play  := v_bot + duel_cfg('bot_top_rating_min', 30)::int
+             + floor(random() * (duel_cfg('bot_top_rating_max', 50) - duel_cfg('bot_top_rating_min', 30) + 1))::int;
     v_skill := v_bot + duel_cfg('bot_top_skill', 200)::int;
   end if;
   v_rounds := duel_cfg('duel_rounds', 3);
