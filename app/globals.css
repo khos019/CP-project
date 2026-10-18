@@ -4912,3 +4912,12 @@ a.cx-prow:hover .cx-pname b{text-decoration:underline;text-underline-offset:3px}
  .leader-modes{width:100%}
  .leader-modes button{flex:1}
 }
+/* Several questions in one quiz card: a divider between them, and the ✓/✕ a
+   checked question gets next to its text. */
+.quiz-q+.quiz-q{border-top:1px solid var(--line);padding-top:var(--s3)}
+.quiz-q>p{margin:0}
+.quiz-q .quiz-options{margin:10px 0 4px}
+.quiz-note{font-size:13px;margin:0}
+.quiz-mark{font-weight:800}
+.quiz-mark.ok{color:color-mix(in srgb,var(--green) 80%,var(--ink))}
+.quiz-mark.bad{color:color-mix(in srgb,var(--bad) 65%,var(--ink))}
