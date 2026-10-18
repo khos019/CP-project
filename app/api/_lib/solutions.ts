@@ -9511,6 +9511,178 @@ for(int k=0;k<n;++k){int u=order[k];vector<int>ch;for(int v:g[u])if(v!=par[u])ch
  for(int i=0;i<c;++i){long long without=pre[i]*suf[i+1]%M*up[u]%M;up[ch[i]]=without%M;}}
 for(int v=1;v<=n;++v)cout<<dn[v]%M*up[v]%M<<"\\n";`)],
   },
+  "sort-bubble-swaps-and-passes": {
+    solution: cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;long long sw=0,ps=0;
+for(;;){bool any=false;for(int i=0;i+1<n;++i)if(a[i]>a[i+1]){swap(a[i],a[i+1]);++sw;any=true;}if(!any)break;++ps;}
+cout<<sw<<" "<<ps<<"\\n";`),
+    // Counting the last, empty pass reports one pass too many; counting pairs with a_i ≥ a_j as out of order swaps equal elements that bubble sort leaves alone.
+    wrong: [cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;long long sw=0,ps=0;
+for(;;){bool any=false;for(int i=0;i+1<n;++i)if(a[i]>a[i+1]){swap(a[i],a[i+1]);++sw;any=true;}++ps;if(!any)break;}
+cout<<sw<<" "<<ps<<"\\n";`), cpp(`int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;long long inv=0,mx=0;
+for(int j=0;j<n;++j){long long c=0;for(int i=0;i<j;++i)if(a[i]>=a[j])++c;inv+=c;mx=max(mx,c);}cout<<inv<<" "<<mx<<"\\n";`)],
+  },
+  "math-bezout-smallest-x": {
+    solution: cpp(`int t;cin>>t;while(t--){long long a,b;cin>>a>>b;long long x0=1,y0=0,x1=0,y1=1,r0=a,r1=b;
+while(r1){long long q=r0/r1,w;w=r0-q*r1;r0=r1;r1=w;w=x0-q*x1;x0=x1;x1=w;w=y0-q*y1;y0=y1;y1=w;}
+long long g=r0,m=b/g;long long x=((x0%m)+m)%m;long long y=(g-a*x)/b;cout<<g<<" "<<x<<" "<<y<<"\\n";}`),
+    // Printing the coefficients exactly as the extended algorithm leaves them gives a negative x half the time; shifting x by b instead of b / g can leave it at b / g or above when g > 1.
+    wrong: [cpp(`int t;cin>>t;while(t--){long long a,b;cin>>a>>b;long long x0=1,y0=0,x1=0,y1=1,r0=a,r1=b;
+while(r1){long long q=r0/r1,w;w=r0-q*r1;r0=r1;r1=w;w=x0-q*x1;x0=x1;x1=w;w=y0-q*y1;y0=y1;y1=w;}
+cout<<r0<<" "<<x0<<" "<<y0<<"\\n";}`), cpp(`int t;cin>>t;while(t--){long long a,b;cin>>a>>b;long long x0=1,y0=0,x1=0,y1=1,r0=a,r1=b;
+while(r1){long long q=r0/r1,w;w=r0-q*r1;r0=r1;r1=w;w=x0-q*x1;x0=x1;x1=w;w=y0-q*y1;y0=y1;y1=w;}
+long long g=r0;long long x=((x0%b)+b)%b;long long y=(g-a*x)/b;cout<<g<<" "<<x<<" "<<y<<"\\n";}`)],
+  },
+  "bs-parallel-first-day-watered": {
+    solution: cpp(`int n,m;cin>>n>>m;vector<long long>p(n+1);for(int i=1;i<=n;++i)cin>>p[i];vector<long long>X(m+1);vector<vector<int>>st(n+2),en(n+2);
+for(int j=1;j<=m;++j){int l,r;cin>>l>>r>>X[j];st[l].push_back(j);en[r+1].push_back(j);}
+int sz=1;while(sz<m)sz<<=1;vector<long long>T(2*sz,0);
+auto upd=[&](int j,long long v){int i=sz+j-1;T[i]+=v;for(i>>=1;i;i>>=1)T[i]=T[2*i]+T[2*i+1];};
+for(int i=1;i<=n;++i){for(int j:en[i])upd(j,-X[j]);for(int j:st[i])upd(j,X[j]);
+ long long ans=-1;if(T[1]>=p[i]){long long need=p[i];int v=1;while(v<sz){if(T[2*v]>=need)v=2*v;else{need-=T[2*v];v=2*v+1;}}ans=v-sz+1;}
+ cout<<ans<<(i==n?"\\n":" ");}`),
+    // Waiting for strictly more than p_i litres answers a day late when a bed gets exactly what it needs; treating r_j as excluded stops each day's watering one bed short.
+    wrong: [cpp(`int n,m;cin>>n>>m;vector<long long>p(n+1);for(int i=1;i<=n;++i)cin>>p[i];vector<long long>X(m+1);vector<vector<int>>st(n+2),en(n+2);
+for(int j=1;j<=m;++j){int l,r;cin>>l>>r>>X[j];st[l].push_back(j);en[r+1].push_back(j);}
+int sz=1;while(sz<m)sz<<=1;vector<long long>T(2*sz,0);
+auto upd=[&](int j,long long v){int i=sz+j-1;T[i]+=v;for(i>>=1;i;i>>=1)T[i]=T[2*i]+T[2*i+1];};
+for(int i=1;i<=n;++i){for(int j:en[i])upd(j,-X[j]);for(int j:st[i])upd(j,X[j]);
+ long long ans=-1;if(T[1]>p[i]){long long need=p[i];int v=1;while(v<sz){if(T[2*v]>need)v=2*v;else{need-=T[2*v];v=2*v+1;}}ans=v-sz+1;}
+ cout<<ans<<(i==n?"\\n":" ");}`), cpp(`int n,m;cin>>n>>m;vector<long long>p(n+1);for(int i=1;i<=n;++i)cin>>p[i];vector<long long>X(m+1);vector<vector<int>>st(n+2),en(n+2);
+for(int j=1;j<=m;++j){int l,r;cin>>l>>r>>X[j];st[l].push_back(j);en[r].push_back(j);}
+int sz=1;while(sz<m)sz<<=1;vector<long long>T(2*sz,0);
+auto upd=[&](int j,long long v){int i=sz+j-1;T[i]+=v;for(i>>=1;i;i>>=1)T[i]=T[2*i]+T[2*i+1];};
+for(int i=1;i<=n;++i){for(int j:en[i])upd(j,-X[j]);for(int j:st[i])upd(j,X[j]);
+ long long ans=-1;if(T[1]>=p[i]){long long need=p[i];int v=1;while(v<sz){if(T[2*v]>=need)v=2*v;else{need-=T[2*v];v=2*v+1;}}ans=v-sz+1;}
+ cout<<ans<<(i==n?"\\n":" ");}`)],
+  },
+  "math-brackets-complete-prefix": {
+    solution: cpp(`const long long M=1000000007;int n;string s;cin>>n>>s;int bal=0;for(char c:s){bal+=c=='('?1:-1;if(bal<0){cout<<0<<"\\n";return 0;}}
+int k=n-(int)s.size();if(bal>k||(k-bal)%2){cout<<0<<"\\n";return 0;}
+vector<long long>f(k+1),inv(k+1);f[0]=1;for(int i=1;i<=k;++i)f[i]=f[i-1]*i%M;
+auto pw=[&](long long b,long long e){long long r=1;b%=M;while(e){if(e&1)r=r*b%M;b=b*b%M;e>>=1;}return r;};
+inv[k]=pw(f[k],M-2);for(int i=k;i>0;--i)inv[i-1]=inv[i]*i%M;
+auto C=[&](int a,int b)->long long{if(b<0||b>a)return 0;return f[a]*inv[b]%M*inv[a-b]%M;};
+int u=(k-bal)/2;cout<<((C(k,u)-C(k,u-1))%M+M)%M<<"\\n";`),
+    // Checking only the final balance of s misses a prefix that dips below zero in the middle; counting every arrangement of the remaining brackets forgets the reflection that removes the ones that dip below zero later.
+    wrong: [cpp(`const long long M=1000000007;int n;string s;cin>>n>>s;int bal=0;for(char c:s)bal+=c=='('?1:-1;
+int k=n-(int)s.size();if(bal<0||bal>k||(k-bal)%2){cout<<0<<"\\n";return 0;}
+vector<long long>f(k+1),inv(k+1);f[0]=1;for(int i=1;i<=k;++i)f[i]=f[i-1]*i%M;
+auto pw=[&](long long b,long long e){long long r=1;b%=M;while(e){if(e&1)r=r*b%M;b=b*b%M;e>>=1;}return r;};
+inv[k]=pw(f[k],M-2);for(int i=k;i>0;--i)inv[i-1]=inv[i]*i%M;
+auto C=[&](int a,int b)->long long{if(b<0||b>a)return 0;return f[a]*inv[b]%M*inv[a-b]%M;};
+int u=(k-bal)/2;cout<<((C(k,u)-C(k,u-1))%M+M)%M<<"\\n";`), cpp(`const long long M=1000000007;int n;string s;cin>>n>>s;int bal=0;for(char c:s){bal+=c=='('?1:-1;if(bal<0){cout<<0<<"\\n";return 0;}}
+int k=n-(int)s.size();if(bal>k||(k-bal)%2){cout<<0<<"\\n";return 0;}
+vector<long long>f(k+1),inv(k+1);f[0]=1;for(int i=1;i<=k;++i)f[i]=f[i-1]*i%M;
+auto pw=[&](long long b,long long e){long long r=1;b%=M;while(e){if(e&1)r=r*b%M;b=b*b%M;e>>=1;}return r;};
+inv[k]=pw(f[k],M-2);for(int i=k;i>0;--i)inv[i-1]=inv[i]*i%M;
+int u=(k-bal)/2;cout<<f[k]*inv[u]%M*inv[k-u]%M<<"\\n";`)],
+  },
+  "adv-persistent-kth-smallest": {
+    solution: cpp(`int n,q;cin>>n>>q;vector<long long>a(n);for(auto&x:a)cin>>x;vector<long long>v(a);sort(v.begin(),v.end());v.erase(unique(v.begin(),v.end()),v.end());int V=v.size();
+static int Lc[4000005],Rc[4000005],C[4000005];int cnt=1;vector<int>root(n+1,0);
+auto ins=[&](auto&&self,int prev,int lo,int hi,int pos)->int{int cur=cnt++;Lc[cur]=Lc[prev];Rc[cur]=Rc[prev];C[cur]=C[prev]+1;
+ if(lo<hi){int mid=(lo+hi)/2;if(pos<=mid){int c=self(self,Lc[prev],lo,mid,pos);Lc[cur]=c;}else{int c=self(self,Rc[prev],mid+1,hi,pos);Rc[cur]=c;}}return cur;};
+for(int i=0;i<n;++i){int pos=lower_bound(v.begin(),v.end(),a[i])-v.begin();root[i+1]=ins(ins,root[i],0,V-1,pos);}
+while(q--){int l,r,k;cin>>l>>r>>k;int u=root[r],w=root[l-1],lo=0,hi=V-1;
+ while(lo<hi){int mid=(lo+hi)/2;int c=C[Lc[u]]-C[Lc[w]];if(k<=c){u=Lc[u];w=Lc[w];hi=mid;}else{k-=c;u=Rc[u];w=Rc[w];lo=mid+1;}}
+ cout<<v[lo]<<"\\n";}`),
+    // Subtracting the version after a_l instead of the one before it leaves a_l out of its own range; walking right when the left half holds enough answers the k-th largest.
+    wrong: [cpp(`int n,q;cin>>n>>q;vector<long long>a(n);for(auto&x:a)cin>>x;vector<long long>v(a);sort(v.begin(),v.end());v.erase(unique(v.begin(),v.end()),v.end());int V=v.size();
+int cap=n*20+5;vector<int>Lc(cap,0),Rc(cap,0),C(cap,0);int cnt=1;vector<int>root(n+1,0);
+auto ins=[&](auto&&self,int prev,int lo,int hi,int pos)->int{int cur=cnt++;Lc[cur]=Lc[prev];Rc[cur]=Rc[prev];C[cur]=C[prev]+1;
+ if(lo<hi){int mid=(lo+hi)/2;if(pos<=mid){int c=self(self,Lc[prev],lo,mid,pos);Lc[cur]=c;}else{int c=self(self,Rc[prev],mid+1,hi,pos);Rc[cur]=c;}}return cur;};
+for(int i=0;i<n;++i){int pos=lower_bound(v.begin(),v.end(),a[i])-v.begin();root[i+1]=ins(ins,root[i],0,V-1,pos);}
+while(q--){int l,r,k;cin>>l>>r>>k;int u=root[r],w=root[l],lo=0,hi=V-1;
+ while(lo<hi){int mid=(lo+hi)/2;int c=C[Lc[u]]-C[Lc[w]];if(k<=c){u=Lc[u];w=Lc[w];hi=mid;}else{k-=c;u=Rc[u];w=Rc[w];lo=mid+1;}}
+ cout<<v[lo]<<"\\n";}`), cpp(`int n,q;cin>>n>>q;vector<long long>a(n);for(auto&x:a)cin>>x;while(q--){int l,r,k;cin>>l>>r>>k;vector<long long>b(a.begin()+l-1,a.begin()+r);sort(b.rbegin(),b.rend());cout<<b[k-1]<<"\\n";}`)],
+  },
+  "str-eertree-distinct-palindromes": {
+    solution: cpp(`string s;cin>>s;int n=s.size();vector<array<int,26>>nx(n+3);vector<int>len(n+3,0),lk(n+3,0);
+len[1]=-1;lk[1]=1;len[2]=0;lk[2]=1;int sz=3,last=2;
+for(int i=0;i<n;++i){int c=s[i]-'a';int cur=last;while(true){int L=len[cur];if(i-1-L>=0&&s[i-1-L]==s[i])break;cur=lk[cur];}
+ if(nx[cur][c]){last=nx[cur][c];continue;}
+ int w=sz++;len[w]=len[cur]+2;if(len[w]==1)lk[w]=2;else{int p=lk[cur];while(true){int L=len[p];if(i-1-L>=0&&s[i-1-L]==s[i])break;p=lk[p];}lk[w]=nx[p][c];}
+ nx[cur][c]=w;last=w;}
+cout<<sz-3<<"\\n";`),
+    // Counting every palindromic occurrence counts a repeated palindrome once per place; keeping only the odd-length palindromes misses aa, abba and the rest of the even ones.
+    wrong: [cpp(`string s;cin>>s;int n=s.size();long long c=0;for(int m=0;m<n;++m){for(int l=m,r=m;l>=0&&r<n&&s[l]==s[r];--l,++r)++c;for(int l=m,r=m+1;l>=0&&r<n&&s[l]==s[r];--l,++r)++c;}cout<<c<<"\\n";`), cpp(`string s;cin>>s;int n=s.size();vector<array<int,26>>nx(n+3);vector<int>len(n+3,0),lk(n+3,0);
+len[1]=-1;lk[1]=1;len[2]=0;lk[2]=1;int sz=3,last=2;
+for(int i=0;i<n;++i){int c=s[i]-'a';int cur=last;while(true){int L=len[cur];if(i-1-L>=0&&s[i-1-L]==s[i])break;cur=lk[cur];}
+ if(nx[cur][c]){last=nx[cur][c];continue;}
+ int w=sz++;len[w]=len[cur]+2;if(len[w]==1)lk[w]=2;else{int p=lk[cur];while(true){int L=len[p];if(i-1-L>=0&&s[i-1-L]==s[i])break;p=lk[p];}lk[w]=nx[p][c];}
+ nx[cur][c]=w;last=w;}
+int odd=0;for(int v=3;v<sz;++v)if(len[v]%2)++odd;cout<<odd<<"\\n";`)],
+  },
+  "adv-treap-reverse-and-move": {
+    solution: cpp(`int n,m;cin>>n>>m;string s;cin>>s;static int L[100005],R[100005],S[100005];static unsigned P[100005];static char F[100005];
+mt19937 rng(12345);for(int i=1;i<=n;++i){P[i]=rng();S[i]=1;}
+auto split=[&](auto&&self,int t,int k,int&a,int&b)->void{if(!t){a=b=0;return;}
+ if(F[t]){int x=L[t];L[t]=R[t];R[t]=x;F[L[t]]^=1;F[R[t]]^=1;F[t]=0;}
+ if(S[L[t]]<k){int x,y;self(self,R[t],k-S[L[t]]-1,x,y);R[t]=x;a=t;b=y;}else{int x,y;self(self,L[t],k,x,y);L[t]=y;a=x;b=t;}S[t]=1+S[L[t]]+S[R[t]];};
+auto merge=[&](auto&&self,int a,int b)->int{if(!a)return b;if(!b)return a;
+ if(P[a]>P[b]){if(F[a]){int x=L[a];L[a]=R[a];R[a]=x;F[L[a]]^=1;F[R[a]]^=1;F[a]=0;}int c=self(self,R[a],b);R[a]=c;S[a]=1+S[L[a]]+S[R[a]];return a;}
+ if(F[b]){int x=L[b];L[b]=R[b];R[b]=x;F[L[b]]^=1;F[R[b]]^=1;F[b]=0;}int c=self(self,a,L[b]);L[b]=c;S[b]=1+S[L[b]]+S[R[b]];return b;};
+int root=0;for(int i=1;i<=n;++i)root=merge(merge,root,i);
+while(m--){int t,l,r;cin>>t>>l>>r;int a,b,c,d;split(split,root,l-1,a,b);split(split,b,r-l+1,c,d);
+ if(t==1){F[c]^=1;root=merge(merge,merge(merge,a,c),d);}else root=merge(merge,merge(merge,a,d),c);}
+string out;out.reserve(n);vector<int>stk;int cur=root;
+while(cur||!stk.empty()){while(cur){if(F[cur]){int x=L[cur];L[cur]=R[cur];R[cur]=x;F[L[cur]]^=1;F[R[cur]]^=1;F[cur]=0;}stk.push_back(cur);cur=L[cur];}cur=stk.back();stk.pop_back();out+=s[cur-1];cur=R[cur];}
+cout<<out<<"\\n";`),
+    // Putting the cut piece at the front instead of the end reads "move" the wrong way round; cutting one letter too few reverses or moves l to r − 1.
+    wrong: [cpp(`int n,m;cin>>n>>m;string s;cin>>s;while(m--){int t,l,r;cin>>t>>l>>r;if(t==1)reverse(s.begin()+l-1,s.begin()+r);else{string p=s.substr(l-1,r-l+1);s.erase(l-1,r-l+1);s=p+s;}}cout<<s<<"\\n";`), cpp(`int n,m;cin>>n>>m;string s;cin>>s;while(m--){int t,l,r;cin>>t>>l>>r;if(t==1)reverse(s.begin()+l-1,s.begin()+r-1);else{string p=s.substr(l-1,r-l);s.erase(l-1,r-l);s+=p;}}cout<<s<<"\\n";`)],
+  },
+  "tree-virtual-sum-pair-distances": {
+    solution: cpp(`int n,q;cin>>n>>q;vector<vector<int>>g(n+1);for(int i=0;i<n-1;++i){int a,b;cin>>a>>b;g[a].push_back(b);g[b].push_back(a);}
+const int LG=18;static int up[18][200005],dep[200005],tin[200005],tout[200005],it[200005],vp[200005];static char vis[200005],mk[200005];static long long cnt[200005];
+int timer=0;vector<int>st={1};vis[1]=1;up[0][1]=1;tin[1]=timer++;
+while(!st.empty()){int u=st.back();if(it[u]<(int)g[u].size()){int w=g[u][it[u]++];if(!vis[w]){vis[w]=1;up[0][w]=u;dep[w]=dep[u]+1;tin[w]=timer++;st.push_back(w);}}else{tout[u]=timer;st.pop_back();}}
+for(int j=1;j<LG;++j)for(int v=1;v<=n;++v)up[j][v]=up[j-1][up[j-1][v]];
+auto anc=[&](int a,int b){return tin[a]<=tin[b]&&tout[b]<=tout[a];};
+auto lca=[&](int a,int b){if(anc(a,b))return a;if(anc(b,a))return b;for(int j=LG-1;j>=0;--j)if(!anc(up[j][a],b))a=up[j][a];return up[0][a];};
+auto byTin=[&](int a,int b){return tin[a]<tin[b];};
+while(q--){int k;cin>>k;vector<int>vs(k);for(auto&x:vs){cin>>x;mk[x]=1;}sort(vs.begin(),vs.end(),byTin);
+ vector<int>all(vs);for(int i=0;i+1<k;++i)all.push_back(lca(vs[i],vs[i+1]));sort(all.begin(),all.end(),byTin);all.erase(unique(all.begin(),all.end()),all.end());
+ vector<int>stk;for(int v:all){while(!stk.empty()&&!anc(stk.back(),v))stk.pop_back();vp[v]=stk.empty()?0:stk.back();stk.push_back(v);cnt[v]=mk[v];}
+ long long ans=0;for(int i=(int)all.size()-1;i>=0;--i){int v=all[i];if(vp[v]){ans+=cnt[v]*(k-cnt[v])*(long long)(dep[v]-dep[vp[v]]);cnt[vp[v]]+=cnt[v];}}
+ for(int v:all){mk[v]=0;cnt[v]=0;}cout<<ans<<"\\n";}`),
+    // Summing the distances between neighbours in DFS order and halving gives the size of the connecting subtree, not the pairwise total; counting ordered pairs doubles every answer.
+    wrong: [cpp(`int n,q;cin>>n>>q;vector<vector<int>>g(n+1);for(int i=0;i<n-1;++i){int a,b;cin>>a>>b;g[a].push_back(b);g[b].push_back(a);}
+const int LG=18;vector<vector<int>>up(LG,vector<int>(n+1,1));vector<int>dep(n+1,0),tin(n+1,0),tout(n+1,0),it(n+1,0);vector<char>vis(n+1,0);
+int timer=0;vector<int>st={1};vis[1]=1;tin[1]=timer++;
+while(!st.empty()){int u=st.back();if(it[u]<(int)g[u].size()){int w=g[u][it[u]++];if(!vis[w]){vis[w]=1;up[0][w]=u;dep[w]=dep[u]+1;tin[w]=timer++;st.push_back(w);}}else{tout[u]=timer;st.pop_back();}}
+for(int j=1;j<LG;++j)for(int v=1;v<=n;++v)up[j][v]=up[j-1][up[j-1][v]];
+auto anc=[&](int a,int b){return tin[a]<=tin[b]&&tout[b]<=tout[a];};
+auto lca=[&](int a,int b){if(anc(a,b))return a;if(anc(b,a))return b;for(int j=LG-1;j>=0;--j)if(!anc(up[j][a],b))a=up[j][a];return up[0][a];};
+while(q--){int k;cin>>k;vector<int>vs(k);for(auto&x:vs)cin>>x;sort(vs.begin(),vs.end(),[&](int a,int b){return tin[a]<tin[b];});
+ long long s=0;for(int i=0;i<k;++i){int a=vs[i],b=vs[(i+1)%k];s+=dep[a]+dep[b]-2*dep[lca(a,b)];}cout<<s/2<<"\\n";}`), cpp(`int n,q;cin>>n>>q;vector<vector<int>>g(n+1);for(int i=0;i<n-1;++i){int a,b;cin>>a>>b;g[a].push_back(b);g[b].push_back(a);}
+while(q--){int k;cin>>k;vector<int>vs(k);for(auto&x:vs)cin>>x;long long s=0;for(int i=0;i<k;++i){vector<int>d(n+1,-1);queue<int>Q;Q.push(vs[i]);d[vs[i]]=0;while(!Q.empty()){int u=Q.front();Q.pop();for(int w:g[u])if(d[w]<0){d[w]=d[u]+1;Q.push(w);}}for(int j=0;j<k;++j)s+=d[vs[j]];}cout<<s<<"\\n";}`)],
+  },
+  "tree-isomorphism-unrooted": {
+    solution: cpp(`int t;cin>>t;map<vector<int>,int>ids;
+auto readTree=[&](int n){vector<vector<int>>g(n+1);for(int i=0;i<n-1;++i){int a,b;cin>>a>>b;g[a].push_back(b);g[b].push_back(a);}return g;};
+auto centers=[&](vector<vector<int>>&g,int n){vector<int>deg(n+1,0),leaves;for(int v=1;v<=n;++v){deg[v]=g[v].size();if(deg[v]<=1)leaves.push_back(v);}
+ int rem=n;while(rem>2){vector<int>nl;for(int v:leaves){--rem;for(int w:g[v])if(--deg[w]==1)nl.push_back(w);}leaves=nl;}return leaves;};
+auto look=[&](vector<int>&k){auto f=ids.find(k);if(f!=ids.end())return f->second;int v=ids.size();ids.emplace(k,v);return v;};
+auto canon=[&](vector<vector<int>>&g,int n,vector<int>&c){int r=c[0];vector<int>order,par(n+1,0);order.reserve(n);order.push_back(r);
+ for(size_t i=0;i<order.size();++i){int u=order[i];for(int w:g[u])if(w!=par[u]){par[w]=u;order.push_back(w);}}
+ vector<int>id(n+1,0);vector<vector<int>>kids(n+1);
+ for(int i=n-1;i>=0;--i){int u=order[i];vector<int>&k=kids[u];sort(k.begin(),k.end());id[u]=look(k);if(par[u])kids[par[u]].push_back(id[u]);}
+ if(c.size()==1)return make_pair(id[r],-1);
+ vector<int>k=kids[r];k.erase(lower_bound(k.begin(),k.end(),id[c[1]]));int a=look(k),b=id[c[1]];return make_pair(min(a,b),max(a,b));};
+while(t--){int n;cin>>n;auto g1=readTree(n);auto g2=readTree(n);auto c1=centers(g1,n),c2=centers(g2,n);
+ bool ok=c1.size()==c2.size()&&canon(g1,n,c1)==canon(g2,n,c2);
+ cout<<(ok?"YES":"NO")<<"\\n";}`),
+    // Comparing sorted degree lists calls two different spiders the same; rooting both trees at vertex 1 compares the trees as they happen to be numbered.
+    wrong: [cpp(`int t;cin>>t;while(t--){int n;cin>>n;vector<int>d1(n+1,0),d2(n+1,0);for(int i=0;i<n-1;++i){int a,b;cin>>a>>b;d1[a]++;d1[b]++;}for(int i=0;i<n-1;++i){int a,b;cin>>a>>b;d2[a]++;d2[b]++;}
+ sort(d1.begin(),d1.end());sort(d2.begin(),d2.end());cout<<(d1==d2?"YES":"NO")<<"\\n";}`), cpp(`int t;cin>>t;map<vector<int>,int>ids;
+auto readTree=[&](int n){vector<vector<int>>g(n+1);for(int i=0;i<n-1;++i){int a,b;cin>>a>>b;g[a].push_back(b);g[b].push_back(a);}return g;};
+auto rootId=[&](vector<vector<int>>&g,int n,int r){vector<int>order,par(n+1,0);order.push_back(r);
+ for(size_t i=0;i<order.size();++i){int u=order[i];for(int w:g[u])if(w!=par[u]){par[w]=u;order.push_back(w);}}
+ vector<int>id(n+1,0);vector<vector<int>>kids(n+1);
+ for(int i=n-1;i>=0;--i){int u=order[i];vector<int>&k=kids[u];sort(k.begin(),k.end());auto f=ids.find(k);int v;if(f==ids.end()){v=ids.size();ids.emplace(k,v);}else v=f->second;id[u]=v;if(par[u])kids[par[u]].push_back(v);}
+ return id[r];};
+while(t--){int n;cin>>n;auto g1=readTree(n);auto g2=readTree(n);cout<<(rootId(g1,n,1)==rootId(g2,n,1)?"YES":"NO")<<"\\n";}`)],
+  },
 };
 
 /** The problems the bot can actually play. Everything else falls back to
