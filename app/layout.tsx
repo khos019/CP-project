@@ -27,20 +27,15 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="uz" data-theme="light" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        <Script 
+          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-6750074489452564" 
+          strategy="afterInteractive" 
+        />
       </head>
       <body>
         {children}
 
-        {/* Yandex Ads skriptlari Next.js Script komponenti orqali ulandi */}
-        <Script 
-          src="https://yandex.ru/ads/system/context.js" 
-          strategy="afterInteractive" 
-        />
-        <Script 
-          src="https://yandex.ru/ads/system/ap-loader.js" 
-          data-page-id="20242049" 
-          strategy="afterInteractive" 
-        />
+
       </body>
     </html>
   );
