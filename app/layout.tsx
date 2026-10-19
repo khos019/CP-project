@@ -8,7 +8,7 @@ import { THEME_INIT_SCRIPT } from "./ui/theme-script";
 // @font-face failed in production and the whole site fell back to an unstyled
 // default. Typography now comes from a native stack defined in globals.css,
 // which needs no network request and cannot break on deploy.
-
+// fuck
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3001"),
   title: "AlgoYo‘l — Algoritmlarni o‘rganing, bellashing, o‘sing",
