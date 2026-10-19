@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 import "./globals.css";
 import { THEME_INIT_SCRIPT } from "./ui/theme-script";
 
@@ -26,10 +27,21 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     <html lang="uz" data-theme="light" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
-        <script src="https://yandex.ru/ads/system/context.js" async></script>
-        <script data-page-id="20242049" src="https://yandex.ru/ads/system/ap-loader.js" async></script>
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+
+        {/* Yandex Ads skriptlari Next.js Script komponenti orqali ulandi */}
+        <Script 
+          src="https://yandex.ru/ads/system/context.js" 
+          strategy="afterInteractive" 
+        />
+        <Script 
+          src="https://yandex.ru/ads/system/ap-loader.js" 
+          data-page-id="20242049" 
+          strategy="afterInteractive" 
+        />
+      </body>
     </html>
   );
 }
