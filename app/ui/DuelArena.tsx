@@ -321,11 +321,15 @@ export function ChallengeOverlay({
 
 /* --------------------------------------------------------------- matchmaking */
 export function DuelMatchmaking({
-  lang, signed, authLoading, needAuth,
+  lang, signed, authLoading, needAuth, onFinished,
 }: {
   lang: Lang; signed: boolean; authLoading: boolean; needAuth: () => void;
+  /** A duel just ended: the rating on the server has moved. */
+  onFinished?: () => void;
 }) {
   const t = T[lang];
+  const onFinishedRef = useRef(onFinished);
+  useEffect(() => { onFinishedRef.current = onFinished; }, [onFinished]);
   const [state, setState] = useState<DuelState | null>(null);
   const [drawnAt, setDrawnAt] = useState(() => Date.now());
   const [tick, setTick] = useState<{ elapsed: number; radius: number; available: number; botDue: boolean }>(
@@ -372,6 +376,7 @@ export function DuelMatchmaking({
           const counted = heartbeatAtStart.current === null ? 0 : heartbeatMark() - heartbeatAtStart.current;
           heartbeatAtStart.current = null;
           recordDuelDone(finished.id, Number.isFinite(played) ? played - counted : 0);
+          onFinishedRef.current?.();
         }
       }
     }
