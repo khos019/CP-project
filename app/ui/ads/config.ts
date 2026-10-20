@@ -1,7 +1,7 @@
 /* Adsterra blocks, switched from one place. ADSTERRA_ENABLED turns all of them
    off at once; each block also has its own flag, so the aggressive formats
    (popunder, social bar) can be dropped without losing the native banner. */
-export const ADSTERRA_ENABLED = false;
+export const ADSTERRA_ENABLED = true;
 
 export const ADSTERRA = {
   native: {
