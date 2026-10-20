@@ -210,7 +210,21 @@ export function PublicProfile({
   const person = override || fetched;
 
   const [summary, setSummary] = useState<ProfileSummary | "missing" | null>(null);
-  const [duels, setDuels] = useState<PublicDuelRow[] | null>(null);
+  const [rawDuels, setDuels] = useState<PublicDuelRow[] | null>(null);
+  /* A duel removed by the owner (with its loss refunded) leaves a jump in the
+     stored history: the next duel starts from a rating the previous one never
+     ended on. Rebuilt from the profile's rating backwards through each delta,
+     every dot sits exactly its +/- away from the one before, and the newest
+     ends on the rating the header shows. */
+  const duels = useMemo(() => {
+    if (!rawDuels || !person) return rawDuels;
+    let at = person.duel_rating;
+    return rawDuels.map((d) => {
+      const row = { ...d, rating_after: at, rating_before: at - d.delta };
+      at = row.rating_before;
+      return row;
+    });
+  }, [rawDuels, person]);
   const [duelState, setDuelState] = useState<"loading" | "ready" | "error" | "missing">("loading");
   const [friends, setFriends] = useState<FriendRow[] | null>(null);
   const [friendState, setFriendState] = useState<"idle" | "ready" | "error" | "missing">("idle");
