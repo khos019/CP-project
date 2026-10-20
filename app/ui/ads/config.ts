@@ -16,7 +16,19 @@ export const ADSTERRA = {
   // "Masalalar" nav link still tried to open mks98.com, and the tab title was
   // rewritten to a fake "(1) New Message!".
   socialBar: { enabled: false, src: "https://bauval.org/14/8b07ed5477b060e7f4d9c558ee0cc9f5" },
+  // Iframe banners (AdsterraBanner): one slot at the top of the content pages.
+  banner: { enabled: true },
   smartlink: { enabled: true, href: "https://araplhn.org/4/9d52200f50a58cb272cd9c806ae8d67c" },
+} as const;
+
+/* Iframe banner keys from the Adsterra dashboard, by size. */
+export const ADSTERRA_BANNERS = {
+  "728x90": { key: "c87746ede00ecf97ed16f83324034b27", width: 728, height: 90 },
+  "468x60": { key: "5b108a94774889af2b246757511001c8", width: 468, height: 60 },
+  "320x50": { key: "2cc8d3b878d7c174cf6544c121dcd5a8", width: 320, height: 50 },
+  "300x250": { key: "166f754e61c0baea9166ad525e2ebc65", width: 300, height: 250 },
+  "160x600": { key: "997d108dd2c76df3b87399b85c4d329d", width: 160, height: 600 },
+  "160x300": { key: "d81f30ed50dc3199b5d96bdbba307e1a", width: 160, height: 300 },
 } as const;
 
 /* Screens where a popunder or a bar over the page would cost the learner
