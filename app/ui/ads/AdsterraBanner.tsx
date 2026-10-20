@@ -10,9 +10,10 @@ const pick = (width: number): Size => (width >= 760 ? "728x90" : width >= 500 ? 
 
 /* An Adsterra iframe banner. Its code sets a global `atOptions` and writes the
    ad where the script tag stands, so every banner gets a document of its own:
-   a sandboxed srcdoc iframe. The sandbox lets the ad run and open its link in
-   a new tab when clicked, but gives it no access to the page and no way to
-   navigate it, so it can never take over a click meant for the site. */
+   a sandboxed srcdoc iframe. The ad's loader needs a real origin (with an
+   opaque one it never fills), hence allow-same-origin; the sandbox still has
+   no allow-top-navigation, so the ad can open its link in a new tab but
+   cannot send the page elsewhere. */
 export function AdsterraBanner({ lang }: { lang: "uz" | "en" }) {
   const [size, setSize] = useState<Size | null>(null);
   useEffect(() => {
@@ -37,7 +38,7 @@ export function AdsterraBanner({ lang }: { lang: "uz" | "en" }) {
         height={height}
         loading="lazy"
         scrolling="no"
-        sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"
+        sandbox="allow-scripts allow-same-origin allow-popups allow-popups-to-escape-sandbox"
       />
     </aside>
   );
