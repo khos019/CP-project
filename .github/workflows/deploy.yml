@@ -1,7 +1,7 @@
 name: Deploy to Cloudflare
 
 # Every push to main rebuilds the site and deploys it to
-# https://algoyol.cp-project.workers.dev
+# https://algoyol.uz
 # Run it by hand from the Actions tab with "Run workflow".
 on:
   push:
@@ -61,18 +61,39 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
           NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
-          NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL || 'https://algoyol.cp-project.workers.dev' }}
+          NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL || 'https://algoyol.uz' }}
           # Optional. Left empty, app/api/judge falls back to the public
           # ce.judge0.com endpoint.
           JUDGE0_URL: ${{ secrets.JUDGE0_URL }}
           JUDGE0_API_KEY: ${{ secrets.JUDGE0_API_KEY }}
           JUDGE0_API_HOST: ${{ secrets.JUDGE0_API_HOST }}
-        run: npm run deploy
+        # A secret pasted as a whole .env line ("NEXT_PUBLIC_SUPABASE_URL=https://...")
+        # once got inlined verbatim, so every Supabase call went to
+        # algoyol.uz/NEXT_PUBLIC_SUPABASE_URL=... and the backend looked dead.
+        # Strip any leading NAME= and surrounding quotes/whitespace, then refuse
+        # to deploy unless the URL is a real https origin.
+        run: |
+          clean() {
+            local v="${!1}"
+            v="${v#"${v%%[![:space:]]*}"}"; v="${v%"${v##*[![:space:]]}"}"
+            if [[ "$v" =~ ^(NEXT_PUBLIC_|JUDGE0_)[A-Z0-9_]*=(.*)$ ]]; then v="${BASH_REMATCH[2]}"; fi
+            v="${v#[\"\']}"; v="${v%[\"\']}"
+            export "$1=$v"
+          }
+          for name in NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_ANON_KEY NEXT_PUBLIC_SITE_URL \
+                      JUDGE0_URL JUDGE0_API_KEY JUDGE0_API_HOST; do
+            clean "$name"
+          done
+          if [[ ! "$NEXT_PUBLIC_SUPABASE_URL" =~ ^https://[a-z0-9]+\.supabase\.co/?$ ]]; then
+            echo "::error::NEXT_PUBLIC_SUPABASE_URL secret is not a https://<ref>.supabase.co URL."
+            exit 1
+          fi
+          npm run deploy
 
       # Proves the deploy actually took, instead of trusting a green check.
       - name: Verify the site responds
         run: |
-          url="${{ secrets.NEXT_PUBLIC_SITE_URL || 'https://algoyol.cp-project.workers.dev' }}"
+          url="${{ secrets.NEXT_PUBLIC_SITE_URL || 'https://algoyol.uz' }}"
           for attempt in 1 2 3 4 5; do
             code=$(curl -s -o /dev/null -w '%{http_code}' "$url" || echo 000)
             if [ "$code" = "200" ]; then
