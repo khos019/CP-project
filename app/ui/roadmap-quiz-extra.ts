@@ -1110,7 +1110,7 @@ export const extraQuiz: Record<string, ExtraQuiz[]> = {
 
 /* ================= GRAPHS ================= */
 "graphs-1": [
- q("n uchli to‘liq bo‘lmagan oddiy yo‘naltirilmagan grafda qirralar soni ko‘pi bilan?", "At most how many edges does a simple undirected graph on n vertices have?",
+ q("n uchli oddiy yo‘naltirilmagan grafda qirralar soni ko‘pi bilan nechta?", "At most how many edges does a simple undirected graph on n vertices have?",
   ["n(n−1)/2","n²","n − 1","2n"],
   ["n(n−1)/2","n²","n − 1","2n"], 0),
  q("Qo‘shnilik matritsasi qachon ma’qul?", "When is an adjacency matrix the better choice?",
@@ -1223,7 +1223,7 @@ export const extraQuiz: Record<string, ExtraQuiz[]> = {
 ],
 "graphs-15": [
  q("DAG da eng uzun yo‘l qanday topiladi?", "How is the longest path in a DAG found?",
-  ["Topologik tartibda DP","Manfiy vaznli Dijkstra","Mumkin emas — NP-qiyin","Floyd-Warshall bilan"],
+  ["Topologik tartibda DP","Vaznlarni manfiyga aylantirib Dijkstra","Mumkin emas — NP-qiyin","Floyd-Warshall bilan"],
   ["DP in topological order","Dijkstra with negated weights","Impossible — NP-hard","With Floyd-Warshall"], 0),
  q("DAG da 1 dan n gacha yo‘llar sonini sanash uchun o‘tish?", "Counting paths from 1 to n in a DAG, the transition is?",
   ["ways[v] += ways[u]","ways[v] = max(ways[u])","ways[v] = ways[u] + 1","ways[v] *= ways[u]"],
