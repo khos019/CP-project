@@ -9683,6 +9683,115 @@ auto rootId=[&](vector<vector<int>>&g,int n,int r){vector<int>order,par(n+1,0);o
  return id[r];};
 while(t--){int n;cin>>n;auto g1=readTree(n);auto g2=readTree(n);cout<<(rootId(g1,n,1)==rootId(g2,n,1)?"YES":"NO")<<"\\n";}`)],
   },
+  "greedy-weighted-completion-order": {
+    solution: cpp(`int n;cin>>n;vector<long long>t(n),w(n);for(int i=0;i<n;++i)cin>>t[i]>>w[i];vector<int>id(n);iota(id.begin(),id.end(),0);
+sort(id.begin(),id.end(),[&](int i,int j){return t[i]*w[j]<t[j]*w[i];});
+long long T=0,ans=0;for(int i:id){T+=t[i];ans+=w[i]*T;}cout<<ans<<"\\n";`),
+    // Shortest order first ignores the weights and heaviest first ignores the durations; comparing t_i / w_i with integer division treats 5/3 and 4/3 as equal and keeps the input order.
+    wrong: [cpp(`int n;cin>>n;vector<long long>t(n),w(n);for(int i=0;i<n;++i)cin>>t[i]>>w[i];vector<int>id(n);iota(id.begin(),id.end(),0);
+sort(id.begin(),id.end(),[&](int i,int j){return t[i]<t[j];});
+long long T=0,ans=0;for(int i:id){T+=t[i];ans+=w[i]*T;}cout<<ans<<"\\n";`), cpp(`int n;cin>>n;vector<long long>t(n),w(n);for(int i=0;i<n;++i)cin>>t[i]>>w[i];vector<int>id(n);iota(id.begin(),id.end(),0);
+sort(id.begin(),id.end(),[&](int i,int j){return w[i]>w[j];});
+long long T=0,ans=0;for(int i:id){T+=t[i];ans+=w[i]*T;}cout<<ans<<"\\n";`), cpp(`int n;cin>>n;vector<long long>t(n),w(n);for(int i=0;i<n;++i)cin>>t[i]>>w[i];vector<int>id(n);iota(id.begin(),id.end(),0);
+stable_sort(id.begin(),id.end(),[&](int i,int j){return t[i]/w[i]<t[j]/w[j];});
+long long T=0,ans=0;for(int i:id){T+=t[i];ans+=w[i]*T;}cout<<ans<<"\\n";`)],
+  },
+  "math-divisible-by-exactly-m": {
+    solution: cpp(`long long N;int k,m;cin>>N>>k>>m;vector<long long>a(k);for(auto&x:a)cin>>x;
+int F=1<<k;vector<long long>L(F);L[0]=1;vector<__int128>g(k+1,0);g[0]=N;
+for(int S=1;S<F;++S){int b=__builtin_ctz(S);long long p=L[S&(S-1)],v;
+ if(p>N)v=N+1;else{long long q=p/__gcd(p,a[b]);__int128 t=(__int128)q*a[b];v=t>N?N+1:(long long)t;}
+ L[S]=v;if(v<=N)g[__builtin_popcount(S)]+=N/v;}
+vector<vector<long long>>C(k+1,vector<long long>(k+1,0));for(int i=0;i<=k;++i){C[i][0]=1;for(int j=1;j<=i;++j)C[i][j]=C[i-1][j-1]+C[i-1][j];}
+__int128 ans=0;for(int s=m;s<=k;++s){__int128 t=(__int128)C[s][m]*g[s];if((s-m)%2)ans-=t;else ans+=t;}
+cout<<(long long)ans<<"\\n";`),
+    // Dropping the binomial factor C(|S|, m) counts the numbers with more than m divisors the wrong number of times; taking the lcm as a plain product is wrong as soon as two a_i share a factor; and an lcm that overflows a 64-bit integer wraps to a small or negative number instead of being treated as larger than N.
+    wrong: [cpp(`long long N;int k,m;cin>>N>>k>>m;vector<long long>a(k);for(auto&x:a)cin>>x;
+int F=1<<k;vector<long long>L(F);L[0]=1;vector<__int128>g(k+1,0);g[0]=N;
+for(int S=1;S<F;++S){int b=__builtin_ctz(S);long long p=L[S&(S-1)],v;
+ if(p>N)v=N+1;else{long long q=p/__gcd(p,a[b]);__int128 t=(__int128)q*a[b];v=t>N?N+1:(long long)t;}
+ L[S]=v;if(v<=N)g[__builtin_popcount(S)]+=N/v;}
+__int128 ans=0;for(int s=m;s<=k;++s){if((s-m)%2)ans-=g[s];else ans+=g[s];}
+cout<<(long long)ans<<"\\n";`), cpp(`long long N;int k,m;cin>>N>>k>>m;vector<long long>a(k);for(auto&x:a)cin>>x;
+int F=1<<k;vector<long long>L(F);L[0]=1;vector<__int128>g(k+1,0);g[0]=N;
+for(int S=1;S<F;++S){int b=__builtin_ctz(S);long long p=L[S&(S-1)],v;
+ if(p>N)v=N+1;else{__int128 t=(__int128)p*a[b];v=t>N?N+1:(long long)t;}
+ L[S]=v;if(v<=N)g[__builtin_popcount(S)]+=N/v;}
+vector<vector<long long>>C(k+1,vector<long long>(k+1,0));for(int i=0;i<=k;++i){C[i][0]=1;for(int j=1;j<=i;++j)C[i][j]=C[i-1][j-1]+C[i-1][j];}
+__int128 ans=0;for(int s=m;s<=k;++s){__int128 t=(__int128)C[s][m]*g[s];if((s-m)%2)ans-=t;else ans+=t;}
+cout<<(long long)ans<<"\\n";`), cpp(`long long N;int k,m;cin>>N>>k>>m;vector<long long>a(k);for(auto&x:a)cin>>x;
+int F=1<<k;vector<long long>L(F);L[0]=1;vector<__int128>g(k+1,0);g[0]=N;
+for(int S=1;S<F;++S){int b=__builtin_ctz(S);long long p=L[S&(S-1)],v;
+ if(p>N)v=N+1;else{long long q=p/__gcd(p,a[b]);v=q*a[b];if(v>N)v=N+1;}
+ L[S]=v;if(v<=N)g[__builtin_popcount(S)]+=N/v;}
+vector<vector<long long>>C(k+1,vector<long long>(k+1,0));for(int i=0;i<=k;++i){C[i][0]=1;for(int j=1;j<=i;++j)C[i][j]=C[i-1][j-1]+C[i-1][j];}
+__int128 ans=0;for(int s=m;s<=k;++s){__int128 t=(__int128)C[s][m]*g[s];if((s-m)%2)ans-=t;else ans+=t;}
+cout<<(long long)ans<<"\\n";`)],
+  },
+  "geo-disk-most-points": {
+    solution: cpp(`int n;long long R;cin>>n>>R;vector<long long>x(n),y(n);for(int i=0;i<n;++i)cin>>x[i]>>y[i];
+const double TW=2*acos(-1.0),EPS=1e-11;int best=1;vector<pair<double,int>>ev;ev.reserve(2*n);
+for(int i=0;i<n;++i){ev.clear();int cur=1;
+ for(int j=0;j<n;++j){if(j==i)continue;long long dx=x[j]-x[i],dy=y[j]-y[i],d2=dx*dx+dy*dy;if(d2>4*R*R)continue;
+  double b=atan2((double)dy,(double)dx),h=atan2(sqrt((double)(4*R*R-d2)),sqrt((double)d2));
+  double s=b-h-EPS;while(s<0)s+=TW;while(s>=TW)s-=TW;double e=s+2*h+2*EPS;
+  if(e>=TW){++cur;ev.push_back(make_pair(e-TW,1));ev.push_back(make_pair(s,0));}
+  else{ev.push_back(make_pair(s,0));ev.push_back(make_pair(e,1));}}
+ sort(ev.begin(),ev.end());best=max(best,cur);
+ for(auto&p:ev){if(p.second==0){++cur;best=max(best,cur);}else --cur;}}
+cout<<best<<"\\n";`),
+    // Only trying centres at the given points misses disks whose best position lies between them; treating the boundary as outside (an open disk) loses the points that lie exactly on the circle, which here is where the optimum always has two of them.
+    wrong: [cpp(`int n;long long R;cin>>n>>R;vector<long long>x(n),y(n);for(int i=0;i<n;++i)cin>>x[i]>>y[i];int best=0;
+for(int i=0;i<n;++i){int c=0;for(int j=0;j<n;++j){long long dx=x[j]-x[i],dy=y[j]-y[i];if(dx*dx+dy*dy<=R*R)++c;}best=max(best,c);}cout<<best<<"\\n";`), cpp(`int n;long long R;cin>>n>>R;vector<long long>x(n),y(n);for(int i=0;i<n;++i)cin>>x[i]>>y[i];
+const double TW=2*acos(-1.0),EPS=-1e-9;int best=1;vector<pair<double,int>>ev;ev.reserve(2*n);
+for(int i=0;i<n;++i){ev.clear();int cur=1;
+ for(int j=0;j<n;++j){if(j==i)continue;long long dx=x[j]-x[i],dy=y[j]-y[i],d2=dx*dx+dy*dy;if(d2>=4*R*R)continue;
+  double b=atan2((double)dy,(double)dx),h=atan2(sqrt((double)(4*R*R-d2)),sqrt((double)d2));
+  double s=b-h-EPS;while(s<0)s+=TW;while(s>=TW)s-=TW;double e=s+2*h+2*EPS;
+  if(e>=TW){++cur;ev.push_back(make_pair(e-TW,1));ev.push_back(make_pair(s,0));}
+  else{ev.push_back(make_pair(s,0));ev.push_back(make_pair(e,1));}}
+ sort(ev.begin(),ev.end());best=max(best,cur);
+ for(auto&p:ev){if(p.second==0){++cur;best=max(best,cur);}else --cur;}}
+cout<<best<<"\\n";`)],
+  },
+  "adv-ntt-count-triangles": {
+    solution: cpp(`const long long MOD=998244353;
+auto pw=[&](long long b,long long e){long long r=1;b%=MOD;while(e){if(e&1)r=r*b%MOD;b=b*b%MOD;e>>=1;}return r;};
+auto ntt=[&](vector<long long>&a,bool inv){int n=a.size();for(int i=1,j=0;i<n;++i){int bit=n>>1;for(;j&bit;bit>>=1)j^=bit;j^=bit;if(i<j)swap(a[i],a[j]);}
+ for(int len=2;len<=n;len<<=1){long long w=pw(3,(MOD-1)/len);if(inv)w=pw(w,MOD-2);for(int i=0;i<n;i+=len){long long wn=1;for(int k=0;k<len/2;++k){long long u=a[i+k],v=a[i+k+len/2]*wn%MOD;a[i+k]=u+v<MOD?u+v:u+v-MOD;a[i+k+len/2]=u-v>=0?u-v:u-v+MOD;wn=wn*w%MOD;}}}
+ if(inv){long long ni=pw(n,MOD-2);for(auto&x:a)x=x*ni%MOD;}};
+int n;cin>>n;vector<int>a(n);int mx=0;for(auto&v:a){cin>>v;mx=max(mx,v);}
+int sz=1;while(sz<2*mx+1)sz<<=1;vector<long long>f(max(sz,mx+1),0);for(int v:a)f[v]=1;f.resize(sz);
+ntt(f,false);for(auto&x:f)x=x*x%MOD;ntt(f,true);
+vector<char>has(mx+1,0);for(int v:a)has[v]=1;
+long long ans=0,Q=0,below=0;
+for(int c=1;c<=mx;++c){long long P=c<sz?f[c]:0;if(c%2==0&&has[c/2])P-=1;P/=2;Q+=P;if(has[c]){ans+=below*(below-1)/2-Q;++below;}}
+cout<<ans<<"\\n";`),
+    // Counting a pair whose sum equals the longest stick lets degenerate triangles in; a transform of length just above the largest length, rather than twice it, wraps the large pair sums onto small ones.
+    wrong: [cpp(`const long long MOD=998244353;
+auto pw=[&](long long b,long long e){long long r=1;b%=MOD;while(e){if(e&1)r=r*b%MOD;b=b*b%MOD;e>>=1;}return r;};
+auto ntt=[&](vector<long long>&a,bool inv){int n=a.size();for(int i=1,j=0;i<n;++i){int bit=n>>1;for(;j&bit;bit>>=1)j^=bit;j^=bit;if(i<j)swap(a[i],a[j]);}
+ for(int len=2;len<=n;len<<=1){long long w=pw(3,(MOD-1)/len);if(inv)w=pw(w,MOD-2);for(int i=0;i<n;i+=len){long long wn=1;for(int k=0;k<len/2;++k){long long u=a[i+k],v=a[i+k+len/2]*wn%MOD;a[i+k]=u+v<MOD?u+v:u+v-MOD;a[i+k+len/2]=u-v>=0?u-v:u-v+MOD;wn=wn*w%MOD;}}}
+ if(inv){long long ni=pw(n,MOD-2);for(auto&x:a)x=x*ni%MOD;}};
+int n;cin>>n;vector<int>a(n);int mx=0;for(auto&v:a){cin>>v;mx=max(mx,v);}
+int sz=1;while(sz<2*mx+1)sz<<=1;vector<long long>f(max(sz,mx+1),0);for(int v:a)f[v]=1;f.resize(sz);
+ntt(f,false);for(auto&x:f)x=x*x%MOD;ntt(f,true);
+vector<char>has(mx+1,0);for(int v:a)has[v]=1;
+long long ans=0,Q=0,below=0;
+for(int c=1;c<=mx;++c){long long P=c<sz?f[c]:0;if(c%2==0&&has[c/2])P-=1;P/=2;if(has[c]){ans+=below*(below-1)/2-Q;++below;}Q+=P;}
+cout<<ans<<"\\n";`), cpp(`const long long MOD=998244353;
+auto pw=[&](long long b,long long e){long long r=1;b%=MOD;while(e){if(e&1)r=r*b%MOD;b=b*b%MOD;e>>=1;}return r;};
+auto ntt=[&](vector<long long>&a,bool inv){int n=a.size();for(int i=1,j=0;i<n;++i){int bit=n>>1;for(;j&bit;bit>>=1)j^=bit;j^=bit;if(i<j)swap(a[i],a[j]);}
+ for(int len=2;len<=n;len<<=1){long long w=pw(3,(MOD-1)/len);if(inv)w=pw(w,MOD-2);for(int i=0;i<n;i+=len){long long wn=1;for(int k=0;k<len/2;++k){long long u=a[i+k],v=a[i+k+len/2]*wn%MOD;a[i+k]=u+v<MOD?u+v:u+v-MOD;a[i+k+len/2]=u-v>=0?u-v:u-v+MOD;wn=wn*w%MOD;}}}
+ if(inv){long long ni=pw(n,MOD-2);for(auto&x:a)x=x*ni%MOD;}};
+int n;cin>>n;vector<int>a(n);int mx=0;for(auto&v:a){cin>>v;mx=max(mx,v);}
+int sz=1;while(sz<mx+1)sz<<=1;vector<long long>f(max(sz,mx+1),0);for(int v:a)f[v]=1;f.resize(sz);
+ntt(f,false);for(auto&x:f)x=x*x%MOD;ntt(f,true);
+vector<char>has(mx+1,0);for(int v:a)has[v]=1;
+long long ans=0,Q=0,below=0;
+for(int c=1;c<=mx;++c){long long P=c<sz?f[c]:0;if(c%2==0&&has[c/2])P-=1;P/=2;Q+=P;if(has[c]){ans+=below*(below-1)/2-Q;++below;}}
+cout<<ans<<"\\n";`)],
+  },
 };
 
 /** The problems the bot can actually play. Everything else falls back to

@@ -702,4 +702,8 @@ export const bankProblems:BankProblem[]=[
  {id:"C627",uz:"Teskari aylantirish va ko‘chirish",en:"Reverse and move to the end",difficulty:"insane",rating:2100,tag:"Implicit treap",points:400,topic:"advanced-cp",judge:"adv-treap-reverse-and-move",timeLimitMs:2000,memoryMb:256},
  {id:"C628",uz:"Belgilangan uchlar orasidagi masofalar",en:"Distances between marked vertices",difficulty:"insane",rating:2200,tag:"Virtual tree",points:400,topic:"trees",judge:"tree-virtual-sum-pair-distances",timeLimitMs:2000,memoryMb:256},
  {id:"C629",uz:"Bir xil daraxtlarmi",en:"Are the trees the same",difficulty:"insane",rating:2300,tag:"Tree hashing",points:400,topic:"trees",judge:"tree-isomorphism-unrooted",timeLimitMs:2000,memoryMb:256},
+ {id:"B630",uz:"Buyurtmalar navbati",en:"The order of the orders",difficulty:"medium",rating:1600,tag:"Exchange argument",points:200,topic:"greedy",judge:"greedy-weighted-completion-order",timeLimitMs:1000,memoryMb:256},
+ {id:"C631",uz:"Aynan m tasiga bo‘linadi",en:"Divisible by exactly m of them",difficulty:"hard",rating:1900,tag:"Inclusion-exclusion",points:300,topic:"math",judge:"math-divisible-by-exactly-m",timeLimitMs:2000,memoryMb:256},
+ {id:"C632",uz:"Doira bilan eng ko‘p nuqta",en:"One disk, as many points as possible",difficulty:"hard",rating:2000,tag:"Angular sweep",points:300,topic:"geometry",judge:"geo-disk-most-points",timeLimitMs:2000,memoryMb:256},
+ {id:"C633",uz:"Uchburchak yasaydigan tayoqchalar",en:"Sticks that make a triangle",difficulty:"insane",rating:2200,tag:"NTT",points:400,topic:"advanced-cp",judge:"adv-ntt-count-triangles",timeLimitMs:2000,memoryMb:256},
 ];
