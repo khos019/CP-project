@@ -38,7 +38,7 @@ export const deepContent: Record<string, DeepStage> = {
       {
         titleUz: "House Robber — masala sharti", titleEn: "House Robber — problem statement",
         minutes: 3,
-        bodyUz: "Ko‘chada n ta uy bor, har birida ma’lum miqdorda pul bor. Qo‘shni ikkita uyni bir kechada o‘g‘irlab bo‘lmaydi (signalizatsiya ishga tushadi). Maksimal qancha pul o‘g‘irlash mumkin? a = [2,7,9,3,1] uchun javob 12 (2-uy + 4-uy... aslida 1-, 3-, 5-uylar: 2+9+1=12, yoki 2- va 4-: 7+3=10 — eng yaxshisi 2+9+1=12).",
+        bodyUz: "Ko‘chada n ta uy bor, har birida ma’lum miqdorda pul bor. Qo‘shni ikkita uyni bir kechada o‘g‘irlab bo‘lmaydi (signalizatsiya ishga tushadi). Maksimal qancha pul o‘g‘irlash mumkin? a = [2,7,9,3,1] uchun javob 12 (1-, 3-, 5-uylar: 2+9+1=12).",
         bodyEn: "There are n houses on a street, each with a known amount of money. You cannot rob two adjacent houses in one night (the alarm triggers). What's the maximum you can steal? For a = [2,7,9,3,1] the answer is 12 (houses 1, 3, 5: 2+9+1=12).",
       },
       {
@@ -84,7 +84,7 @@ export const deepContent: Record<string, DeepStage> = {
       {
         titleUz: "Xotira optimallashtirish: O(n) dan O(1) ga", titleEn: "Space optimization: O(n) down to O(1)",
         minutes: 5,
-        bodyUz: "Diqqat qiling: yuqoridagi barcha masalalarda dp[i] faqat dp[i-1] va dp[i-2] ga bog‘liq edi — butun massiv shart emas! Ikkita o‘zgaruvchi (prev, prev2) yetarli. Bu xotirani O(n) dan O(1) ga tushiradi. Bu texnika faqat «doiraviy» bog‘liqlik (dp[i] oxirgi bir necha qiymatga bog‘liq) bo‘lganda ishlaydi — Interval DP yoki Tree DP kabi turlarda ishlamaydi.",
+        bodyUz: "Diqqat qiling: yuqoridagi barcha masalalarda dp[i] faqat dp[i-1] va dp[i-2] ga bog‘liq edi — butun massiv shart emas! Ikkita o‘zgaruvchi (prev, prev2) yetarli. Bu xotirani O(n) dan O(1) ga tushiradi. Bu texnika faqat «mahalliy» bog‘liqlik (dp[i] oxirgi bir necha qiymatga bog‘liq) bo‘lganda ishlaydi — Interval DP yoki Tree DP kabi turlarda ishlamaydi.",
         bodyEn: "Notice: in every problem above, dp[i] depended only on dp[i-1] and dp[i-2] — never the full array! Two variables (prev, prev2) suffice. This drops memory from O(n) to O(1). This trick only works when the dependency is “local” (dp[i] depends on the last few values) — it won't apply to types like Interval DP or Tree DP.",
         cpp: "long long prev2=1, prev=1;\nfor(int i=2;i<=n;++i){ long long cur=prev+prev2; prev2=prev; prev=cur; }",
         python: "prev2, prev = 1, 1\nfor i in range(2, n + 1):\n    prev2, prev = prev, prev + prev2",
