@@ -118,7 +118,7 @@ export function RatingGraph({
   lang: Lang;
   /** Finished duels, newest first -- the order the RPC returns. */
   rows: PublicDuelRow[];
-  /** The account's current duel rating, for the empty chart's baseline. */
+  /** The account's current duel rating: the header figure and the empty chart's baseline. */
   rating?: number;
   className?: string;
 }) {
@@ -221,8 +221,11 @@ export function RatingGraph({
   };
 
   const active = hover !== null ? points[hover] : null;
-  const current = empty ? rating : history[history.length - 1].rating_after;
-  const peak = empty ? rating : points[peakIndex].row.rating_after;
+  // The header reads the profile's rating, not the last dot: an owner fix in
+  // the database (a deleted duel, a refunded loss) moves duel_rating without
+  // rewriting the history, and the two numbers must not disagree.
+  const current = rating;
+  const peak = empty ? rating : Math.max(rating, points[peakIndex].row.rating_after);
   const activeRank = active ? rankOf(active.row.rating_after) : null;
 
   return (
