@@ -12,7 +12,10 @@ export const ADSTERRA = {
   // Off: a popunder hijacks the first click anywhere on the page (any button,
   // any link) and opens the ad instead, so learners got sent elsewhere.
   popunder: { enabled: false, src: "https://abscloud.org/1/eb14ea621ccd2c11224c211f117ef45d" },
-  socialBar: { enabled: true, src: "https://bauval.org/14/8b07ed5477b060e7f4d9c558ee0cc9f5" },
+  // Off for the same reason: with the popunder already off, a click on the
+  // "Masalalar" nav link still tried to open mks98.com, and the tab title was
+  // rewritten to a fake "(1) New Message!".
+  socialBar: { enabled: false, src: "https://bauval.org/14/8b07ed5477b060e7f4d9c558ee0cc9f5" },
   smartlink: { enabled: true, href: "https://araplhn.org/4/9d52200f50a58cb272cd9c806ae8d67c" },
 } as const;
 
