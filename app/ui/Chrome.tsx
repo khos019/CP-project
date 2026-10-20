@@ -163,10 +163,11 @@ function LangMenu({ lang, setLang }: { lang: Lang; setLang: (l: Lang) => void })
 }
 
 export function SiteHeader({
-  lang, view, go, signed, authLoading, name, unread, setLang, onSignOut,
+  lang, view, go, signed, authLoading, name, unread, setLang, onSignOut, onAuth,
 }: {
   lang: Lang; view: string; go: Nav; signed: boolean; authLoading: boolean;
   name: string | null; unread: number; setLang: (l: Lang) => void; onSignOut: () => void;
+  onAuth: (mode: "login" | "signup") => void;
 }) {
   const uz = lang === "uz";
   const [menu, setMenu] = useState(false);
@@ -272,11 +273,11 @@ export function SiteHeader({
           </div>
         ) : (
           <>
-            <a className="nav-link" href="/auth" onClick={linkTo(() => go("auth"))}>
+            <a className="nav-link" href="/auth" onClick={linkTo(() => onAuth("login"))}>
               {tr(lang,"chrome.kirish")}
             </a>
             {/* The single solid button on a signed-out page. */}
-            <a className="primary" href="/auth" onClick={linkTo(() => go("auth"))}>
+            <a className="primary" href="/auth" onClick={linkTo(() => onAuth("signup"))}>
               {tr(lang,"chrome.royxatdan_otish")}
             </a>
           </>
