@@ -9,7 +9,9 @@ export const ADSTERRA = {
     src: "https://bauval.org/21/eb0a5757d9ee3c3219bdff625af3bbd1",
     container: "container-eb0a5757d9ee3c3219bdff625af3bbd1",
   },
-  popunder: { enabled: true, src: "https://abscloud.org/1/eb14ea621ccd2c11224c211f117ef45d" },
+  // Off: a popunder hijacks the first click anywhere on the page (any button,
+  // any link) and opens the ad instead, so learners got sent elsewhere.
+  popunder: { enabled: false, src: "https://abscloud.org/1/eb14ea621ccd2c11224c211f117ef45d" },
   socialBar: { enabled: true, src: "https://bauval.org/14/8b07ed5477b060e7f4d9c558ee0cc9f5" },
   smartlink: { enabled: true, href: "https://araplhn.org/4/9d52200f50a58cb272cd9c806ae8d67c" },
 } as const;
