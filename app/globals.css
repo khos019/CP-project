@@ -4921,3 +4921,24 @@ a.cx-prow:hover .cx-pname b{text-decoration:underline;text-underline-offset:3px}
 .quiz-mark{font-weight:800}
 .quiz-mark.ok{color:color-mix(in srgb,var(--green) 80%,var(--ink))}
 .quiz-mark.bad{color:color-mix(in srgb,var(--bad) 65%,var(--ink))}
+
+/* Adsterra native banner (app/ui/ads). A labelled, bordered slot in the page's
+   own surface colours; the ad's markup is foreign, so it is clipped to the
+   slot rather than allowed to widen the page on a phone. */
+.ad-native{
+ margin:var(--s6) 0 0;padding:var(--s4);
+ background:var(--surface);border:1px solid var(--line);border-radius:14px;
+ max-width:100%;overflow:hidden;
+}
+.ad-native .ad-label{
+ display:block;margin-bottom:var(--s3);
+ color:var(--dim);font-size:var(--t-xs);letter-spacing:.06em;text-transform:uppercase;
+}
+.ad-native img{max-width:100%;height:auto}
+.footer-sponsor{color:var(--dim)}
+.footer-sponsor:hover{color:var(--muted)}
+/* A loaded popunder cannot be unloaded. On the screens in NO_INTRUSIVE_ADS
+   (AdsterraGlobal sets data-ads-quiet) its full-page click catcher — a fixed
+   div tagged with an inline --rdata variable — is hidden, so the first click
+   in the code editor or a duel reaches the page and not the ad. */
+body[data-ads-quiet] > div[style*="--rdata"]{display:none!important}

@@ -10,6 +10,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { tr } from "./i18n";
 import { BrandMark } from "./BrandMark";
 import { ThemeToggle } from "./ThemeToggle";
+import { ADSTERRA, adOn } from "./ads/config";
 import { fetchBalance, fetchStreak, localBalance, localStreak } from "./coins";
 
 /* The chrome around every screen: header, mobile tab bar, footer.
@@ -370,6 +371,11 @@ export function SiteFooter({ lang, go }: { lang: Lang; go: Nav }) {
       </div>
       <div className="footer-base">
         <span>© {new Date().getFullYear()} AlgoYo‘l · {tr(lang,"chrome.toshkent")}</span>
+        {adOn("smartlink") && (
+          <a className="footer-sponsor" href={ADSTERRA.smartlink.href} target="_blank" rel="nofollow sponsored noopener">
+            {uz ? "Homiylar" : "Sponsors"}
+          </a>
+        )}
       </div>
     </footer>
   );
