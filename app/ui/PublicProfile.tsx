@@ -211,19 +211,21 @@ export function PublicProfile({
 
   const [summary, setSummary] = useState<ProfileSummary | "missing" | null>(null);
   const [rawDuels, setDuels] = useState<PublicDuelRow[] | null>(null);
-  /* A duel removed by the owner (with its loss refunded) leaves a jump in the
-     stored history: the next duel starts from a rating the previous one never
-     ended on. Rebuilt from the profile's rating backwards through each delta,
-     every dot sits exactly its +/- away from the one before, and the newest
-     ends on the rating the header shows. */
-  const duels = useMemo(() => {
-    if (!rawDuels || !person) return rawDuels;
-    let at = person.duel_rating;
-    return rawDuels.map((d) => {
-      const row = { ...d, rating_after: at, rating_before: at - d.delta };
-      at = row.rating_before;
+  /* A duel removed by the owner leaves a jump in the stored history: the next
+     duel starts from a rating the previous one never ended on. The curve is
+     rebuilt from the first duel's starting rating forward through each delta,
+     so every dot sits exactly its +/- away from the one before. Whatever the
+     duels do not explain (a refund the owner gave by hand) is kept apart as
+     `adjustment` and drawn as one last labelled step to the profile rating. */
+  const { duels, adjustment } = useMemo(() => {
+    if (!rawDuels || !person || !rawDuels.length) return { duels: rawDuels, adjustment: 0 };
+    let at = rawDuels[rawDuels.length - 1].rating_before;
+    const rebuilt = [...rawDuels].reverse().map((d) => {
+      const row = { ...d, rating_before: at, rating_after: at + d.delta };
+      at = row.rating_after;
       return row;
-    });
+    }).reverse();
+    return { duels: rebuilt, adjustment: person.duel_rating - at };
   }, [rawDuels, person]);
   const [duelState, setDuelState] = useState<"loading" | "ready" | "error" | "missing">("loading");
   const [friends, setFriends] = useState<FriendRow[] | null>(null);
@@ -521,7 +523,7 @@ export function PublicProfile({
 
       {section === "overview" && (
         <div className="pv-body">
-          {duelState === "ready" && duels && <RatingGraph lang={lang} rows={duels} rating={rating} />}
+          {duelState === "ready" && duels && <RatingGraph lang={lang} rows={duels} rating={rating} adjustment={adjustment} />}
           {duelState === "missing" && <p className="muted os-empty">{t.duelsMissing}</p>}
           {subDates && duelState !== "loading" && (
             <ActivityHeatmap lang={lang} dates={[...subDates, ...(duels || []).map((d) => d.finished_at || d.started_at)]} />

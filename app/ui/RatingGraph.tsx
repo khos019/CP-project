@@ -39,6 +39,8 @@ import type { PublicDuelRow } from "./social";
 
 type Lang = "uz" | "en";
 
+const ADJUST_ID = "rating-adjustment";
+
 const T = {
   uz: {
     title: "Duel reytingi",
@@ -46,6 +48,7 @@ const T = {
     bot: "Algo (AI)",
     outcome: { win: "G‘alaba", loss: "Mag‘lubiyat", draw: "Durang" },
     unrated: "reytingsiz",
+    adjusted: "Reyting tuzatildi",
     peak: "Eng yuqori",
     duels: (n: number) => `${n} ta duel`,
     noneYet: "Hali duel yo‘q",
@@ -56,6 +59,7 @@ const T = {
     bot: "Algo (AI)",
     outcome: { win: "Win", loss: "Loss", draw: "Draw" },
     unrated: "unrated",
+    adjusted: "Rating corrected",
     peak: "Peak",
     duels: (n: number) => `${n} duel${n === 1 ? "" : "s"}`,
     noneYet: "No duels yet",
@@ -113,13 +117,15 @@ function segmentHits(a: { x: number; y: number }, b: { x: number; y: number },
 }
 
 export function RatingGraph({
-  lang, rows, rating = 1200, className,
+  lang, rows, rating = 1200, adjustment = 0, className,
 }: {
   lang: Lang;
   /** Finished duels, newest first -- the order the RPC returns. */
   rows: PublicDuelRow[];
   /** The account's current duel rating: the header figure and the empty chart's baseline. */
   rating?: number;
+  /** Rating change no duel accounts for (an owner refund), drawn as a last step. */
+  adjustment?: number;
   className?: string;
 }) {
   const t = T[lang];
@@ -142,6 +148,13 @@ export function RatingGraph({
   const history = [...rows]
     .filter((r) => r.finished_at && r.mode !== "friend")
     .sort((a, b) => +new Date(a.finished_at) - +new Date(b.finished_at));
+  const last = history[history.length - 1];
+  if (last && adjustment) {
+    history.push({
+      ...last, id: ADJUST_ID, delta: adjustment,
+      rating_before: last.rating_after, rating_after: last.rating_after + adjustment,
+    });
+  }
 
   const innerW = W - PAD.left - PAD.right;
   const innerH = H - PAD.top - PAD.bottom;
@@ -236,7 +249,7 @@ export function RatingGraph({
           <p className="drg-sum">
             <b className="mono" style={{ color: rankOf(current).color }}>{current}</b>
             <span>{t.peak} <b className="mono" style={{ color: rankOf(peak).color }}>{peak}</b></span>
-            <span>{t.duels(n)}</span>
+            <span>{t.duels(n - (adjustment && n ? 1 : 0))}</span>
           </p>
         )}
       </div>
@@ -339,15 +352,21 @@ export function RatingGraph({
             <small className="drg-tip-rank" style={{ color: activeRank.color }}>
               {lang === "uz" ? activeRank.nameUz : activeRank.nameEn}
             </small>
-            <small>
-              {t.outcome[active.row.outcome]} · <span className="mono">{active.row.my_score}:{active.row.opp_score}</span>
-            </small>
-            <small className="muted">
-              {t.vs}: {active.row.opponent_is_bot
-                ? t.bot
-                : active.row.opponent || active.row.opponent_username || "—"}
-            </small>
-            <small className="muted mono">{fullDateTime(active.row.finished_at, lang)}</small>
+            {active.row.id === ADJUST_ID ? (
+              <small>{t.adjusted}</small>
+            ) : (
+              <>
+                <small>
+                  {t.outcome[active.row.outcome]} · <span className="mono">{active.row.my_score}:{active.row.opp_score}</span>
+                </small>
+                <small className="muted">
+                  {t.vs}: {active.row.opponent_is_bot
+                    ? t.bot
+                    : active.row.opponent || active.row.opponent_username || "—"}
+                </small>
+                <small className="muted mono">{fullDateTime(active.row.finished_at, lang)}</small>
+              </>
+            )}
           </div>
         )}
       </div>
