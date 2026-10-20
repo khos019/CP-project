@@ -378,7 +378,11 @@ export function PublicProfile({
   const rank = rankOf(rating);
   const next = nextRank(rating);
   const sum = summary && summary !== "missing" ? summary : null;
-  const peak = Math.max(rating, sum?.max_rating ?? 0, ...(duels || []).map((d) => d.rating_after));
+  // Once the duels are in, the peak comes from the rebuilt curve: the stored
+  // max_rating still counts duels the owner removed or refunded.
+  const peak = duels
+    ? Math.max(rating, ...duels.map((d) => d.rating_after))
+    : Math.max(rating, sum?.max_rating ?? 0);
   const solvedCount = sum ? sum.solved_keys.length : person.solved_count;
   // The summary counts every finished duel; the friend ones come off here.
   // They are all recent, so the newest 200 loaded above hold every one.
