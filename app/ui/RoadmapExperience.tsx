@@ -165,8 +165,8 @@ function Lesson({roadmap,unit,index,lang,progress,setProgress,onBack,onPractice,
  // its topic and level instead of repeating the roadmap's easiest problems.
  const picked=(unitPractice[unit.id]||[unit.problemId]).map(id=>bankProblems.find(p=>p.id===id||p.judge===id)).filter((p):p is typeof bankProblems[number]=>!!p);
  const own=picked.filter((p,i)=>picked.indexOf(p)===i);
- const unitLo=parseInt(unit.rating,10)||0;
- const rest=bankProblems.filter(p=>p.topic===roadmap.slug&&!own.includes(p)).sort((a,b)=>Math.abs(a.rating-unitLo)-Math.abs(b.rating-unitLo)||a.rating-b.rating);
+ const [bandLo,bandHi]=unit.rating.split("→").map(s=>parseInt(s,10)||0),unitMid=(bandLo+(bandHi||bandLo))/2;
+ const rest=bankProblems.filter(p=>p.topic===roadmap.slug&&!own.includes(p)).sort((a,b)=>Math.abs(a.rating-unitMid)-Math.abs(b.rating-unitMid)||a.rating-b.rating);
  const practice=[...own,...rest].slice(0,8);
  const saveQuiz=()=>{if(answers.length<quizzes.length||answers.some(a=>a===null||a===undefined))return;setChecked(true);
   const good=quizzes.filter((q,i)=>answers[i]===q.correct).length,score=Math.round(good/quizzes.length*100);setLastScore(score);

@@ -46,23 +46,39 @@ const nearestProblemSet=(slug:string,seen=new Set<string>()):string[]=>{
  return [];
 };
 
-export const roadmapCatalog:MasteryRoadmap[]=defs.map(d=>({
+// A unit's rating band follows its own main problem, whose rating is honest
+// (Codeforces scale). Those ratings are fitted with the closest non-decreasing
+// sequence (pool adjacent violators) so a section's path never steps back
+// down, then each fit becomes a 200-wide band rounded to the hundred. A main
+// problem far outside its band is one that breaks the section's order and
+// wants replacing, not a band to bend.
+const ratingOf=new Map(bankProblems.map(p=>[p.id,p.rating]));
+const ratingBands=(problemIds:string[]):string[]=>{
+ const blocks:{v:number;n:number}[]=[];
+ for(const id of problemIds){
+  blocks.push({v:ratingOf.get(id)||1200,n:1});
+  while(blocks.length>1&&blocks[blocks.length-2].v>blocks[blocks.length-1].v){const b=blocks.pop()!,a=blocks.pop()!;blocks.push({v:(a.v*a.n+b.v*b.n)/(a.n+b.n),n:a.n+b.n})}
+ }
+ return blocks.flatMap(b=>Array<number>(b.n).fill(b.v)).map(v=>{const lo=Math.max(800,Math.round((v-100)/100)*100);return `${lo} → ${lo+200}`});
+};
+
+export const roadmapCatalog:MasteryRoadmap[]=defs.map(d=>{
+ const problemIds=d.units.map((_,index)=>unitPractice[`${d.slug}-${index+1}`]?.[0]??(()=>{const set=nearestProblemSet(d.slug);return set.length?set[index%set.length]:"A01"})());
+ const bands=ratingBands(problemIds);
+ return {
  slug:d.slug,icon:d.icon,color:d.color,titleUz:d.uz,titleEn:d.en,descriptionUz:d.descUz,descriptionEn:d.descEn,level:d.level,difficulty:d.difficulty,category:d.cat,categoryUz:d.catUz,prereqs:d.prereqs,
  prerequisiteUz:d.prereqs.length?d.prereqs.map(s=>defs.find(x=>x.slug===s)?.uz||s).join(" + "):"Yo‘q — boshlanish nuqtasi",
  prerequisiteEn:d.prereqs.length?d.prereqs.map(s=>defs.find(x=>x.slug===s)?.en||s).join(" + "):"None — starting point",
  units:d.units.map((titleUz,index)=>{
-  // Spread each unit's rating band evenly across the roadmap's own level
-  // range (parsed from "1100 → 2400") instead of a fixed per-index step,
-  // so roadmaps with more than six units still land on realistic numbers.
-  const [lo,hi]=d.level.split("→").map(s=>parseInt(s.trim(),10)),n=d.units.length,step=(hi-lo)/n;
+  const n=d.units.length;
   return {
   id:`${d.slug}-${index+1}`,titleUz,titleEn:d.unitsEn[index],
   summaryUz:`${titleUz} mavzusining asosiy g‘oyasi, qachon ishlatilishi va xatolarini bosqichma-bosqich o‘rganing.`,
   summaryEn:`Learn the core idea behind ${d.unitsEn[index]}, when to use it, and the mistakes to avoid.`,
-  rating:`${Math.round(lo+index*step)} → ${Math.round(lo+(index+1)*step)}`,minutes:15+Math.round(index*(30/n)),complexity:d.complexity,cpp:d.cpp,python:d.python,
+  rating:bands[index],minutes:15+Math.round(index*(30/n)),complexity:d.complexity,cpp:d.cpp,python:d.python,
   quiz:{questionUz:`${titleUz} uchun eng muhim birinchi qadam qaysi?`,questionEn:`What is the most important first step for ${d.unitsEn[index]}?`,choicesUz:["Cheklov va invariantni aniqlash","Tasodifiy kod yozish","Har doim O(n²) ishlatish","Testlarni e’tiborsiz qoldirish"],choicesEn:["Identify constraints and the invariant","Write random code","Always use O(n²)","Ignore test cases"],correct:0},
-  problemId:unitPractice[`${d.slug}-${index+1}`]?.[0]??(()=>{const set=nearestProblemSet(d.slug);return set.length?set[index%set.length]:"A01"})()
+  problemId:problemIds[index]
  }})
-}));
+}});
 
 export const roadmapCards=roadmapCatalog.map(r=>({slug:r.slug,icon:r.icon,color:r.color,uz:r.titleUz,en:r.titleEn,descUz:r.descriptionUz,descEn:r.descriptionEn,units:r.units.length,level:r.level,progress:0}));
