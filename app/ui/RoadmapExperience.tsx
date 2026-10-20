@@ -95,7 +95,7 @@ function UnitPanel({roadmap,unitId,lang,progress,isOpen,onClose,onOpenUnit}:{
    <dl className="drawer-facts">
     <div><dt>{uz?"Reyting":"Rating"}</dt><dd className="mono">{unit.rating}</dd></div>
     <div><dt>{uz?"Vaqt":"Time"}</dt><dd className="mono">{unit.minutes} min</dd></div>
-    <div><dt>{uz?"Murakkablik":"Complexity"}</dt><dd className="mono">{unit.complexity}</dd></div>
+    <div><dt>{uz?"Murakkablik":"Complexity"}</dt><dd className="mono">{uz?unit.complexity:unit.complexityEn}</dd></div>
    </dl>
 
    <div className="drawer-checks">
@@ -186,8 +186,8 @@ function Lesson({roadmap,unit,index,lang,progress,setProgress,onBack,onPractice,
   if(e.key==="ArrowRight"&&nextUnit&&onOpenUnit&&(isOpen?isOpen(index+1):false))onOpenUnit(nextUnit.id);
  };window.addEventListener("keydown",onKey);return()=>window.removeEventListener("keydown",onKey)},[prevUnit,nextUnit,onOpenUnit,isOpen,index]);
  const solved=!!progress.solved[unit.id],passed=(progress.quizScores[unit.id]||0)>=70;
- return <div className="lesson-page"><button className="crumb" onClick={onBack}>← {lang==="uz"?roadmap.titleUz:roadmap.titleEn}</button><div className="lesson-head"><div><p className="eyebrow">{tr(lang,"roadmapExperience.bosqich_3")} {index+1}/{roadmap.units.length} · {unit.rating}</p><h1>{lang==="uz"?unit.titleUz:unit.titleEn}</h1><p className="muted">{lang==="uz"?unit.summaryUz:unit.summaryEn}</p></div><div className="lesson-state"><span className={passed?"passed":""}>Quiz {progress.quizScores[unit.id]||0}%</span><span className={solved?"passed":""}>Problem {solved?"AC":"—"}</span></div></div><div className="lesson-grid"><article className="lesson-content panel">
-  <h2>{tr(lang,"roadmapExperience.maqsad")}</h2><p>{lang==="uz"?content.goalUz:content.goalEn}</p><p>{lang==="uz"?content.intuitionUz:content.intuitionEn}</p><div className="concept-box"><b>{tr(lang,"roadmapExperience.murakkablik")}</b><code>{unit.complexity}</code></div>
+ return <div className="lesson-page"><button className="crumb" onClick={onBack}>← {lang==="uz"?roadmap.titleUz:roadmap.titleEn}</button><div className="lesson-head"><div><p className="eyebrow">{tr(lang,"roadmapExperience.bosqich_3")} {index+1}/{roadmap.units.length} · {unit.rating}</p><h1>{lang==="uz"?unit.titleUz:unit.titleEn}</h1></div><div className="lesson-state"><span className={passed?"passed":""}>Quiz {progress.quizScores[unit.id]||0}%</span><span className={solved?"passed":""}>Problem {solved?"AC":"—"}</span></div></div><div className="lesson-grid"><article className="lesson-content panel">
+  <h2>{tr(lang,"roadmapExperience.maqsad")}</h2><p>{lang==="uz"?content.goalUz:content.goalEn}</p><p>{lang==="uz"?content.intuitionUz:content.intuitionEn}</p><div className="concept-box"><b>{tr(lang,"roadmapExperience.murakkablik")}</b><code>{lang==="uz"?unit.complexity:unit.complexityEn}</code></div>
   <h2>{tr(lang,"roadmapExperience.asosiy_tushuncha")}</h2><p>{lang==="uz"?content.coreUz:content.coreEn}</p>
   {unitSpec&&<DiagramFromSpec spec={unitSpec}/>}{showSnippet&&<><h2>{tr(lang,"roadmapExperience.kod_namunasi")}</h2><div className="code-tabs"><button className={codeLang==="cpp"?"active":""} onClick={()=>setCodeLang("cpp")}>C++</button><button className={codeLang==="python"?"active":""} onClick={()=>setCodeLang("python")}>Python 3</button></div><CodeBlock code={codeLang==="cpp"?code.cpp:code.python} lang={codeLang}/></>}
   <h2>{tr(lang,"roadmapExperience.bosqichma_bosqich")}</h2><p>{lang==="uz"?content.walkUz:content.walkEn}</p>

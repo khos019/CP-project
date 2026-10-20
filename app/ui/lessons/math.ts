@@ -221,7 +221,7 @@ export const mathLessons: Record<string, DeepLesson> = {
   { t: "p",
     uz: "G‘alvir teskari yo‘ldan boradi. «Bu son tubmi?» deb so‘rash o‘rniga, u BARCHA murakkab sonlarni belgilab chiqadi: har bir tub sonning karralilari albatta murakkab. Oxirida belgilanmay qolganlari — tub sonlar.",
     en: "The sieve works the other way round. Instead of asking “is this number prime?”, it marks every COMPOSITE: the multiples of each prime are certainly composite. Whatever is left unmarked at the end is prime." },
-  { t: "sim", titleUz: "30 gacha bo‘lgan g‘alvir", titleEn: "Sieving up to 30", frames: [
+  { t: "sim", titleUz: "31 gacha bo‘lgan g‘alvir", titleEn: "Sieving up to 31", frames: [
     { spec: { kind: "numgrid", label: "boshlanish", from: 2, to: 31, cols: 10,
         state: { 2: "current" }, note: "hamma nomzod, 2 dan boshlaymiz" },
       uz: "2 dan 31 gacha barcha sonlar nomzod. Birinchi tub son — 2. Uni belgilab, karralilarini o‘chira boshlaymiz.",

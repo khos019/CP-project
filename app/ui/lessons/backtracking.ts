@@ -751,8 +751,8 @@ export const backtrackingLessons: Record<string, DeepLesson> = {
       uz: "Kesh jadvali to‘lib boradi. Har bir n uchun javob AYNAN BIR MARTA hisoblanadi — demak chaqiruvlar soni 2ⁿ dan n ga tushdi.",
       en: "The cache fills up. Each n is computed EXACTLY ONCE, so the number of calls falls from 2ⁿ to n." },
     { spec: { kind: "table", label: "natija", rows: [["n = 40", "chaqiruvlar"], ["keshsiz", "~10⁹"], ["kesh bilan", "40"]], hi: [2, 1], note: "sekundlardan mikrosekundlarga" },
-      uz: "n = 40 uchun farq: milliard chaqiruv o‘rniga 40 ta. Bitta massiv qo‘shish bilan eksponensial algoritm chiziqli bo‘lib qoldi.",
-      en: "At n = 40 the difference is a billion calls versus forty. Adding a single array turned an exponential algorithm into a linear one." },
+      uz: "n = 40 uchun farq: 330 milliondan ortiq chaqiruv o‘rniga 40 ta. Bitta massiv qo‘shish bilan eksponensial algoritm chiziqli bo‘lib qoldi.",
+      en: "At n = 40 the difference is over 330 million calls versus forty. Adding a single array turned an exponential algorithm into a linear one." },
   ]},
   { t: "codewalk", code: "vector<long long> memo;\n\nlong long fib(int n) {\n    if (n <= 1) return n;\n    if (memo[n] != -1) return memo[n];    // tayyor javob bormi?\n    return memo[n] = fib(n - 1) + fib(n - 2);\n}\n\n// ishlatishdan oldin:\nmemo.assign(maxN + 1, -1);",
     notes: [
@@ -810,10 +810,10 @@ export const backtrackingLessons: Record<string, DeepLesson> = {
   { t: "code", cpp: "// Sanash: butun daraxt kezildi\nvoid countAll(int i) {\n    if (i == n) { ++answers; return; }\n    for (auto v : choices(i)) { apply(v); countAll(i + 1); undo(v); }\n}\n\n// Qurish: birinchi yechimda to‘xtaymiz\nbool build(int i) {\n    if (i == n) return true;                    // topildi!\n    for (auto v : choices(i)) {\n        apply(v);\n        if (build(i + 1)) return true;          // ← yuqoriga xabar\n        undo(v);\n    }\n    return false;                               // bu shoxda yo‘q\n}",
     captionUz: "Farq bitta narsada: qurishda funksiya bool qaytaradi va true kelsa, qolgan shoxlar umuman ko‘rilmaydi.",
     captionEn: "The difference is one thing: the construction version returns bool, and a true reply means the remaining branches are never explored." },
-  { t: "sim", titleUz: "Shaxmat taxtasiga n ta mineni qo‘yish", titleEn: "Placing n mines on a board", frames: [
+  { t: "sim", titleUz: "Taxtaga n ta rux qo‘yish", titleEn: "Placing n rooks on a board", frames: [
     { spec: { kind: "board", label: "shart: har qator va ustunda bittadan", cells: ["....", "....", "....", "...."], note: "bo‘sh taxta" },
-      uz: "Masala: 4×4 taxtaga 4 ta mine qo‘ying, har qator va har ustunda aynan bittadan bo‘lsin.",
-      en: "The task: place 4 mines on a 4×4 board so that every row and every column holds exactly one." },
+      uz: "Masala: 4×4 taxtaga 4 ta rux qo‘ying (bir-birini urmasin), har qator va har ustunda aynan bittadan bo‘lsin.",
+      en: "The task: place 4 rooks on a 4×4 board (none attacking another) so that every row and every column holds exactly one." },
     { spec: { kind: "board", label: "birinchi qator", cells: ["Q...", "x...", "x...", "x..."], note: "0-ustun endi band" },
       uz: "Birinchi qatorga 0-ustunga qo‘yamiz. Bu ustun endi band — quyidagi qatorlarda uni ishlatib bo‘lmaydi.",
       en: "Row one takes column 0. That column is now occupied and unavailable to the rows below." },
@@ -830,8 +830,8 @@ export const backtrackingLessons: Record<string, DeepLesson> = {
     uz: "Konstruksiya masalalarida eng ko‘p uchraydigan xato — darhol backtracking yozishga o‘tish. Aslida bunday masalalarning KO‘PCHILIGIDA to‘g‘ridan-to‘g‘ri, qidiruvsiz javob quriladi. Backtracking — oxirgi chora, birinchi emas.",
     en: "The most common mistake in construction problems is jumping straight into backtracking. In fact MOST of them have a direct answer that needs no search at all. Backtracking is the last resort, not the first." },
   { t: "p",
-    uz: "Yuqoridagi mine masalasining javobi shunchaki diagonal: (0,0), (1,1), (2,2), (3,3). Uni topish uchun hech qanday qidiruv kerak emas — bir daqiqalik o‘ylash yetadi. Musobaqada konstruksiya masalalarining aksariyati shunday: kichik misollarni qo‘lda chizib ko‘rsangiz, naqsh o‘zi ko‘rinadi.",
-    en: "The answer to the mine problem above is simply the diagonal: (0,0), (1,1), (2,2), (3,3). No search is needed — a minute of thought suffices. Most construction problems in contests are like this: draw a few small cases by hand and the pattern shows itself." },
+    uz: "Yuqoridagi rux masalasining javobi shunchaki diagonal: (0,0), (1,1), (2,2), (3,3). Uni topish uchun hech qanday qidiruv kerak emas — bir daqiqalik o‘ylash yetadi. Musobaqada konstruksiya masalalarining aksariyati shunday: kichik misollarni qo‘lda chizib ko‘rsangiz, naqsh o‘zi ko‘rinadi.",
+    en: "The answer to the rook problem above is simply the diagonal: (0,0), (1,1), (2,2), (3,3). No search is needed — a minute of thought suffices. Most construction problems in contests are like this: draw a few small cases by hand and the pattern shows itself." },
   { t: "list", ordered: true,
     uz: [
       "Kichik n lar uchun (1, 2, 3, 4) javobni QO‘LDA yozing.",

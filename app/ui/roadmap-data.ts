@@ -1,7 +1,9 @@
 import { bankProblems } from "./problem-bank";
 import {unitPractice} from "./roadmap-practice";
+import {unitComplexity} from "./roadmap-complexity";
+import {unitContent} from "./roadmap-content";
 
-export type LessonUnit={id:string;titleUz:string;titleEn:string;summaryUz:string;summaryEn:string;rating:string;minutes:number;complexity:string;cpp:string;python:string;quiz:{questionUz:string;questionEn:string;choicesUz:string[];choicesEn:string[];correct:number};problemId:string};
+export type LessonUnit={id:string;titleUz:string;titleEn:string;summaryUz:string;summaryEn:string;rating:string;minutes:number;complexity:string;complexityEn:string;cpp:string;python:string;quiz:{questionUz:string;questionEn:string;choicesUz:string[];choicesEn:string[];correct:number};problemId:string};
 export type RoadmapDifficulty="beginner"|"intermediate"|"advanced"|"expert";
 export type MasteryRoadmap={slug:string;icon:string;color:string;titleUz:string;titleEn:string;descriptionUz:string;descriptionEn:string;level:string;difficulty:RoadmapDifficulty;category:string;categoryUz:string;prereqs:string[];prerequisiteUz:string;prerequisiteEn:string;units:LessonUnit[]};
 
@@ -73,9 +75,13 @@ export const roadmapCatalog:MasteryRoadmap[]=defs.map(d=>{
   const n=d.units.length;
   return {
   id:`${d.slug}-${index+1}`,titleUz,titleEn:d.unitsEn[index],
-  summaryUz:`${titleUz} mavzusining asosiy g‘oyasi, qachon ishlatilishi va xatolarini bosqichma-bosqich o‘rganing.`,
-  summaryEn:`Learn the core idea behind ${d.unitsEn[index]}, when to use it, and the mistakes to avoid.`,
-  rating:bands[index],minutes:15+Math.round(index*(30/n)),complexity:d.complexity,cpp:d.cpp,python:d.python,
+  // The card line is the unit's own goal; the old one-template sentence read
+  // the same on all 241 units.
+  summaryUz:unitContent[`${d.slug}-${index+1}`]?.goalUz??`${titleUz} mavzusining asosiy g‘oyasi, qachon ishlatilishi va xatolarini bosqichma-bosqich o‘rganing.`,
+  summaryEn:unitContent[`${d.slug}-${index+1}`]?.goalEn??`Learn the core idea behind ${d.unitsEn[index]}, when to use it, and the mistakes to avoid.`,
+  rating:bands[index],minutes:15+Math.round(index*(30/n)),
+  complexity:unitComplexity[`${d.slug}-${index+1}`]?.[0]??d.complexity,
+  complexityEn:(()=>{const c=unitComplexity[`${d.slug}-${index+1}`];return c?(c[1]??c[0]):d.complexity})(),cpp:d.cpp,python:d.python,
   quiz:{questionUz:`${titleUz} uchun eng muhim birinchi qadam qaysi?`,questionEn:`What is the most important first step for ${d.unitsEn[index]}?`,choicesUz:["Cheklov va invariantni aniqlash","Tasodifiy kod yozish","Har doim O(n²) ishlatish","Testlarni e’tiborsiz qoldirish"],choicesEn:["Identify constraints and the invariant","Write random code","Always use O(n²)","Ignore test cases"],correct:0},
   problemId:problemIds[index]
  }})
