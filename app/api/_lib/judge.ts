@@ -351,6 +351,47 @@ export async function judgeSource(
   }
 }
 
+/** A contest problem the owner wrote on the site: its tests and limits come
+ *  from the database (contest_judge_spec, 065) rather than from tests.ts.
+ *  Same path to a verdict otherwise, so its WRONG_ANSWER means what a bank
+ *  problem's does. The time limit is stated for C++ and scaled for Python,
+ *  exactly as problemCpuSeconds is. */
+export async function judgeCases(
+  cases: ReadonlyArray<{ stdin: string; expected_output: string }>, timeLimitMs: number, memoryMb: number,
+  language: Language, sourceCode: string, onProgress?: JudgeProgress,
+): Promise<JudgeOutcome> {
+  if (!cases.length) {
+    return { verdict: "JUDGE_ERROR", passed: 0, total: 0, runtimeMs: 0, memoryKb: 0, details: "This problem has no tests yet." };
+  }
+  const scale = Math.max(0.25, timeLimitMs / 1000) / limits.cpp20.cpu;
+  const memoryKb = Math.round(Math.max(16, memoryMb) * 1024);
+  const submissions: Submission[] = cases.map((test) => ({
+    language_id: languageIds[language], source_code: sourceCode,
+    stdin: test.stdin, expected_output: test.expected_output,
+    cpu_time_limit: limits[language].cpu * scale, wall_time_limit: limits[language].wall * scale,
+    memory_limit: memoryKb, max_file_size: 1024,
+    ...(language === "cpp20" ? cppOptions : {}),
+  }));
+  try {
+    const results = await judgeTests(language, sourceCode, cases, [], submissions, scale, onProgress, memoryKb);
+    const total = submissions.length;
+    const runtimeMs = Math.ceil(Math.max(0, ...results.map((r) => Number(r.time || 0))) * 1000);
+    const used = Math.max(0, ...results.map((r) => r.memory || 0));
+    const failedIndex = results.findIndex((r) => r.status?.id !== 3);
+    if (failedIndex === -1) return { verdict: "ACCEPTED", passed: total, total, runtimeMs, memoryKb: used };
+    const failed = results[failedIndex];
+    return {
+      verdict: verdictFor(failed), test: failedIndex + 1, passed: failedIndex, total, runtimeMs, memoryKb: used,
+      details: failed.compile_output || failed.stderr || failed.message || failed.status?.description || undefined,
+    };
+  } catch (error) {
+    return {
+      verdict: "JUDGE_ERROR", passed: 0, total: submissions.length, runtimeMs: 0, memoryKb: 0,
+      details: error instanceof Error ? error.message : "Judge service unavailable",
+    };
+  }
+}
+
 /* The whole submission as one Judge0 job first (see judge-batch.ts: one
  * compile instead of one per test), and test by test for whatever that job
  * could not settle.
@@ -363,6 +404,7 @@ export async function judgeSource(
 async function judgeTests(
   language: Language, sourceCode: string, cases: ReadonlyArray<{ stdin: string; expected_output: string }>,
   generated: ReadonlyArray<GeneratedTest>, submissions: Submission[], scale: number, onProgress?: JudgeProgress,
+  memoryKb = 262144,
 ): Promise<Result[]> {
   // Stored tests first, then the large generated ones: a wrong answer shows
   // on a small test before any time is spent building a big input.
@@ -373,7 +415,7 @@ async function judgeTests(
   try {
     onProgress?.(0, total);
     const job = buildBatchSubmission(language, sourceCode, [...cases, ...generated], {
-      cpu: limits[language].cpu * scale, wall: limits[language].wall * scale, memoryKb: 262144, outputKb: 1024,
+      cpu: limits[language].cpu * scale, wall: limits[language].wall * scale, memoryKb, outputKb: 1024,
     }, key);
     // The job is one token, so its own progress is 0/1 until the end. Every
     // poll is still reported as 0/total: the stream stays visibly alive for

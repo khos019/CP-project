@@ -5,8 +5,8 @@ import { NextResponse } from "next/server";
    the subrequest budget this used to blow through. The response shapes below
    are unchanged: the problem screen, the duel and the playground all read
    them, and this route is not the place to renegotiate that. */
-import { judgeSource, runSource, languageIds, isJudgeableProblem, type Language } from "../_lib/judge";
-import { bearerFrom, insertAsService } from "../_lib/supabase";
+import { judgeSource, judgeCases, runSource, languageIds, isJudgeableProblem, type Language } from "../_lib/judge";
+import { bearerFrom, insertAsService, rpcAsService } from "../_lib/supabase";
 import { bankProblems } from "../../ui/problem-bank";
 import { allow, verifiedUserId } from "../_lib/guard";
 
@@ -23,6 +23,24 @@ async function record(userId: string, problemId: string, language: Language, sou
     user_id: userId, problem_key: problemId, problem_title: problem?.uz || problemId,
     language, verdict: outcome.verdict, runtime_ms: outcome.runtimeMs ?? null, memory_kb: outcome.memoryKb ?? null,
     passed: outcome.passed ?? null, total: outcome.total ?? null, source_code: sourceCode,
+  });
+}
+
+/* A problem the owner wrote for a contest (065). Its key is
+   "cx:<contest id>:<idx>"; its tests and limits are read from the database
+   with the service role, and only after the database has agreed this account
+   may submit (the round has begun, or the account is the owner). */
+type ContestSpec = {
+  ok: boolean; reason?: string; title?: string; time_limit_ms: number; memory_mb: number;
+  tests: { stdin: string; expected_output: string }[];
+};
+const isContestKey = (key: string) => key.startsWith("cx:");
+
+async function recordContest(userId: string, problemId: string, language: Language, sourceCode: string, outcome: Outcome) {
+  await rpcAsService("contest_record_submission", {
+    p_user: userId, p_key: problemId, p_language: language, p_verdict: outcome.verdict,
+    p_runtime_ms: outcome.runtimeMs ?? null, p_memory_kb: outcome.memoryKb ?? null,
+    p_passed: outcome.passed ?? null, p_total: outcome.total ?? null, p_source: sourceCode,
   });
 }
 
@@ -61,8 +79,26 @@ export async function POST(request: Request) {
   }
 
   const problemId = body.problemId || "sum-two";
-  if (!validLanguage || !body.sourceCode?.trim() || !isJudgeableProblem(problemId)) {
+  if (!validLanguage || !body.sourceCode?.trim()) {
     return NextResponse.json({ error: "Invalid submission" }, { status: 400 });
+  }
+
+  // The two kinds of problem differ only in where the tests come from and
+  // where the verdict is written; everything after this is shared.
+  let judgeIt: (onProgress?: (settled: number, total: number) => void) => Promise<Outcome>;
+  let save: (outcome: Outcome) => Promise<void>;
+  if (isContestKey(problemId)) {
+    const spec = await rpcAsService<ContestSpec | null>("contest_judge_spec", { p_key: problemId, p_user: userId });
+    if (!spec.ok) return NextResponse.json({ error: spec.error }, { status: spec.error === "not_migrated" ? 501 : 502 });
+    if (!spec.data) return NextResponse.json({ error: "Invalid submission" }, { status: 400 });
+    if (!spec.data.ok) return NextResponse.json({ error: spec.data.reason || "forbidden" }, { status: 403 });
+    const s = spec.data;
+    judgeIt = (onProgress) => judgeCases(s.tests, s.time_limit_ms, s.memory_mb, body.language, body.sourceCode, onProgress);
+    save = (outcome) => recordContest(userId, problemId, body.language, body.sourceCode, outcome);
+  } else {
+    if (!isJudgeableProblem(problemId)) return NextResponse.json({ error: "Invalid submission" }, { status: 400 });
+    judgeIt = (onProgress) => judgeSource(problemId, body.language, body.sourceCode, onProgress);
+    save = (outcome) => record(userId, problemId, body.language, body.sourceCode, outcome);
   }
 
   /* Streaming mode. The judge already learns how many tests have settled on
@@ -78,11 +114,10 @@ export async function POST(request: Request) {
       async start(controller) {
         const send = (value: unknown) => controller.enqueue(encoder.encode(JSON.stringify(value) + "\n"));
         try {
-          const outcome = await judgeSource(problemId, body.language, body.sourceCode,
-            (settled, total) => send({ type: "progress", settled, total }));
+          const outcome = await judgeIt((settled, total) => send({ type: "progress", settled, total }));
           // Recorded before the result line, so a history the page reloads on
           // seeing the verdict already contains it.
-          await record(userId, problemId, body.language, body.sourceCode, outcome);
+          await save(outcome);
           send({ type: "result", ...outcome });
         } catch (error) {
           send({ type: "result", verdict: "JUDGE_ERROR", passed: 0, total: 0, runtimeMs: 0, memoryKb: 0,
@@ -100,8 +135,8 @@ export async function POST(request: Request) {
     });
   }
 
-  const outcome = await judgeSource(problemId, body.language, body.sourceCode);
-  await record(userId, problemId, body.language, body.sourceCode, outcome);
+  const outcome = await judgeIt();
+  await save(outcome);
   if (outcome.verdict === "JUDGE_ERROR") {
     return NextResponse.json({ verdict: outcome.verdict, details: outcome.details }, { status: 502 });
   }
