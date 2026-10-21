@@ -5456,3 +5456,28 @@ body[data-ads-quiet] > div[style*="--rdata"]{display:none!important}
  .cx-round-body.with-side{grid-template-columns:1fr}
  .cx-round-hero.compact .cx-round-body.with-side{grid-template-columns:1fr}
 }
+
+/* Jamoa va takliflar (068). */
+.cx-invites{display:grid;gap:10px;margin-bottom:var(--s4)}
+.cx-invite{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:14px 16px;border-radius:var(--r-lg);background:color-mix(in srgb,#a46bff 8%,var(--surface));border:1px solid color-mix(in srgb,#a46bff 30%,var(--line))}
+.cx-invite.in-hero{margin-top:var(--s4)}
+.cx-invite-ic{flex:none;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;color:#a46bff;background:color-mix(in srgb,#a46bff 15%,transparent)}
+.cx-invite-ic svg{width:18px;height:18px}
+.cx-invite-copy{flex:1;min-width:220px;display:grid;gap:3px}
+.cx-invite-copy small{color:var(--muted);font-size:12.5px;line-height:1.45}
+.cx-invite-actions{display:flex;gap:8px}
+.cx-role-badge{background:color-mix(in srgb,#a46bff 14%,transparent);color:#a46bff;border-color:color-mix(in srgb,#a46bff 30%,transparent)}
+.cx-reg-closed{font-size:13px;font-weight:600;color:var(--muted)}
+.cx-side-reg.closed .cx-reg-copy b{color:var(--muted)}
+.cx-reg.closed{border-color:var(--line);background:var(--surface-2)}
+.cxe-team-form{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.cxe-team-form input{flex:1;min-width:200px;width:auto}
+.cxe-team-hint{margin:8px 0 0}
+.cxe-team{list-style:none;margin:var(--s4) 0 0;padding:0;display:grid;gap:6px}
+.cxe-team li{display:grid;grid-template-columns:minmax(0,1fr) auto auto auto;align-items:center;gap:var(--s3);padding:10px 14px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line)}
+.cxe-team-who{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cxe-team-role{font-size:12px;font-weight:700;padding:3px 9px;border-radius:99px;color:#a46bff;background:color-mix(in srgb,#a46bff 13%,transparent)}
+.cxe-team-role.tester{color:#4f8cff;background:color-mix(in srgb,#4f8cff 13%,transparent)}
+.cxe-team-status{font-size:12.5px;color:var(--muted)}
+.cxe-team-status.accepted{color:var(--green)}
+@media(max-width:760px){.cxe-team li{grid-template-columns:minmax(0,1fr) auto}}

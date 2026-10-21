@@ -4,7 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { tr, type Lang } from "./i18n";
 import { MathText } from "./math-text";
 import { ratingColor } from "./rating";
-import { ownerRpc, toTashkentInput, fromTashkentInput, lasting } from "./contest-data";
+import { ownerRpc, toTashkentInput, fromTashkentInput, lasting, type StaffMember } from "./contest-data";
 
 /* The owner's contest editor: /contests/new and /contests/<slug>/edit.
  *
@@ -158,15 +158,16 @@ const normalise = (s: string) => s.replace(/\r\n?/g, "\n");
 
 /* ------------------------------------------------------------ the editor */
 
-export function ContestEditor({ lang, slug, onDone, onCancel, onDeleted }: {
-  lang: Lang; slug: string | null; onDone: (slug: string) => void; onCancel: () => void; onDeleted: () => void;
+export function ContestEditor({ lang, slug, isOwner, onDone, onCancel, onDeleted }: {
+  lang: Lang; slug: string | null; isOwner: boolean; onDone: (slug: string) => void; onCancel: () => void; onDeleted: () => void;
 }) {
   const [draft, setDraft] = useState<Draft | null>(slug ? null : blankDraft());
-  const [state, setState] = useState<"loading" | "ready" | "not-migrated" | "error" | "missing">(slug ? "loading" : "ready");
+  const [state, setState] = useState<"loading" | "ready" | "not-migrated" | "error" | "missing" | "forbidden">(slug ? "loading" : "ready");
   // A seeded archive round: its problems are bank problems and its window
   // holds the board, so only its titles and visibility are editable.
   const [archive, setArchive] = useState(false);
-  const [section, setSection] = useState<"round" | number>("round");
+  const [section, setSection] = useState<"round" | "team" | number>("round");
+  const [teamCount, setTeamCount] = useState<number | null>(null);
   const [slugTouched, setSlugTouched] = useState(Boolean(slug));
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ tone: "ok" | "bad"; text: string } | null>(null);
@@ -177,7 +178,7 @@ export function ContestEditor({ lang, slug, onDone, onCancel, onDeleted }: {
     let live = true;
     void ownerRpc<Loaded | null>("owner_contest_get", { p_slug: slug }).then((got) => {
       if (!live) return;
-      if (!got.ok) { setState(got.error === "not_migrated" ? "not-migrated" : "error"); return; }
+      if (!got.ok) { setState(got.error === "not_migrated" ? "not-migrated" : got.error.includes("Only the owner") ? "forbidden" : "error"); return; }
       const c = got.data;
       if (!c) { setState("missing"); return; }
       setArchive(c.kind !== "custom");
@@ -201,7 +202,7 @@ export function ContestEditor({ lang, slug, onDone, onCancel, onDeleted }: {
 
   if (state !== "ready" || !draft) {
     const text = state === "loading" ? null
-      : tr(lang, state === "not-migrated" ? "contests.editor_not_migrated" : state === "missing" ? "contests.not_found" : "contests.load_error");
+      : tr(lang, state === "not-migrated" ? "contests.editor_not_migrated" : state === "missing" ? "contests.not_found" : state === "forbidden" ? "contests.ed_forbidden" : "contests.load_error");
     return <>
       <button type="button" className="back-link" onClick={onCancel}>← {tr(lang, "contests.ed_back")}</button>
       {text ? <div className="panel"><div className={`notice ${state === "error" ? "notice-error" : ""}`}>{text}</div></div>
@@ -310,6 +311,9 @@ export function ContestEditor({ lang, slug, onDone, onCancel, onDeleted }: {
         <button type="button" className={section === "round" ? "on" : undefined} onClick={() => setSection("round")}>
           <span className="cxe-nav-ic">⚙</span><span><b>{tr(lang, "contests.ed_round")}</b><small>{lasting(draft.duration, lang)} · {draft.hidden ? tr(lang, "contests.hidden") : tr(lang, "contests.ed_public")}</small></span>
         </button>
+        {!archive && <button type="button" className={section === "team" ? "on" : undefined} onClick={() => setSection("team")}>
+          <span className="cxe-nav-ic">👥</span><span><b>{tr(lang, "contests.ed_team")}</b><small>{slug ? tr(lang, "contests.ed_team_nav", { n: teamCount ?? "…" }) : "—"}</small></span>
+        </button>}
         {archive ? <p className="cxe-archive-note muted">{tr(lang, "contests.ed_archive_note")}</p> : <>
         <p className="cxe-nav-label">{tr(lang, "contests.problems")} · {draft.problems.length}</p>
         {draft.problems.length === 0 && <p className="cxe-archive-note muted">{tr(lang, "contests.ed_no_problems_yet")}</p>}
@@ -337,7 +341,8 @@ export function ContestEditor({ lang, slug, onDone, onCancel, onDeleted }: {
 
       <section className="cxe-main">
         {section === "round" && <RoundSettings lang={lang} draft={draft} set={set} slugTouched={slugTouched}
-          onSlugTouched={() => setSlugTouched(true)} canDelete={Boolean(slug) && !archive} onDelete={remove} entries={roundEntries} archive={archive} />}
+          onSlugTouched={() => setSlugTouched(true)} canDelete={Boolean(slug) && !archive && isOwner} onDelete={remove} entries={roundEntries} archive={archive} />}
+        {section === "team" && <TeamSettings lang={lang} slug={slug} onCount={setTeamCount} />}
         {current && typeof section === "number" && <ProblemEditor key={current.key} lang={lang} p={current} count={draft.problems.length} index={section}
           set={(patch) => setProblem(section, patch)} onMove={(by) => moveProblem(section, by)} onRemove={() => removeProblem(section)} />}
       </section>
@@ -648,5 +653,77 @@ function TestsEditor({ lang, p, set }: { lang: Lang; p: Problem; set: (patch: Pa
           </div>}
         </li>)}
       </ol>}
+  </div>;
+}
+
+/* ------------------------------------------------------------ the team */
+
+/* Co-authors and testers (068). An invitation does nothing until the invitee
+   accepts it on the round's page or the contests list. */
+function TeamSettings({ lang, slug, onCount }: { lang: Lang; slug: string | null; onCount: (n: number) => void }) {
+  const [list, setList] = useState<StaffMember[] | null>(null);
+  const [username, setUsername] = useState("");
+  const [role, setRole] = useState<"author" | "tester">("tester");
+  const [busy, setBusy] = useState(false);
+  const [note, setNote] = useState<{ tone: "ok" | "bad"; text: string } | null>(null);
+  const [nonce, setNonce] = useState(0);
+
+  useEffect(() => {
+    if (!slug) return;
+    let live = true;
+    void ownerRpc<StaffMember[]>("contest_staff_list", { p_slug: slug }).then((got) => {
+      if (!live) return;
+      if (got.ok) { setList(got.data || []); onCount((got.data || []).length); }
+      else setNote({ tone: "bad", text: tr(lang, got.error === "not_migrated" ? "contests.ed_team_err_not_migrated" : "contests.ed_err_generic", { e: got.error }) });
+    });
+    return () => { live = false; };
+  }, [slug, nonce, lang, onCount]);
+
+  if (!slug) return <div className="cxe-card"><header className="cxe-card-head"><h2>{tr(lang, "contests.ed_team")}</h2>
+    <p className="muted">{tr(lang, "contests.ed_team_save_first")}</p></header></div>;
+
+  const invite = async () => {
+    const name = username.trim().replace(/^@/, "");
+    if (!name) return;
+    setBusy(true);
+    setNote(null);
+    const got = await ownerRpc<{ username: string }>("contest_invite", { p_slug: slug, p_username: name, p_role: role });
+    setBusy(false);
+    if (got.ok) {
+      setUsername("");
+      setNote({ tone: "ok", text: tr(lang, "contests.ed_team_invited", { u: got.data.username }) });
+      setNonce((n) => n + 1);
+      return;
+    }
+    const code = got.error.split(":")[0];
+    setNote({ tone: "bad", text: tr(lang, ["no_such_user", "already_staff", "not_migrated"].includes(code) ? `contests.ed_team_err_${code}` : "contests.ed_err_generic", { e: got.error }) });
+  };
+  const remove = async (u: string) => {
+    const got = await ownerRpc("contest_staff_remove", { p_slug: slug, p_username: u });
+    if (got.ok) setNonce((n) => n + 1);
+  };
+
+  return <div className="cxe-card">
+    <header className="cxe-card-head"><h2>{tr(lang, "contests.ed_team")}</h2><p className="muted">{tr(lang, "contests.ed_team_lead")}</p></header>
+    <form className="cxe-team-form" onSubmit={(e) => { e.preventDefault(); void invite(); }}>
+      <input value={username} placeholder={tr(lang, "contests.ed_team_username")} aria-label={tr(lang, "contests.ed_team_username")}
+        onChange={(e) => setUsername(e.target.value)} />
+      <span className="cxe-toggle">
+        <button type="button" className={role === "author" ? "on" : undefined} onClick={() => setRole("author")}>{tr(lang, "contests.role_author")}</button>
+        <button type="button" className={role === "tester" ? "on" : undefined} onClick={() => setRole("tester")}>{tr(lang, "contests.role_tester")}</button>
+      </span>
+      <button type="submit" className="primary" disabled={busy || !username.trim()}>{tr(lang, "contests.ed_team_invite")}</button>
+    </form>
+    <p className="cxe-hint cxe-team-hint">{tr(lang, `contests.role_hint_${role}`)}</p>
+    {note && <p className={`cxe-note ${note.tone}`}>{note.text}</p>}
+    {list === null ? null : list.length === 0 ? <p className="cxe-empty muted">{tr(lang, "contests.ed_team_empty")}</p>
+      : <ul className="cxe-team">
+        {list.map((m) => <li key={m.username}>
+          <span className="cxe-team-who"><b>{m.display_name?.trim() || m.username}</b> <span className="muted">@{m.username}</span></span>
+          <span className={`cxe-team-role ${m.role}`}>{tr(lang, `contests.role_${m.role}`)}</span>
+          <span className={`cxe-team-status ${m.status}`}>{tr(lang, m.status === "accepted" ? "contests.ed_team_accepted" : "contests.ed_team_pending")}</span>
+          <button type="button" className="cx-ghost-btn cxe-del" onClick={() => void remove(m.username)}>{tr(lang, "contests.ed_team_remove")}</button>
+        </li>)}
+      </ul>}
   </div>;
 }

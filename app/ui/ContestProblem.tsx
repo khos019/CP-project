@@ -37,12 +37,14 @@ function Prose({ text }: { text: string }) {
   return <>{parts.map((p, i) => <p key={i} className="cxp-para"><MathText text={p} /></p>)}</>;
 }
 
-export function ContestProblemPage({ lang, slug, idx, board, phase, isOwner, signed, onPick, onSignIn, onSubmitted, onRegister, regBusy }: {
+/* isOwner here means "on the round's team" (owner, co-author or tester): they
+   read the problems early and submit without registering. */
+export function ContestProblemPage({ lang, slug, idx, board, phase, isOwner, signed, onPick, onSignIn, onSubmitted }: {
   lang: Lang; slug: string; idx: string; board: Standings; phase: Phase; isOwner: boolean; signed: boolean;
   onPick: (idx: string) => void; onSignIn: () => void; onSubmitted: () => void;
-  onRegister: () => void; regBusy: boolean;
 }) {
-  // A running round takes submissions from its registered participants (067).
+  // A running round takes submissions from its registered participants only,
+  // and registration closed when it started (068).
   const mustRegister = phase === "live" && !isOwner && board.contest.kind === "custom"
     && board.contest.me_registered === false;
   const [load, setLoad] = useState<Load<Spec>>({ state: "loading" });
@@ -176,12 +178,11 @@ export function ContestProblemPage({ lang, slug, idx, board, phase, isOwner, sig
       <div className="cxp-side">
         {phase === "finished" && <p className="notice cxp-note">{tr(lang, "contests.p_practice")}</p>}
         {phase === "upcoming" && isOwner && <p className="notice cxp-note">{tr(lang, "contests.p_owner_early")}</p>}
-        {mustRegister && signed && <div className="cx-reg cxp-reg">
-          <div className="cx-reg-copy"><b>{tr(lang, "contests.reg_needed")}</b></div>
-          <button type="button" className="primary cx-reg-btn" disabled={regBusy} onClick={onRegister}>{tr(lang, "contests.reg_button")}</button>
+        {mustRegister && <div className="cx-reg cxp-reg closed">
+          <div className="cx-reg-copy"><b>{tr(lang, "contests.reg_closed")}</b><small>{tr(lang, "contests.reg_closed_problem")}</small></div>
         </div>}
-        <CodeEditor code={code} setCode={edit} lang={language} setLang={switchLang} onSubmit={submit}
-          submitLabel={signed ? tr(lang, "contests.p_submit") : tr(lang, "contests.p_sign_in")} verdict={verdict} busy={busy} />
+        {!mustRegister && <CodeEditor code={code} setCode={edit} lang={language} setLang={switchLang} onSubmit={submit}
+          submitLabel={signed ? tr(lang, "contests.p_submit") : tr(lang, "contests.p_sign_in")} verdict={verdict} busy={busy} />}
       </div>
     </div>
   </>;

@@ -18,7 +18,12 @@ export type ContestSummary = {
   kind?: "archive" | "custom";
   /** From 067: how many signed up, and whether the viewer is one of them. */
   registered?: number; me_registered?: boolean;
+  /** From 068: the viewer's place on the round's team, and a pending invitation. */
+  my_role?: ContestRole | null; invited?: "author" | "tester" | null;
 };
+export type ContestRole = "owner" | "author" | "tester";
+export type StaffMember = { username: string; display_name: string | null; role: "author" | "tester"; status: "pending" | "accepted"; invited_at: string };
+export type Invitation = { slug: string; title_uz: string; title_en: string; starts_at: string; role: "author" | "tester"; invited_by: string | null };
 export type ContestProblem = {
   idx: string; bank_id: string; problem_key: string; title_uz: string; title_en: string;
   rating: number; solved: number; tried: number;
