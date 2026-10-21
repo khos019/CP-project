@@ -184,7 +184,7 @@ export const extraQuiz: Record<string, ExtraQuiz[]> = {
   ["The same — bases differ by a constant","O(n·log₁₀ n) is asymptotically faster","O(n log n) is asymptotically faster","Big O cannot compare them"], 0),
 ],
 "foundations-4": [
- q("Saralangan massivda chiziqli qidiruvning eng yaxshi holati qanday?", "What is linear search's best case?",
+ q("Chiziqli qidiruvning eng yaxshi holati qanday?", "What is linear search's best case?",
   ["O(1)","O(log n)","O(n)","O(n²)"],
   ["O(1)","O(log n)","O(n)","O(n²)"], 0),
  q("Tasodifiy pivotli quicksort uchun «o‘rtacha O(n log n)» qaysi tasodifiylik ustidan olinadi?", "For random-pivot quicksort, “O(n log n) on average” is averaged over what?",
@@ -713,9 +713,9 @@ export const extraQuiz: Record<string, ExtraQuiz[]> = {
  q("Multiplikativ funksiya: gcd(a, b) = 1 bo‘lsa f(ab) = ?", "A multiplicative function: when gcd(a, b) = 1, f(ab) = ?",
   ["f(a) · f(b)","f(a) + f(b)","f(a)^b","max(f(a), f(b))"],
   ["f(a) · f(b)","f(a) + f(b)","f(a)^b","max(f(a), f(b))"], 0),
- q("Chiziqli g‘alvir har bir murakkab sonni necha marta o‘chiradi?", "How many times does the linear sieve cross out each composite?",
-  ["Aynan bir marta","Har bir tub bo‘luvchisi uchun bir marta","log n marta","Bo‘luvchilari soni marta"],
-  ["Exactly once","Once per prime factor","log n times","Once per divisor"], 0),
+ q("μ(12) nimaga teng?", "What is μ(12)?",
+  ["0 — 12 kvadratga (4 ga) bo‘linadi","1 — 12 ning ikkita turli tub ko‘paytuvchisi bor","−1 — 12 ning uchta tub ko‘paytuvchisi bor (2, 2, 3)","6 — 12 ning bo‘luvchilari soni"],
+  ["0 — 12 is divisible by a square (4)","1 — 12 has two distinct prime factors","−1 — 12 has three prime factors (2, 2, 3)","6 — the number of divisors of 12"], 0),
 ],
 "math-17": [
  q("Miller–Rabin tubligini qanday tekshiradi?", "How does Miller–Rabin test primality?",
