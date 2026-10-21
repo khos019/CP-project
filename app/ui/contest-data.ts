@@ -160,6 +160,17 @@ export const countdown = (ms: number, lang: Lang) => {
   return d ? `${d} ${lang === "uz" ? "kun" : "d"} ${hms}` : hms;
 };
 
+/* The same countdown as separate units, for the tile clock: days only when
+   there are any, so a running round reads 01 · 23 · 45. */
+export const clockUnits = (ms: number, lang: Lang): [string, string][] => {
+  const s = Math.max(0, Math.floor(ms / 1000));
+  const d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60), x = s % 60;
+  const L = lang === "uz" ? ["kun", "soat", "daq", "son"] : ["days", "hrs", "min", "sec"];
+  const pad = (n: number) => String(n).padStart(2, "0");
+  const units: [string, string][] = [[pad(h), L[1]], [pad(m), L[2]], [pad(x), L[3]]];
+  return d ? [[String(d), L[0]], ...units] : units;
+};
+
 /** The current time, re-read every `ms` while isActive(now) holds. A
  *  finished archive answers false and does not re-render once a second for
  *  nothing; a round that is about to start or still running ticks. */

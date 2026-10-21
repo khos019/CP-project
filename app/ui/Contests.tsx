@@ -11,7 +11,7 @@ import { fetchSubmissionCode, unlockSubmissionCode, type CodeResult } from "./so
 import { CodeBlock } from "./CodeBlock";
 import { EmptyState } from "./kit";
 import {
-  publicRpc, ownerRpc, tashkent, when, lasting, clock, phaseOf, windowOf, span, countdown, useNow,
+  publicRpc, ownerRpc, tashkent, when, lasting, clock, phaseOf, windowOf, span, clockUnits, useNow,
   UZ_SHORT, EN_MONTHS, LANGS,
   type Load, type Registrant, type ContestSummary, type ContestProblem, type StandingRow, type Standings, type Attempt, type Phase,
 } from "./contest-data";
@@ -53,6 +53,14 @@ function Waiting({ lang, load, notMigrated = "contests.not_migrated" }: { lang: 
   const key = load.state === "not-migrated" ? notMigrated
     : load.state === "missing" ? "contests.not_found" : "contests.load_error";
   return <div className="panel"><div className={`notice ${load.state === "error" ? "notice-error" : ""}`}>{tr(lang, key)}</div></div>;
+}
+
+/* A countdown as tiles — days, hours, minutes, seconds — in the round's
+   accent colour (--cx-acc), not one long monospace string. */
+export function Clock({ ms, lang, big }: { ms: number; lang: Lang; big?: boolean }) {
+  return <span className={`cx-clock${big ? " big" : ""}`} role="timer">
+    {clockUnits(ms, lang).map(([n, label], i) => <span className="cx-clock-u" key={i}><b>{n}</b><small>{label}</small></span>)}
+  </span>;
 }
 
 const titleOf = (lang: Lang, x: { title_uz: string; title_en: string }) => (lang === "uz" ? x.title_uz : x.title_en) || x.title_uz;
@@ -203,7 +211,7 @@ function FeatureCard({ lang, c, phase, now, onOpen }: { lang: Lang; c: ContestSu
     </span>
     <div className="cx-feature-clock">
       <small>{tr(lang, phase === "live" ? "contests.ends_label" : "contests.starts_label")}</small>
-      <b className="mono">{countdown(phase === "live" ? end - now : start - now, lang)}</b>
+      <Clock ms={phase === "live" ? end - now : start - now} lang={lang} />
     </div>
     {phase === "live" && <span className="cx-progress" aria-hidden><i style={{ width: `${pct}%` }} /></span>}
     {c.kind === "custom" && c.registered !== undefined && <span className="cx-feature-reg">
@@ -360,7 +368,7 @@ function ContestRound({ lang, slug, tab, problemIdx, isOwner, signed, onTab, onO
       </div>
       {livePhase !== "finished" && <div className="cx-round-clock">
         <div><small>{tr(lang, livePhase === "live" ? "contests.ends_label" : "contests.starts_label")}</small>
-          <b className="mono">{countdown(livePhase === "live" ? end - now : start - now, lang)}</b></div>
+          <Clock ms={livePhase === "live" ? end - now : start - now} lang={lang} /></div>
         {livePhase === "live" && <span className="cx-progress"><i style={{ width: `${pct}%` }} /></span>}
       </div>}
       {contest.hidden && <p className="cx-hidden-note">{tr(lang, "contests.hidden_note")}</p>}
@@ -389,7 +397,7 @@ function ContestRound({ lang, slug, tab, problemIdx, isOwner, signed, onTab, onO
           <span className="cx-empty-ic" aria-hidden><CxIcon d={CX_LOCK} /></span>
           <h2>{tr(lang, "contests.sealed_title")}</h2>
           <p className="muted">{tr(lang, "contests.sealed_body", { t: span(start - now, lang) })}</p>
-          <b className="cx-sealed-clock mono">{countdown(start - now, lang)}</b>
+          <Clock ms={start - now} lang={lang} big />
         </section>
       : <>
         {tab === "problems" && <ProblemsTab lang={lang} slug={slug} board={board} phase={livePhase} isOwner={isOwner} onEdit={onEdit} onOpenProblem={onOpenProblem} onOpenContestProblem={onOpenContestProblem} onOpenSubmissions={onOpenSubmissions} />}

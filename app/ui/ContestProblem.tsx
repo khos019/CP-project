@@ -9,7 +9,8 @@ import { CodeEditor, type EditorLang } from "./CodeEditor";
 import { judgeFetch, judgeRefusal } from "./judge-client";
 import { readDraft, writeDraft } from "./drafts";
 import { verdictLabel } from "./social-ui";
-import { publicRpc, countdown, windowOf, type Load, type Standings, type Phase } from "./contest-data";
+import { Clock } from "./Contests";
+import { publicRpc, windowOf, type Load, type Standings, type Phase } from "./contest-data";
 
 /* One problem the owner wrote for a round (065): its statement, then an
  * editor that submits to /api/judge under the problem's "cx:" key. The judge
@@ -142,7 +143,7 @@ export function ContestProblemPage({ lang, slug, idx, board, phase, isOwner, sig
   if (!p.ok) {
     const { start } = windowOf(board.contest);
     return <>{picker}<section className="cx-sealed"><h2>{tr(lang, "contests.sealed_title")}</h2>
-      <b className="cx-sealed-clock mono">{countdown(start - Date.now(), lang)}</b></section></>;
+      <span className="cx-upcoming"><Clock ms={start - Date.now()} lang={lang} big /></span></section></>;
   }
   const title = (lang === "uz" ? p.title_uz : p.title_en) || p.title_uz;
 
