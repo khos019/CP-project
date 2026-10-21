@@ -195,7 +195,7 @@ export const unitPractice: Record<string, string[]> = {
   "geometry-9": ["C632", "B179", "C376"],
   "geometry-10": ["C235", "B188"],
   "geometry-11": ["B400", "C233"],
-  "geometry-12": ["B184", "B389", "C331"],
+  "geometry-12": ["C634", "B389", "B184"],
   "geometry-13": ["C411", "B178"],
   "geometry-14": ["C233", "C234"],
 

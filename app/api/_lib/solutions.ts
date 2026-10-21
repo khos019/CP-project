@@ -9792,6 +9792,35 @@ long long ans=0,Q=0,below=0;
 for(int c=1;c<=mx;++c){long long P=c<sz?f[c]:0;if(c%2==0&&has[c/2])P-=1;P/=2;Q+=P;if(has[c]){ans+=below*(below-1)/2-Q;++below;}}
 cout<<ans<<"\\n";`)],
   },
+  "geo-union-of-rectangles-area": {
+    solution: cpp(`int n;cin>>n;vector<array<long long,4>>r(n);vector<long long>ys;ys.reserve(2*n);
+for(auto&a:r){cin>>a[0]>>a[1]>>a[2]>>a[3];ys.push_back(a[1]);ys.push_back(a[3]);}
+sort(ys.begin(),ys.end());ys.erase(unique(ys.begin(),ys.end()),ys.end());int m=ys.size()-1;
+vector<array<long long,4>>ev;ev.reserve(2*n);
+for(auto&a:r){long long lo=lower_bound(ys.begin(),ys.end(),a[1])-ys.begin(),hi=lower_bound(ys.begin(),ys.end(),a[3])-ys.begin();ev.push_back({a[0],1,lo,hi});ev.push_back({a[2],-1,lo,hi});}
+sort(ev.begin(),ev.end());
+static int cnt[800005];static long long len[800005];
+auto upd=[&](auto&&self,int v,int l,int rr,int ql,int qr,int d)->void{if(qr<=l||rr<=ql)return;
+ if(ql<=l&&rr<=qr)cnt[v]+=d;else{int mid=(l+rr)/2;self(self,2*v,l,mid,ql,qr,d);self(self,2*v+1,mid,rr,ql,qr,d);}
+ if(cnt[v]>0)len[v]=ys[rr]-ys[l];else if(rr-l==1)len[v]=0;else len[v]=len[2*v]+len[2*v+1];};
+long long ans=0,px=ev[0][0];
+for(auto&e:ev){ans+=len[1]*(e[0]-px);px=e[0];upd(upd,1,0,m,(int)e[2],(int)e[3],(int)e[1]);}
+cout<<ans<<"\\n";`),
+    // Adding up the rectangles' areas counts every overlap more than once; keeping the area in an int overflows once the plane is mostly covered.
+    wrong: [cpp(`int n;cin>>n;long long s=0;for(int i=0;i<n;++i){long long a,b,c,d;cin>>a>>b>>c>>d;s+=(c-a)*(d-b);}cout<<s<<"\\n";`), cpp(`int n;cin>>n;vector<array<long long,4>>r(n);vector<long long>ys;
+for(auto&a:r){cin>>a[0]>>a[1]>>a[2]>>a[3];ys.push_back(a[1]);ys.push_back(a[3]);}
+sort(ys.begin(),ys.end());ys.erase(unique(ys.begin(),ys.end()),ys.end());int m=ys.size()-1;
+vector<array<long long,4>>ev;
+for(auto&a:r){long long lo=lower_bound(ys.begin(),ys.end(),a[1])-ys.begin(),hi=lower_bound(ys.begin(),ys.end(),a[3])-ys.begin();ev.push_back({a[0],1,lo,hi});ev.push_back({a[2],-1,lo,hi});}
+sort(ev.begin(),ev.end());
+static int cnt[800005];static long long len[800005];
+auto upd=[&](auto&&self,int v,int l,int rr,int ql,int qr,int d)->void{if(qr<=l||rr<=ql)return;
+ if(ql<=l&&rr<=qr)cnt[v]+=d;else{int mid=(l+rr)/2;self(self,2*v,l,mid,ql,qr,d);self(self,2*v+1,mid,rr,ql,qr,d);}
+ if(cnt[v]>0)len[v]=ys[rr]-ys[l];else if(rr-l==1)len[v]=0;else len[v]=len[2*v]+len[2*v+1];};
+int ans=0;long long px=ev[0][0];
+for(auto&e:ev){ans+=len[1]*(e[0]-px);px=e[0];upd(upd,1,0,m,(int)e[2],(int)e[3],(int)e[1]);}
+cout<<ans<<"\\n";`)],
+  },
 };
 
 /** The problems the bot can actually play. Everything else falls back to

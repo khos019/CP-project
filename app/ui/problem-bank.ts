@@ -706,4 +706,5 @@ export const bankProblems:BankProblem[]=[
  {id:"C631",uz:"Aynan m tasiga bo‘linadi",en:"Divisible by exactly m of them",difficulty:"hard",rating:1900,tag:"Inclusion-exclusion",points:300,topic:"math",judge:"math-divisible-by-exactly-m",timeLimitMs:2000,memoryMb:256},
  {id:"C632",uz:"Doira bilan eng ko‘p nuqta",en:"One disk, as many points as possible",difficulty:"hard",rating:2000,tag:"Angular sweep",points:300,topic:"geometry",judge:"geo-disk-most-points",timeLimitMs:2000,memoryMb:256},
  {id:"C633",uz:"Uchburchak yasaydigan tayoqchalar",en:"Sticks that make a triangle",difficulty:"insane",rating:2200,tag:"NTT",points:400,topic:"advanced-cp",judge:"adv-ntt-count-triangles",timeLimitMs:2000,memoryMb:256},
+ {id:"C634",uz:"To‘rtburchaklar birlashmasi",en:"The union of rectangles",difficulty:"insane",rating:2100,tag:"Sweep line",points:400,topic:"geometry",judge:"geo-union-of-rectangles-area",timeLimitMs:2000,memoryMb:256},
 ];

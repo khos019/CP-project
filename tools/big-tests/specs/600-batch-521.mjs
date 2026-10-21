@@ -9,7 +9,7 @@
 const wrap = (body) => "#include <bits/stdc++.h>\nusing namespace std;\nint main(){ios::sync_with_stdio(false);cin.tie(nullptr);\n" + body + "\nreturn 0;}\n";
 
 const spec = {};
-for (const b of ["521", "533", "549", "565", "571", "587", "600", "613", "621", "630"]) {
+for (const b of ["521", "533", "549", "565", "571", "587", "600", "613", "621", "630", "634"]) {
   for (const p of (await import(`../../problem-authoring/batch-${b}.mjs`)).default) {
     if (!p.big?.length) continue;
     spec[p.judge] = { tests: p.big, slow: (p.slow || []).map(wrap) };
