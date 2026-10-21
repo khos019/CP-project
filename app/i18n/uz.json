@@ -695,5 +695,21 @@
   "contests.ed_archive_note": "Arxiv raundi: masalalari bankdan olingan va o‘zgarmaydi. Nomi, tavsifi va ko‘rinishini o‘zgartirish mumkin.",
   "contests.ed_archive_lead": "Vaqt va davomiylik o‘zgarmaydi — natijalar jadvali aynan shu oraliqdagi yechimlardan hisoblanadi.",
   "contests.ed_no_problems_yet": "Hali masala yo‘q. Kontestni hozir yaratib, masalalarni keyin qo‘shishingiz mumkin.",
-  "contests.ed_warnings_note": "Saqlash mumkin. {n} ta eslatma — masalalarni keyin to‘ldirasiz."
+  "contests.ed_warnings_note": "Saqlash mumkin. {n} ta eslatma — masalalarni keyin to‘ldirasiz.",
+  "contests.tab_registrants": "Ishtirokchilar",
+  "contests.reg_count": "{n} kishi ro‘yxatdan o‘tgan",
+  "contests.reg_done": "Siz ro‘yxatdan o‘tgansiz",
+  "contests.reg_done_short": "Ro‘yxatdasiz",
+  "contests.reg_cta": "Kontestda qatnashish uchun ro‘yxatdan o‘ting",
+  "contests.reg_cta_live": "Kontest ketmoqda — hali ham qo‘shilishingiz mumkin",
+  "contests.reg_button": "Ro‘yxatdan o‘tish",
+  "contests.reg_sign_in": "Kirib, ro‘yxatdan o‘tish",
+  "contests.reg_cancel": "Bekor qilish",
+  "contests.reg_needed": "Yechim yuborish uchun avval kontestga ro‘yxatdan o‘ting.",
+  "contests.reg_none": "Hali hech kim ro‘yxatdan o‘tmagan",
+  "contests.reg_none_body": "Birinchi bo‘lib ro‘yxatdan o‘ting!",
+  "contests.reg_err_not_migrated": "Ro‘yxatdan o‘tish uchun 067_contest_registration.sql migratsiyasi kerak.",
+  "contests.reg_err_started": "Kontest boshlangan — endi ro‘yxatdan chiqib bo‘lmaydi.",
+  "contests.reg_err_finished": "Kontest tugagan.",
+  "contests.reg_err_not_authenticated": "Ro‘yxatdan o‘tish uchun hisobingizga kiring."
 }

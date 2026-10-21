@@ -13,7 +13,7 @@ import { EmptyState } from "./kit";
 import {
   publicRpc, ownerRpc, tashkent, when, lasting, clock, phaseOf, windowOf, span, countdown, useNow,
   UZ_SHORT, EN_MONTHS, LANGS,
-  type Load, type ContestSummary, type ContestProblem, type StandingRow, type Standings, type Attempt, type Phase,
+  type Load, type Registrant, type ContestSummary, type ContestProblem, type StandingRow, type Standings, type Attempt, type Phase,
 } from "./contest-data";
 import { ContestEditor } from "./ContestEditor";
 import { ContestProblemPage } from "./ContestProblem";
@@ -42,6 +42,7 @@ const CX_EDIT = "M4 20h4L19 9l-4-4L4 16v4ZM14 6l4 4";
 const CX_CODE = "M8 8l-4 4 4 4M16 8l4 4-4 4M14 5l-4 14";
 const CX_REFRESH = "M20 11a8 8 0 0 0-14.9-4M4 4v4h4M4 13a8 8 0 0 0 14.9 4M20 20v-4h-4";
 const CX_LOCK = "M7 11V8a5 5 0 0 1 10 0v3M6 11h12v9H6z";
+const CX_CHECK = "M5 12.5l4.5 4.5L19 7.5";
 const CX_EYE = "M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12ZM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z";
 const CX_EYE_OFF = "M3 3l18 18M10.6 6.1A9.8 9.8 0 0 1 12 6c5 0 9 6 9 6a17 17 0 0 1-2.4 3M6.6 6.6C4.3 8.1 3 12 3 12s4 6 9 6a9 9 0 0 0 4.4-1.1M9.9 9.9a3 3 0 0 0 4.2 4.2";
 
@@ -59,7 +60,7 @@ const titleOf = (lang: Lang, x: { title_uz: string; title_en: string }) => (lang
 /* A round's pages, as on Codeforces: the problems at its root, then the
    standings and every submission sent during it. "problem" is one custom
    problem (/p/<idx>), "edit" the owner's editor. */
-export type ContestTab = "problems" | "standings" | "status" | "problem" | "edit";
+export type ContestTab = "problems" | "standings" | "status" | "registrants" | "problem" | "edit";
 
 export function Contests({ lang, slug, tab, problemIdx, isOwner, signed, onTab, onOpenContest, onOpenList, onOpenSubmissions, onOpenProblem, onOpenContestProblem, onEdit, onSignIn, onPractice }: {
   lang: Lang;
@@ -205,6 +206,10 @@ function FeatureCard({ lang, c, phase, now, onOpen }: { lang: Lang; c: ContestSu
       <b className="mono">{countdown(phase === "live" ? end - now : start - now, lang)}</b>
     </div>
     {phase === "live" && <span className="cx-progress" aria-hidden><i style={{ width: `${pct}%` }} /></span>}
+    {c.kind === "custom" && c.registered !== undefined && <span className="cx-feature-reg">
+      <CxIcon d={CX_USERS} />{tr(lang, "contests.reg_count", { n: c.registered })}
+      {c.me_registered && <b className="cx-reg-badge"><CxIcon d={CX_CHECK} />{tr(lang, "contests.reg_done_short")}</b>}
+    </span>}
     <span className="cx-feature-cta">{tr(lang, phase === "live" ? "contests.enter" : "contests.details")} →</span>
   </a>;
 }
@@ -254,6 +259,8 @@ function ContestRound({ lang, slug, tab, problemIdx, isOwner, signed, onTab, onO
   const [nonce, setNonce] = useState(0);
   const [toggling, setToggling] = useState(false);
   const [toggleError, setToggleError] = useState("");
+  const [regBusy, setRegBusy] = useState(false);
+  const [regError, setRegError] = useState("");
   const reload = useCallback(() => setNonce((n) => n + 1), []);
   useEffect(() => {
     let live = true;
@@ -301,7 +308,31 @@ function ContestRound({ lang, slug, tab, problemIdx, isOwner, signed, onTab, onO
     else setToggleError(tr(lang, got.error === "not_migrated" ? "contests.ed_err_need_066" : "contests.ed_err_generic", { e: got.error }));
   };
 
-  const tabs: ContestTab[] = ["problems", "standings", "status"];
+  /* Registration (067): open until the round ends, cancellable until it starts. */
+  const canRegister = contest.kind === "custom" && livePhase !== "finished" && contest.registered !== undefined;
+  const register = async (join: boolean) => {
+    if (!signed) { onSignIn(); return; }
+    setRegBusy(true);
+    setRegError("");
+    const got = await ownerRpc(join ? "contest_register" : "contest_unregister", { p_slug: slug });
+    setRegBusy(false);
+    if (got.ok) { reload(); return; }
+    const code = got.error.split(":")[0];
+    setRegError(tr(lang, ["not_migrated", "started", "finished", "not_authenticated"].includes(code) ? `contests.reg_err_${code}` : "contests.ed_err_generic", { e: got.error }));
+  };
+  const regBox = canRegister && <div className={`cx-reg${contest.me_registered ? " done" : ""}`}>
+    <div className="cx-reg-copy">
+      {contest.me_registered
+        ? <b><CxIcon d={CX_CHECK} />{tr(lang, "contests.reg_done")}</b>
+        : <b>{tr(lang, livePhase === "live" ? "contests.reg_cta_live" : "contests.reg_cta")}</b>}
+      <small>{tr(lang, "contests.reg_count", { n: contest.registered ?? 0 })}</small>
+    </div>
+    {contest.me_registered
+      ? livePhase === "upcoming" && <button type="button" className="cx-ghost-btn" disabled={regBusy} onClick={() => void register(false)}>{tr(lang, "contests.reg_cancel")}</button>
+      : <button type="button" className="primary cx-reg-btn" disabled={regBusy} onClick={() => void register(true)}>{tr(lang, signed ? "contests.reg_button" : "contests.reg_sign_in")}</button>}
+  </div>;
+
+  const tabs: ContestTab[] = contest.kind === "custom" ? ["problems", "standings", "status", "registrants"] : ["problems", "standings", "status"];
   const hrefOf = (t: ContestTab) => `/contests/${encodeURIComponent(slug)}${t === "problems" ? "" : `/${t}`}`;
   const activeTab = tab === "problem" ? "problems" : tab;
 
@@ -334,6 +365,8 @@ function ContestRound({ lang, slug, tab, problemIdx, isOwner, signed, onTab, onO
       </div>}
       {contest.hidden && <p className="cx-hidden-note">{tr(lang, "contests.hidden_note")}</p>}
       {toggleError && <p className="cx-hidden-note">{toggleError}</p>}
+      {regBox}
+      {regError && <p className="cx-hidden-note">{regError}</p>}
     </header>
 
     <nav className="cx-tabs" aria-label={tr(lang, "contests.title")}>
@@ -342,13 +375,16 @@ function ContestRound({ lang, slug, tab, problemIdx, isOwner, signed, onTab, onO
           onClick={linkTo(() => { if (tab !== t) onTab(t); })}>
           {tr(lang, `contests.tab_${t}`)}
           {t === "standings" && board.rows.length > 0 && <small>{board.rows.length}</small>}
+          {t === "registrants" && (contest.registered ?? 0) > 0 && <small>{contest.registered}</small>}
         </a>
       ))}
     </nav>
 
     {tab === "problem" && problemIdx
       ? <ContestProblemPage key={problemIdx} lang={lang} slug={slug} idx={problemIdx} board={board} phase={livePhase} isOwner={isOwner}
-          signed={signed} onPick={onOpenContestProblem} onSignIn={onSignIn} onSubmitted={reload} />
+          signed={signed} onPick={onOpenContestProblem} onSignIn={onSignIn} onSubmitted={reload}
+          onRegister={() => register(true)} regBusy={regBusy} />
+      : tab === "registrants" ? <RegistrantsTab lang={lang} slug={slug} onOpenSubmissions={onOpenSubmissions} />
       : sealed ? <section className="cx-sealed">
           <span className="cx-empty-ic" aria-hidden><CxIcon d={CX_LOCK} /></span>
           <h2>{tr(lang, "contests.sealed_title")}</h2>
@@ -436,6 +472,31 @@ function ProblemsTab({ lang, slug, board, phase, isOwner, onEdit, onOpenProblem,
       </section>}
     </aside>
   </div>;
+}
+
+/* Who signed up, in the order they did: Codeforces' "Registrants". */
+function RegistrantsTab({ lang, slug, onOpenSubmissions }: { lang: Lang; slug: string; onOpenSubmissions: (handle: string) => void }) {
+  const [load, setLoad] = useState<Load<Registrant[]>>({ state: "loading" });
+  useEffect(() => {
+    let live = true;
+    void publicRpc<Registrant[]>("contest_registrants", { p_slug: slug }).then((got) => { if (live) setLoad(got); });
+    return () => { live = false; };
+  }, [slug]);
+  if (load.state !== "ready") return <Waiting lang={lang} load={load} notMigrated="contests.reg_err_not_migrated" />;
+  if (!load.data.length) return <EmptyState lang={lang} icon="podium" title={tr(lang, "contests.reg_none")} body={tr(lang, "contests.reg_none_body")} />;
+  return <ol className="cx-registrants">
+    {load.data.map((r, i) => {
+      const name = r.display_name?.trim() || r.username;
+      return <li key={r.username}>
+        <span className="cx-reg-n mono">{i + 1}</span>
+        <a href={`/u/${encodeURIComponent(r.username)}`} onClick={linkTo(() => onOpenSubmissions(r.username))}>
+          <b style={r.rating ? { color: ratingColor(r.rating) } : undefined}>{name}</b> <span className="muted">@{r.username}</span>
+        </a>
+        {r.rating !== null && <span className="cx-reg-rating mono" style={{ color: ratingColor(r.rating) }}>{r.rating}</span>}
+        <span className="cx-reg-when muted">{when(r.registered_at, lang)}</span>
+      </li>;
+    })}
+  </ol>;
 }
 
 function StandingsTab({ lang, slug, board, live, onReload, onOpenSubmissions }: {

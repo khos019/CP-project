@@ -5349,3 +5349,29 @@ body[data-ads-quiet] > div[style*="--rdata"]{display:none!important}
 .cx-noproblems{margin-bottom:var(--s3)}
 .cxe-archive-note{margin:var(--s2) 12px;font-size:13px;line-height:1.5}
 .cxe-check li.warn button{color:var(--muted)}
+
+/* Ro‘yxatdan o‘tish (067). */
+.cx-reg{display:flex;align-items:center;justify-content:space-between;gap:var(--s4);flex-wrap:wrap;margin-top:var(--s4);padding:14px 16px;border-radius:var(--r-lg);border:1px solid color-mix(in srgb,var(--green) 35%,var(--line));background:linear-gradient(120deg,color-mix(in srgb,var(--green) 9%,var(--surface)),var(--surface));max-width:640px}
+.cx-reg.done{border-color:color-mix(in srgb,var(--green) 25%,var(--line));background:var(--green-wash)}
+.cx-reg-copy{display:grid;gap:3px}
+.cx-reg-copy b{display:inline-flex;align-items:center;gap:7px}
+.cx-reg-copy b svg{width:17px;height:17px;color:var(--green)}
+.cx-reg-copy small{font-size:13px;color:var(--muted)}
+.cx-reg-btn{padding:10px 18px}
+.cx-round-hero.compact .cx-reg{display:none}
+.cxp-reg{margin-top:0}
+.cx-feature-reg{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13.5px;color:var(--muted)}
+.cx-feature-reg svg{width:15px;height:15px}
+.cx-reg-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 9px;border-radius:99px;background:var(--green-wash);color:var(--green);font-size:12px}
+.cx-registrants{list-style:none;margin:0;padding:0;display:grid;gap:6px}
+.cx-registrants li{display:grid;grid-template-columns:40px minmax(0,1fr) auto auto;align-items:center;gap:var(--s3);padding:10px 16px;border-radius:12px;background:var(--surface);border:1px solid var(--line)}
+.cx-registrants a{color:inherit;text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cx-registrants a:hover b{text-decoration:underline}
+.cx-reg-n{color:var(--dim)}
+.cx-reg-rating{font-weight:700;font-size:13px}
+.cx-reg-when{font-size:12.5px}
+@media(max-width:760px){
+ .cx-registrants li{grid-template-columns:28px minmax(0,1fr) auto}
+ .cx-reg-when{display:none}
+ .cx-reg{flex-direction:column;align-items:stretch}
+}

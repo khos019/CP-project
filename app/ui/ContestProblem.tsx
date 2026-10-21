@@ -36,10 +36,14 @@ function Prose({ text }: { text: string }) {
   return <>{parts.map((p, i) => <p key={i} className="cxp-para"><MathText text={p} /></p>)}</>;
 }
 
-export function ContestProblemPage({ lang, slug, idx, board, phase, isOwner, signed, onPick, onSignIn, onSubmitted }: {
+export function ContestProblemPage({ lang, slug, idx, board, phase, isOwner, signed, onPick, onSignIn, onSubmitted, onRegister, regBusy }: {
   lang: Lang; slug: string; idx: string; board: Standings; phase: Phase; isOwner: boolean; signed: boolean;
   onPick: (idx: string) => void; onSignIn: () => void; onSubmitted: () => void;
+  onRegister: () => void; regBusy: boolean;
 }) {
+  // A running round takes submissions from its registered participants (067).
+  const mustRegister = phase === "live" && !isOwner && board.contest.kind === "custom"
+    && board.contest.me_registered === false;
   const [load, setLoad] = useState<Load<Spec>>({ state: "loading" });
   const [language, setLanguage] = useState<EditorLang>("cpp20");
   const [code, setCode] = useState(STARTER.cpp20);
@@ -85,7 +89,7 @@ export function ContestProblemPage({ lang, slug, idx, board, phase, isOwner, sig
       if (refusal) { setVerdict(refusal); return; }
       if (response.status === 403) {
         const body = (await response.json().catch(() => ({}))) as JudgeReply;
-        setVerdict(tr(lang, body.error === "not_started" ? "contests.p_not_started" : "contests.p_forbidden"));
+        setVerdict(tr(lang, body.error === "not_started" ? "contests.p_not_started" : body.error === "not_registered" ? "contests.reg_needed" : "contests.p_forbidden"));
         return;
       }
       // Newline-delimited JSON: progress lines, then one result (see the route).
@@ -171,6 +175,10 @@ export function ContestProblemPage({ lang, slug, idx, board, phase, isOwner, sig
       <div className="cxp-side">
         {phase === "finished" && <p className="notice cxp-note">{tr(lang, "contests.p_practice")}</p>}
         {phase === "upcoming" && isOwner && <p className="notice cxp-note">{tr(lang, "contests.p_owner_early")}</p>}
+        {mustRegister && signed && <div className="cx-reg cxp-reg">
+          <div className="cx-reg-copy"><b>{tr(lang, "contests.reg_needed")}</b></div>
+          <button type="button" className="primary cx-reg-btn" disabled={regBusy} onClick={onRegister}>{tr(lang, "contests.reg_button")}</button>
+        </div>}
         <CodeEditor code={code} setCode={edit} lang={language} setLang={switchLang} onSubmit={submit}
           submitLabel={signed ? tr(lang, "contests.p_submit") : tr(lang, "contests.p_sign_in")} verdict={verdict} busy={busy} />
       </div>

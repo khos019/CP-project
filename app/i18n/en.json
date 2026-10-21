@@ -695,5 +695,21 @@
   "contests.ed_archive_note": "Archive round: its problems come from the bank and stay as they are. Its title, description and visibility can change.",
   "contests.ed_archive_lead": "Start and length stay fixed — the standings count submissions inside that window.",
   "contests.ed_no_problems_yet": "No problems yet. Create the round now and add problems later.",
-  "contests.ed_warnings_note": "You can save. {n} reminders — finish the problems later."
+  "contests.ed_warnings_note": "You can save. {n} reminders — finish the problems later.",
+  "contests.tab_registrants": "Registrants",
+  "contests.reg_count": "{n} registered",
+  "contests.reg_done": "You are registered",
+  "contests.reg_done_short": "Registered",
+  "contests.reg_cta": "Register to take part in this round",
+  "contests.reg_cta_live": "The round is live — you can still join",
+  "contests.reg_button": "Register",
+  "contests.reg_sign_in": "Sign in to register",
+  "contests.reg_cancel": "Cancel registration",
+  "contests.reg_needed": "Register for the round before submitting.",
+  "contests.reg_none": "Nobody has registered yet",
+  "contests.reg_none_body": "Be the first to register!",
+  "contests.reg_err_not_migrated": "Registration needs migration 067_contest_registration.sql.",
+  "contests.reg_err_started": "The round has started; registration can no longer be cancelled.",
+  "contests.reg_err_finished": "The round is over.",
+  "contests.reg_err_not_authenticated": "Sign in to register."
 }

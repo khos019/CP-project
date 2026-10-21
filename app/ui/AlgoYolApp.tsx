@@ -305,7 +305,7 @@ void pushUnit(lesson,{solved:true});removeScoped("algoyol-active-lesson");window
   if(parts[0]==="roadmaps"&&parts[1])return {...base,view:"roadmap",roadmap:parts[1],unit:parts[2]||null};
   if(parts[0]==="contests"){
    if(parts[2]==="p"&&parts[3]&&!parts[4]&&/^[A-Za-z]$/.test(parts[3]))return {...base,view:"contests",contest:decodeURIComponent(parts[1]),contestTab:"problem",contestProblem:parts[3].toUpperCase()};
-   const tab=parts[2]===undefined?"problems":parts[2]==="standings"||parts[2]==="status"||parts[2]==="edit"?parts[2]:null;
+   const tab=parts[2]===undefined?"problems":parts[2]==="standings"||parts[2]==="status"||parts[2]==="registrants"||parts[2]==="edit"?parts[2]:null;
    return !tab||parts[3]||(parts[1]==="new"&&parts[2])?{...base,view:"notfound"}:{...base,view:"contests",contest:parts[1]?decodeURIComponent(parts[1]):null,contestTab:tab,contestProblem:null};
   }
   if(parts[0]==="u"&&parts[1])return {...base,view:parts[2]==="submissions"?"person-submissions":parts[2]==="duels"?"person-duels":parts[2]==="friends"?"person-friends":"person",person:decodeURIComponent(parts[1])};

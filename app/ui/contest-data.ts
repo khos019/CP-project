@@ -16,6 +16,8 @@ export type ContestSummary = {
   hidden?: boolean;
   /** From 065: 'custom' rounds were written on the site and can be edited. */
   kind?: "archive" | "custom";
+  /** From 067: how many signed up, and whether the viewer is one of them. */
+  registered?: number; me_registered?: boolean;
 };
 export type ContestProblem = {
   idx: string; bank_id: string; problem_key: string; title_uz: string; title_en: string;
@@ -33,6 +35,7 @@ export type Standings = {
   problems: ContestProblem[];
   rows: StandingRow[];
 };
+export type Registrant = { username: string; display_name: string | null; avatar_url: string | null; rating: number | null; registered_at: string };
 export type Attempt = {
   id: string; created_at: string; minute: number; idx: string; username: string; display_name: string;
   language: string; verdict: string; passed: number | null; total: number | null;
