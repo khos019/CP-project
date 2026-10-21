@@ -109,7 +109,31 @@ export const duelState = () => post<DuelState>({ action: "state" });
 export const duelHistory = (limit = 40) =>
   post<DuelHistoryRow[] | { ok: false; error: string }>({ action: "history", limit });
 export const duelRecentResult = () => post<DuelResult | null>({ action: "result" });
-export const duelHeartbeat = (ready = true) => post<{ ok: boolean }>({ action: "heartbeat", ready });
+/* The heartbeat goes straight to Supabase, not through /api/duel.
+ *
+ * Every signed-in tab beats every 25 seconds on every screen, and the route
+ * only forwarded it to duel_heartbeat() as the same user — so the Worker added
+ * nothing but a Cloudflare request: 144 an hour per open tab, which on the free
+ * plan's 100k a day was most of the budget (a 100-person contest alone is
+ * ~30k). The function is granted to `authenticated` and writes only the
+ * caller's own presence row, so asking it directly is exactly as safe. */
+export async function duelHeartbeat(ready = true): Promise<{ ok: boolean } | { ok: false; error: string }> {
+  const token = await ensureFreshToken();
+  const { url, key } = supabaseConfig();
+  if (!token) return { ok: false, error: "not_authenticated" };
+  if (!url || !key) return { ok: false, error: "not_configured" };
+  try {
+    const response = await fetch(`${url}/rest/v1/rpc/duel_heartbeat`, {
+      method: "POST",
+      headers: { apikey: key, Authorization: `Bearer ${token}`, "content-type": "application/json" },
+      body: JSON.stringify({ p_ready: ready }),
+    });
+    if (!response.ok) return { ok: false, error: `http_${response.status}` };
+    return (await response.json()) as { ok: boolean };
+  } catch {
+    return { ok: false, error: "network" };
+  }
+}
 export const startSearch = () => post<{ ok: boolean; error?: string; resumed?: boolean; state?: DuelState }>({ action: "search" });
 export const cancelSearch = () => post<{ ok: boolean }>({ action: "cancel" });
 export const duelTick = () => post<TickResult>({ action: "tick" });
