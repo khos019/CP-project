@@ -115,7 +115,6 @@ function ContestList({ lang, isOwner, onOpenContest, onNew, onPractice }: {
     <div className="cx-hero-copy">
       <p className="eyebrow">{tr(lang, "contests.eyebrow")}</p>
       <h1 className="page-title">{tr(lang, "contests.title")}</h1>
-      <p className="muted">{tr(lang, "contests.lead")}</p>
     </div>
     {addButton}
   </header>;
