@@ -11,7 +11,7 @@ import { fetchSubmissionCode, unlockSubmissionCode, type CodeResult } from "./so
 import { CodeBlock } from "./CodeBlock";
 import { EmptyState } from "./kit";
 import {
-  publicRpc, tashkent, when, lasting, clock, phaseOf, windowOf, span, countdown, useNow,
+  publicRpc, ownerRpc, tashkent, when, lasting, clock, phaseOf, windowOf, span, countdown, useNow,
   UZ_SHORT, EN_MONTHS, LANGS,
   type Load, type ContestSummary, type ContestProblem, type StandingRow, type Standings, type Attempt, type Phase,
 } from "./contest-data";
@@ -42,6 +42,7 @@ const CX_EDIT = "M4 20h4L19 9l-4-4L4 16v4ZM14 6l4 4";
 const CX_CODE = "M8 8l-4 4 4 4M16 8l4 4-4 4M14 5l-4 14";
 const CX_REFRESH = "M20 11a8 8 0 0 0-14.9-4M4 4v4h4M4 13a8 8 0 0 0 14.9 4M20 20v-4h-4";
 const CX_LOCK = "M7 11V8a5 5 0 0 1 10 0v3M6 11h12v9H6z";
+const CX_EYE = "M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12ZM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z";
 const CX_EYE_OFF = "M3 3l18 18M10.6 6.1A9.8 9.8 0 0 1 12 6c5 0 9 6 9 6a17 17 0 0 1-2.4 3M6.6 6.6C4.3 8.1 3 12 3 12s4 6 9 6a9 9 0 0 0 4.4-1.1M9.9 9.9a3 3 0 0 0 4.2 4.2";
 
 function Waiting({ lang, load, notMigrated = "contests.not_migrated" }: { lang: Lang; load: Load<unknown>; notMigrated?: string }) {
@@ -251,6 +252,8 @@ function ContestRound({ lang, slug, tab, problemIdx, isOwner, signed, onTab, onO
   // "×54" beside a problem and the 54 green cells in its column agree.
   const [load, setLoad] = useState<Load<Standings>>({ state: "loading" });
   const [nonce, setNonce] = useState(0);
+  const [toggling, setToggling] = useState(false);
+  const [toggleError, setToggleError] = useState("");
   const reload = useCallback(() => setNonce((n) => n + 1), []);
   useEffect(() => {
     let live = true;
@@ -288,6 +291,15 @@ function ContestRound({ lang, slug, tab, problemIdx, isOwner, signed, onTab, onO
   const pct = livePhase === "live" ? Math.min(100, Math.max(0, ((now - start) / (end - start)) * 100)) : livePhase === "finished" ? 100 : 0;
   // A custom round's problems are secret until it starts (065 blanks them).
   const sealed = livePhase === "upcoming" && !isOwner && contest.kind === "custom";
+  /* The owner's one-click visibility switch (066), for any round. */
+  const toggleHidden = async (hidden: boolean) => {
+    setToggling(true);
+    setToggleError("");
+    const got = await ownerRpc("owner_contest_set_hidden", { p_slug: slug, p_hidden: hidden });
+    setToggling(false);
+    if (got.ok) reload();
+    else setToggleError(tr(lang, got.error === "not_migrated" ? "contests.ed_err_need_066" : "contests.ed_err_generic", { e: got.error }));
+  };
 
   const tabs: ContestTab[] = ["problems", "standings", "status"];
   const hrefOf = (t: ContestTab) => `/contests/${encodeURIComponent(slug)}${t === "problems" ? "" : `/${t}`}`;
@@ -300,7 +312,12 @@ function ContestRound({ lang, slug, tab, problemIdx, isOwner, signed, onTab, onO
         <p className="eyebrow">{tr(lang, "contests.round_n", { n: contest.number })} · ICPC</p>
         <span className={`cx-phase ${livePhase}`}>{livePhase === "live" && <i className="cx-live-dot" aria-hidden />}{tr(lang, `contests.${livePhase}`)}</span>
         {contest.hidden && <span className="tag cx-hidden-tag"><CxIcon d={CX_EYE_OFF} />{tr(lang, "contests.hidden")}</span>}
-        {isOwner && contest.kind === "custom" && <button type="button" className="cx-ghost-btn" onClick={onEdit}><CxIcon d={CX_EDIT} />{tr(lang, "contests.edit")}</button>}
+        {isOwner && <span className="cx-owner-tools">
+          <button type="button" className="cx-ghost-btn" disabled={toggling} onClick={() => void toggleHidden(!contest.hidden)}>
+            <CxIcon d={contest.hidden ? CX_EYE : CX_EYE_OFF} />{tr(lang, contest.hidden ? "contests.make_public" : "contests.make_hidden")}
+          </button>
+          <button type="button" className="cx-ghost-btn" onClick={onEdit}><CxIcon d={CX_EDIT} />{tr(lang, contest.kind === "custom" ? "contests.edit" : "contests.edit_settings")}</button>
+        </span>}
       </div>
       <h1 className="page-title">{titleOf(lang, contest)}</h1>
       {contest.description && <p className="cx-round-desc">{contest.description}</p>}
@@ -316,6 +333,7 @@ function ContestRound({ lang, slug, tab, problemIdx, isOwner, signed, onTab, onO
         {livePhase === "live" && <span className="cx-progress"><i style={{ width: `${pct}%` }} /></span>}
       </div>}
       {contest.hidden && <p className="cx-hidden-note">{tr(lang, "contests.hidden_note")}</p>}
+      {toggleError && <p className="cx-hidden-note">{toggleError}</p>}
     </header>
 
     <nav className="cx-tabs" aria-label={tr(lang, "contests.title")}>
@@ -338,7 +356,7 @@ function ContestRound({ lang, slug, tab, problemIdx, isOwner, signed, onTab, onO
           <b className="cx-sealed-clock mono">{countdown(start - now, lang)}</b>
         </section>
       : <>
-        {tab === "problems" && <ProblemsTab lang={lang} slug={slug} board={board} phase={livePhase} onOpenProblem={onOpenProblem} onOpenContestProblem={onOpenContestProblem} onOpenSubmissions={onOpenSubmissions} />}
+        {tab === "problems" && <ProblemsTab lang={lang} slug={slug} board={board} phase={livePhase} isOwner={isOwner} onEdit={onEdit} onOpenProblem={onOpenProblem} onOpenContestProblem={onOpenContestProblem} onOpenSubmissions={onOpenSubmissions} />}
         {tab === "standings" && <StandingsTab lang={lang} slug={slug} board={board} live={livePhase === "live"} onReload={reload} onOpenSubmissions={onOpenSubmissions} />}
         {tab === "status" && <StatusTab lang={lang} slug={slug} board={board} onOpenSubmissions={onOpenSubmissions} />}
       </>}
@@ -347,8 +365,8 @@ function ContestRound({ lang, slug, tab, problemIdx, isOwner, signed, onTab, onO
 
 /* The round's front page: the problems, and beside them what Codeforces puts
    in its sidebar — the round's state, its numbers and how to practise it. */
-function ProblemsTab({ lang, slug, board, phase, onOpenProblem, onOpenContestProblem, onOpenSubmissions }: {
-  lang: Lang; slug: string; board: Standings; phase: Phase; onOpenProblem: (bankId: string) => void;
+function ProblemsTab({ lang, slug, board, phase, isOwner, onEdit, onOpenProblem, onOpenContestProblem, onOpenSubmissions }: {
+  lang: Lang; slug: string; board: Standings; phase: Phase; isOwner: boolean; onEdit: () => void; onOpenProblem: (bankId: string) => void;
   onOpenContestProblem: (idx: string) => void; onOpenSubmissions: (handle: string) => void;
 }) {
   const { contest, problems, rows } = board;
@@ -365,6 +383,11 @@ function ProblemsTab({ lang, slug, board, phase, onOpenProblem, onOpenContestPro
 
   return <div className="cx-dash">
     <div className="cx-dash-main">
+      {problems.length === 0 && <section className="cx-sealed cx-noproblems">
+        <h2>{tr(lang, "contests.no_problems_title")}</h2>
+        <p className="muted">{tr(lang, isOwner ? "contests.no_problems_owner" : "contests.no_problems_body")}</p>
+        {isOwner && <button type="button" className="primary" onClick={onEdit}>+ {tr(lang, "contests.ed_add_problem")}</button>}
+      </section>}
       <div className="cx-plist" role="list" aria-label={tr(lang, "contests.problems")}>
         {problems.map((p) => {
           const share = people ? p.solved / people : 0;

@@ -56,7 +56,8 @@ const nextHour = () => {
 };
 const blankDraft = (): Draft => ({
   slug: "", title_uz: "", title_en: "", description: "", starts: nextHour(), duration: 120, penalty: 20, hidden: true,
-  problems: [blankProblem("A")],
+  // A round is created first and filled later (066), so it starts empty.
+  problems: [],
 });
 
 /* "AlgoYo'l Raund #3 — Bahor" → "algoyol-raund-3-bahor". */
@@ -161,7 +162,10 @@ export function ContestEditor({ lang, slug, onDone, onCancel, onDeleted }: {
   lang: Lang; slug: string | null; onDone: (slug: string) => void; onCancel: () => void; onDeleted: () => void;
 }) {
   const [draft, setDraft] = useState<Draft | null>(slug ? null : blankDraft());
-  const [state, setState] = useState<"loading" | "ready" | "not-migrated" | "error" | "not-custom" | "missing">(slug ? "loading" : "ready");
+  const [state, setState] = useState<"loading" | "ready" | "not-migrated" | "error" | "missing">(slug ? "loading" : "ready");
+  // A seeded archive round: its problems are bank problems and its window
+  // holds the board, so only its titles and visibility are editable.
+  const [archive, setArchive] = useState(false);
   const [section, setSection] = useState<"round" | number>("round");
   const [slugTouched, setSlugTouched] = useState(Boolean(slug));
   const [saving, setSaving] = useState(false);
@@ -176,12 +180,12 @@ export function ContestEditor({ lang, slug, onDone, onCancel, onDeleted }: {
       if (!got.ok) { setState(got.error === "not_migrated" ? "not-migrated" : "error"); return; }
       const c = got.data;
       if (!c) { setState("missing"); return; }
-      if (c.kind !== "custom") { setState("not-custom"); return; }
+      setArchive(c.kind !== "custom");
       setRoundEntries(c.entries);
       setDraft({
         slug: c.slug, title_uz: c.title_uz, title_en: c.title_en === c.title_uz ? "" : c.title_en, description: c.description || "",
         starts: toTashkentInput(c.starts_at), duration: c.duration_minutes, penalty: c.penalty_minutes, hidden: c.hidden,
-        problems: c.problems.map((p) => ({
+        problems: c.kind !== "custom" ? [] : c.problems.map((p) => ({
           key: nextKey++, origIdx: p.idx, idx: p.idx, title_uz: p.title_uz, title_en: p.title_en === p.title_uz ? "" : p.title_en,
           rating: p.rating, statement: p.statement || "", input_spec: p.input_spec || "", output_spec: p.output_spec || "",
           notes: p.notes || "", time_limit_ms: p.time_limit_ms || 1000, memory_mb: p.memory_mb || 256,
@@ -197,7 +201,7 @@ export function ContestEditor({ lang, slug, onDone, onCancel, onDeleted }: {
 
   if (state !== "ready" || !draft) {
     const text = state === "loading" ? null
-      : tr(lang, state === "not-migrated" ? "contests.editor_not_migrated" : state === "not-custom" ? "contests.ed_not_custom" : state === "missing" ? "contests.not_found" : "contests.load_error");
+      : tr(lang, state === "not-migrated" ? "contests.editor_not_migrated" : state === "missing" ? "contests.not_found" : "contests.load_error");
     return <>
       <button type="button" className="back-link" onClick={onCancel}>← {tr(lang, "contests.ed_back")}</button>
       {text ? <div className="panel"><div className={`notice ${state === "error" ? "notice-error" : ""}`}>{text}</div></div>
@@ -236,10 +240,29 @@ export function ContestEditor({ lang, slug, onDone, onCancel, onDeleted }: {
     setSection(j);
   };
 
+  const blocking = issues.filter((x) => x.block);
+  const warnings = issues.filter((x) => !x.block);
+  const failed = (error: string) => {
+    const code = error.split(":")[0];
+    // no_problems comes from 065's version of the function; 066 lifts it.
+    if (code === "no_problems" || (code === "not_migrated" && archive)) { setMessage({ tone: "bad", text: tr(lang, "contests.ed_err_need_066") }); return; }
+    const known = ["slug_taken", "bad_slug", "bad_title", "problem_has_submissions", "not_migrated", "bad_problem_title", "not_authenticated"];
+    setMessage({ tone: "bad", text: known.includes(code) ? tr(lang, `contests.ed_err_${code}`) : tr(lang, "contests.ed_err_generic", { e: error }) });
+  };
+
   const save = async () => {
-    if (issues.length) { setMessage({ tone: "bad", text: tr(lang, "contests.ed_fix_first", { n: issues.length }) }); return; }
+    if (blocking.length) { setMessage({ tone: "bad", text: tr(lang, "contests.ed_fix_first", { n: blocking.length }) }); return; }
     setSaving(true);
     setMessage(null);
+    if (archive && slug) {
+      const got = await ownerRpc<{ ok: boolean; slug: string }>("owner_contest_settings", {
+        p_slug: slug, p: { title_uz: draft.title_uz.trim(), title_en: draft.title_en.trim(), description: draft.description.trim(), hidden: draft.hidden },
+      });
+      setSaving(false);
+      if (!got.ok) { failed(got.error); return; }
+      onDone(slug);
+      return;
+    }
     const payload = {
       slug: draft.slug, title_uz: draft.title_uz.trim(), title_en: draft.title_en.trim(), description: draft.description.trim(),
       starts_at: fromTashkentInput(draft.starts), duration_minutes: draft.duration, penalty_minutes: draft.penalty, hidden: draft.hidden,
@@ -253,12 +276,7 @@ export function ContestEditor({ lang, slug, onDone, onCancel, onDeleted }: {
     };
     const got = await ownerRpc<{ ok: boolean; slug: string }>("owner_contest_save", { p_original: slug, p: payload });
     setSaving(false);
-    if (!got.ok) {
-      const code = got.error.split(":")[0];
-      const known = ["slug_taken", "bad_slug", "bad_title", "no_problems", "problem_has_submissions", "not_migrated", "bad_problem_title", "not_authenticated"];
-      setMessage({ tone: "bad", text: known.includes(code) ? tr(lang, `contests.ed_err_${code}`) : tr(lang, "contests.ed_err_generic", { e: got.error }) });
-      return;
-    }
+    if (!got.ok) { failed(got.error); return; }
     onDone(got.data.slug);
   };
 
@@ -292,7 +310,9 @@ export function ContestEditor({ lang, slug, onDone, onCancel, onDeleted }: {
         <button type="button" className={section === "round" ? "on" : undefined} onClick={() => setSection("round")}>
           <span className="cxe-nav-ic">⚙</span><span><b>{tr(lang, "contests.ed_round")}</b><small>{lasting(draft.duration, lang)} · {draft.hidden ? tr(lang, "contests.hidden") : tr(lang, "contests.ed_public")}</small></span>
         </button>
+        {archive ? <p className="cxe-archive-note muted">{tr(lang, "contests.ed_archive_note")}</p> : <>
         <p className="cxe-nav-label">{tr(lang, "contests.problems")} · {draft.problems.length}</p>
+        {draft.problems.length === 0 && <p className="cxe-archive-note muted">{tr(lang, "contests.ed_no_problems_yet")}</p>}
         {draft.problems.map((p, i) => {
           const bad = issues.some((x) => x.where === p.idx);
           return <button type="button" key={p.key} className={section === i ? "on" : undefined} onClick={() => setSection(i)}>
@@ -302,10 +322,12 @@ export function ContestEditor({ lang, slug, onDone, onCancel, onDeleted }: {
           </button>;
         })}
         {draft.problems.length < 26 && <button type="button" className="cxe-add-problem" onClick={addProblem}>+ {tr(lang, "contests.ed_add_problem")}</button>}
+        </>}
 
         <div className="cxe-check">
-          <b>{issues.length ? tr(lang, "contests.ed_issues_n", { n: issues.length }) : tr(lang, "contests.ed_ready")}</b>
-          {issues.length > 0 ? <ul>{issues.slice(0, 8).map((x, i) => <li key={i}><button type="button" onClick={() => {
+          <b>{blocking.length ? tr(lang, "contests.ed_issues_n", { n: blocking.length }) : tr(lang, "contests.ed_ready")}</b>
+          {!blocking.length && warnings.length > 0 && <p className="muted">{tr(lang, "contests.ed_warnings_note", { n: warnings.length })}</p>}
+          {issues.length > 0 ? <ul>{issues.slice(0, 8).map((x, i) => <li key={i} className={x.block ? undefined : "warn"}><button type="button" onClick={() => {
             const k = draft.problems.findIndex((p) => p.idx === x.where);
             setSection(k >= 0 ? k : "round");
           }}>{x.where !== "round" && <b>{x.where}: </b>}{x.text}</button></li>)}</ul>
@@ -315,7 +337,7 @@ export function ContestEditor({ lang, slug, onDone, onCancel, onDeleted }: {
 
       <section className="cxe-main">
         {section === "round" && <RoundSettings lang={lang} draft={draft} set={set} slugTouched={slugTouched}
-          onSlugTouched={() => setSlugTouched(true)} canDelete={Boolean(slug)} onDelete={remove} entries={roundEntries} />}
+          onSlugTouched={() => setSlugTouched(true)} canDelete={Boolean(slug) && !archive} onDelete={remove} entries={roundEntries} archive={archive} />}
         {current && typeof section === "number" && <ProblemEditor key={current.key} lang={lang} p={current} count={draft.problems.length} index={section}
           set={(patch) => setProblem(section, patch)} onMove={(by) => moveProblem(section, by)} onRemove={() => removeProblem(section)} />}
       </section>
@@ -323,23 +345,26 @@ export function ContestEditor({ lang, slug, onDone, onCancel, onDeleted }: {
   </div>;
 }
 
-type Issue = { where: string; text: string };
+/* Only the round's own fields block a save. A problem can stay half-written
+   for as long as the owner likes; its gaps are listed as reminders. */
+type Issue = { where: string; text: string; block: boolean };
 function validate(d: Draft, lang: Lang): Issue[] {
   const out: Issue[] = [];
   const t = (k: string, v?: Record<string, string | number>) => tr(lang, `contests.ed_v_${k}`, v);
-  if (!d.title_uz.trim()) out.push({ where: "round", text: t("title") });
-  if (!/^[a-z0-9-]{3,64}$/.test(d.slug) || d.slug === "new" || d.slug === "edit") out.push({ where: "round", text: t("slug") });
-  if (!d.starts || Number.isNaN(Date.parse(`${d.starts}:00+05:00`))) out.push({ where: "round", text: t("start") });
-  if (!(d.duration >= 30 && d.duration <= 600)) out.push({ where: "round", text: t("duration") });
-  if (!(d.penalty >= 0 && d.penalty <= 60)) out.push({ where: "round", text: t("penalty") });
-  if (!d.problems.length) out.push({ where: "round", text: t("no_problems") });
+  const round = (text: string) => out.push({ where: "round", text, block: true });
+  if (!d.title_uz.trim()) round(t("title"));
+  if (!/^[a-z0-9-]{3,64}$/.test(d.slug) || d.slug === "new" || d.slug === "edit") round(t("slug"));
+  if (!d.starts || Number.isNaN(Date.parse(`${d.starts}:00+05:00`))) round(t("start"));
+  if (!(d.duration >= 30 && d.duration <= 600)) round(t("duration"));
+  if (!(d.penalty >= 0 && d.penalty <= 60)) round(t("penalty"));
   for (const p of d.problems) {
-    if (!p.title_uz.trim()) out.push({ where: p.idx, text: t("p_title") });
-    if (!p.statement.trim()) out.push({ where: p.idx, text: t("p_statement") });
-    if (!p.tests.length) out.push({ where: p.idx, text: t("p_tests") });
-    if (!(p.time_limit_ms >= 250 && p.time_limit_ms <= 10000)) out.push({ where: p.idx, text: t("p_tl") });
-    if (!(p.memory_mb >= 16 && p.memory_mb <= 1024)) out.push({ where: p.idx, text: t("p_ml") });
-    if (p.tests.some((x) => !x.expected.trim())) out.push({ where: p.idx, text: t("p_empty_answer") });
+    // The database refuses these limits, so they do block.
+    if (!(p.time_limit_ms >= 250 && p.time_limit_ms <= 10000)) out.push({ where: p.idx, text: t("p_tl"), block: true });
+    if (!(p.memory_mb >= 16 && p.memory_mb <= 1024)) out.push({ where: p.idx, text: t("p_ml"), block: true });
+    if (!p.title_uz.trim()) out.push({ where: p.idx, text: t("p_title"), block: false });
+    if (!p.statement.trim()) out.push({ where: p.idx, text: t("p_statement"), block: false });
+    if (!p.tests.length) out.push({ where: p.idx, text: t("p_tests"), block: false });
+    if (p.tests.some((x) => !x.expected.trim())) out.push({ where: p.idx, text: t("p_empty_answer"), block: false });
   }
   return out;
 }
@@ -354,9 +379,9 @@ function Field({ label, hint, children, wide }: { label: string; hint?: string; 
   </label>;
 }
 
-function RoundSettings({ lang, draft, set, slugTouched, onSlugTouched, canDelete, onDelete, entries }: {
+function RoundSettings({ lang, draft, set, slugTouched, onSlugTouched, canDelete, onDelete, entries, archive }: {
   lang: Lang; draft: Draft; set: (patch: Partial<Draft>) => void; slugTouched: boolean; onSlugTouched: () => void;
-  canDelete: boolean; onDelete: () => void; entries: number;
+  canDelete: boolean; onDelete: () => void; entries: number; archive: boolean;
 }) {
   const hours = Math.floor(draft.duration / 60), minutes = draft.duration % 60;
   const ends = (() => {
@@ -364,32 +389,32 @@ function RoundSettings({ lang, draft, set, slugTouched, onSlugTouched, canDelete
     return Number.isNaN(at) ? "" : new Date(at + draft.duration * 60000 + 5 * 3600_000).toISOString().slice(0, 16).replace("T", " ");
   })();
   return <div className="cxe-card">
-    <header className="cxe-card-head"><h2>{tr(lang, "contests.ed_round")}</h2><p className="muted">{tr(lang, "contests.ed_round_lead")}</p></header>
+    <header className="cxe-card-head"><h2>{tr(lang, "contests.ed_round")}</h2><p className="muted">{tr(lang, archive ? "contests.ed_archive_lead" : "contests.ed_round_lead")}</p></header>
     <div className="cxe-grid">
       <Field label={tr(lang, "contests.ed_title_uz")} wide>
         <input value={draft.title_uz} maxLength={120} placeholder="AlgoYo‘l Raund #1"
-          onChange={(e) => set({ title_uz: e.target.value, ...(slugTouched ? {} : { slug: slugify(e.target.value) }) })} />
+          onChange={(e) => set({ title_uz: e.target.value, ...(slugTouched || archive ? {} : { slug: slugify(e.target.value) }) })} />
       </Field>
       <Field label={tr(lang, "contests.ed_title_en")} hint={tr(lang, "contests.ed_title_en_hint")} wide>
         <input value={draft.title_en} maxLength={120} placeholder="AlgoYol Round #1" onChange={(e) => set({ title_en: e.target.value })} />
       </Field>
       <Field label={tr(lang, "contests.ed_slug")} hint={`algoyol.uz/contests/${draft.slug || "…"}`} wide>
-        <input value={draft.slug} maxLength={64} className="mono" placeholder="raund-1"
+        <input value={draft.slug} maxLength={64} className="mono" placeholder="raund-1" disabled={archive}
           onChange={(e) => { onSlugTouched(); set({ slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, "-") }); }} />
       </Field>
       <Field label={tr(lang, "contests.ed_starts")} hint={tr(lang, "contests.ed_starts_hint")}>
-        <input type="datetime-local" value={draft.starts} onChange={(e) => set({ starts: e.target.value })} />
+        <input type="datetime-local" value={draft.starts} disabled={archive} onChange={(e) => set({ starts: e.target.value })} />
       </Field>
       <Field label={tr(lang, "contests.ed_duration")} hint={ends ? tr(lang, "contests.ed_ends_at", { t: ends }) : undefined}>
         <span className="cxe-pair">
-          <input type="number" min={0} max={10} value={hours} onChange={(e) => set({ duration: Math.max(0, Number(e.target.value) || 0) * 60 + minutes })} />
+          <input type="number" min={0} max={10} value={hours} disabled={archive} onChange={(e) => set({ duration: Math.max(0, Number(e.target.value) || 0) * 60 + minutes })} />
           <em>{tr(lang, "contests.ed_hours")}</em>
-          <input type="number" min={0} max={59} step={5} value={minutes} onChange={(e) => set({ duration: hours * 60 + Math.min(59, Math.max(0, Number(e.target.value) || 0)) })} />
+          <input type="number" min={0} max={59} step={5} value={minutes} disabled={archive} onChange={(e) => set({ duration: hours * 60 + Math.min(59, Math.max(0, Number(e.target.value) || 0)) })} />
           <em>{tr(lang, "contests.ed_minutes")}</em>
         </span>
       </Field>
       <Field label={tr(lang, "contests.ed_penalty")} hint={tr(lang, "contests.ed_penalty_hint")}>
-        <input type="number" min={0} max={60} value={draft.penalty} onChange={(e) => set({ penalty: Number(e.target.value) || 0 })} />
+        <input type="number" min={0} max={60} value={draft.penalty} disabled={archive} onChange={(e) => set({ penalty: Number(e.target.value) || 0 })} />
       </Field>
       <Field label={tr(lang, "contests.ed_visibility")}>
         <span className="cxe-toggle">

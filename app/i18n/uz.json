@@ -684,5 +684,16 @@
   "contests.ed_v_p_tl": "vaqt limiti 0.25–10 s bo‘lsin",
   "contests.ed_v_p_ml": "xotira limiti 16–1024 MB bo‘lsin",
   "contests.ed_v_p_empty_answer": "javobi bo‘sh test bor",
-  "contests.ed_err_not_authenticated": "Saqlash uchun owner hisobi bilan kiring."
+  "contests.ed_err_not_authenticated": "Saqlash uchun owner hisobi bilan kiring.",
+  "contests.make_public": "Ochiq qilish",
+  "contests.make_hidden": "Yashirish",
+  "contests.edit_settings": "Sozlamalar",
+  "contests.no_problems_title": "Masalalar hali qo‘shilmagan",
+  "contests.no_problems_owner": "Kontest yaratildi. Masalalarni istalgan payt «Tahrirlash» orqali qo‘shishingiz mumkin.",
+  "contests.no_problems_body": "Masalalar tez orada qo‘shiladi.",
+  "contests.ed_err_need_066": "Buning uchun 066_contest_drafts.sql migratsiyasini qo‘llang.",
+  "contests.ed_archive_note": "Arxiv raundi: masalalari bankdan olingan va o‘zgarmaydi. Nomi, tavsifi va ko‘rinishini o‘zgartirish mumkin.",
+  "contests.ed_archive_lead": "Vaqt va davomiylik o‘zgarmaydi — natijalar jadvali aynan shu oraliqdagi yechimlardan hisoblanadi.",
+  "contests.ed_no_problems_yet": "Hali masala yo‘q. Kontestni hozir yaratib, masalalarni keyin qo‘shishingiz mumkin.",
+  "contests.ed_warnings_note": "Saqlash mumkin. {n} ta eslatma — masalalarni keyin to‘ldirasiz."
 }

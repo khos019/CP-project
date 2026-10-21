@@ -5344,3 +5344,8 @@ body[data-ads-quiet] > div[style*="--rdata"]{display:none!important}
  .cxe-bar-actions button{flex:1}
  .cxe-danger{flex-direction:column;align-items:stretch}
 }
+.cx-owner-tools{margin-left:auto;display:inline-flex;flex-wrap:wrap;gap:6px}
+.cx-round-top .cx-owner-tools .cx-ghost-btn{margin-left:0}
+.cx-noproblems{margin-bottom:var(--s3)}
+.cxe-archive-note{margin:var(--s2) 12px;font-size:13px;line-height:1.5}
+.cxe-check li.warn button{color:var(--muted)}

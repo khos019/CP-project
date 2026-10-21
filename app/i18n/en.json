@@ -684,5 +684,16 @@
   "contests.ed_v_p_tl": "time limit must be 0.25–10 s",
   "contests.ed_v_p_ml": "memory limit must be 16–1024 MB",
   "contests.ed_v_p_empty_answer": "a test has an empty answer",
-  "contests.ed_err_not_authenticated": "Sign in with the owner account to save."
+  "contests.ed_err_not_authenticated": "Sign in with the owner account to save.",
+  "contests.make_public": "Make public",
+  "contests.make_hidden": "Hide",
+  "contests.edit_settings": "Settings",
+  "contests.no_problems_title": "No problems yet",
+  "contests.no_problems_owner": "The round is created. Add problems any time from Edit.",
+  "contests.no_problems_body": "Problems will be added soon.",
+  "contests.ed_err_need_066": "Apply migration 066_contest_drafts.sql for this.",
+  "contests.ed_archive_note": "Archive round: its problems come from the bank and stay as they are. Its title, description and visibility can change.",
+  "contests.ed_archive_lead": "Start and length stay fixed — the standings count submissions inside that window.",
+  "contests.ed_no_problems_yet": "No problems yet. Create the round now and add problems later.",
+  "contests.ed_warnings_note": "You can save. {n} reminders — finish the problems later."
 }
