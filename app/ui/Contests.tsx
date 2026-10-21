@@ -97,23 +97,41 @@ export function Contests({ lang, slug, tab, problemIdx, isOwner, signed, onTab, 
     ? <ContestRound key={slug} lang={lang} slug={slug} tab={tab} problemIdx={problemIdx} isOwner={isOwner} signed={signed} onTab={onTab}
         onOpenList={onOpenList} onOpenSubmissions={onOpenSubmissions} onOpenProblem={onOpenProblem}
         onOpenContestProblem={(idx) => onOpenContestProblem(slug, idx)} onEdit={() => onEdit(slug)} onSignIn={onSignIn} />
-    : <ContestList lang={lang} isOwner={isOwner} onOpenContest={onOpenContest} onNew={() => onEdit("new")} onPractice={onPractice} />;
+    : <ContestList lang={lang} isOwner={isOwner} signed={signed} onSignIn={onSignIn} onOpenContest={onOpenContest} onNew={() => onEdit("new")} onPractice={onPractice} />;
 }
 
 /* ------------------------------------------------------------------ list */
 
 type Filter = "all" | Phase;
 
-function ContestList({ lang, isOwner, onOpenContest, onNew, onPractice }: {
-  lang: Lang; isOwner: boolean; onOpenContest: (slug: string) => void; onNew: () => void; onPractice?: () => void;
+function ContestList({ lang, isOwner, signed, onSignIn, onOpenContest, onNew, onPractice }: {
+  lang: Lang; isOwner: boolean; signed: boolean; onSignIn: () => void;
+  onOpenContest: (slug: string) => void; onNew: () => void; onPractice?: () => void;
 }) {
   const [load, setLoad] = useState<Load<ContestSummary[]>>({ state: "loading" });
   const [filter, setFilter] = useState<Filter>("all");
+  const [nonce, setNonce] = useState(0);
   useEffect(() => {
     let live = true;
-    void publicRpc<ContestSummary[]>("contest_list").then((got) => { if (live) setLoad(got); });
+    void publicRpc<ContestSummary[]>("contest_list").then((got) => {
+      // A refresh after registering keeps the cards on screen meanwhile.
+      if (live && (got.state === "ready" || nonce === 0)) setLoad(got);
+    });
     return () => { live = false; };
-  }, []);
+  }, [nonce]);
+  /* Registering from the card itself (067), without opening the round. */
+  const [regBusy, setRegBusy] = useState<string | null>(null);
+  const [regError, setRegError] = useState<{ slug: string; text: string } | null>(null);
+  const register = async (slug: string) => {
+    if (!signed) { onSignIn(); return; }
+    setRegBusy(slug);
+    setRegError(null);
+    const got = await ownerRpc("contest_register", { p_slug: slug });
+    setRegBusy(null);
+    if (got.ok) { setNonce((n) => n + 1); return; }
+    const code = got.error.split(":")[0];
+    setRegError({ slug, text: tr(lang, ["not_migrated", "finished", "not_authenticated"].includes(code) ? `contests.reg_err_${code}` : "contests.ed_err_generic", { e: got.error }) });
+  };
   const list = useMemo(() => (load.state === "ready" ? load.data : []), [load]);
   // A list with a running or announced round ticks; a pure archive does not.
   const now = useNow((t) => list.some((c) => phaseOf(c, t) !== "finished"));
@@ -183,7 +201,9 @@ function ContestList({ lang, isOwner, onOpenContest, onNew, onPractice }: {
     </div>
 
     {featured.length > 0 && <section className="cx-featured" aria-label={tr(lang, "contests.current")}>
-      {featured.map(({ c, phase }) => <FeatureCard key={c.slug} lang={lang} c={c} phase={phase} now={now} onOpen={() => onOpenContest(c.slug)} />)}
+      {featured.map(({ c, phase }) => <FeatureCard key={c.slug} lang={lang} c={c} phase={phase} now={now} signed={signed}
+        busy={regBusy === c.slug} error={regError?.slug === c.slug ? regError.text : ""}
+        onRegister={() => void register(c.slug)} onOpen={() => onOpenContest(c.slug)} />)}
     </section>}
 
     {years.map(({ year, items }) => <section key={year} aria-label={String(year)}>
@@ -194,16 +214,23 @@ function ContestList({ lang, isOwner, onOpenContest, onNew, onPractice }: {
 }
 
 /* A running or announced round: big, with its clock. */
-function FeatureCard({ lang, c, phase, now, onOpen }: { lang: Lang; c: ContestSummary; phase: Phase; now: number; onOpen: () => void }) {
+/* The whole card opens the round (its title link is stretched over it), and
+   the register button sits above that link so it registers instead. A button
+   cannot live inside an <a>, hence the article. */
+function FeatureCard({ lang, c, phase, now, signed, busy, error, onRegister, onOpen }: {
+  lang: Lang; c: ContestSummary; phase: Phase; now: number; signed: boolean;
+  busy: boolean; error: string; onRegister: () => void; onOpen: () => void;
+}) {
   const { start, end } = windowOf(c);
   const pct = phase === "live" ? Math.min(100, Math.max(0, ((now - start) / (end - start)) * 100)) : 0;
-  return <a className={`cx-feature cx-${phase}`} href={`/contests/${c.slug}`} onClick={linkTo(onOpen)}>
+  const canRegister = c.kind === "custom" && c.registered !== undefined;
+  return <article className={`cx-feature cx-${phase}`}>
     <div className="cx-feature-top">
       <span className={`cx-phase ${phase}`}>{phase === "live" && <i className="cx-live-dot" aria-hidden />}{tr(lang, `contests.${phase}`)}</span>
       {c.hidden && <span className="tag cx-hidden-tag"><CxIcon d={CX_EYE_OFF} />{tr(lang, "contests.hidden")}</span>}
       <span className="cx-feature-num">#{c.number}</span>
     </div>
-    <b className="cx-feature-title">{titleOf(lang, c)}</b>
+    <a className="cx-feature-title cx-stretch" href={`/contests/${c.slug}`} onClick={linkTo(onOpen)}>{titleOf(lang, c)}</a>
     <span className="cx-meta">
       <span><CxIcon d={CX_CAL} />{when(c.starts_at, lang)}</span>
       <span><CxIcon d={CX_CLOCK} />{lasting(c.duration_minutes, lang)}</span>
@@ -214,12 +241,19 @@ function FeatureCard({ lang, c, phase, now, onOpen }: { lang: Lang; c: ContestSu
       <Clock ms={phase === "live" ? end - now : start - now} lang={lang} />
     </div>
     {phase === "live" && <span className="cx-progress" aria-hidden><i style={{ width: `${pct}%` }} /></span>}
-    {c.kind === "custom" && c.registered !== undefined && <span className="cx-feature-reg">
-      <CxIcon d={CX_USERS} />{tr(lang, "contests.reg_count", { n: c.registered })}
-      {c.me_registered && <b className="cx-reg-badge"><CxIcon d={CX_CHECK} />{tr(lang, "contests.reg_done_short")}</b>}
+    {canRegister && <span className="cx-feature-reg">
+      <CxIcon d={CX_USERS} />{tr(lang, "contests.reg_count", { n: c.registered ?? 0 })}
     </span>}
-    <span className="cx-feature-cta">{tr(lang, phase === "live" ? "contests.enter" : "contests.details")} →</span>
-  </a>;
+    <div className="cx-feature-foot">
+      {canRegister && (c.me_registered
+        ? <b className="cx-reg-badge big"><CxIcon d={CX_CHECK} />{tr(lang, "contests.reg_done_short")}</b>
+        : <button type="button" className="primary cx-feature-reg-btn" disabled={busy} onClick={onRegister}>
+            {tr(lang, signed ? "contests.reg_button" : "contests.reg_sign_in")}
+          </button>)}
+      <span className="cx-feature-cta">{tr(lang, phase === "live" ? "contests.enter" : "contests.details")} →</span>
+    </div>
+    {error && <p className="cx-feature-err">{error}</p>}
+  </article>;
 }
 
 function PastCard({ lang, c, onOpen }: { lang: Lang; c: ContestSummary; onOpen: () => void }) {
