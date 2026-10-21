@@ -362,17 +362,19 @@ function ContestRound({ lang, slug, tab, problemIdx, isOwner, signed, onTab, onO
     const code = got.error.split(":")[0];
     setRegError(tr(lang, ["not_migrated", "started", "finished", "not_authenticated"].includes(code) ? `contests.reg_err_${code}` : "contests.ed_err_generic", { e: got.error }));
   };
-  const regBox = canRegister && <div className={`cx-reg${contest.me_registered ? " done" : ""}`}>
-    <div className="cx-reg-copy">
-      {contest.me_registered
-        ? <b><CxIcon d={CX_CHECK} />{tr(lang, "contests.reg_done")}</b>
-        : <b>{tr(lang, livePhase === "live" ? "contests.reg_cta_live" : "contests.reg_cta")}</b>}
-      <small>{tr(lang, "contests.reg_count", { n: contest.registered ?? 0 })}</small>
-    </div>
-    {contest.me_registered
-      ? livePhase === "upcoming" && <button type="button" className="cx-ghost-btn" disabled={regBusy} onClick={() => void register(false)}>{tr(lang, "contests.reg_cancel")}</button>
-      : <button type="button" className="primary cx-reg-btn" disabled={regBusy} onClick={() => void register(true)}>{tr(lang, signed ? "contests.reg_button" : "contests.reg_sign_in")}</button>}
-  </div>;
+  /* The side panel's lower half: a call to register, or — once registered —
+     one quiet line with a check, so the panel does not shout twice. */
+  const regBox = canRegister && (contest.me_registered
+    ? <div className="cx-side-reg done">
+        <span className="cx-reg-check" aria-hidden><CxIcon d={CX_CHECK} /></span>
+        <span className="cx-reg-copy"><b>{tr(lang, "contests.reg_done")}</b><small>{tr(lang, "contests.reg_count", { n: contest.registered ?? 0 })}</small></span>
+        {livePhase === "upcoming" && <button type="button" className="cx-link-btn" disabled={regBusy} onClick={() => void register(false)}>{tr(lang, "contests.reg_cancel")}</button>}
+      </div>
+    : <div className="cx-side-reg">
+        <span className="cx-reg-copy"><b>{tr(lang, livePhase === "live" ? "contests.reg_cta_live" : "contests.reg_cta")}</b><small>{tr(lang, "contests.reg_count", { n: contest.registered ?? 0 })}</small></span>
+        <button type="button" className="primary cx-reg-btn" disabled={regBusy} onClick={() => void register(true)}>{tr(lang, signed ? "contests.reg_button" : "contests.reg_sign_in")}</button>
+      </div>);
+  const hasSide = livePhase !== "finished" || Boolean(regBox);
 
   const tabs: ContestTab[] = contest.kind === "custom" ? ["problems", "standings", "status", "registrants"] : ["problems", "standings", "status"];
   const hrefOf = (t: ContestTab) => `/contests/${encodeURIComponent(slug)}${t === "problems" ? "" : `/${t}`}`;
@@ -392,22 +394,28 @@ function ContestRound({ lang, slug, tab, problemIdx, isOwner, signed, onTab, onO
           <button type="button" className="cx-ghost-btn" onClick={onEdit}><CxIcon d={CX_EDIT} />{tr(lang, contest.kind === "custom" ? "contests.edit" : "contests.edit_settings")}</button>
         </span>}
       </div>
-      <h1 className="page-title">{titleOf(lang, contest)}</h1>
-      {contest.description && <p className="cx-round-desc">{contest.description}</p>}
-      <div className="cx-round-meta">
-        <span><CxIcon d={CX_CAL} />{when(contest.starts_at, lang)}</span>
-        <span><CxIcon d={CX_CLOCK} />{lasting(contest.duration_minutes, lang)}</span>
-        <span><CxIcon d={CX_USERS} />{tr(lang, "contests.participants_n", { n: board.rows.length })}</span>
-        <span><CxIcon d={CX_LIST} />{tr(lang, "contests.problems_n", { n: board.problems.length })}</span>
+      <div className={`cx-round-body${hasSide ? " with-side" : ""}`}>
+        <div className="cx-round-info">
+          <h1 className="page-title">{titleOf(lang, contest)}</h1>
+          {contest.description && <p className="cx-round-desc">{contest.description}</p>}
+          <div className="cx-round-meta">
+            <span><CxIcon d={CX_CAL} />{when(contest.starts_at, lang)}</span>
+            <span><CxIcon d={CX_CLOCK} />{lasting(contest.duration_minutes, lang)}</span>
+            <span><CxIcon d={CX_USERS} />{tr(lang, "contests.participants_n", { n: board.rows.length })}</span>
+            <span><CxIcon d={CX_LIST} />{tr(lang, "contests.problems_n", { n: board.problems.length })}</span>
+          </div>
+        </div>
+        {hasSide && <aside className="cx-round-side">
+          {livePhase !== "finished" && <div className="cx-side-clock">
+            <small>{tr(lang, livePhase === "live" ? "contests.ends_label" : "contests.starts_label")}</small>
+            <Clock ms={livePhase === "live" ? end - now : start - now} lang={lang} />
+            {livePhase === "live" && <span className="cx-progress"><i style={{ width: `${pct}%` }} /></span>}
+          </div>}
+          {regBox}
+        </aside>}
       </div>
-      {livePhase !== "finished" && <div className="cx-round-clock">
-        <div><small>{tr(lang, livePhase === "live" ? "contests.ends_label" : "contests.starts_label")}</small>
-          <Clock ms={livePhase === "live" ? end - now : start - now} lang={lang} /></div>
-        {livePhase === "live" && <span className="cx-progress"><i style={{ width: `${pct}%` }} /></span>}
-      </div>}
       {contest.hidden && <p className="cx-hidden-note">{tr(lang, "contests.hidden_note")}</p>}
       {toggleError && <p className="cx-hidden-note">{toggleError}</p>}
-      {regBox}
       {regError && <p className="cx-hidden-note">{regError}</p>}
     </header>
 

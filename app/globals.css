@@ -5418,3 +5418,41 @@ body[data-ads-quiet] > div[style*="--rdata"]{display:none!important}
 .cx-reg-badge.big svg{width:15px;height:15px}
 .cx-feature-err{margin:0;font-size:13px;color:var(--bad)}
 .cx-feature-title.cx-stretch{font-weight:700}
+
+/* Raund sarlavhasi: chapda nom va ma’lumot, o‘ngda bitta panel — soat va
+   ro‘yxatdan o‘tish bir xil kenglikda, bir-birining ostida. */
+.cx-round-body{margin-top:10px}
+.cx-round-body.with-side{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,380px);gap:var(--s5);align-items:start}
+.cx-round-info .page-title{margin:0 0 6px}
+.cx-round-side{
+ display:grid;gap:14px;padding:16px;border-radius:var(--r-lg);
+ background:color-mix(in srgb,var(--cx-acc) 6%,var(--surface));
+ border:1px solid color-mix(in srgb,var(--cx-acc) 22%,transparent);
+}
+.cx-side-clock{display:grid;gap:10px}
+.cx-side-clock > small{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:color-mix(in srgb,var(--cx-acc) 70%,var(--muted))}
+.cx-side-clock .cx-clock{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:8px}
+.cx-side-clock .cx-clock-u{min-width:0}
+.cx-side-reg{display:grid;gap:12px;padding-top:14px;border-top:1px solid color-mix(in srgb,var(--cx-acc) 16%,transparent)}
+.cx-side-reg .cx-reg-copy{display:grid;gap:2px}
+.cx-side-reg .cx-reg-copy b{font-size:14.5px;line-height:1.35}
+.cx-side-reg .cx-reg-copy small{font-size:12.5px;color:var(--muted)}
+.cx-side-reg .cx-reg-btn{width:100%;justify-content:center}
+.cx-side-reg.done{display:flex;align-items:center;gap:12px}
+.cx-side-reg.done .cx-reg-copy b{color:var(--ink)}
+.cx-reg-check{flex:none;width:34px;height:34px;border-radius:50%;display:grid;place-items:center;color:var(--green);background:color-mix(in srgb,var(--green) 16%,transparent);box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--green) 30%,transparent)}
+.cx-reg-check svg{width:17px;height:17px}
+.cx-link-btn{margin-left:auto;flex:none;border:0;background:none;padding:6px 4px;color:var(--muted);font-size:13px;font-weight:600;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.cx-link-btn:hover{color:var(--bad)}
+/* Masala sahifasida: bitta ixcham qator, soat o‘ngda. */
+.cx-round-hero.compact{display:block}
+.cx-round-hero.compact .cx-round-body.with-side{grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:var(--s4)}
+.cx-round-hero.compact .cx-round-info .page-title{font-size:1.35rem;margin:0}
+.cx-round-hero.compact .cx-side-reg{display:none}
+.cx-round-hero.compact .cx-round-side{padding:8px 10px;gap:6px}
+.cx-round-hero.compact .cx-side-clock{gap:6px}
+.cx-round-hero.compact .cx-side-clock > small{font-size:10px}
+@media(max-width:860px){
+ .cx-round-body.with-side{grid-template-columns:1fr}
+ .cx-round-hero.compact .cx-round-body.with-side{grid-template-columns:1fr}
+}
