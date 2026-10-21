@@ -166,6 +166,9 @@ export function ContestEditor({ lang, slug, isOwner, onDone, onCancel, onDeleted
   // A seeded archive round: its problems are bank problems and its window
   // holds the board, so only its titles and visibility are editable.
   const [archive, setArchive] = useState(false);
+  // From 069: whether the owner approved the round yet, and the viewer's role on it.
+  const [status, setStatus] = useState<"draft" | "review" | "approved">(isOwner ? "approved" : "draft");
+  const [myRole, setMyRole] = useState<string | null>(isOwner ? "owner" : null);
   const [section, setSection] = useState<"round" | "team" | number>("round");
   const [teamCount, setTeamCount] = useState<number | null>(null);
   const [slugTouched, setSlugTouched] = useState(Boolean(slug));
@@ -182,6 +185,8 @@ export function ContestEditor({ lang, slug, isOwner, onDone, onCancel, onDeleted
       const c = got.data;
       if (!c) { setState("missing"); return; }
       setArchive(c.kind !== "custom");
+      setStatus((c as Loaded & { status?: "draft" | "review" | "approved" }).status ?? "approved");
+      setMyRole((c as Loaded & { my_role?: string }).my_role ?? (isOwner ? "owner" : null));
       setRoundEntries(c.entries);
       setDraft({
         slug: c.slug, title_uz: c.title_uz, title_en: c.title_en === c.title_uz ? "" : c.title_en, description: c.description || "",
@@ -196,7 +201,7 @@ export function ContestEditor({ lang, slug, isOwner, onDone, onCancel, onDeleted
       setState("ready");
     });
     return () => { live = false; };
-  }, [slug]);
+  }, [slug, isOwner]);
 
   const issues = useMemo(() => (draft ? validate(draft, lang) : []), [draft, lang]);
 
@@ -231,6 +236,24 @@ export function ContestEditor({ lang, slug, isOwner, onDone, onCancel, onDeleted
     if (!window.confirm(tr(lang, "contests.ed_confirm_remove", { idx: p.idx }))) return;
     set({ problems: relabel(draft.problems.filter((_, j) => j !== i)) });
     setSection(i > 0 ? i - 1 : "round");
+  };
+  /* "Masalalar soni" in the round settings: grows the list with blank
+     problems A, B, C…, or trims it from the end — asking first if a trimmed
+     problem has anything in it, and never past one that has submissions. */
+  const setProblemCount = (n: number) => {
+    const want = Math.max(0, Math.min(26, Math.floor(n) || 0));
+    const have = draft.problems.length;
+    if (want === have) return;
+    if (want > have) {
+      set({ problems: [...draft.problems, ...Array.from({ length: want - have }, (_, k) => blankProblem(LETTERS[have + k]))] });
+      return;
+    }
+    const cut = draft.problems.slice(want);
+    if (cut.some((p) => p.entries > 0)) { setMessage({ tone: "bad", text: tr(lang, "contests.ed_err_problem_has_submissions") }); return; }
+    const filled = cut.filter((p) => p.title_uz.trim() || p.statement.trim() || p.tests.length);
+    if (filled.length && !window.confirm(tr(lang, "contests.ed_confirm_trim", { list: filled.map((p) => p.idx).join(", ") }))) return;
+    set({ problems: draft.problems.slice(0, want) });
+    if (typeof section === "number" && section >= want) setSection("round");
   };
   const moveProblem = (i: number, by: -1 | 1) => {
     const j = i + by;
@@ -341,7 +364,7 @@ export function ContestEditor({ lang, slug, isOwner, onDone, onCancel, onDeleted
 
       <section className="cxe-main">
         {section === "round" && <RoundSettings lang={lang} draft={draft} set={set} slugTouched={slugTouched}
-          onSlugTouched={() => setSlugTouched(true)} canDelete={Boolean(slug) && !archive && isOwner} onDelete={remove} entries={roundEntries} archive={archive} />}
+          onSlugTouched={() => setSlugTouched(true)} canDelete={Boolean(slug) && !archive && (isOwner || myRole === "author")} onDelete={remove} entries={roundEntries} archive={archive} approved={status === "approved"} onProblemCount={setProblemCount} />}
         {section === "team" && <TeamSettings lang={lang} slug={slug} onCount={setTeamCount} />}
         {current && typeof section === "number" && <ProblemEditor key={current.key} lang={lang} p={current} count={draft.problems.length} index={section}
           set={(patch) => setProblem(section, patch)} onMove={(by) => moveProblem(section, by)} onRemove={() => removeProblem(section)} />}
@@ -384,9 +407,9 @@ function Field({ label, hint, children, wide }: { label: string; hint?: string; 
   </label>;
 }
 
-function RoundSettings({ lang, draft, set, slugTouched, onSlugTouched, canDelete, onDelete, entries, archive }: {
+function RoundSettings({ lang, draft, set, slugTouched, onSlugTouched, canDelete, onDelete, entries, archive, approved, onProblemCount }: {
   lang: Lang; draft: Draft; set: (patch: Partial<Draft>) => void; slugTouched: boolean; onSlugTouched: () => void;
-  canDelete: boolean; onDelete: () => void; entries: number; archive: boolean;
+  canDelete: boolean; onDelete: () => void; entries: number; archive: boolean; approved: boolean; onProblemCount: (n: number) => void;
 }) {
   const hours = Math.floor(draft.duration / 60), minutes = draft.duration % 60;
   const ends = (() => {
@@ -421,12 +444,16 @@ function RoundSettings({ lang, draft, set, slugTouched, onSlugTouched, canDelete
       <Field label={tr(lang, "contests.ed_penalty")} hint={tr(lang, "contests.ed_penalty_hint")}>
         <input type="number" min={0} max={60} value={draft.penalty} disabled={archive} onChange={(e) => set({ penalty: Number(e.target.value) || 0 })} />
       </Field>
+      {!archive && <Field label={tr(lang, "contests.ed_problem_count")} hint={tr(lang, "contests.ed_problem_count_hint")}>
+        <span className="cxe-unit"><input type="number" min={0} max={26} value={draft.problems.length}
+          onChange={(e) => onProblemCount(Number(e.target.value))} /><em>{draft.problems.length ? `A–${LETTERS[draft.problems.length - 1]}` : "—"}</em></span>
+      </Field>}
       <Field label={tr(lang, "contests.ed_visibility")}>
         <span className="cxe-toggle">
-          <button type="button" className={draft.hidden ? "on" : undefined} onClick={() => set({ hidden: true })}>{tr(lang, "contests.hidden")}</button>
-          <button type="button" className={!draft.hidden ? "on" : undefined} onClick={() => set({ hidden: false })}>{tr(lang, "contests.ed_public")}</button>
+          <button type="button" className={draft.hidden || !approved ? "on" : undefined} onClick={() => set({ hidden: true })}>{tr(lang, "contests.hidden")}</button>
+          <button type="button" className={!draft.hidden && approved ? "on" : undefined} disabled={!approved} onClick={() => set({ hidden: false })}>{tr(lang, "contests.ed_public")}</button>
         </span>
-        <small className="cxe-hint">{tr(lang, draft.hidden ? "contests.ed_hidden_hint" : "contests.ed_public_hint")}</small>
+        <small className="cxe-hint">{tr(lang, !approved ? "contests.ed_needs_approval" : draft.hidden ? "contests.ed_hidden_hint" : "contests.ed_public_hint")}</small>
       </Field>
       <Field label={tr(lang, "contests.ed_description")} hint={tr(lang, "contests.ed_description_hint")} wide>
         <textarea rows={3} value={draft.description} maxLength={1000} onChange={(e) => set({ description: e.target.value })} />

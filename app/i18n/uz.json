@@ -742,5 +742,21 @@
   "contests.ed_team_err_already_staff": "Bu odam allaqachon kontestni boshqaradi.",
   "contests.ed_team_err_not_migrated": "Jamoa uchun 068_contest_team.sql migratsiyasi kerak.",
   "contests.ed_forbidden": "Bu kontestni tahrirlashga ruxsatingiz yo‘q.",
-  "contests.ed_team_nav": "{n} kishi"
+  "contests.ed_team_nav": "{n} kishi",
+  "contests.status_draft": "Qoralama",
+  "contests.status_review": "Tasdiqlash kutilmoqda",
+  "contests.status_note_draft": "Bu kontest qoralama. Tayyor bo‘lgach «Tasdiqlashga yuborish»ni bosing — owner tasdiqlamaguncha u hammadan yashirin turadi.",
+  "contests.status_note_review": "Kontest owner’ga tasdiqlash uchun yuborildi. Tasdiqlanmaguncha u hammadan yashirin.",
+  "contests.status_note_draft_owner": "Bu kontest hali qoralama — muallifi uni tasdiqlashga yubormagan. Xohlasangiz hozir tasdiqlashingiz mumkin.",
+  "contests.status_note_review_owner": "Bu kontest sizning tasdiqlashingizni kutmoqda. Masalalar va sozlamalarni ko‘rib chiqing, keyin «Tasdiqlash» yoki «Qaytarish»ni bosing.",
+  "contests.review_submit": "Tasdiqlashga yuborish",
+  "contests.review_approve": "Tasdiqlash",
+  "contests.review_reject": "Qaytarish",
+  "contests.review_banner": "{n} ta kontest tasdiqlashingizni kutmoqda",
+  "contests.review_open": "Ko‘rib chiqish",
+  "contests.err_need_069": "Buning uchun 069_contest_approval.sql migratsiyasi kerak.",
+  "contests.ed_problem_count": "Masalalar soni",
+  "contests.ed_problem_count_hint": "Shuncha bo‘sh masala (A, B, C…) chap tomonda ochiladi — keyin birma-bir to‘ldirasiz.",
+  "contests.ed_confirm_trim": "{list} masalalarida yozilgan narsa bor. Baribir olib tashlaysizmi?",
+  "contests.ed_needs_approval": "Owner kontestni tasdiqlagandan keyin uni ochiq qilish mumkin."
 }

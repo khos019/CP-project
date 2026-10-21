@@ -5481,3 +5481,11 @@ body[data-ads-quiet] > div[style*="--rdata"]{display:none!important}
 .cxe-team-status{font-size:12.5px;color:var(--muted)}
 .cxe-team-status.accepted{color:var(--green)}
 @media(max-width:760px){.cxe-team li{grid-template-columns:minmax(0,1fr) auto}}
+
+/* Tasdiqlash (069). */
+.cx-status-tag.draft{background:var(--surface-2);color:var(--muted)}
+.cx-status-tag.review{background:color-mix(in srgb,#e2a33b 15%,transparent);color:#d0911f;border-color:color-mix(in srgb,#e2a33b 35%,transparent)}
+.cx-approve-btn{display:inline-flex;align-items:center;gap:7px;padding:7px 14px;border-radius:10px;font-size:13.5px}
+.cx-approve-btn svg{width:15px;height:15px}
+.cx-review-banner{display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:14px 16px;margin-bottom:var(--s4);border-radius:var(--r-lg);background:color-mix(in srgb,#e2a33b 9%,var(--surface));border:1px solid color-mix(in srgb,#e2a33b 35%,var(--line))}
+.cx-review-banner .cx-invite-ic{color:#d0911f;background:color-mix(in srgb,#e2a33b 16%,transparent)}

@@ -742,5 +742,21 @@
   "contests.ed_team_err_already_staff": "This person already manages the round.",
   "contests.ed_team_err_not_migrated": "The team needs migration 068_contest_team.sql.",
   "contests.ed_forbidden": "You may not edit this round.",
-  "contests.ed_team_nav": "{n} people"
+  "contests.ed_team_nav": "{n} people",
+  "contests.status_draft": "Draft",
+  "contests.status_review": "Awaiting approval",
+  "contests.status_note_draft": "This round is a draft. When it is ready, press “Submit for approval” — it stays hidden until the owner approves it.",
+  "contests.status_note_review": "The round was sent to the owner for approval. It stays hidden until approved.",
+  "contests.status_note_draft_owner": "This round is still a draft — its author has not sent it for approval. You can approve it now if you like.",
+  "contests.status_note_review_owner": "This round awaits your approval. Review its problems and settings, then press Approve or Send back.",
+  "contests.review_submit": "Submit for approval",
+  "contests.review_approve": "Approve",
+  "contests.review_reject": "Send back",
+  "contests.review_banner": "{n} rounds await your approval",
+  "contests.review_open": "Review",
+  "contests.err_need_069": "This needs migration 069_contest_approval.sql.",
+  "contests.ed_problem_count": "Number of problems",
+  "contests.ed_problem_count_hint": "That many blank problems (A, B, C…) open on the left — fill them in one by one.",
+  "contests.ed_confirm_trim": "Problems {list} have content. Remove them anyway?",
+  "contests.ed_needs_approval": "The round can be made public once the owner approves it."
 }

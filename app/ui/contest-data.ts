@@ -20,6 +20,8 @@ export type ContestSummary = {
   registered?: number; me_registered?: boolean;
   /** From 068: the viewer's place on the round's team, and a pending invitation. */
   my_role?: ContestRole | null; invited?: "author" | "tester" | null;
+  /** From 069: an admin's round waits for the owner's approval. */
+  status?: "draft" | "review" | "approved";
 };
 export type ContestRole = "owner" | "author" | "tester";
 export type StaffMember = { username: string; display_name: string | null; role: "author" | "tester"; status: "pending" | "accepted"; invited_at: string };
