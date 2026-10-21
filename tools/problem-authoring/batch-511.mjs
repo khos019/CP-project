@@ -195,7 +195,7 @@ P.push({
     "One row down and two columns right lands the knight on T in a single move.",
     "On a 2 × 2 board no knight move stays on the board.",
   ],
-  testInputs: ["2 3\nS..\n..T\n", "2 2\nS.\n.T\n", "3 3\nS..\n...\n..T\n", "3 4\nS#..\n.##.\n..#T\n", "2 3\nS..\n..#\n", "1 5\nS...T\n", "4 4\nT...\n....\n....\n...S\n", "3 3\nS..\n..#\n.#T\n"],
+  testInputs: ["2 3\nS..\n..T\n", "2 2\nS.\n.T\n", "3 3\nS..\n...\n..T\n", "3 4\nS#..\n.##.\n..#T\n", "2 3\nS.T\n..#\n", "1 5\nS...T\n", "4 4\nT...\n....\n....\n...S\n", "3 3\nS..\n..#\n.#T\n"],
   sol: `int n,m;cin>>n>>m;vector<string>b(n);for(auto&r:b)cin>>r;
 int sr=0,sc=0,tr=0,tc=0;for(int i=0;i<n;++i)for(int j=0;j<m;++j){if(b[i][j]=='S'){sr=i;sc=j;}if(b[i][j]=='T'){tr=i;tc=j;}}
 int dr[8]={1,1,-1,-1,2,2,-2,-2},dc[8]={2,-2,2,-2,1,-1,1,-1};
