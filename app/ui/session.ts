@@ -722,6 +722,13 @@ export type OwnerPageViews = {
 };
 export const fetchOwnerPageViews = () => rpc<OwnerPageViews>("owner_page_views");
 export const fetchOwnerOnline = () => rpc<{ window_seconds: number; now: string; users: OnlineUser[] }>("owner_online_users");
+/* Who was active on one UTC day (074), longest time first. */
+export type ActivePerson = {
+  id: string; username: string; display_name: string | null; duel_rating: number;
+  seconds: number; duels: number; joined: boolean;
+};
+export const fetchOwnerActivePeople = (day: string) =>
+  rpc<{ day: string; users: ActivePerson[] }>("owner_active_people", { p_day: day });
 export const markThreadRead = (otherId: string) => rpc<number>("mark_thread_read", { p_other: otherId });
 
 /* A conversation is every message between the two of us, in either direction.

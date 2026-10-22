@@ -694,6 +694,14 @@ body{background:var(--bg);min-height:calc(100 * var(--vh))}
 .os-orow-duel{font-style:normal;color:var(--orange);background:color-mix(in srgb,var(--orange) 12%,transparent);padding:2px 8px;border-radius:999px;font-weight:600}
 .os-orow-rating{text-align:right;font-size:13px;color:var(--muted)}
 .os-orow.faded b{color:var(--muted);font-weight:500}
+.os-active .os-chart{margin:0}
+.os-active-head{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:4px 12px;margin:var(--s4) 0 var(--s2)}
+.os-active-head h3{margin:0;font-size:16px}
+.os-active-head small{font-size:12px}
+.os-arow{display:grid;grid-template-columns:22px minmax(0,1fr) auto max-content;align-items:center;gap:10px;width:100%;min-height:42px;padding:6px 10px;border:0;border-radius:8px;background:transparent;color:var(--ink);text-align:left;cursor:pointer}
+.os-arow:hover{background:var(--surface-2)}
+.os-arow-new{font-style:normal;color:var(--green);background:var(--green-wash);padding:2px 8px;border-radius:999px;font-weight:600}
+.os-arow-time{text-align:right;font-size:13px;color:var(--muted);white-space:nowrap}
 .os-recent-toggle{justify-self:start;border:0;background:transparent;padding:6px 10px;color:var(--muted);font-size:13px;cursor:pointer}
 .os-recent-toggle:hover{color:var(--ink)}
 @media (max-width:520px){.os-orow{grid-template-columns:8px minmax(0,1fr) auto 44px;gap:8px}.os-orow-n{display:none}.os-orow-name small{display:none}}
@@ -4580,6 +4588,8 @@ a.cx-prow:hover .cx-pname b{text-decoration:underline;text-underline-offset:3px}
 .os-col.on{background:color-mix(in srgb,var(--ink) 5%,transparent)}
 .os-col.on i{filter:brightness(1.1)}
 .os-col:focus-visible{outline:2px solid var(--green);outline-offset:1px}
+.os-col.picked{background:color-mix(in srgb,var(--green) 14%,transparent)}
+.os-col.picked i{background:var(--green)}
 .os-chart-axis span:nth-child(2){opacity:.8}
 
 @media(max-width:900px){.os-today-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -5190,12 +5200,13 @@ body[data-ads-quiet] > div[style*="--rdata"]{display:none!important}
 .cxe-bar-actions{display:flex;gap:8px}
 .cxe-msg{margin-bottom:var(--s3)}
 .cxe-layout{display:grid;grid-template-columns:280px minmax(0,1fr);gap:var(--s5);align-items:start}
-.cxe-nav{position:sticky;top:calc(var(--header-h) + 90px);display:grid;gap:6px}
+.cxe-nav{position:sticky;top:calc(var(--header-h) + 90px);display:grid;grid-template-columns:minmax(0,1fr);gap:6px;min-width:0}
 .cxe-nav > button{
  display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border-radius:12px;border:1px solid transparent;
- background:transparent;color:var(--ink);text-align:left;font:inherit;position:relative;
+ background:transparent;color:var(--ink);text-align:left;font:inherit;position:relative;min-width:0;overflow:hidden;
 }
-.cxe-nav > button span:last-of-type{display:flex;flex-direction:column;min-width:0}
+.cxe-nav > button span:last-of-type{display:flex;flex-direction:column;flex:1 1 auto;min-width:0}
+.cxe-nav > button:has(.cxe-dot) span:last-of-type{padding-right:16px}
 .cxe-nav > button b{font-weight:650;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cxe-nav > button small{font-size:12px;color:var(--muted)}
 .cxe-nav > button:hover{background:var(--surface)}

@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { tr, catalogue } from "./i18n";
 import { roadmapCatalog } from "./roadmap-data";
-import { fetchOwnerStats, fetchOwnerDuelStats, fetchOwnerOnline, fetchOwnerPageViews, type OnlineUser, type OwnerStats as Stats, type OwnerDuelStats, type OwnerPageViews } from "./session";
+import { fetchOwnerStats, fetchOwnerDuelStats, fetchOwnerOnline, fetchOwnerPageViews, fetchOwnerActivePeople, type ActivePerson, type OnlineUser, type OwnerStats as Stats, type OwnerDuelStats, type OwnerPageViews } from "./session";
 
 type Lang = "uz" | "en";
 
@@ -115,6 +115,73 @@ function OnlineNow({ t, onOpenPerson }: { lang: Lang; t: (typeof T)["uz"]; onOpe
   );
 }
 
+/* Who was active each day (074): the learners bar chart, and the list of
+   people behind whichever bar is picked — today's until another is clicked.
+   A day already read is kept, so going back to it costs no second request. */
+function ActiveByDay({ lang, t, series, onOpenPerson }: {
+  lang: Lang; t: (typeof T)["uz"]; series: { day: string; learners: number }[]; onOpenPerson: (username: string) => void;
+}) {
+  const [day, setDay] = useState(() => series[series.length - 1]?.day ?? "");
+  const [lists, setLists] = useState<Record<string, ActivePerson[]>>({});
+  const [missing, setMissing] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const people = lists[day];
+  useEffect(() => {
+    if (!day || lists[day]) return;
+    let live = true;
+    void fetchOwnerActivePeople(day).then((r) => {
+      if (!live) return;
+      if (r.ok) { setLists((m) => ({ ...m, [day]: r.data.users || [] })); setFailed(false); }
+      else if (r.error === "not-migrated") setMissing(true);
+      else setFailed(true);
+    });
+    return () => { live = false; };
+  }, [day, lists]);
+  const fill = (text: string, vars: Record<string, string | number>) =>
+    Object.entries(vars).reduce((s, [k, v]) => s.replace(`{${k}}`, String(v)), text);
+
+  return (
+    <section className="os-section os-active">
+      <div className="panel">
+        <DayBars lang={lang} t={t} title={t.activeDaysTitle} hint={t.activeDaysHint} emptyText={t.activeDaysNone}
+          series={series.map((d) => ({ day: d.day, value: d.learners }))} format={(v) => String(v)}
+          onPick={setDay} picked={day} />
+      </div>
+      <div className="os-active-head">
+        <h3>{fill(t.activeOn, { d: dayLabel(day, lang), n: people ? people.length : "…" })}</h3>
+        <small className="muted">{t.activeDayNote}</small>
+      </div>
+      {missing ? <div className="notice notice-info">{t.activeNotMigrated}</div>
+        : failed ? <div className="notice notice-error">{t.networkErr}</div>
+        : !people ? <div className="os-olist"><p className="muted os-olist-empty">{t.loading}</p></div>
+        : (
+          <div className="os-olist">
+            {people.length ? (
+              <ul className="os-olist-rows">
+                {people.map((u, i) => (
+                  <li key={u.id}>
+                    <button className="os-arow" onClick={() => onOpenPerson(u.username)}>
+                      <span className="os-orow-n mono">{i + 1}</span>
+                      <span className="os-orow-name">
+                        <b>{u.display_name || u.username}</b>
+                        <small>@{u.username}</small>
+                      </span>
+                      <span className="os-orow-tag">
+                        {u.joined && <i className="os-arow-new">{t.activeNew}</i>}
+                        {u.duels > 0 && <i className="os-orow-duel">⚔ {u.duels}</i>}
+                      </span>
+                      <span className="os-arow-time mono">{duration(u.seconds, t, lang)}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : <p className="muted os-olist-empty">{t.activeEmpty}</p>}
+          </div>
+        )}
+    </section>
+  );
+}
+
 export function OwnerStats({ lang, goProfile, onPickDay, onOpenPerson }: {
   lang: Lang; goProfile: () => void; onPickDay: (day: string) => void; onOpenPerson: (username: string) => void;
 }) {
@@ -194,7 +261,7 @@ export function OwnerStats({ lang, goProfile, onPickDay, onOpenPerson }: {
       )}
 
       {state === "ready" && <OnlineNow lang={lang} t={t} onOpenPerson={onOpenPerson} />}
-      {state === "ready" && stats && <StatsBody lang={lang} t={t} stats={stats} duels={duels} views={views} onPickDay={onPickDay} />}
+      {state === "ready" && stats && <StatsBody lang={lang} t={t} stats={stats} duels={duels} views={views} onPickDay={onPickDay} onOpenPerson={onOpenPerson} />}
     </>
   );
 }
@@ -218,9 +285,9 @@ const IC: Record<string, string> = {
   swords: "M14.5 17.5 3 6V3h3l11.5 11.5M13 19l6-6M16 16l4 4M19 21l2-2M9.5 14.5 6 18M5 17l2 2",
 };
 
-function StatsBody({ lang, t, stats, duels, views, onPickDay }: {
+function StatsBody({ lang, t, stats, duels, views, onPickDay, onOpenPerson }: {
   lang: Lang; t: (typeof T)["uz"]; stats: Stats; duels: OwnerDuelStats | null | undefined;
-  views: OwnerPageViews | null | undefined; onPickDay: (day: string) => void;
+  views: OwnerPageViews | null | undefined; onPickDay: (day: string) => void; onOpenPerson: (username: string) => void;
 }) {
   const langRows = useMemo(
     () => Object.entries(stats.by_language || {}).sort((a, b) => b[1] - a[1]),
@@ -263,6 +330,8 @@ function StatsBody({ lang, t, stats, duels, views, onPickDay }: {
           <Tile hero icon="key" tone="violet" label={t.activeToday} value={stats.active_today} hint={t.activeTodayHint} />
         </div>
       </section>
+
+      {online && <ActiveByDay lang={lang} t={t} series={online.series} onOpenPerson={onOpenPerson} />}
 
       <section className="os-section">
         <h2 className="os-h2">{t.accounts}</h2>
@@ -445,6 +514,7 @@ function DayBars({
   series,
   format,
   onPick,
+  picked,
 }: {
   lang: Lang;
   t: (typeof T)["uz"];
@@ -454,6 +524,7 @@ function DayBars({
   series: { day: string; value: number }[];
   format: (value: number) => string;
   onPick?: (day: string) => void;
+  picked?: string;
 }) {
   const [focus, setFocus] = useState<number | null>(null);
   const max = Math.max(1, ...series.map((d) => d.value));
@@ -488,7 +559,7 @@ function DayBars({
               <button
                 type="button"
                 key={d.day}
-                className={`os-col${d.value === 0 ? " zero" : ""}${focus === i ? " on" : ""}${i === last ? " today" : ""}`}
+                className={`os-col${d.value === 0 ? " zero" : ""}${focus === i ? " on" : ""}${i === last ? " today" : ""}${d.day === picked ? " picked" : ""}`}
                 onPointerEnter={() => setFocus(i)}
                 onFocus={() => setFocus(i)}
                 onClick={() => { if (clickable && onPick) onPick(d.day); }}
