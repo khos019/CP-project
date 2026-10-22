@@ -768,5 +768,7 @@
   "contests.inv_later": "Keyinroq",
   "contests.inv_view": "Kontestni ko‘rish",
   "contests.inv_starts": "Boshlanadi: {t}",
-  "contests.inv_failed": "Javob yuborib bo‘lmadi. Hisobingizga qayta kirib, yana urinib ko‘ring."
+  "contests.inv_failed": "Javob yuborib bo‘lmadi. Hisobingizga qayta kirib, yana urinib ko‘ring.",
+  "chrome.contest_live_hint": "Kontest ketmoqda: «{title}» — tugashiga {t}",
+  "chrome.contest_soon_hint": "Yaqinda kontest: «{title}» — {t} dan keyin boshlanadi"
 }

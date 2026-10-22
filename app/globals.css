@@ -5554,3 +5554,15 @@ body[data-ads-quiet] > div[style*="--rdata"]{display:none!important}
 .ci-later:hover{color:var(--ink);text-decoration:underline}
 @media(max-width:760px){.ci-toast{right:16px;bottom:76px}}
 .ci-error{color:var(--bad);font-size:12.5px}
+
+/* "Kontestlar" yonidagi eslatma: yaqin kontest — ko‘k nuqta, ketayotgan — qizil "Jonli". */
+.nav-link{position:relative}
+.nav-pulse.soon{display:inline-block;width:8px;height:8px;margin-left:6px;vertical-align:2px;border-radius:50%;background:#4f8cff;box-shadow:0 0 0 0 color-mix(in srgb,#4f8cff 55%,transparent);animation:nav-pulse 2s ease-out infinite}
+.nav-pulse.live{display:inline-flex;align-items:center;margin-left:7px;padding:1px 7px;border-radius:99px;font-size:10.5px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#fff;background:#e2574c;vertical-align:1px;animation:nav-pulse-live 2s ease-out infinite}
+@keyframes nav-pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,#4f8cff 55%,transparent)}70%,100%{box-shadow:0 0 0 7px transparent}}
+@keyframes nav-pulse-live{0%{box-shadow:0 0 0 0 color-mix(in srgb,#e2574c 55%,transparent)}70%,100%{box-shadow:0 0 0 7px transparent}}
+@media(prefers-reduced-motion:reduce){.nav-pulse.soon,.nav-pulse.live{animation:none}}
+.sheet-item .nav-pulse{margin-left:auto}
+.tab-ic{position:relative}
+.tab-pulse{position:absolute;top:-2px;right:-6px;width:8px;height:8px;border-radius:50%;background:#4f8cff;border:2px solid var(--surface)}
+.tab-pulse.live{background:#e2574c}

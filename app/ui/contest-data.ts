@@ -193,3 +193,36 @@ export function useNow(isActive: (now: number) => boolean, ms = 1000) {
 }
 
 export const LANGS: Record<string, string> = { cpp20: "C++17", python3: "Python 3" };
+
+/* "Is there a round to remind people of?" — for the dot beside Kontestlar in
+ * the header. A public round that is running, or starts within a week. Read
+ * straight from Supabase (no Worker), once on load and every five minutes;
+ * the phase itself is recomputed every half minute so the dot turns into
+ * "Jonli" at the start without waiting for the next read. */
+export type ContestPulse = { phase: "live" | "soon"; title_uz: string; title_en: string; starts_at: string; duration_minutes: number } | null;
+const PULSE_AHEAD_MS = 7 * 86400_000;
+export function useContestPulse(): { pulse: ContestPulse; now: number } {
+  const [list, setList] = useState<ContestSummary[]>([]);
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    let live = true;
+    const load = () => { void publicRpc<ContestSummary[]>("contest_list").then((got) => { if (live && got.state === "ready") setList(got.data); }); };
+    load();
+    const read = window.setInterval(load, 5 * 60_000);
+    const tick = window.setInterval(() => setNow(Date.now()), 30_000);
+    return () => { live = false; window.clearInterval(read); window.clearInterval(tick); };
+  }, []);
+  let pulse: ContestPulse = null;
+  for (const c of list) {
+    // A hidden round is the owner's draft, not something to remind anybody of.
+    if (c.hidden) continue;
+    const { start, end } = windowOf(c);
+    const phase = now >= start && now < end ? "live" : start > now && start - now <= PULSE_AHEAD_MS ? "soon" : null;
+    if (!phase) continue;
+    // A running round outranks an announced one; among announced, the nearest.
+    if (!pulse || (phase === "live" && pulse.phase !== "live") || (phase === pulse.phase && start < windowOf(pulse).start)) {
+      pulse = { phase, title_uz: c.title_uz, title_en: c.title_en, starts_at: c.starts_at, duration_minutes: c.duration_minutes };
+    }
+  }
+  return { pulse, now };
+}

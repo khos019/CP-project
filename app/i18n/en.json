@@ -768,5 +768,7 @@
   "contests.inv_later": "Later",
   "contests.inv_view": "View round",
   "contests.inv_starts": "Starts {t}",
-  "contests.inv_failed": "Could not send the answer. Sign in again and retry."
+  "contests.inv_failed": "Could not send the answer. Sign in again and retry.",
+  "chrome.contest_live_hint": "Contest live: “{title}” — {t} left",
+  "chrome.contest_soon_hint": "Upcoming contest: “{title}” — starts in {t}"
 }

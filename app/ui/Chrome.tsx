@@ -12,6 +12,7 @@ import { BrandMark } from "./BrandMark";
 import { ThemeToggle } from "./ThemeToggle";
 import { ADSTERRA, adOn } from "./ads/config";
 import { fetchBalance, fetchStreak, localBalance, localStreak } from "./coins";
+import { useContestPulse, span, windowOf, type ContestPulse } from "./contest-data";
 
 /* The chrome around every screen: header, mobile tab bar, footer.
    It used to live inline in AlgoYolApp as one 4,000-character return line, and
@@ -162,6 +163,20 @@ function LangMenu({ lang, setLang }: { lang: Lang; setLang: (l: Lang) => void })
   );
 }
 
+/* The reminder beside "Kontestlar": a blue dot while a round is announced
+   for the coming week, a red "Jonli" while one runs. Its title says which. */
+function ContestPulseBadge({ lang, pulse, now }: { lang: Lang; pulse: ContestPulse; now: number }) {
+  if (!pulse) return null;
+  const name = (lang === "uz" ? pulse.title_uz : pulse.title_en) || pulse.title_uz;
+  const { start, end } = windowOf(pulse);
+  const hint = pulse.phase === "live"
+    ? tr(lang, "chrome.contest_live_hint", { title: name, t: span(end - now, lang) })
+    : tr(lang, "chrome.contest_soon_hint", { title: name, t: span(start - now, lang) });
+  return pulse.phase === "live"
+    ? <span className="nav-pulse live" title={hint} aria-label={hint}>{tr(lang, "contests.live")}</span>
+    : <span className="nav-pulse soon" title={hint} aria-label={hint} />;
+}
+
 export function SiteHeader({
   lang, view, go, signed, authLoading, name, unread, setLang, onSignOut, onAuth, bell,
 }: {
@@ -175,6 +190,7 @@ export function SiteHeader({
   const [menu, setMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const { coins, streak } = useLearnerStats(signed);
+  const { pulse, now } = useContestPulse();
 
   /* A dropdown that outlives the click that should have closed it is the most
      common way this control goes wrong, so it closes on an outside click, on
@@ -212,7 +228,7 @@ export function SiteHeader({
             href={link.href}
             aria-current={view === link.view ? "page" : undefined}
             onClick={linkTo(() => go(link.view))}
-          >{uz ? link.uz : link.en}</a>
+          >{uz ? link.uz : link.en}{link.view === "contests" && <ContestPulseBadge lang={lang} pulse={pulse} now={now} />}</a>
         ))}
         <span className="nav-divider" aria-hidden />
         {SECONDARY.map(link => (
@@ -294,6 +310,9 @@ export function SiteHeader({
 export function MobileTabBar({ lang, view, go }: { lang: Lang; view: string; go: Nav }) {
   const uz = lang === "uz";
   const [more, setMore] = useState(false);
+  // Kontestlar lives in the "more" sheet on a phone, so the reminder sits on
+  // the sheet's button as well as on the item inside it.
+  const { pulse, now } = useContestPulse();
   useEffect(() => {
     if (!more) return;
     const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setMore(false); };
@@ -315,6 +334,7 @@ export function MobileTabBar({ lang, view, go }: { lang: Lang; view: string; go:
                 onClick={linkTo(() => { setMore(false); go(item.view); })}>
                 <span className="sheet-ic" aria-hidden>{item.icon}</span>
                 {uz ? item.uz : item.en}
+                {item.view === "contests" && <ContestPulseBadge lang={lang} pulse={pulse} now={now} />}
               </a>
             ))}
           </div>
@@ -334,7 +354,7 @@ export function MobileTabBar({ lang, view, go }: { lang: Lang; view: string; go:
             rather than nowhere, which is where they were. */}
         <button className={more ? "tab-more active" : "tab-more"} onClick={() => setMore(v => !v)}
           aria-expanded={more} aria-label={uz ? "Boshqa bo‘limlar" : "More sections"}>
-          <span className="tab-ic" aria-hidden>⋯</span>
+          <span className="tab-ic" aria-hidden>⋯{pulse && <i className={`tab-pulse ${pulse.phase}`} />}</span>
           <span className="tab-label">{uz ? "Ko‘proq" : "More"}</span>
         </button>
       </nav>
