@@ -16,7 +16,7 @@ import {
   type Role,
 } from "./session";
 import { EmptyState } from "./kit";
-import { ownerBroadcast, ownerBroadcastRecipients } from "./session";
+import { ownerBroadcast, ownerBroadcastMissing, ownerBroadcastMissingCount, ownerBroadcastRecipients, ownerWelcomeGet, ownerWelcomeSet, type WelcomeMessage } from "./session";
 
 type Lang = "uz" | "en";
 
@@ -47,6 +47,17 @@ const T = {
     broadcastSend: "Ha, hammaga yuborish", broadcastSending: "Yuborilmoqda…",
     broadcastSent: (n: number) => `Xabar ${n} ta foydalanuvchiga yuborildi.`,
     broadcastFailed: "Yuborib bo‘lmadi.", broadcastNotMigrated: "Bu imkoniyat hali yoqilmagan (055 migratsiyasi).",
+    missingCount: (n: number | null) => n === null ? "Hali olmaganlar sanalmoqda…" : `Hali olmaganlar: ${n} ta`,
+    missingNote: "Xabardagi havola bo‘yicha aniqlanadi: shu havolali xabarni avval olgan foydalanuvchiga qayta bormaydi.",
+    sendMissing: (n: number) => `Olmaganlarga yuborish (${n})`, sendAll: (n: number) => `Hammaga yuborish (${n})`,
+    confirmMissing: (n: number) => `Xabar hali olmagan ${n} ta foydalanuvchiga yuborilsinmi? Yuborilgan xabarni qaytarib olib bo‘lmaydi.`,
+    sendMissingYes: "Ha, olmaganlarga yuborish",
+    missingNotMigrated: "«Olmaganlarga» va avtomatik yuborish uchun 075 migratsiyasini ishga tushiring.",
+    welcomeTitle: "Yangi foydalanuvchilarga avtomatik",
+    welcomeOn: (who: string | null) => `Yoqilgan: saytga yangi ro‘yxatdan o‘tgan har bir foydalanuvchiga ${who ? "@" + who + " nomidan " : ""}xabar avtomatik boradi.`,
+    welcomeOff: "O‘chiq: yangi foydalanuvchilarga hech narsa yuborilmaydi.",
+    welcomeEnable: "Shu matnni yangilarga avtomatik yuborish", welcomeUpdate: "Matnni shu matnga almashtirish",
+    welcomeDisable: "O‘chirish", welcomeSaved: "Saqlandi.", welcomeDiffers: "Yuqoridagi matn avtomatik xabardan farq qiladi.",
     findPerson: "Kimga yozmoqchisiz?",
     searchHint: "Nickname yoki ism bo‘yicha qidiring (kamida 2 belgi).",
     nobody: "Hech kim topilmadi.",
@@ -84,6 +95,17 @@ const T = {
     broadcastSend: "Yes, send to everyone", broadcastSending: "Sending…",
     broadcastSent: (n: number) => `Sent to ${n} learners.`,
     broadcastFailed: "Could not send.", broadcastNotMigrated: "Not switched on yet (migration 055).",
+    missingCount: (n: number | null) => n === null ? "Counting who has not had it…" : `Not received yet: ${n}`,
+    missingNote: "Judged by the link in the message: anyone who already got a message with that link is skipped.",
+    sendMissing: (n: number) => `Send to those who missed it (${n})`, sendAll: (n: number) => `Send to everyone (${n})`,
+    confirmMissing: (n: number) => `Send this message to the ${n} learners who have not had it? A sent message cannot be taken back.`,
+    sendMissingYes: "Yes, send to those who missed it",
+    missingNotMigrated: "Run migration 075 for \"those who missed it\" and automatic sending.",
+    welcomeTitle: "Automatic for new learners",
+    welcomeOn: (who: string | null) => `On: every newly registered learner gets the message${who ? " from @" + who : ""} automatically.`,
+    welcomeOff: "Off: nothing is sent to new learners.",
+    welcomeEnable: "Send this text to new learners automatically", welcomeUpdate: "Replace the text with this one",
+    welcomeDisable: "Switch off", welcomeSaved: "Saved.", welcomeDiffers: "The text above differs from the automatic message.",
     title: "Messages",
     eyebrow: "Conversations",
     lede: "Write to any learner. When the owner writes, the message comes from the site.",
@@ -168,29 +190,74 @@ Shuningdek, masalalar tahlili va foydali maslahatlarni ham ulashib boramiz. Kana
 Hurmat bilan,
 AlgoYo‘l jamoasi`;
 
-/* Owner only: one message to every learner, through migration 055. Two steps
-   — read and edit, then confirm with the recipient count in front of you —
-   because a broadcast cannot be recalled. */
+/* Owner only: one message to every learner (055), or only to those it missed
+   (075, judged by the message's link). Two steps — read and edit, then
+   confirm with the recipient count in front of you — because a broadcast
+   cannot be recalled. Below it, the announcement new accounts receive. */
 function BroadcastPanel({ t, onClose }: { t: (typeof T)["uz"]; onClose: () => void }) {
   const [body, setBody] = useState(BROADCAST_DRAFT);
   const [asSite, setAsSite] = useState(false);
   const [count, setCount] = useState<number | null>(null);
+  /* null while counting; undefined when 075 is not applied. */
+  const [missing, setMissing] = useState<number | null | undefined>(null);
+  const [target, setTarget] = useState<"missing" | "all">("missing");
   const [step, setStep] = useState<"edit" | "confirm" | "sending" | "sent">("edit");
   const [sent, setSent] = useState(0);
   const [error, setError] = useState("");
+  const [welcome, setWelcome] = useState<WelcomeMessage | null>(null);
+  const [welcomeNote, setWelcomeNote] = useState("");
+  const [savingWelcome, setSavingWelcome] = useState(false);
   useEffect(() => {
     void ownerBroadcastRecipients().then((r) => {
       if (r.ok) setCount(Number(r.data) || 0);
       else setError(r.error === "not-migrated" ? t.broadcastNotMigrated : t.broadcastFailed);
     });
+    void ownerWelcomeGet().then((r) => { if (r.ok) setWelcome(r.data); });
   }, [t]);
+  // Who still lacks it depends on the link in the text, so it is recounted
+  // shortly after the owner stops typing.
+  useEffect(() => {
+    let live = true;
+    const id = window.setTimeout(() => {
+      void ownerBroadcastMissingCount(body).then((r) => {
+        if (!live) return;
+        setMissing(r.ok ? Number(r.data) || 0 : r.error === "not-migrated" ? undefined : null);
+      });
+    }, 400);
+    return () => { live = false; window.clearTimeout(id); };
+  }, [body, sent]);
   const send = async () => {
     setStep("sending"); setError("");
-    const r = await ownerBroadcast(body, asSite);
+    const r = target === "missing" ? await ownerBroadcastMissing(body, asSite) : await ownerBroadcast(body, asSite);
     if (r.ok && r.data?.ok) { setSent(Number(r.data.sent) || 0); setStep("sent"); return; }
-    setError(!r.ok && r.error === "not-migrated" ? t.broadcastNotMigrated : t.broadcastFailed);
+    setError(!r.ok && r.error === "not-migrated" ? (target === "missing" ? t.missingNotMigrated : t.broadcastNotMigrated) : t.broadcastFailed);
     setStep("confirm");
   };
+  const ask = (next: "missing" | "all") => { setTarget(next); setStep("confirm"); };
+  const saveWelcome = async (enabled: boolean) => {
+    setSavingWelcome(true); setWelcomeNote("");
+    const r = await ownerWelcomeSet(enabled, enabled ? body : welcome?.body || "", asSite);
+    setSavingWelcome(false);
+    if (r.ok && r.data?.ok) {
+      setWelcome((w) => ({ enabled, body: enabled ? body.trim() : w?.body || "", as_site: asSite, updated_at: new Date().toISOString(), sender: w?.sender ?? null }));
+      setWelcomeNote(t.welcomeSaved);
+      if (enabled) void ownerWelcomeGet().then((g) => { if (g.ok) setWelcome(g.data); });
+    } else setWelcomeNote(!r.ok && r.error === "not-migrated" ? t.missingNotMigrated : t.broadcastFailed);
+  };
+  const welcomeDiffers = !!welcome?.enabled && welcome.body.trim() !== body.trim();
+  const welcomeBox = welcome && (
+    <div className="broadcast-welcome">
+      <b>{t.welcomeTitle}</b>
+      <p className="muted">{welcome.enabled ? t.welcomeOn(welcome.sender) : t.welcomeOff}</p>
+      {welcomeDiffers && <p className="muted">{t.welcomeDiffers}</p>}
+      <div className="broadcast-actions">
+        {!welcome.enabled && <button className="secondary" disabled={savingWelcome || !body.trim()} onClick={() => { void saveWelcome(true); }}>{t.welcomeEnable}</button>}
+        {welcomeDiffers && <button className="secondary" disabled={savingWelcome || !body.trim()} onClick={() => { void saveWelcome(true); }}>{t.welcomeUpdate}</button>}
+        {welcome.enabled && <button className="secondary" disabled={savingWelcome} onClick={() => { void saveWelcome(false); }}>{t.welcomeDisable}</button>}
+        {welcomeNote && <span className="muted broadcast-note">{welcomeNote}</span>}
+      </div>
+    </div>
+  );
   return (
     <div className="panel broadcast-panel">
       <h2>{t.broadcastTitle}</h2>
@@ -198,10 +265,13 @@ function BroadcastPanel({ t, onClose }: { t: (typeof T)["uz"]; onClose: () => vo
         <>
           <div className="notice">{t.broadcastSent(sent)}</div>
           <div className="broadcast-actions"><button className="secondary" onClick={onClose}>{t.broadcastBack}</button></div>
+          {welcomeBox}
         </>
       ) : (
         <>
           <p className="muted">{t.broadcastLede(count)}</p>
+          {missing === undefined ? <div className="notice notice-info">{t.missingNotMigrated}</div>
+            : <p className="broadcast-missing"><b>{t.missingCount(missing)}</b> <span className="muted">{t.missingNote}</span></p>}
           <textarea value={body} onChange={(e) => setBody(e.target.value)} rows={13} maxLength={4000}
             disabled={step !== "edit"} aria-label={t.broadcastTitle} />
           <label className="broadcast-check">
@@ -211,20 +281,24 @@ function BroadcastPanel({ t, onClose }: { t: (typeof T)["uz"]; onClose: () => vo
           {error && <div className="notice notice-error">{error}</div>}
           {step === "edit" ? (
             <div className="broadcast-actions">
-              <button className="primary" disabled={!body.trim() || !count} onClick={() => setStep("confirm")}>{t.broadcastNext}</button>
+              {missing !== undefined && <button className="primary" disabled={!body.trim() || !missing} onClick={() => ask("missing")}>{t.sendMissing(missing || 0)}</button>}
+              <button className={missing === undefined ? "primary" : "secondary"} disabled={!body.trim() || !count} onClick={() => ask("all")}>
+                {missing === undefined ? t.broadcastNext : t.sendAll(count || 0)}
+              </button>
               <button className="secondary" onClick={onClose}>{t.broadcastCancel}</button>
             </div>
           ) : (
             <>
-              <div className="notice notice-info">{t.broadcastConfirm(count || 0)}</div>
+              <div className="notice notice-info">{target === "missing" ? t.confirmMissing(missing || 0) : t.broadcastConfirm(count || 0)}</div>
               <div className="broadcast-actions">
                 <button className="primary" disabled={step === "sending"} onClick={() => { void send(); }}>
-                  {step === "sending" ? t.broadcastSending : t.broadcastSend}
+                  {step === "sending" ? t.broadcastSending : target === "missing" ? t.sendMissingYes : t.broadcastSend}
                 </button>
                 <button className="secondary" disabled={step === "sending"} onClick={() => setStep("edit")}>{t.broadcastBack}</button>
               </div>
             </>
           )}
+          {step === "edit" && welcomeBox}
         </>
       )}
     </div>

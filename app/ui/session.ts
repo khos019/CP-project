@@ -695,6 +695,15 @@ export const fetchThreads = (limit = 50) => rpc<MessageThread[]>("my_message_thr
 export const fetchUnreadCount = () => rpc<number>("my_unread_count");
 /* Owner broadcast (migration 055): one message from the owner to every learner. */
 export const ownerBroadcastRecipients = () => rpc<number>("owner_broadcast_recipients");
+/* 075: the people an announcement missed (judged by its link), and the one
+   every new account receives. */
+export const ownerBroadcastMissingCount = (body: string) => rpc<number>("owner_broadcast_missing_count", { p_body: body });
+export const ownerBroadcastMissing = (body: string, asSite: boolean) =>
+  rpc<{ ok: boolean; sent?: number; error?: string }>("owner_broadcast_missing", { p_body: body, p_as_site: asSite });
+export type WelcomeMessage = { enabled: boolean; body: string; as_site: boolean; updated_at: string | null; sender: string | null };
+export const ownerWelcomeGet = () => rpc<WelcomeMessage>("owner_welcome_get");
+export const ownerWelcomeSet = (enabled: boolean, body: string, asSite: boolean) =>
+  rpc<{ ok: boolean; error?: string }>("owner_welcome_set", { p_enabled: enabled, p_body: body, p_as_site: asSite });
 export const ownerBroadcast = (body: string, asSite: boolean) =>
   rpc<{ ok: boolean; sent?: number; error?: string }>("owner_broadcast", { p_body: body, p_as_site: asSite });
 /* Who is on the site now (migration 056), for the owner's statistics. */

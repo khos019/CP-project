@@ -856,7 +856,11 @@ body{background:var(--bg);min-height:calc(100 * var(--vh))}
 .broadcast-panel p{margin:0}
 .broadcast-panel textarea{width:100%;background:var(--inset);border:1px solid var(--line);border-radius:var(--r-md);padding:12px var(--s4);color:var(--ink);font:inherit;font-size:var(--t-sm);line-height:1.6;resize:vertical}
 .broadcast-check{display:flex;align-items:center;gap:8px;font-size:var(--t-sm);color:var(--muted)}
-.broadcast-actions{display:flex;gap:var(--s3);flex-wrap:wrap}
+.broadcast-actions{display:flex;gap:var(--s3);flex-wrap:wrap;align-items:center}
+.broadcast-missing{font-size:var(--t-sm);line-height:1.5}
+.broadcast-welcome{display:grid;gap:8px;margin-top:var(--s2);padding:var(--s3) var(--s4);border:1px solid var(--line);border-radius:var(--r-md);background:var(--inset)}
+.broadcast-welcome p{font-size:var(--t-sm);line-height:1.5}
+.broadcast-note{font-size:var(--t-sm)}
 .msg-bubble a{color:var(--blue);text-decoration:underline;text-underline-offset:2px;overflow-wrap:anywhere}
 .msg-bubble small{font-size:11.5px}
 .msg-site{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:850;letter-spacing:.08em;color:color-mix(in srgb,var(--inset) 53%,var(--surface-2));background:var(--lime);padding:3px 8px;border-radius:6px;justify-self:start}
