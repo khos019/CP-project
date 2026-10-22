@@ -1,0 +1,331 @@
+/* Batch 675 — the last ten of the fifty added on 2026-10-22, B675–B684, at
+ * 1200–1500; the bank reaches 684. Every task is a well-known contest problem
+ * restated for AlgoYo'l in our own words, with our own samples; ratings follow
+ * the Codeforces scale.
+ */
+import { line } from "./gen-lib.mjs";
+
+const P = [];
+const tests = (r, k, one) => { const t = r.int(1, k); let s = t + "\n"; for (let i = 0; i < t; i++) s += one(r); return s; };
+
+/* ------------------------------------------------------------------ 1200 */
+P.push({
+  id: "B675", judge: "greedy-can-reach-the-end", topic: "greedy", rating: 1200,
+  tag: "Greedy", timeLimitMs: 1000,
+  uz: "Oxirgacha yetib borish",
+  en: "Reaching the end",
+  statementUz: "n ta katakdan iborat qator berilgan, i-katakda a_i soni yozilgan. Siz 1-katakda turibsiz. i-katakdan bitta sakrashda i + 1, i + 2, …, i + a_i kataklardan istalganiga o‘tish mumkin (qatordan tashqariga chiqish mumkin emas); a_i = 0 bo‘lsa, bu katakdan sakrab bo‘lmaydi. Oxirgi, n-katakka yetib borish mumkinmi?",
+  statementEn: "A row of n cells is given, and cell i holds the number a_i. You stand on cell 1. From cell i one jump takes you to any of the cells i + 1, i + 2, …, i + a_i (you cannot leave the row); if a_i = 0 you cannot jump from that cell. Can you reach the last cell, cell n?",
+  inputUz: "Birinchi qatorda testlar soni t beriladi. Har bir test ikki qatordan iborat: birinchisida n, ikkinchisida n ta son a_1, …, a_n.",
+  inputEn: "The first line contains the number of test cases t. Each test case takes two lines: the first holds n, the second the n numbers a_1, …, a_n.",
+  outputUz: "Har bir test uchun alohida qatorda YES yoki NO chiqaring.",
+  outputEn: "For each test case print YES or NO on its own line.",
+  constraintList: ["1 ≤ t ≤ 10^4", "1 ≤ n ≤ 2·10^5, the sum of n over all tests ≤ 2·10^5", "0 ≤ a_i ≤ 10^9"],
+  constraintListUz: ["1 ≤ t ≤ 10^4", "1 ≤ n ≤ 2·10^5, barcha testlar bo‘yicha n lar yig‘indisi ≤ 2·10^5", "0 ≤ a_i ≤ 10^9"],
+  sampleInputs: ["3\n5\n2 3 1 1 4\n5\n3 2 1 0 4\n1\n0\n"],
+  expect: ["YES\nNO\nYES\n"],
+  sampleNotesUz: ["Birinchi testda 1 → 2 → 5. Ikkinchida qayerdan boshlanmasin, 4-katakdan nariga o‘tib bo‘lmaydi, u yerda esa 0. Bitta katakli qatorda biz allaqachon oxirdamiz."],
+  sampleNotesEn: ["In the first test 1 → 2 → 5. In the second every route stops at cell 4, which holds 0. In a row of one cell we are already at the end."],
+  testInputs: ["3\n5\n2 3 1 1 4\n5\n3 2 1 0 4\n1\n0\n", "2\n4\n2 0 1 0\n3\n0 1 1\n", "2\n6\n5 0 0 0 0 0\n6\n1 1 1 1 0 1\n", "1\n5\n1 2 0 1 0\n", "2\n4\n2 2 0 0\n5\n3 1 1 0 0\n"],
+  sol: `int t;cin>>t;while(t--){int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;long long far=0;bool ok=true;for(int i=0;i<n;++i){if(i>far){ok=false;break;}far=max(far,i+a[i]);}cout<<(ok?"YES":"NO")<<"\\n";}`,
+  wrongNote: "Giving up at the first zero ignores jumping over it from an earlier cell; always jumping the full a_i misses landing short on a better cell.",
+  wrong: [
+    `int t;cin>>t;while(t--){int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;bool ok=true;for(int i=0;i+1<n;++i)if(a[i]==0)ok=false;cout<<(ok?"YES":"NO")<<"\\n";}`,
+    `int t;cin>>t;while(t--){int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;long long i=0;while(i<n-1&&a[i]>0)i+=a[i];cout<<(i>=n-1?"YES":"NO")<<"\\n";}`,
+  ],
+  gen: (r) => tests(r, 3, (r) => { const n = r.int(1, 8); return n + "\n" + line(r.ints(n, 0, 3)) + "\n"; }),
+  brute: `int t;cin>>t;while(t--){int n;cin>>n;vector<long long>a(n);for(auto&x:a)cin>>x;vector<bool>can(n,false);can[0]=true;for(int i=0;i<n;++i)if(can[i])for(long long j=i+1;j<=i+a[i]&&j<n;++j)can[j]=true;cout<<(can[n-1]?"YES":"NO")<<"\\n";}`,
+  big: [
+    { seed: 1, note: "a long row of ones and twos with no gaps", code: `n = 200000\nreturn "1\\n" + str(n) + "\\n" + line(r.ints(n, 1, 2))` },
+    { seed: 2, note: "a long row with large jumps", code: `n = 200000\nreturn "1\\n" + str(n) + "\\n" + line(r.ints(n, 0, 10**9))` },
+  ],
+});
+
+/* ------------------------------------------------------------------ 1300 */
+P.push({
+  id: "B676", judge: "bs-closest-value-queries", topic: "binary-search", rating: 1300,
+  tag: "Binary search", timeLimitMs: 1000,
+  uz: "Eng yaqin qiymat",
+  en: "The nearest value",
+  statementUz: "n ta butun sondan iborat massiv va q ta so‘rov berilgan. Har bir so‘rovda x soni beriladi: massivdagi x ga eng yaqin qiymatni, ya'ni |a_i − x| eng kichik bo‘lgan qiymatni toping. Agar ikkita qiymat bir xil yaqin bo‘lsa (biri x dan kichik, biri katta), kichigini chiqaring. Massiv tartiblanmagan.",
+  statementEn: "You are given an array of n integers and q queries. Each query gives a number x: find the value in the array nearest to x, that is, the value with the smallest |a_i − x|. If two values are equally near (one below x, one above), print the smaller one. The array is not sorted.",
+  inputUz: "Birinchi qatorda n va q, ikkinchi qatorda a_1, …, a_n, uchinchi qatorda q ta so‘rov beriladi.",
+  inputEn: "The first line contains n and q, the second a_1, …, a_n, the third the q queries.",
+  outputUz: "Har bir so‘rov uchun alohida qatorda eng yaqin qiymatni chiqaring.",
+  outputEn: "For each query print the nearest value on its own line.",
+  constraintList: ["1 ≤ n, q ≤ 2·10^5", "−10^9 ≤ a_i, x ≤ 10^9", "ties go to the smaller value"],
+  constraintListUz: ["1 ≤ n, q ≤ 2·10^5", "−10^9 ≤ a_i, x ≤ 10^9", "teng yaqin bo‘lsa, kichigi tanlanadi"],
+  sampleInputs: ["5 4\n10 3 7 -2 7\n5 4 100 -5\n"],
+  expect: ["3\n3\n10\n-2\n"],
+  sampleNotesUz: ["x = 5 uchun 3 va 7 teng uzoqlikda — kichigi 3. x = 4 uchun 3 eng yaqin. x = 100 uchun eng kattasi 10."],
+  sampleNotesEn: ["For x = 5 the values 3 and 7 are equally far — the smaller, 3, wins. For x = 4 the nearest is 3. For x = 100 it is the largest, 10."],
+  testInputs: ["5 4\n10 3 7 -2 7\n5 4 100 -5\n", "1 3\n0\n-1000000000 0 1000000000\n", "4 4\n1 3 5 7\n2 4 6 8\n", "3 2\n-1000000000 1000000000 0\n500000000 -500000000\n"],
+  sol: `int n,q;cin>>n>>q;vector<long long>a(n);for(auto&x:a)cin>>x;sort(a.begin(),a.end());while(q--){long long x;cin>>x;auto it=lower_bound(a.begin(),a.end(),x);long long best;if(it==a.end())best=a.back();else if(it==a.begin())best=*it;else{long long hi=*it,lo=*prev(it);best=(x-lo<=hi-x)?lo:hi;}cout<<best<<"\\n";}`,
+  wrongNote: "Breaking a tie towards the larger value contradicts the rule; taking only the first value not below x ignores a closer one just under it.",
+  wrong: [
+    `int n,q;cin>>n>>q;vector<long long>a(n);for(auto&x:a)cin>>x;sort(a.begin(),a.end());while(q--){long long x;cin>>x;auto it=lower_bound(a.begin(),a.end(),x);long long best;if(it==a.end())best=a.back();else if(it==a.begin())best=*it;else{long long hi=*it,lo=*prev(it);best=(x-lo<hi-x)?lo:hi;}cout<<best<<"\\n";}`,
+    `int n,q;cin>>n>>q;vector<long long>a(n);for(auto&x:a)cin>>x;sort(a.begin(),a.end());while(q--){long long x;cin>>x;auto it=lower_bound(a.begin(),a.end(),x);cout<<(it==a.end()?a.back():*it)<<"\\n";}`,
+  ],
+  gen: (r) => { const n = r.int(1, 6), q = r.int(1, 5); return n + " " + q + "\n" + line(r.ints(n, -6, 6)) + "\n" + line(r.ints(q, -8, 8)) + "\n"; },
+  brute: `int n,q;cin>>n>>q;vector<long long>a(n);for(auto&x:a)cin>>x;while(q--){long long x;cin>>x;long long best=a[0];for(long long v:a){long long d=llabs(v-x),bd=llabs(best-x);if(d<bd||(d==bd&&v<best))best=v;}cout<<best<<"\\n";}`,
+  slow: [`int n,q;cin>>n>>q;vector<long long>a(n);for(auto&x:a)cin>>x;while(q--){long long x;cin>>x;long long best=a[0];for(long long v:a){long long d=llabs(v-x),bd=llabs(best-x);if(d<bd||(d==bd&&v<best))best=v;}cout<<best<<"\\n";}`],
+  big: [
+    { seed: 1, note: "many values and queries: scanning the array per query is quadratic", code: `n, q = 150000, 70000\nreturn "%d %d\\n" % (n, q) + line(r.ints(n, -10**9, 10**9)) + "\\n" + line(r.ints(q, -10**9, 10**9))` },
+  ],
+});
+
+P.push({
+  id: "B677", judge: "fnd-game-of-life-steps", topic: "foundations", rating: 1300,
+  tag: "Simulation", timeLimitMs: 1000,
+  uz: "Hayot o‘yini",
+  en: "The game of life",
+  statementUz: "n × m o‘lchamli maydonning har bir katagi tirik («#») yoki o‘lik («.»). Har bir qadamda barcha kataklar bir vaqtda yangilanadi: tirik katakning 8 ta qo‘shnisidan (tomon yoki burchak bilan tutashgan) 2 yoki 3 tasi tirik bo‘lsa, u tirik qoladi, aks holda o‘ladi; o‘lik katakning aynan 3 ta qo‘shnisi tirik bo‘lsa, u tiriladi. Maydondan tashqari kataklar o‘lik hisoblanadi. k qadamdan keyingi maydonni chiqaring.",
+  statementEn: "Each cell of an n × m field is alive (\"#\") or dead (\".\"). On every step all cells update at the same time: a live cell with 2 or 3 live neighbours among its 8 (sharing a side or a corner) stays alive, otherwise it dies; a dead cell with exactly 3 live neighbours comes alive. Cells outside the field count as dead. Print the field after k steps.",
+  inputUz: "Birinchi qatorda n, m va k beriladi. Keyingi n ta qatorda maydon keladi.",
+  inputEn: "The first line contains n, m and k. The next n lines hold the field.",
+  outputUz: "k qadamdan keyingi maydonni n ta qatorda chiqaring.",
+  outputEn: "Print the field after k steps in n lines.",
+  constraintList: ["1 ≤ n, m ≤ 200", "0 ≤ k ≤ 20", "every cell is \"#\" or \".\""],
+  constraintListUz: ["1 ≤ n, m ≤ 200", "0 ≤ k ≤ 20", "har bir katak «#» yoki «.»"],
+  sampleInputs: ["5 5 1\n.....\n..#..\n..#..\n..#..\n.....\n", "4 4 2\n....\n.##.\n.##.\n....\n"],
+  expect: [".....\n.....\n.###.\n.....\n.....\n", "....\n.##.\n.##.\n....\n"],
+  sampleNotesUz: ["Uchta katakdan iborat tik chiziq bir qadamda yotiq chiziqqa aylanadi. 2 × 2 kvadrat o‘zgarmaydi: har bir katakning uchtadan tirik qo‘shnisi bor."],
+  sampleNotesEn: ["A vertical line of three cells turns horizontal after one step. A 2 × 2 square never changes: each of its cells has three live neighbours."],
+  testInputs: ["5 5 1\n.....\n..#..\n..#..\n..#..\n.....\n", "4 4 2\n....\n.##.\n.##.\n....\n", "1 1 5\n#\n", "3 3 0\n#.#\n.#.\n#.#\n", "6 6 4\n.#....\n..#...\n###...\n......\n......\n......\n", "3 3 1\n###\n###\n###\n"],
+  sol: `int n,m,k;cin>>n>>m>>k;vector<string>g(n);for(auto&r:g)cin>>r;while(k--){vector<string>h=g;for(int i=0;i<n;++i)for(int j=0;j<m;++j){int c=0;for(int di=-1;di<=1;++di)for(int dj=-1;dj<=1;++dj){if(!di&&!dj)continue;int a=i+di,b=j+dj;if(a>=0&&a<n&&b>=0&&b<m&&g[a][b]=='#')c++;}h[i][j]=(g[i][j]=='#')?((c==2||c==3)?'#':'.'):(c==3?'#':'.');}g=h;}for(auto&r:g)cout<<r<<"\\n";`,
+  wrongNote: "Updating the field in place lets a cell see its neighbours' new states mid-step; counting only the four side neighbours ignores the corners.",
+  wrong: [
+    `int n,m,k;cin>>n>>m>>k;vector<string>g(n);for(auto&r:g)cin>>r;while(k--){for(int i=0;i<n;++i)for(int j=0;j<m;++j){int c=0;for(int di=-1;di<=1;++di)for(int dj=-1;dj<=1;++dj){if(!di&&!dj)continue;int a=i+di,b=j+dj;if(a>=0&&a<n&&b>=0&&b<m&&g[a][b]=='#')c++;}g[i][j]=(g[i][j]=='#')?((c==2||c==3)?'#':'.'):(c==3?'#':'.');}}for(auto&r:g)cout<<r<<"\\n";`,
+    `int n,m,k;cin>>n>>m>>k;vector<string>g(n);for(auto&r:g)cin>>r;int dx[4]={1,-1,0,0},dy[4]={0,0,1,-1};while(k--){vector<string>h=g;for(int i=0;i<n;++i)for(int j=0;j<m;++j){int c=0;for(int d=0;d<4;++d){int a=i+dx[d],b=j+dy[d];if(a>=0&&a<n&&b>=0&&b<m&&g[a][b]=='#')c++;}h[i][j]=(g[i][j]=='#')?((c==2||c==3)?'#':'.'):(c==3?'#':'.');}g=h;}for(auto&r:g)cout<<r<<"\\n";`,
+  ],
+  gen: (r) => { const n = r.int(1, 5), m = r.int(1, 5); let s = n + " " + m + " " + r.int(0, 3) + "\n"; for (let i = 0; i < n; i++) s += r.str(m, "#..") + "\n"; return s; },
+  brute: `int n,m,k;cin>>n>>m>>k;vector<string>g(n);for(auto&r:g)cin>>r;vector<vector<int>>a(n+2,vector<int>(m+2,0));for(int i=0;i<n;++i)for(int j=0;j<m;++j)a[i+1][j+1]=g[i][j]=='#';for(int s=0;s<k;++s){auto b=a;for(int i=1;i<=n;++i)for(int j=1;j<=m;++j){int c=a[i-1][j-1]+a[i-1][j]+a[i-1][j+1]+a[i][j-1]+a[i][j+1]+a[i+1][j-1]+a[i+1][j]+a[i+1][j+1];b[i][j]=a[i][j]?(c==2||c==3):(c==3);}a=b;}for(int i=1;i<=n;++i){for(int j=1;j<=m;++j)cout<<(a[i][j]?'#':'.');cout<<"\\n";}`,
+  big: [
+    { seed: 1, note: "the largest field for twenty steps", code: `rows = [text(r, 200, "#..") for _ in range(200)]\nreturn "200 200 20\\n" + "\\n".join(rows)` },
+  ],
+});
+
+P.push({
+  id: "B678", judge: "math-last-digit-huge-power", topic: "math", rating: 1300,
+  tag: "Remainders", timeLimitMs: 1000,
+  uz: "Ulkan darajaning oxirgi raqami",
+  en: "The last digit of a huge power",
+  statementUz: "a soni va daraja ko‘rsatkichi b berilgan; b juda katta bo‘lishi mumkin — 10^5 tagacha raqamdan iborat. a^b sonining oxirgi raqamini toping. Bunda 0^0 = 1 deb hisoblanadi. Oxirgi raqamning darajalari ma'lum davr bilan takrorlanadi, lekin b ning uzunligi uni oddiy son sifatida o‘qishga imkon bermaydi.",
+  statementEn: "You are given a number a and an exponent b; b can be huge — up to 10^5 digits. Find the last digit of a^b, where 0^0 is taken to be 1. The last digits of powers repeat in a cycle, but b is far too long to read into any built-in integer type, so it has to be handled as a string of digits.",
+  inputUz: "Birinchi qatorda so‘rovlar soni t beriladi. Keyingi t ta qatorning har birida a va b keladi.",
+  inputEn: "The first line contains the number of queries t. Each of the next t lines contains a and b.",
+  outputUz: "Har bir so‘rov uchun alohida qatorda bitta raqam chiqaring.",
+  outputEn: "For each query print one digit on its own line.",
+  constraintList: ["1 ≤ t ≤ 100", "0 ≤ a ≤ 10^18", "b is a non-negative integer of 1 to 10^5 digits without leading zeros", "0^0 = 1"],
+  constraintListUz: ["1 ≤ t ≤ 100", "0 ≤ a ≤ 10^18", "b — bosh nollarsiz, 1 dan 10^5 gacha raqamli manfiy bo‘lmagan butun son", "0^0 = 1"],
+  sampleInputs: ["4\n2 10\n7 0\n123456789 100000000000000000001\n0 0\n"],
+  expect: ["4\n1\n9\n1\n"],
+  sampleNotesUz: ["2^10 = 1024. 9 ning darajalari 9, 1, 9, 1, … tartibda tugaydi; toq daraja — 9."],
+  sampleNotesEn: ["2^10 = 1024. Powers of 9 end in 9, 1, 9, 1, …; an odd power ends in 9."],
+  testInputs: ["4\n2 10\n7 0\n123456789 100000000000000000001\n0 0\n", "3\n2 4\n2 8\n3 4\n", "3\n0 5\n10 3\n5 12345678901234567890\n", "4\n4 2\n4 3\n1000000000000000000 1\n999999999999999999 2\n"],
+  sol: `int t;cin>>t;while(t--){long long a;string b;cin>>a>>b;int d=a%10;if(b=="0"){cout<<1<<"\\n";continue;}int m=0;for(char c:b)m=(m*10+(c-'0'))%4;int e=m==0?4:m;int r=1;for(int i=0;i<e;++i)r=r*d%10;cout<<r<<"\\n";}`,
+  wrongNote: "Using b mod 4 directly as the exponent turns every multiple of 4 into the zeroth power and prints 1, where the cycle actually ends on its fourth step.",
+  wrong: [
+    `int t;cin>>t;while(t--){long long a;string b;cin>>a>>b;int d=a%10;int m=0;for(char c:b)m=(m*10+(c-'0'))%4;int r=1;for(int i=0;i<m;++i)r=r*d%10;cout<<r<<"\\n";}`,
+    `int t;cin>>t;while(t--){long long a;string b;cin>>a>>b;int d=a%10;int e=b.back()-'0';int r=1;for(int i=0;i<e;++i)r=r*d%10;cout<<r<<"\\n";}`,
+  ],
+  gen: (r) => tests(r, 5, (r) => r.int(0, 30) + " " + r.int(0, 40) + "\n"),
+  brute: `int t;cin>>t;while(t--){long long a;long long b;cin>>a>>b;int r=1;for(long long i=0;i<b;++i)r=r*(a%10)%10;cout<<r<<"\\n";}`,
+  big: [
+    { seed: 1, note: "100 exponents of 10^4 digits each", code: `q = []\nfor _ in range(100):\n    b = str(r.int(1, 9)) + text(r, 9999, "0123456789")\n    q.append(str(r.int(0, 10**18)) + " " + b)\nreturn "100\\n" + "\\n".join(q)` },
+  ],
+});
+
+/* ------------------------------------------------------------------ 1400 */
+P.push({
+  id: "B679", judge: "bs-aggressive-cows", topic: "binary-search", rating: 1400,
+  tag: "Binary search on the answer", timeLimitMs: 1000,
+  uz: "Sigirlarni uzoqroq joylash",
+  en: "Spreading the cows apart",
+  statementUz: "Fermada to‘g‘ri chiziq bo‘ylab n ta og‘il bor, i-og‘il x_i nuqtada joylashgan. Fermer c ta sigirni turli og‘illarga joylashtirmoqchi. Sigirlar bir-biriga yaqin tursa janjallashadi, shuning uchun eng yaqin ikki sigir orasidagi masofa iloji boricha katta bo‘lishi kerak. Shu eng kichik masofaning eng katta qiymatini toping.",
+  statementEn: "A farm has n stalls along a straight line, and stall i is at point x_i. The farmer wants to put c cows into different stalls. Cows that stand close to each other fight, so the distance between the two nearest cows should be as large as possible. Find the largest possible value of that smallest distance.",
+  inputUz: "Birinchi qatorda n va c, ikkinchi qatorda n ta turli son x_1, …, x_n beriladi.",
+  inputEn: "The first line contains n and c, the second the n distinct numbers x_1, …, x_n.",
+  outputUz: "Yagona sonni chiqaring — eng kichik masofaning eng katta qiymati.",
+  outputEn: "Print a single number — the largest possible smallest distance.",
+  constraintList: ["2 ≤ c ≤ n ≤ 2·10^5", "0 ≤ x_i ≤ 10^9, all different", "the stalls come in any order"],
+  constraintListUz: ["2 ≤ c ≤ n ≤ 2·10^5", "0 ≤ x_i ≤ 10^9, barchasi turlicha", "og‘illar ixtiyoriy tartibda keladi"],
+  sampleInputs: ["5 3\n1 2 8 4 9\n", "4 2\n0 3 5 100\n"],
+  expect: ["3\n", "100\n"],
+  sampleNotesUz: ["Sigirlarni 1, 4 va 8 (yoki 9) nuqtalarga qo‘ysak, eng yaqin ikkitasi orasida 3. Masofani 4 qilib bo‘lmaydi. Ikkinchi namunada ikki sigir chetlarga qo‘yiladi."],
+  sampleNotesEn: ["Cows at 1, 4 and 8 (or 9) keep the nearest two 3 apart; 4 is impossible. In the second sample the two cows go to the ends."],
+  testInputs: ["5 3\n1 2 8 4 9\n", "4 2\n0 3 5 100\n", "2 2\n0 1000000000\n", "6 6\n1 2 3 4 5 6\n", "5 4\n1 2 4 8 9\n", "7 3\n0 10 11 12 20 21 30\n"],
+  sol: `int n,c;cin>>n>>c;vector<long long>x(n);for(auto&v:x)cin>>v;sort(x.begin(),x.end());auto can=[&](long long d){int cnt=1;long long last=x[0];for(int i=1;i<n;++i)if(x[i]-last>=d){cnt++;last=x[i];}return cnt>=c;};long long lo=0,hi=x[n-1]-x[0];while(lo<hi){long long mid=lo+(hi-lo+1)/2;if(can(mid))lo=mid;else hi=mid-1;}cout<<lo<<"\\n";`,
+  wrongNote: "Spacing the cows evenly by (max − min) / (c − 1) assumes a stall at every point; placing the first cow anywhere but the leftmost stall wastes room.",
+  wrong: [
+    `int n,c;cin>>n>>c;vector<long long>x(n);for(auto&v:x)cin>>v;sort(x.begin(),x.end());cout<<(x[n-1]-x[0])/(c-1)<<"\\n";`,
+    `int n,c;cin>>n>>c;vector<long long>x(n);for(auto&v:x)cin>>v;sort(x.begin(),x.end());auto can=[&](long long d){int cnt=1;long long last=x[1%n];for(int i=2;i<n;++i)if(x[i]-last>=d){cnt++;last=x[i];}return cnt>=c;};long long lo=0,hi=x[n-1]-x[0];while(lo<hi){long long mid=lo+(hi-lo+1)/2;if(can(mid))lo=mid;else hi=mid-1;}cout<<lo<<"\\n";`,
+  ],
+  gen: (r) => { const n = r.int(2, 7); return n + " " + r.int(2, n) + "\n" + line(r.shuffle(Array.from({ length: 20 }, (_, i) => i)).slice(0, n)) + "\n"; },
+  brute: `int n,c;cin>>n>>c;vector<long long>x(n);for(auto&v:x)cin>>v;sort(x.begin(),x.end());long long best=0;for(int s=0;s<(1<<n);++s){if(__builtin_popcount(s)!=c)continue;long long mn=LLONG_MAX,last=-1;for(int i=0;i<n;++i)if(s>>i&1){if(last>=0)mn=min(mn,x[i]-last);last=x[i];}best=max(best,mn);}cout<<best<<"\\n";`,
+  big: [
+    { seed: 1, note: "2·10^5 stalls, c in the middle", code: `n = 200000\nxs = r.shuffle(list(range(0, 10**9, 5000)))[:n]\nreturn "%d %d\\n" % (n, 1000) + line(xs)` },
+  ],
+});
+
+P.push({
+  id: "B680", judge: "bs-machines-production-time", topic: "binary-search", rating: 1400,
+  tag: "Binary search on the answer", timeLimitMs: 1000,
+  uz: "Zavod dastgohlari",
+  en: "Factory machines",
+  statementUz: "Zavodda n ta dastgoh bor, i-dastgoh bitta mahsulotni k_i soniyada tayyorlaydi. Barcha dastgohlar bir vaqtda va mustaqil ishlaydi, har biri tayyorlagan mahsulotlarni ketma-ket chiqaradi. Jami kamida t ta mahsulot tayyorlash uchun eng kamida necha soniya kerak?",
+  statementEn: "A factory has n machines, and machine i makes one product in k_i seconds. All machines work at the same time and independently, each turning out its products one after another. What is the smallest number of seconds needed to make at least t products in total?",
+  inputUz: "Birinchi qatorda n va t, ikkinchi qatorda n ta son k_1, …, k_n beriladi.",
+  inputEn: "The first line contains n and t, the second the n numbers k_1, …, k_n.",
+  outputUz: "Yagona sonni chiqaring — eng kam vaqt.",
+  outputEn: "Print a single number — the smallest time.",
+  constraintList: ["1 ≤ n ≤ 2·10^5", "1 ≤ t ≤ 10^9", "1 ≤ k_i ≤ 10^9", "the answer can reach 10^18"],
+  constraintListUz: ["1 ≤ n ≤ 2·10^5", "1 ≤ t ≤ 10^9", "1 ≤ k_i ≤ 10^9", "javob 10^18 gacha yetishi mumkin"],
+  sampleInputs: ["3 7\n3 2 5\n", "1 1000000000\n1000000000\n"],
+  expect: ["8\n", "1000000000000000000\n"],
+  sampleNotesUz: ["8 soniyada dastgohlar 2, 4 va 1 ta mahsulot tayyorlaydi — jami 7. 7 soniyada esa faqat 2 + 3 + 1 = 6."],
+  sampleNotesEn: ["In 8 seconds the machines make 2, 4 and 1 products — 7 in all. In 7 seconds they make only 2 + 3 + 1 = 6."],
+  testInputs: ["3 7\n3 2 5\n", "1 1000000000\n1000000000\n", "2 1\n5 3\n", "4 10\n1 1 1 1\n", "3 1000000000\n1 1000000000 1000000000\n", "5 13\n7 7 7 7 7\n"],
+  sol: `int n;long long t;cin>>n>>t;vector<long long>k(n);for(auto&x:k)cin>>x;long long lo=1,hi=*min_element(k.begin(),k.end())*t;while(lo<hi){long long mid=lo+(hi-lo)/2;long long made=0;for(long long x:k){made+=mid/x;if(made>=t)break;}if(made>=t)hi=mid;else lo=mid+1;}cout<<lo<<"\\n";`,
+  wrongNote: "Searching only up to t seconds assumes the fastest machine takes one second; without stopping the count at t, the running total can overflow on huge times.",
+  wrong: [
+    `int n;long long t;cin>>n>>t;vector<long long>k(n);for(auto&x:k)cin>>x;long long lo=1,hi=t;while(lo<hi){long long mid=lo+(hi-lo)/2;long long made=0;for(long long x:k){made+=mid/x;if(made>=t)break;}if(made>=t)hi=mid;else lo=mid+1;}cout<<lo<<"\\n";`,
+    `int n;long long t;cin>>n>>t;vector<long long>k(n);for(auto&x:k)cin>>x;long long best=*min_element(k.begin(),k.end());cout<<best*((t+n-1)/n)<<"\\n";`,
+  ],
+  gen: (r) => { const n = r.int(1, 5); return n + " " + r.int(1, 15) + "\n" + line(r.ints(n, 1, 6)) + "\n"; },
+  brute: `int n;long long t;cin>>n>>t;vector<long long>k(n);for(auto&x:k)cin>>x;for(long long T=1;;++T){long long made=0;for(long long x:k)made+=T/x;if(made>=t){cout<<T<<"\\n";break;}}`,
+  big: [
+    { seed: 1, note: "2·10^5 machines and a large order", code: `n = 200000\nreturn "%d %d\\n" % (n, 10**9) + line(r.ints(n, 1, 10**9))` },
+  ],
+});
+
+P.push({
+  id: "B681", judge: "greedy-circular-fuel-start", topic: "greedy", rating: 1400,
+  tag: "Greedy", timeLimitMs: 1000,
+  uz: "Aylana yo‘lda yoqilg‘i",
+  en: "Fuel on a circular road",
+  statementUz: "Aylana yo‘lda n ta yoqilg‘i shoxobchasi bor, ular 1 dan n gacha raqamlangan. i-shoxobchada g_i litr yoqilg‘i olish mumkin, undan keyingisiga (n-dan keyin 1-ga) borish uchun c_i litr kerak. Bo‘sh bakli mashina qaysidir shoxobchadan yo‘lga chiqadi va soat mili bo‘yicha to‘liq aylanib, o‘sha joyga qaytishi kerak; bak hech qachon manfiy bo‘lmasligi lozim. Bunday boshlash mumkin bo‘lgan eng kichik raqamli shoxobchani toping, yoki -1.",
+  statementEn: "n fuel stations stand on a circular road, numbered 1 to n. At station i you can take g_i litres, and reaching the next station (station 1 after station n) costs c_i litres. A car with an empty tank starts at some station and must go all the way round clockwise back to it; the tank must never go negative. Find the smallest-numbered station from which this is possible, or -1.",
+  inputUz: "Birinchi qatorda n, ikkinchi qatorda g_1, …, g_n, uchinchi qatorda c_1, …, c_n beriladi.",
+  inputEn: "The first line contains n, the second g_1, …, g_n, the third c_1, …, c_n.",
+  outputUz: "Yagona sonni chiqaring — shoxobcha raqami yoki -1.",
+  outputEn: "Print a single number — the station's number or -1.",
+  constraintList: ["1 ≤ n ≤ 2·10^5", "0 ≤ g_i, c_i ≤ 10^9", "the tank has no capacity limit"],
+  constraintListUz: ["1 ≤ n ≤ 2·10^5", "0 ≤ g_i, c_i ≤ 10^9", "bakning sig‘imi cheklanmagan"],
+  sampleInputs: ["5\n1 2 3 4 5\n3 4 5 1 2\n", "3\n2 3 4\n3 4 3\n"],
+  expect: ["4\n", "-1\n"],
+  sampleNotesUz: ["4-shoxobchadan chiqsak, bakda yo‘l bo‘yi 3, 6, 4, 2, 0 litr bo‘ladi. Ikkinchi namunada jami yoqilg‘i 9, kerak bo‘ladigani esa 10."],
+  sampleNotesEn: ["Starting at station 4 the tank holds 3, 6, 4, 2 and 0 litres along the way. In the second sample there are 9 litres in total but the trip needs 10."],
+  testInputs: ["5\n1 2 3 4 5\n3 4 5 1 2\n", "3\n2 3 4\n3 4 3\n", "1\n0\n0\n", "2\n1 1\n1 1\n", "4\n0 2 0 2\n1 1 1 1\n", "4\n1 0 2 1\n0 2 0 2\n", "3\n5 0 0\n1 2 2\n", "4\n1 1 0 2\n0 0 1 0\n"],
+  sol: `int n;cin>>n;vector<long long>g(n),c(n);for(auto&x:g)cin>>x;for(auto&x:c)cin>>x;long long tot=0,tank=0;int start=0;for(int i=0;i<n;++i){tot+=g[i]-c[i];tank+=g[i]-c[i];if(tank<0){start=i+1;tank=0;}}cout<<(tot<0?-1:start+1)<<"\\n";`,
+  wrongNote: "Resetting the start when the tank merely reaches zero skips stations that work with an empty tank and returns a later one.",
+  wrong: [
+    `int n;cin>>n;vector<long long>g(n),c(n);for(auto&x:g)cin>>x;for(auto&x:c)cin>>x;long long tot=0,tank=0;int start=0;for(int i=0;i<n;++i){tot+=g[i]-c[i];tank+=g[i]-c[i];if(tank<=0){start=i+1;tank=0;}}cout<<(tot<0?-1:(start%n)+1)<<"\\n";`,
+    `int n;cin>>n;vector<long long>g(n),c(n);for(auto&x:g)cin>>x;for(auto&x:c)cin>>x;int best=0;for(int i=1;i<n;++i)if(g[i]-c[i]>g[best]-c[best])best=i;long long tot=0;for(int i=0;i<n;++i)tot+=g[i]-c[i];cout<<(tot<0?-1:best+1)<<"\\n";`,
+  ],
+  gen: (r) => { const n = r.int(1, 6); return n + "\n" + line(r.ints(n, 0, 4)) + "\n" + line(r.ints(n, 0, 4)) + "\n"; },
+  brute: `int n;cin>>n;vector<long long>g(n),c(n);for(auto&x:g)cin>>x;for(auto&x:c)cin>>x;int ans=-1;for(int s=0;s<n&&ans<0;++s){long long tank=0;bool ok=true;for(int k=0;k<n;++k){int i=(s+k)%n;tank+=g[i]-c[i];if(tank<0){ok=false;break;}}if(ok)ans=s+1;}cout<<ans<<"\\n";`,
+  slow: [`int n;cin>>n;vector<long long>g(n),c(n);for(auto&x:g)cin>>x;for(auto&x:c)cin>>x;int ans=-1;for(int s=0;s<n&&ans<0;++s){long long tank=0;bool ok=true;for(int k=0;k<n;++k){int i=(s+k)%n;tank+=g[i]-c[i];if(tank<0){ok=false;break;}}if(ok)ans=s+1;}cout<<ans<<"\\n";`],
+  big: [
+    { seed: 1, note: "2·10^5 stations, the only start near the end: trying every start is quadratic", code: `n = 200000\ng = [1] * n\nc = [1] * n\nc[n // 2] = 2\ng[n - 7] = 2\nreturn str(n) + "\\n" + line(g) + "\\n" + line(c)` },
+    { seed: 2, note: "random stations", code: `n = 200000\nreturn str(n) + "\\n" + line(r.ints(n, 0, 10**9)) + "\\n" + line(r.ints(n, 0, 10**9))` },
+  ],
+});
+
+P.push({
+  id: "B682", judge: "ds-lru-cache-misses", topic: "data-structures", rating: 1400,
+  tag: "Hash map", timeLimitMs: 1000,
+  uz: "Keshdagi xatolar",
+  en: "Cache misses",
+  statementUz: "Kompyuter keshi ko‘pi bilan k ta sahifani saqlaydi. n ta sahifa so‘rovi ketma-ket keladi. So‘ralgan sahifa keshda bo‘lsa — «tegish», aks holda — «xato»: sahifa keshga yoziladi, kesh to‘lgan bo‘lsa esa eng uzoq vaqtdan beri so‘ralmagan sahifa chiqarib tashlanadi (LRU qoidasi). Tegish ham sahifani «yangi so‘ralgan» qiladi. Boshida kesh bo‘sh. Xatolar sonini toping.",
+  statementEn: "A computer cache holds at most k pages. n page requests arrive one after another. If the requested page is in the cache it is a hit; otherwise it is a miss: the page is put into the cache, and if the cache is full, the page that has gone unrequested for the longest time is evicted (the LRU rule). A hit also makes the page the most recently requested. The cache starts empty. Find the number of misses.",
+  inputUz: "Birinchi qatorda n va k, ikkinchi qatorda n ta sahifa raqami beriladi.",
+  inputEn: "The first line contains n and k, the second the n page numbers.",
+  outputUz: "Yagona sonni chiqaring — xatolar soni.",
+  outputEn: "Print a single number — the number of misses.",
+  constraintList: ["1 ≤ n ≤ 2·10^5", "1 ≤ k ≤ n", "1 ≤ page numbers ≤ 10^9"],
+  constraintListUz: ["1 ≤ n ≤ 2·10^5", "1 ≤ k ≤ n", "1 ≤ sahifa raqamlari ≤ 10^9"],
+  sampleInputs: ["7 3\n1 2 3 1 4 2 1\n", "4 1\n5 5 5 6\n"],
+  expect: ["5\n", "2\n"],
+  sampleNotesUz: ["1, 2, 3 — xatolar. 1 — tegish. 4 — xato, eng eski 2 chiqariladi. 2 — xato, endi eng eski 3. 1 — tegish. Jami 5."],
+  sampleNotesEn: ["1, 2, 3 are misses. 1 is a hit. 4 is a miss and evicts the oldest, 2. 2 is a miss and evicts 3. 1 is a hit. Five in all."],
+  testInputs: ["7 3\n1 2 3 1 4 2 1\n", "4 1\n5 5 5 6\n", "5 5\n1 2 3 4 5\n", "8 2\n1 2 1 3 1 4 1 5\n", "6 3\n1 2 3 4 1 2\n", "6 2\n7 8 7 9 8 7\n"],
+  sol: `int n,k;cin>>n>>k;list<long long>order;unordered_map<long long,list<long long>::iterator>pos;pos.reserve(2*n);long long miss=0;for(int i=0;i<n;++i){long long p;cin>>p;auto it=pos.find(p);if(it!=pos.end()){order.erase(it->second);}else{miss++;if((int)order.size()==k){pos.erase(order.back());order.pop_back();}}order.push_front(p);pos[p]=order.begin();}cout<<miss<<"\\n";`,
+  wrongNote: "Evicting the page that entered first (FIFO) instead of the one used least recently treats a frequently requested page as old.",
+  wrong: [
+    `int n,k;cin>>n>>k;deque<long long>q;set<long long>in;long long miss=0;for(int i=0;i<n;++i){long long p;cin>>p;if(in.count(p))continue;miss++;if((int)q.size()==k){in.erase(q.front());q.pop_front();}q.push_back(p);in.insert(p);}cout<<miss<<"\\n";`,
+  ],
+  gen: (r) => { const n = r.int(1, 10); return n + " " + r.int(1, n) + "\n" + line(r.ints(n, 1, 4)) + "\n"; },
+  brute: `int n,k;cin>>n>>k;vector<pair<long long,int>>cache;long long miss=0;for(int i=0;i<n;++i){long long p;cin>>p;int f=-1;for(int j=0;j<(int)cache.size();++j)if(cache[j].first==p)f=j;if(f>=0){cache[f].second=i;continue;}miss++;if((int)cache.size()==k){int old=0;for(int j=1;j<(int)cache.size();++j)if(cache[j].second<cache[old].second)old=j;cache.erase(cache.begin()+old);}cache.push_back(make_pair(p,i));}cout<<miss<<"\\n";`,
+  slow: [`int n,k;cin>>n>>k;vector<pair<long long,int>>cache;long long miss=0;for(int i=0;i<n;++i){long long p;cin>>p;int f=-1;for(int j=0;j<(int)cache.size();++j)if(cache[j].first==p)f=j;if(f>=0){cache[f].second=i;continue;}miss++;if((int)cache.size()==k){int old=0;for(int j=1;j<(int)cache.size();++j)if(cache[j].second<cache[old].second)old=j;cache.erase(cache.begin()+old);}cache.push_back(make_pair(p,i));}cout<<miss<<"\\n";`],
+  big: [
+    { seed: 1, note: "2·10^5 requests with a large cache: scanning the cache per request is quadratic", code: `n = 200000\nreturn "%d %d\\n" % (n, 50000) + line(r.ints(n, 1, 100000))` },
+  ],
+});
+
+/* ------------------------------------------------------------------ 1500 */
+P.push({
+  id: "B683", judge: "tp-subarrays-product-below-k", topic: "two-pointers", rating: 1500,
+  tag: "Sliding window", timeLimitMs: 1000,
+  uz: "Ko‘paytmasi k dan kichik qism-massivlar",
+  en: "Subarrays with a product below k",
+  statementUz: "n ta musbat butun sondan iborat massiv va k soni berilgan. Ketma-ket elementlardan iborat bo‘sh bo‘lmagan qism-massivlardan nechtasining barcha elementlari ko‘paytmasi k dan qat'iy kichik ekanini toping. Turli joylarda turgan qism-massivlar qiymatlari bir xil bo‘lsa ham alohida sanaladi.",
+  statementEn: "You are given an array of n positive integers and a number k. Find how many non-empty subarrays of consecutive elements have a product of all their elements strictly less than k. Subarrays at different positions are counted separately even if their values coincide.",
+  inputUz: "Birinchi qatorda n va k, ikkinchi qatorda n ta son a_1, …, a_n beriladi.",
+  inputEn: "The first line contains n and k, the second the n numbers a_1, …, a_n.",
+  outputUz: "Yagona sonni chiqaring — mos qism-massivlar soni.",
+  outputEn: "Print a single number — the number of such subarrays.",
+  constraintList: ["1 ≤ n ≤ 2·10^5", "1 ≤ a_i ≤ 1000", "1 ≤ k ≤ 10^9", "the answer can exceed 2^31"],
+  constraintListUz: ["1 ≤ n ≤ 2·10^5", "1 ≤ a_i ≤ 1000", "1 ≤ k ≤ 10^9", "javob 2^31 dan oshishi mumkin"],
+  sampleInputs: ["4 100\n10 5 2 6\n", "3 1\n1 2 3\n"],
+  expect: ["8\n", "0\n"],
+  sampleNotesUz: ["Mos qism-massivlar: [10], [5], [2], [6], [10, 5], [5, 2], [2, 6], [5, 2, 6]. [10, 5, 2] ning ko‘paytmasi 100 — k dan kichik emas. k = 1 bo‘lsa, hech bir ko‘paytma 1 dan kichik emas."],
+  sampleNotesEn: ["The subarrays are [10], [5], [2], [6], [10, 5], [5, 2], [2, 6] and [5, 2, 6]. [10, 5, 2] has product 100, which is not below k. With k = 1 no product is below 1."],
+  testInputs: ["4 100\n10 5 2 6\n", "3 1\n1 2 3\n", "1 2\n1\n", "5 2\n1 1 1 1 1\n", "4 1000000000\n1000 1000 1000 1000\n", "6 10\n2 5 1 1 3 9\n"],
+  sol: `int n;long long k;cin>>n>>k;vector<long long>a(n);for(auto&x:a)cin>>x;long long cnt=0,prod=1;int l=0;for(int r=0;r<n;++r){prod*=a[r];while(l<=r&&prod>=k)prod/=a[l++];cnt+=r-l+1;}cout<<cnt<<"\\n";`,
+  wrongNote: "Counting products up to and including k breaks the strict inequality; counting only the windows that end where the left pointer moves misses most of them.",
+  wrong: [
+    `int n;long long k;cin>>n>>k;vector<long long>a(n);for(auto&x:a)cin>>x;long long cnt=0,prod=1;int l=0;for(int r=0;r<n;++r){prod*=a[r];while(l<=r&&prod>k)prod/=a[l++];cnt+=r-l+1;}cout<<cnt<<"\\n";`,
+    `int n;long long k;cin>>n>>k;vector<long long>a(n);for(auto&x:a)cin>>x;long long cnt=0;for(int i=0;i<n;++i)cnt+=a[i]<k;cout<<cnt<<"\\n";`,
+  ],
+  gen: (r) => { const n = r.int(1, 8); return n + " " + r.int(1, 40) + "\n" + line(r.ints(n, 1, 6)) + "\n"; },
+  brute: `int n;long long k;cin>>n>>k;vector<long long>a(n);for(auto&x:a)cin>>x;long long cnt=0;for(int i=0;i<n;++i){long long p=1;for(int j=i;j<n;++j){p*=a[j];if(p>=k)break;cnt++;}}cout<<cnt<<"\\n";`,
+  slow: [`int n;long long k;cin>>n>>k;vector<long long>a(n);for(auto&x:a)cin>>x;long long cnt=0;for(int i=0;i<n;++i){long double p=1;for(int j=i;j<n;++j){p*=a[j];if(p>=k)continue;cnt++;}}cout<<cnt<<"\\n";`],
+  big: [
+    { seed: 1, note: "2·10^5 ones and twos with a huge k: the windows are long", code: `n = 200000\nreturn "%d %d\\n" % (n, 10**9) + line(r.ints(n, 1, 2))` },
+    { seed: 2, note: "random values", code: `n = 200000\nreturn "%d %d\\n" % (n, r.int(1, 10**9)) + line(r.ints(n, 1, 1000))` },
+  ],
+});
+
+P.push({
+  id: "B684", judge: "greedy-partition-into-labels", topic: "greedy", rating: 1500,
+  tag: "Greedy", timeLimitMs: 1000,
+  uz: "Harflar bo‘yicha bo‘laklash",
+  en: "Splitting by letters",
+  statementUz: "Kichik lotin harflaridan iborat s satri berilgan. Uni iloji boricha ko‘p ketma-ket bo‘laklarga ajratish kerak, shunday qilib har bir harf faqat bitta bo‘lakda uchrasin (masalan, «a» harfi bo‘lsa, uning barcha nusxalari bitta bo‘lakda bo‘lishi kerak). Bo‘laklar soni va ularning uzunliklarini chapdan o‘ngga chiqaring. Bunday eng ko‘p bo‘lakli ajratish yagona ekanini ko‘rsatish mumkin.",
+  statementEn: "You are given a string s of lowercase Latin letters. Split it into as many consecutive parts as possible so that every letter appears in only one part (for example, if \"a\" occurs, all its copies must lie in the same part). Print the number of parts and their lengths from left to right. One can show that the split with the most parts is unique.",
+  inputUz: "Birinchi qatorda n, ikkinchi qatorda n uzunlikdagi s satri beriladi.",
+  inputEn: "The first line contains n, the second the string s of length n.",
+  outputUz: "Birinchi qatorda bo‘laklar soni, ikkinchi qatorda ularning uzunliklarini chiqaring.",
+  outputEn: "Print the number of parts on the first line and their lengths on the second.",
+  constraintList: ["1 ≤ n ≤ 2·10^5", "s consists of lowercase Latin letters", "the parts cover the whole string"],
+  constraintListUz: ["1 ≤ n ≤ 2·10^5", "s kichik lotin harflaridan iborat", "bo‘laklar butun satrni qoplaydi"],
+  sampleInputs: ["24\nababcbacadefegdehijhklij\n", "5\nabcde\n"],
+  expect: ["3\n9 7 8\n", "5\n1 1 1 1 1\n"],
+  sampleNotesUz: ["Bo‘laklar «ababcbaca», «defegde» va «hijhklij»: masalan «a» faqat birinchisida, «e» faqat ikkinchisida uchraydi. Ikkinchi namunada har bir harf bir marta, har biri alohida bo‘lak."],
+  sampleNotesEn: ["The parts are \"ababcbaca\", \"defegde\" and \"hijhklij\": \"a\", for example, appears only in the first and \"e\" only in the second. In the second sample every letter occurs once, so each is a part of its own."],
+  testInputs: ["24\nababcbacadefegdehijhklij\n", "5\nabcde\n", "1\nz\n", "6\nabcaxy\n", "8\naabbccaa\n", "7\nabacdcd\n"],
+  sol: `int n;string s;cin>>n>>s;int last[26];for(int i=0;i<n;++i)last[s[i]-'a']=i;vector<int>parts;int start=0,end=0;for(int i=0;i<n;++i){end=max(end,last[s[i]-'a']);if(i==end){parts.push_back(i-start+1);start=i+1;}}cout<<parts.size()<<"\\n";for(size_t i=0;i<parts.size();++i)cout<<parts[i]<<(i+1<parts.size()?' ':'\\n');`,
+  wrongNote: "Cutting as soon as the current letter has no later copy forgets the letters met earlier in the same part whose last copy is still ahead.",
+  wrong: [
+    `int n;string s;cin>>n>>s;int last[26];for(int i=0;i<n;++i)last[s[i]-'a']=i;vector<int>parts;int start=0;for(int i=0;i<n;++i){if(last[s[i]-'a']==i){parts.push_back(i-start+1);start=i+1;}}if(start<n)parts.push_back(n-start);cout<<parts.size()<<"\\n";for(size_t i=0;i<parts.size();++i)cout<<parts[i]<<(i+1<parts.size()?' ':'\\n');`,
+  ],
+  gen: (r) => { const n = r.int(1, 10); return n + "\n" + r.str(n, "abcd") + "\n"; },
+  brute: `int n;string s;cin>>n>>s;int best=-1;vector<int>bp;for(int m=0;m<(1<<(n-1));++m){vector<int>cuts;cuts.push_back(0);for(int i=0;i<n-1;++i)if(m>>i&1)cuts.push_back(i+1);cuts.push_back(n);bool ok=true;int where[26];fill(where,where+26,-1);for(size_t p=0;p+1<cuts.size()&&ok;++p)for(int i=cuts[p];i<cuts[p+1];++i){int c=s[i]-'a';if(where[c]>=0&&where[c]!=(int)p)ok=false;where[c]=p;}if(ok&&(int)cuts.size()-1>best){best=cuts.size()-1;bp.clear();for(size_t p=0;p+1<cuts.size();++p)bp.push_back(cuts[p+1]-cuts[p]);}}cout<<best<<"\\n";for(size_t i=0;i<bp.size();++i)cout<<bp[i]<<(i+1<bp.size()?' ':'\\n');`,
+  big: [
+    { seed: 1, note: "a long string of blocks with private alphabets", code: `abc = "abcdefghijklmnopqrstuvwxyz"\nparts = []\nfor i in range(20000):\n    a, b = abc[(2 * i) % 26], abc[(2 * i + 1) % 26]\n    parts.append(text(r, 10, a + b))\ns = "".join(parts)\nreturn str(len(s)) + "\\n" + s` },
+    { seed: 2, note: "a long random string", code: `n = 200000\nreturn str(n) + "\\n" + text(r, n, "abcdefghij")` },
+  ],
+});
+
+export default P;
