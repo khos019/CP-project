@@ -30,12 +30,18 @@
  *
  * Nothing here fetches. The caller already has the rows -- the duel page of the
  * same profile renders them -- so the curve and the table cannot disagree.
+ *
+ * A second curve, the contest rating (078), sits behind a tab beside it, the
+ * way AtCoder keeps Algorithm and Heuristic apart. Duel is the one shown
+ * first: it is the site's main rating. Both are drawn by the same code from
+ * the same kind of step -- a rating before, a rating after, a moment -- and
+ * differ only in the tooltip.
  */
 
 import { useCallback, useRef, useState } from "react";
 import { RANKS, rankOf } from "./rating";
 import { MONTHS_SHORT, fullDateTime } from "./dates";
-import type { PublicDuelRow } from "./social";
+import type { ContestRatingRow, PublicDuelRow } from "./social";
 
 type Lang = "uz" | "en";
 
@@ -52,6 +58,12 @@ const T = {
     peak: "Eng yuqori",
     duels: (n: number) => `${n} ta duel`,
     noneYet: "Hali duel yo‘q",
+    tabDuel: "Duel reytingi",
+    tabContest: "Kontest reytingi",
+    contests: (n: number) => `${n} ta kontest`,
+    noContest: "Hali reytingli kontestda qatnashmagan — hamma 1200 dan boshlaydi",
+    place: (p: number, n: number) => `${p}-o‘rin / ${n}`,
+    perf: "Natija reytingi",
   },
   en: {
     title: "Duel rating",
@@ -63,6 +75,12 @@ const T = {
     peak: "Peak",
     duels: (n: number) => `${n} duel${n === 1 ? "" : "s"}`,
     noneYet: "No duels yet",
+    tabDuel: "Duel rating",
+    tabContest: "Contest rating",
+    contests: (n: number) => `${n} contest${n === 1 ? "" : "s"}`,
+    noContest: "No rated contest yet — everybody starts from 1200",
+    place: (p: number, n: number) => `Place ${p} of ${n}`,
+    perf: "Performance",
   },
 } as const;
 
@@ -76,7 +94,15 @@ const PAD = { top: 12, right: 14, bottom: 28, left: 44 };
 /* Room kept between the frame and the first and last dots. */
 const EDGE = 18;
 
-type Point = { x: number; y: number; t: number; row: PublicDuelRow };
+/* One step of either curve. */
+type Step = {
+  id: string; at: string; before: number; after: number; delta: number;
+  duel?: PublicDuelRow; contest?: ContestRatingRow;
+};
+type Point = { x: number; y: number; t: number; row: Step };
+
+/* The rating every account enters the contest curve from (078). */
+const CONTEST_START = 1200;
 
 /* A y-axis on round hundreds, at least 400 points tall. Without the floor an
    account whose rating moved by 12 gets a curve like a mountain range. */
@@ -117,7 +143,7 @@ function segmentHits(a: { x: number; y: number }, b: { x: number; y: number },
 }
 
 export function RatingGraph({
-  lang, rows, rating = 1200, adjustment = 0, className,
+  lang, rows, rating = 1200, adjustment = 0, contestRows, className,
 }: {
   lang: Lang;
   /** Finished duels, newest first -- the order the RPC returns. */
@@ -126,9 +152,14 @@ export function RatingGraph({
   rating?: number;
   /** Rating change no duel accounts for (an owner refund), drawn as a last step. */
   adjustment?: number;
+  /** Rated rounds, oldest first (078). Absent until the database has them: no tab then. */
+  contestRows?: ContestRatingRow[] | null;
   className?: string;
 }) {
   const t = T[lang];
+  const [kind, setKind] = useState<"duel" | "contest">("duel");
+  const tabs = Array.isArray(contestRows);
+  const showContest = tabs && kind === "contest";
   const [hover, setHover] = useState<number | null>(null);
   const svgRef = useRef<SVGSVGElement>(null);
   /* The canvas follows the width it is given. A callback ref, because the box
@@ -145,16 +176,20 @@ export function RatingGraph({
 
   /* Friend duels are unrated (054): they stay in the duel table but have no
      place on a rating curve, where they would only draw flat steps. */
-  const history = [...rows]
-    .filter((r) => r.finished_at && r.mode !== "friend")
-    .sort((a, b) => +new Date(a.finished_at) - +new Date(b.finished_at));
+  const history: Step[] = showContest
+    ? (contestRows || []).map((c) => ({
+        id: c.slug, at: c.ended_at, before: c.rating_before, after: c.rating_after, delta: c.delta, contest: c,
+      }))
+    : [...rows]
+        .filter((r) => r.finished_at && r.mode !== "friend")
+        .sort((a, b) => +new Date(a.finished_at) - +new Date(b.finished_at))
+        .map((r) => ({ id: r.id, at: r.finished_at, before: r.rating_before, after: r.rating_after, delta: r.delta, duel: r }));
   const last = history[history.length - 1];
-  if (last && adjustment) {
-    history.push({
-      ...last, id: ADJUST_ID, delta: adjustment,
-      rating_before: last.rating_after, rating_after: last.rating_after + adjustment,
-    });
+  if (!showContest && last && adjustment) {
+    history.push({ id: ADJUST_ID, at: last.at, delta: adjustment, before: last.after, after: last.after + adjustment });
   }
+  // The header figure: the profile's duel rating, or the last rated round's result.
+  const shown = showContest ? (last ? last.after : CONTEST_START) : rating;
 
   const innerW = W - PAD.left - PAD.right;
   const innerH = H - PAD.top - PAD.bottom;
@@ -163,7 +198,7 @@ export function RatingGraph({
 
   /* One step per duel. A single duel stands at the left edge like the first
      of many; there is no "middle" to put it in. */
-  const times = history.map((r) => +new Date(r.finished_at));
+  const times = history.map((r) => +new Date(r.at));
   const n = history.length;
   const step = n > 1 ? (innerW - 2 * EDGE) / (n - 1) : 0;
   const xs = history.map((_, i) => x0 + EDGE + i * step);
@@ -172,11 +207,11 @@ export function RatingGraph({
      account that has not competed: the bands around the starting rating and a
      dashed line where the curve will begin. */
   const empty = history.length === 0;
-  const [lo, hi] = domain(empty ? [rating] : history.flatMap((r) => [r.rating_after, r.rating_before]));
+  const [lo, hi] = domain(empty ? [shown] : history.flatMap((r) => [r.after, r.before]));
   const yOf = (rating: number) => PAD.top + innerH - ((rating - lo) / (hi - lo)) * innerH;
 
   const points: Point[] = history.map((row, i) => ({
-    x: xs[i], y: yOf(row.rating_after), t: times[i], row,
+    x: xs[i], y: yOf(row.after), t: times[i], row,
   }));
   const line = points.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
 
@@ -202,7 +237,7 @@ export function RatingGraph({
   };
 
   let peakIndex = 0;
-  points.forEach((p, i) => { if (p.row.rating_after >= points[peakIndex].row.rating_after) peakIndex = i; });
+  points.forEach((p, i) => { if (p.row.after >= points[peakIndex].row.after) peakIndex = i; });
 
   /* Month labels: under the first duel of each month, skipping any that
      would land closer than this to the label before it. */
@@ -237,28 +272,40 @@ export function RatingGraph({
   // The header reads the profile's rating, not the last dot: an owner fix in
   // the database (a deleted duel, a refunded loss) moves duel_rating without
   // rewriting the history, and the two numbers must not disagree.
-  const current = rating;
-  const peak = empty ? rating : Math.max(rating, points[peakIndex].row.rating_after);
-  const activeRank = active ? rankOf(active.row.rating_after) : null;
+  const current = shown;
+  const peak = empty ? shown : Math.max(shown, points[peakIndex].row.after);
+  const activeRank = active ? rankOf(active.row.after) : null;
+  const title = showContest ? t.tabContest : t.title;
+  const count = showContest ? t.contests(n) : t.duels(n - (adjustment && n ? 1 : 0));
 
   return (
     <section className={`panel drg ${className || ""}`}>
       <div className="drg-head">
-        <h2 className="drg-title">{t.title}</h2>
+        {tabs ? (
+          <div className="cx-seg drg-tabs" style={{ marginBottom: 0 }} role="tablist" aria-label={t.title}>
+            {(["duel", "contest"] as const).map((k) => (
+              <button key={k} type="button" role="tab" aria-selected={kind === k} className={kind === k ? "on" : ""}
+                onClick={() => { setKind(k); setHover(null); }}>
+                {k === "duel" ? t.tabDuel : t.tabContest}
+              </button>
+            ))}
+          </div>
+        ) : <h2 className="drg-title">{t.title}</h2>}
         {!empty && (
           <p className="drg-sum">
             <b className="mono" style={{ color: rankOf(current).color }}>{current}</b>
             <span>{t.peak} <b className="mono" style={{ color: rankOf(peak).color }}>{peak}</b></span>
-            <span>{t.duels(n - (adjustment && n ? 1 : 0))}</span>
+            <span>{count}</span>
           </p>
         )}
+        {empty && showContest && <p className="drg-sum muted">{t.noContest}</p>}
       </div>
 
       <div ref={measure} className={`drg-box ${narrow ? "drg-narrow" : ""}`} style={{ aspectRatio: `${W} / ${H}` }}>
         <svg
           ref={svgRef}
           viewBox={`0 0 ${W} ${H}`} className="drg-svg" role="img"
-          aria-label={`${t.title}: ${empty ? t.noneYet : current}`}
+          aria-label={`${title}: ${empty ? (showContest ? t.noContest : t.noneYet) : current}`}
           onMouseMove={(e) => { if (!empty) pick(e.clientX, e.clientY); }}
           onMouseLeave={() => setHover(null)}
         >
@@ -307,7 +354,7 @@ export function RatingGraph({
 
           {empty && (
             <g>
-              <line x1={x0} x2={x1} y1={yOf(rating)} y2={yOf(rating)} className="drg-baseline" />
+              <line x1={x0} x2={x1} y1={yOf(shown)} y2={yOf(shown)} className="drg-baseline" />
             </g>
           )}
 
@@ -318,16 +365,16 @@ export function RatingGraph({
           {/* The peak is ringed, as Codeforces rings a maximum. */}
           {!empty && (
             <circle cx={points[peakIndex].x} cy={points[peakIndex].y} r={dotR + 4.5} className="drg-peak">
-              <title>{`${t.peak}: ${points[peakIndex].row.rating_after}`}</title>
+              <title>{`${t.peak}: ${points[peakIndex].row.after}`}</title>
             </circle>
           )}
 
           {points.map((p, i) => (
             <circle
               key={p.row.id} cx={p.x} cy={p.y} r={hover === i ? dotR + 1.5 : dotR}
-              fill={rankOf(p.row.rating_after).color} className="drg-dot"
+              fill={rankOf(p.row.after).color} className="drg-dot"
               tabIndex={0}
-              aria-label={`${p.row.rating_after} · ${fullDateTime(p.row.finished_at, lang)}`}
+              aria-label={`${p.row.after} · ${fullDateTime(p.row.at, lang)}`}
               onFocus={() => setHover(i)}
               onBlur={() => setHover((h) => (h === i ? null : h))}
             />
@@ -344,7 +391,7 @@ export function RatingGraph({
             }}
           >
             <div className="drg-tip-top">
-              <b className="mono" style={{ color: activeRank.color }}>{active.row.rating_after}</b>
+              <b className="mono" style={{ color: activeRank.color }}>{active.row.after}</b>
               <span className={`mono ${active.row.delta > 0 ? "dh-win" : active.row.delta < 0 ? "dh-loss" : "muted"}`}>
                 {active.row.delta === 0 ? t.unrated : `${active.row.delta > 0 ? "+" : ""}${active.row.delta}`}
               </span>
@@ -352,20 +399,29 @@ export function RatingGraph({
             <small className="drg-tip-rank" style={{ color: activeRank.color }}>
               {lang === "uz" ? activeRank.nameUz : activeRank.nameEn}
             </small>
-            {active.row.id === ADJUST_ID ? (
-              <small>{t.adjusted}</small>
-            ) : (
+            {active.row.contest ? (
+              <>
+                <small><b>{(lang === "uz" ? active.row.contest.title_uz : active.row.contest.title_en) || active.row.contest.title_uz}</b></small>
+                <small>{t.place(active.row.contest.place, active.row.contest.participants)}</small>
+                <small className="muted">
+                  {t.perf}: <span className="mono" style={{ color: rankOf(active.row.contest.performance).color }}>{active.row.contest.performance}</span>
+                </small>
+                <small className="muted mono">{fullDateTime(active.row.at, lang)}</small>
+              </>
+            ) : active.row.duel ? (
               <>
                 <small>
-                  {t.outcome[active.row.outcome]} · <span className="mono">{active.row.my_score}:{active.row.opp_score}</span>
+                  {t.outcome[active.row.duel.outcome]} · <span className="mono">{active.row.duel.my_score}:{active.row.duel.opp_score}</span>
                 </small>
                 <small className="muted">
-                  {t.vs}: {active.row.opponent_is_bot
+                  {t.vs}: {active.row.duel.opponent_is_bot
                     ? t.bot
-                    : active.row.opponent || active.row.opponent_username || "—"}
+                    : active.row.duel.opponent || active.row.duel.opponent_username || "—"}
                 </small>
-                <small className="muted mono">{fullDateTime(active.row.finished_at, lang)}</small>
+                <small className="muted mono">{fullDateTime(active.row.at, lang)}</small>
               </>
+            ) : (
+              <small>{t.adjusted}</small>
             )}
           </div>
         )}

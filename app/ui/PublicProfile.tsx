@@ -10,9 +10,9 @@ import { nextRank, rankOf } from "./rating";
 import { shortDateTime } from "./dates";
 import { fetchLadderRank, fetchPersonByUsername, type PublicPerson, type Role } from "./session";
 import {
-  fetchFriendIds, fetchProfileSummary, fetchPublicDuelHistory, fetchPublicFriends, fetchSubmissions,
+  fetchContestRatingHistory, fetchFriendIds, fetchProfileSummary, fetchPublicDuelHistory, fetchPublicFriends, fetchSubmissions,
   removeFriend,
-  type FriendRow, type ProfileSummary, type PublicDuelRow, type SubmissionRow,
+  type FriendRow, type ProfileSummary, type PublicDuelRow, type SubmissionRow, type ContestRatingRow,
 } from "./social";
 import { AvatarZoom, FriendStar, SubmissionHistory, verdictLabel } from "./social-ui";
 import { LockIcon } from "./icons";
@@ -214,6 +214,7 @@ export function PublicProfile({
 
   const [summary, setSummary] = useState<ProfileSummary | "missing" | null>(null);
   const [rawDuels, setDuels] = useState<PublicDuelRow[] | null>(null);
+  const [contestRows, setContestRows] = useState<ContestRatingRow[] | null>(null);
   /* A duel removed by the owner leaves a jump in the stored history: the next
      duel starts from a rating the previous one never ended on. The curve is
      rebuilt from the first duel's starting rating forward through each delta,
@@ -263,6 +264,10 @@ export function PublicProfile({
     fetchProfileSummary(personId).then((result) => {
       if (!live) return;
       setSummary(result === "not-migrated" ? "missing" : result);
+    });
+    // The contest curve's rows (078); a database without them shows no tab.
+    fetchContestRatingHistory(personId).then((result) => {
+      if (live) setContestRows(Array.isArray(result) ? result : null);
     });
     fetchPublicDuelHistory(personId, 200).then((result) => {
       if (!live) return;
@@ -526,7 +531,7 @@ export function PublicProfile({
 
       {section === "overview" && (
         <div className="pv-body">
-          {duelState === "ready" && duels && <RatingGraph lang={lang} rows={duels} rating={rating} adjustment={adjustment} />}
+          {duelState === "ready" && duels && <RatingGraph lang={lang} rows={duels} rating={rating} adjustment={adjustment} contestRows={contestRows} />}
           {duelState === "missing" && <p className="muted os-empty">{t.duelsMissing}</p>}
           {subDates && duelState !== "loading" && (
             <ActivityHeatmap lang={lang} dates={[...subDates, ...(duels || []).map((d) => d.finished_at || d.started_at)]} />

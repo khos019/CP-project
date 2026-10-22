@@ -336,6 +336,20 @@ export async function fetchPublicDuelHistory(
   return Array.isArray(rows) ? rows : null;
 }
 
+/** One rated round on an account's contest curve (078). */
+export type ContestRatingRow = {
+  slug: string; number: number; title_uz: string; title_en: string; ended_at: string;
+  place: number; participants: number; solved: number;
+  rating_before: number; rating_after: number; delta: number; performance: number;
+};
+
+/** Any account's rated rounds, oldest first. Empty for an account never rated. */
+export async function fetchContestRatingHistory(userId: string): Promise<ContestRatingRow[] | "not-migrated" | null> {
+  const rows = await rpc<ContestRatingRow[]>("contest_rating_history", { p_user: userId });
+  if (rows === "not-migrated" || rows === null) return rows;
+  return Array.isArray(rows) ? rows : null;
+}
+
 /** The people any account follows, newest first. */
 export async function fetchPublicFriends(
   userId: string,

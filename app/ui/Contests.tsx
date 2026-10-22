@@ -359,6 +359,17 @@ function ContestRound({ lang, slug, tab, problemIdx, isOwner, signed, onTab, onO
     });
     return () => { live = false; };
   }, [slug, nonce]);
+  /* The round's contest-rating changes (078): null until the database has
+     them, which also keeps the owner's rate button away. */
+  const [ratings, setRatings] = useState<RatingChanges | null>(null);
+  const [rateBusy, setRateBusy] = useState(false);
+  useEffect(() => {
+    let live = true;
+    void publicRpc<RatingChanges | null>("contest_rating_changes", { p_slug: slug }).then((got) => {
+      if (live) setRatings(got.state === "ready" && got.data ? got.data : null);
+    });
+    return () => { live = false; };
+  }, [slug, nonce]);
 
   const board = load.state === "ready" ? load.data : null;
   const now = useNow((t) => Boolean(board) && phaseOf(board!.contest, t) !== "finished");
@@ -420,6 +431,22 @@ function ContestRound({ lang, slug, tab, problemIdx, isOwner, signed, onTab, onO
     else setToggleError(tr(lang, got.error === "not_migrated" ? "contests.ed_err_need_066" : "contests.ed_err_generic", { e: got.error }));
   };
 
+  /* Rating (078): the owner rates a finished custom round once, and can take
+     it back while no later round has been rated on top of it. */
+  const canRate = isOwner && contest.kind === "custom" && livePhase === "finished" && ratings !== null;
+  const rated = Boolean(ratings?.rated_at);
+  const rate = async (undo: boolean) => {
+    if (!window.confirm(tr(lang, undo ? "contests.unrate_confirm" : "contests.rate_confirm", { n: board.rows.length }))) return;
+    setRateBusy(true);
+    setToggleError("");
+    const got = await ownerRpc(undo ? "owner_contest_unrate" : "owner_contest_rate", { p_slug: slug });
+    setRateBusy(false);
+    if (got.ok) { reload(); return; }
+    const code = got.error.split(":")[0].trim();
+    const known = ["not_finished", "already_rated", "too_few", "later_round_rated", "not_rated", "not_custom", "not_migrated"];
+    setToggleError(tr(lang, known.includes(code) ? `contests.rate_err_${code}` : "contests.ed_err_generic", { e: got.error }));
+  };
+
   /* Registration (067): open until the round ends, cancellable until it starts. */
   const canRegister = contest.kind === "custom" && livePhase !== "finished" && contest.registered !== undefined && !canPreview;
   const register = async (join: boolean) => {
@@ -464,7 +491,13 @@ function ContestRound({ lang, slug, tab, problemIdx, isOwner, signed, onTab, onO
         {contest.hidden && <span className="tag cx-hidden-tag"><CxIcon d={CX_EYE_OFF} />{tr(lang, "contests.hidden")}</span>}
         {role && role !== "owner" && <span className="tag cx-role-badge">{tr(lang, `contests.role_${role}`)}</span>}
         {status !== "approved" && <span className={`tag cx-status-tag ${status}`}>{tr(lang, `contests.status_${status}`)}</span>}
+        {rated && <span className="tag cx-role-badge">{tr(lang, "contests.rated_tag")}</span>}
         {canManage && <span className="cx-owner-tools">
+          {canRate && (rated
+            ? <button type="button" className="cx-ghost-btn" disabled={rateBusy} onClick={() => void rate(true)}>{tr(lang, "contests.unrate_button")}</button>
+            : <button type="button" className="primary cx-approve-btn" disabled={rateBusy || board.rows.length < 2} onClick={() => void rate(false)}>
+                {tr(lang, rateBusy ? "contests.rate_busy" : "contests.rate_button")}
+              </button>)}
           {isOwner && status !== "approved" && <>
             <button type="button" className="primary cx-approve-btn" disabled={reviewBusy} onClick={() => void review("owner_contest_review", { p_approve: true })}>
               <CxIcon d={CX_CHECK} />{tr(lang, "contests.review_approve")}
@@ -540,7 +573,8 @@ function ContestRound({ lang, slug, tab, problemIdx, isOwner, signed, onTab, onO
         </section>
       : <>
         {tab === "problems" && <ProblemsTab lang={lang} slug={slug} board={board} people={people} phase={livePhase} isOwner={canManage} onEdit={onEdit} onOpenProblem={onOpenProblem} onOpenContestProblem={onOpenContestProblem} onOpenSubmissions={onOpenSubmissions} />}
-        {tab === "standings" && <StandingsTab lang={lang} slug={slug} board={board} live={livePhase === "live"} onReload={reload} onOpenSubmissions={onOpenSubmissions} />}
+        {tab === "standings" && <StandingsTab lang={lang} slug={slug} board={board} live={livePhase === "live"} onReload={reload} onOpenSubmissions={onOpenSubmissions}
+          changes={rated ? ratings!.rows : null} />}
         {tab === "status" && <StatusTab lang={lang} slug={slug} board={board} onOpenSubmissions={onOpenSubmissions} />}
       </>}
   </>;
@@ -647,10 +681,13 @@ function RegistrantsTab({ lang, slug, onOpenSubmissions }: { lang: Lang; slug: s
   </ol>;
 }
 
-function StandingsTab({ lang, slug, board, live, onReload, onOpenSubmissions }: {
+function StandingsTab({ lang, slug, board, live, onReload, onOpenSubmissions, changes }: {
   lang: Lang; slug: string; board: Standings; live: boolean; onReload: () => void; onOpenSubmissions: (handle: string) => void;
+  /** A rated round's changes (078), shown as a column; null before it is rated. */
+  changes: RatingChange[] | null;
 }) {
   const { problems, rows } = board;
+  const changeOf = useMemo(() => new Map((changes || []).map((c) => [c.username.toLowerCase(), c])), [changes]);
   const [cell, setCell] = useState<{ row: StandingRow; problem: ContestProblem } | null>(null);
 
   // Who took each problem first. Marked on the board, as most judges do.
@@ -673,6 +710,7 @@ function StandingsTab({ lang, slug, board, live, onReload, onOpenSubmissions }: 
           <th className="st-who">{tr(lang, "contests.participant")}</th>
           <th className="st-num" title={tr(lang, "contests.solved")}>=</th>
           <th className="st-num">{tr(lang, "contests.penalty")}</th>
+          {changes && <th className="st-num" title={tr(lang, "contests.rating_change_hint")}>{tr(lang, "contests.rating_change")}</th>}
           {problems.map((p) => <th key={p.idx} className="st-cell" title={titleOf(lang, p)}>
             {p.idx}<small>{p.solved}/{p.tried}</small>
           </th>)}
@@ -688,6 +726,14 @@ function StandingsTab({ lang, slug, board, live, onReload, onOpenSubmissions }: 
             </td>
             <td className="st-num"><b>{r.solved}</b></td>
             <td className="st-num st-pen">{r.penalty}</td>
+            {changes && (() => {
+              const c = changeOf.get(r.username.toLowerCase());
+              if (!c) return <td className="st-num muted">—</td>;
+              return <td className="st-num" title={tr(lang, "contests.rating_change_cell", { from: c.rating_before, to: c.rating_after, perf: c.performance })}>
+                <b className={`mono ${c.delta > 0 ? "dh-win" : c.delta < 0 ? "dh-loss" : "muted"}`}>{c.delta > 0 ? `+${c.delta}` : c.delta}</b>
+                <small className="mono" style={{ display: "block", color: ratingColor(c.rating_after) }}>{c.rating_after}</small>
+              </td>;
+            })()}
             {problems.map((p) => {
               const c = r.cells[p.idx];
               if (!c) return <td key={p.idx} className="st-cell" />;
@@ -711,6 +757,10 @@ function StandingsTab({ lang, slug, board, live, onReload, onOpenSubmissions }: 
       onClose={() => setCell(null)} />}
   </>;
 }
+
+/* A rated round's change for one participant, and the round's whole set (078). */
+type RatingChange = { username: string; place: number; rating_before: number; rating_after: number; delta: number; performance: number };
+type RatingChanges = { rated_at: string | null; rows: RatingChange[] };
 
 /* One cell's attempts. contest_attempts (065) answers directly; before it is
    applied the same rows are read off contest_status, which can filter by
