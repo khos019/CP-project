@@ -758,5 +758,8 @@
   "contests.ed_problem_count": "Masalalar soni",
   "contests.ed_problem_count_hint": "Shuncha bo‘sh masala (A, B, C…) chap tomonda ochiladi — keyin birma-bir to‘ldirasiz.",
   "contests.ed_confirm_trim": "{list} masalalarida yozilgan narsa bor. Baribir olib tashlaysizmi?",
-  "contests.ed_needs_approval": "Owner kontestni tasdiqlagandan keyin uni ochiq qilish mumkin."
+  "contests.ed_needs_approval": "Owner kontestni tasdiqlagandan keyin uni ochiq qilish mumkin.",
+  "contests.ed_team_searching": "Qidirilmoqda…",
+  "contests.ed_team_no_match": "Bunday foydalanuvchi topilmadi",
+  "contests.ed_team_already": "Jamoada"
 }

@@ -758,5 +758,8 @@
   "contests.ed_problem_count": "Number of problems",
   "contests.ed_problem_count_hint": "That many blank problems (A, B, C…) open on the left — fill them in one by one.",
   "contests.ed_confirm_trim": "Problems {list} have content. Remove them anyway?",
-  "contests.ed_needs_approval": "The round can be made public once the owner approves it."
+  "contests.ed_needs_approval": "The round can be made public once the owner approves it.",
+  "contests.ed_team_searching": "Searching…",
+  "contests.ed_team_no_match": "No matching users",
+  "contests.ed_team_already": "On the team"
 }

@@ -1,10 +1,11 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useMemo, useRef, useState } from "react";
 import { tr, type Lang } from "./i18n";
 import { MathText } from "./math-text";
 import { ratingColor } from "./rating";
 import { ownerRpc, toTashkentInput, fromTashkentInput, lasting, type StaffMember } from "./contest-data";
+import { searchPeople, type Person } from "./session";
 
 /* The owner's contest editor: /contests/new and /contests/<slug>/edit.
  *
@@ -733,8 +734,8 @@ function TeamSettings({ lang, slug, onCount }: { lang: Lang; slug: string | null
   return <div className="cxe-card">
     <header className="cxe-card-head"><h2>{tr(lang, "contests.ed_team")}</h2><p className="muted">{tr(lang, "contests.ed_team_lead")}</p></header>
     <form className="cxe-team-form" onSubmit={(e) => { e.preventDefault(); void invite(); }}>
-      <input value={username} placeholder={tr(lang, "contests.ed_team_username")} aria-label={tr(lang, "contests.ed_team_username")}
-        onChange={(e) => setUsername(e.target.value)} />
+      <PersonPicker lang={lang} value={username} onChange={setUsername}
+        taken={new Set((list || []).map((m) => m.username.toLowerCase()))} />
       <span className="cxe-toggle">
         <button type="button" className={role === "author" ? "on" : undefined} onClick={() => setRole("author")}>{tr(lang, "contests.role_author")}</button>
         <button type="button" className={role === "tester" ? "on" : undefined} onClick={() => setRole("tester")}>{tr(lang, "contests.role_tester")}</button>
@@ -752,5 +753,85 @@ function TeamSettings({ lang, slug, onCount }: { lang: Lang; slug: string | null
           <button type="button" className="cx-ghost-btn cxe-del" onClick={() => void remove(m.username)}>{tr(lang, "contests.ed_team_remove")}</button>
         </li>)}
       </ul>}
+  </div>;
+}
+
+/* The username box with suggestions underneath, like the site search: what
+   is typed is matched against nicknames and names (searchPeople), a quarter
+   of a second after the typing stops. Arrows move, Enter picks, Escape
+   closes. People already on the team, and the owner (who needs no
+   invitation), are shown but cannot be picked. */
+function PersonPicker({ lang, value, onChange, taken }: {
+  lang: Lang; value: string; onChange: (v: string) => void; taken: Set<string>;
+}) {
+  const term = value.trim().replace(/^@/, "");
+  const [answer, setAnswer] = useState<{ term: string; people: Person[] } | null>(null);
+  const [open, setOpen] = useState(false);
+  const [active, setActive] = useState(0);
+  const listId = useId();
+  useEffect(() => {
+    if (!term) return;
+    let live = true;
+    const id = window.setTimeout(() => {
+      void searchPeople(term, 8).then((people) => { if (live) setAnswer({ term, people: people || [] }); });
+    }, 250);
+    return () => { live = false; window.clearTimeout(id); };
+  }, [term]);
+  // Only the answer to what is in the box now: a slow reply for an older
+  // prefix never flashes up under a newer one.
+  const people = term && answer?.term === term ? answer.people : [];
+  const searching = Boolean(term) && answer?.term !== term;
+  const blocked = (p: Person) => taken.has(p.username.toLowerCase()) || p.role === "owner";
+  const show = open && Boolean(term);
+
+  const pick = (p: Person) => {
+    if (blocked(p)) return;
+    onChange(p.username);
+    setOpen(false);
+  };
+  const onKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (!show || !people.length) return;
+    if (e.key === "ArrowDown") { e.preventDefault(); setActive((i) => (i + 1) % people.length); }
+    else if (e.key === "ArrowUp") { e.preventDefault(); setActive((i) => (i - 1 + people.length) % people.length); }
+    else if (e.key === "Enter" && people[active] && people[active].username.toLowerCase() !== term.toLowerCase()) {
+      // Enter on a suggestion fills the box; Enter on a finished name submits.
+      e.preventDefault();
+      pick(people[active]);
+    } else if (e.key === "Escape") setOpen(false);
+  };
+  /* The typed part of the nickname in bold, so the eye finds why it matched. */
+  const mark = (text: string) => {
+    const at = text.toLowerCase().indexOf(term.toLowerCase());
+    if (at < 0 || !term) return text;
+    return <>{text.slice(0, at)}<b>{text.slice(at, at + term.length)}</b>{text.slice(at + term.length)}</>;
+  };
+
+  return <div className="cxe-picker">
+    <input value={value} placeholder={tr(lang, "contests.ed_team_username")} aria-label={tr(lang, "contests.ed_team_username")}
+      role="combobox" aria-expanded={show} aria-controls={listId} aria-autocomplete="list" autoComplete="off" spellCheck={false}
+      onChange={(e) => { onChange(e.target.value); setOpen(true); setActive(0); }}
+      onFocus={() => setOpen(true)} onBlur={() => window.setTimeout(() => setOpen(false), 120)} onKeyDown={onKey} />
+    {show && <ul className="cxe-picker-list" role="listbox" id={listId}>
+      {searching && !people.length && <li className="cxe-picker-note">{tr(lang, "contests.ed_team_searching")}</li>}
+      {!searching && !people.length && <li className="cxe-picker-note">{tr(lang, "contests.ed_team_no_match")}</li>}
+      {people.map((p, i) => {
+        const off = blocked(p);
+        const name = p.display_name?.trim() || p.username;
+        return <li key={p.id} role="option" aria-selected={i === active} aria-disabled={off}
+          className={`${i === active ? "on" : ""}${off ? " off" : ""}`}
+          onMouseEnter={() => setActive(i)} onMouseDown={(e) => { e.preventDefault(); pick(p); }}>
+          <span className="cxe-picker-av" aria-hidden>
+            {/* eslint-disable-next-line @next/next/no-img-element -- a 34px avatar, as on the profile pages */}
+            {p.avatar_url ? <img src={p.avatar_url} alt="" /> : name.slice(0, 1).toUpperCase()}
+          </span>
+          <span className="cxe-picker-who">
+            <span className="cxe-picker-name">{mark(name)}</span>
+            <span className="cxe-picker-handle">@{mark(p.username)}</span>
+          </span>
+          {off ? <span className="cxe-picker-tag">{tr(lang, p.role === "owner" ? "contests.role_owner" : "contests.ed_team_already")}</span>
+            : <span className="cxe-picker-rating" style={{ color: ratingColor(p.duel_rating) }}>{p.duel_rating}</span>}
+        </li>;
+      })}
+    </ul>}
   </div>;
 }
