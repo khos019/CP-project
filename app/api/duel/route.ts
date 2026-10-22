@@ -26,7 +26,7 @@ import { judgeSource, languageIds, isJudgeableProblem, type Language } from "../
 // identity still comes from the duel row, never from the request.
 import { bankProblems } from "../../ui/problem-bank";
 import { solutions, hasSolution } from "../_lib/solutions";
-import { planDuel, botConfigFrom, type BotPlan } from "../_lib/bot";
+import { planDuel, botConfigFrom, implementationLoad, loadTimeFactor, type BotPlan } from "../_lib/bot";
 import { allow } from "../_lib/guard";
 
 const titleFor = (key: string) => bankProblems.find((p) => p.judge === key)?.uz || key;
@@ -168,7 +168,7 @@ export async function POST(request: Request) {
         const bot = await rpcAsUser<Json>(token, "duel_start_bot_match");
         if (bot.ok && bot.data.ok) {
           const duelId = asString(bot.data.duel_id);
-          await givePlan(duelId, Number(bot.data.bot_base ?? bot.data.bot_rating) || 1200, Number(bot.data.bot_skill) || undefined);
+          await givePlan(duelId, Number(bot.data.bot_base ?? bot.data.bot_rating) || 1200, Number(bot.data.bot_skill) || undefined, await callerId(token));
           const fresh = await rpcAsUser<Json>(token, "duel_state");
           await broadcast([
             toUser(asString(await callerId(token)), "match_found", { duel_id: duelId, is_bot: true }),
@@ -291,7 +291,7 @@ export async function POST(request: Request) {
       if (!result.ok) return bad(result.error, result.status);
       if (result.data.ok) {
         const duelId = asString(result.data.duel_id);
-        await givePlan(duelId, Number(result.data.bot_base ?? result.data.bot_rating) || 1200, Number(result.data.bot_skill) || undefined);
+        await givePlan(duelId, Number(result.data.bot_base ?? result.data.bot_rating) || 1200, Number(result.data.bot_skill) || undefined, await callerId(token));
         await broadcast([
           toUser(asString(await callerId(token)), "match_found", { duel_id: duelId, is_bot: true }),
           toMatch(duelId, "duel_started", { duel_id: duelId }),
@@ -433,7 +433,10 @@ export async function POST(request: Request) {
    only: the first problem goes at the usual pace, the later ones are where the
    bot is stronger. Its rating -- what the Elo update reads -- is separate and
    moves only a little. */
-async function givePlan(matchId: string, botRating: number, laterSkill?: number): Promise<void> {
+/* `playerId` is the human in the duel. The bot plays at bot_strength_factor
+   (070) against everybody except the players in bot_full_strength_users, who
+   meet it at full strength. */
+async function givePlan(matchId: string, botRating: number, laterSkill?: number, playerId?: string | null): Promise<void> {
   const status = await rpcAsService<Json>("duel_bot_status", { p_match: matchId });
   if (!status.ok || !status.data?.ok) return;
   const rounds = Array.isArray(status.data.rounds) ? (status.data.rounds as Json[]) : [];
@@ -441,6 +444,9 @@ async function givePlan(matchId: string, botRating: number, laterSkill?: number)
 
   const configRow = await rpcAsService<Json>("duel_bot_config");
   const config = botConfigFrom(configRow.ok ? configRow.data : null);
+  const fullStrength = configRow.ok && Array.isArray(configRow.data?.bot_full_strength_users)
+    ? (configRow.data.bot_full_strength_users as unknown[]).map(String) : [];
+  if (playerId && fullStrength.includes(playerId)) config.strengthFactor = 1;
 
   const plan: BotPlan = planDuel(
     matchId, botRating,
@@ -454,6 +460,11 @@ async function givePlan(matchId: string, botRating: number, laterSkill?: number)
         // distinct wrong programs to send.
         wrongVariants: hasSolution(key) ? solutions[key].wrong.length : 0,
         botRating: laterSkill && Number(r.round) > 0 ? laterSkill : undefined,
+        // Problems that take a lot of code to write give the bot more time.
+        timeFactor: (() => {
+          const bank = bankProblems.find((p) => p.judge === key);
+          return loadTimeFactor(implementationLoad(bank?.topic, bank?.tag), config);
+        })(),
       };
     }),
     1800, config,

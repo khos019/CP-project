@@ -45,6 +45,16 @@ export type BotConfig = {
    *  up the moment its first roll fails is the "switched off" opponent this
    *  model keeps trying not to be. */
   lateSolveFactor: number;
+  /** Scales the bot's whole strength: the chance it solves a round is
+   *  multiplied by this, and its thinking time divided by it. 1 is the bot as
+   *  balanced above; 0.88 is a bot 12% weaker and ~14% slower. Players listed
+   *  in bot_full_strength_users (070) always meet the full bot. */
+  strengthFactor: number;
+  /** Extra thinking time on problems that take writing, not just seeing:
+   *  a segment tree, a treap, a flow network. See implementationLoad(). */
+  heavyTimeScale: number;
+  /** The same for the middle tier: simulation, matrices, graphs, geometry. */
+  mediumTimeScale: number;
 };
 
 export const DEFAULT_BOT_CONFIG: BotConfig = {
@@ -55,7 +65,32 @@ export const DEFAULT_BOT_CONFIG: BotConfig = {
   maxDelaySeconds: 900,
   skillBonus: 120,
   lateSolveFactor: 0.5,
+  strengthFactor: 1,
+  heavyTimeScale: 1.4,
+  mediumTimeScale: 1.2,
 };
+
+/* How much code a problem takes to write, beyond the idea.
+ *
+ * The thinking-time curve reads only the rating, so a 1600 segment-tree
+ * problem cost the bot the same minutes as a 1600 greedy one — and a person
+ * who sees both ideas at once still spends twice as long typing the first.
+ * The bank's own tag and topic say which kind a problem is; the heavy tier is
+ * the structures and algorithms that are long to implement, the medium tier
+ * the problems that are fiddly rather than deep. */
+const HEAVY_TAG = /segment tree|fenwick|treap|lazy|persistent|sqrt|suffix array|suffix automaton|palindromic tree|virtual tree|binary lifting|sparse table|max flow|min cost|convex hull|rotating calipers|small to large|slope trick|parallel binary search|trie|dsu|union.?find|offline|heavy.?light|centroid|link.?cut|ntt|fft|matrix exponentiation|strongly connected|rerooting|aho|manacher|z-function|prefix function/i;
+const MEDIUM_TAG = /implementation|simulation|parsing|matri|grid|dijkstra|floyd|bfs|dfs|topological|heap|stack|queue|deque|ordered|multiset|sweep|interval|geometry|segment intersection|ray casting|bitmask|digit dp|interval dp|tree/i;
+const HEAVY_TOPIC = new Set(["advanced-cp"]);
+const MEDIUM_TOPIC = new Set(["data-structures", "trees", "graphs", "geometry"]);
+
+export type ImplementationLoad = "heavy" | "medium" | "light";
+export function implementationLoad(topic?: string, tag?: string): ImplementationLoad {
+  if ((tag && HEAVY_TAG.test(tag)) || (topic && HEAVY_TOPIC.has(topic))) return "heavy";
+  if ((tag && MEDIUM_TAG.test(tag)) || (topic && MEDIUM_TOPIC.has(topic))) return "medium";
+  return "light";
+}
+export const loadTimeFactor = (load: ImplementationLoad, config = DEFAULT_BOT_CONFIG) =>
+  load === "heavy" ? config.heavyTimeScale : load === "medium" ? config.mediumTimeScale : 1;
 
 export type Attempt = {
   at: number;
@@ -120,7 +155,7 @@ export function solveProbability(botRating: number, problemRating: number, confi
 export function effectiveSolveProbability(
   botRating: number, problemRating: number, config = DEFAULT_BOT_CONFIG,
 ): number {
-  const p = solveProbability(botRating, problemRating, config);
+  const p = solveProbability(botRating, problemRating, config) * config.strengthFactor;
   return p + (1 - p) * Math.min(1, Math.max(0, p * config.lateSolveFactor));
 }
 
@@ -132,7 +167,7 @@ export function effectiveSolveProbability(
  *  roughly half the base time; one 400 points below takes about double.
  */
 export function expectedThinkingSeconds(
-  botRating: number, problemRating: number, config = DEFAULT_BOT_CONFIG,
+  botRating: number, problemRating: number, config = DEFAULT_BOT_CONFIG, timeFactor = 1,
 ): number {
   // A smooth curve in the rating rather than four difficulty buckets. The
   // buckets made every problem from 800 to 1100 cost the same minute, so
@@ -141,16 +176,18 @@ export function expectedThinkingSeconds(
   // adds about 10%: ~1.8 minutes of base at 800, ~3.3 at 1400, ~6 at 2000.
   const base = 110 * Math.exp((problemRating - 800) / 1000);
   const gap = botRating + config.skillBonus - problemRating;
-  const stretched = base * Math.exp(-gap / 520) * config.timeScale;
+  // A weaker bot (strengthFactor < 1) is also a slower one, and a problem
+  // that takes more code to write (timeFactor) takes longer for everybody.
+  const stretched = base * Math.exp(-gap / 520) * config.timeScale * timeFactor / Math.max(0.1, config.strengthFactor);
   return Math.min(config.maxDelaySeconds, Math.max(config.minDelaySeconds, stretched));
 }
 
 /** The whole behaviour for one round, in the shape the brief asked for. */
 export function getBotSubmissionBehavior(
-  botRating: number, problemRating: number, seed: string, config = DEFAULT_BOT_CONFIG,
+  botRating: number, problemRating: number, seed: string, config = DEFAULT_BOT_CONFIG, timeFactor = 1,
 ): { shouldSolve: boolean; solvesLate: boolean; expectedDelay: number; mistakeProbability: number } {
   const random = seeded(`${seed}:outcome`);
-  const p = solveProbability(botRating, problemRating, config);
+  const p = solveProbability(botRating, problemRating, config) * config.strengthFactor;
   // Mistakes track the same gap: a bot comfortably above a problem rarely
   // fumbles it, one reaching above itself often does. The floor is the part
   // that is not derived from the gap, and it is deliberate: a player who is
@@ -166,7 +203,7 @@ export function getBotSubmissionBehavior(
   return {
     shouldSolve: early || late,
     solvesLate: late,
-    expectedDelay: expectedThinkingSeconds(botRating, problemRating, config),
+    expectedDelay: expectedThinkingSeconds(botRating, problemRating, config, timeFactor),
     mistakeProbability,
   };
 }
@@ -188,6 +225,9 @@ export function planDuel(
     /** How well the bot plays this round, when it differs from `botRating`
      *  (061: against the top players only rounds B and C get the stronger bot). */
     botRating?: number;
+    /** How much longer than its rating alone suggests this problem takes to
+     *  write (implementationLoad -> loadTimeFactor). 1 when not given. */
+    timeFactor?: number;
   }[],
   duelSeconds: number, config = DEFAULT_BOT_CONFIG,
 ): BotPlan {
@@ -201,7 +241,7 @@ export function planDuel(
     const seed = `${matchId}:${round.round}`;
     const timing = seeded(`${seed}:timing`);
     const mistakes = seeded(`${seed}:mistakes`);
-    const behaviour = getBotSubmissionBehavior(round.botRating ?? botRating, round.problemRating, seed, config);
+    const behaviour = getBotSubmissionBehavior(round.botRating ?? botRating, round.problemRating, seed, config, round.timeFactor ?? 1);
 
     // Lognormal-ish jitter so two duels at the same rating do not look identical.
     const jitter = Math.exp((timing() - 0.5) * 0.7);
@@ -270,5 +310,8 @@ export function botConfigFrom(row: Record<string, unknown> | null | undefined): 
     maxDelaySeconds: num("bot_max_delay", DEFAULT_BOT_CONFIG.maxDelaySeconds),
     skillBonus: num("bot_skill_bonus", DEFAULT_BOT_CONFIG.skillBonus),
     lateSolveFactor: num("bot_late_solve", DEFAULT_BOT_CONFIG.lateSolveFactor),
+    strengthFactor: Math.min(1.5, Math.max(0.3, num("bot_strength_factor", DEFAULT_BOT_CONFIG.strengthFactor))),
+    heavyTimeScale: num("bot_time_heavy", DEFAULT_BOT_CONFIG.heavyTimeScale),
+    mediumTimeScale: num("bot_time_medium", DEFAULT_BOT_CONFIG.mediumTimeScale),
   };
 }
