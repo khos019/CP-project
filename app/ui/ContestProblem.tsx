@@ -38,6 +38,18 @@ function Prose({ text }: { text: string }) {
   return <>{parts.map((p, i) => <p key={i} className="cxp-para"><MathText text={p} /></p>)}</>;
 }
 
+/* A participant cannot select, copy, cut, drag or right-click the statement
+   (into a translator or a chatbot, say); the samples stay copyable, since
+   pasting them into one's own program is what they are for. The round's team
+   edits these texts, so it is left alone. This only raises the bar: the text
+   is still on the page. */
+const NO_COPY_STYLE: React.CSSProperties = { userSelect: "none", WebkitUserSelect: "none" };
+const SAMPLE_STYLE: React.CSSProperties = { userSelect: "text", WebkitUserSelect: "text" };
+const blockCopy = (e: React.SyntheticEvent) => {
+  if (!(e.target instanceof Element && e.target.closest(".cxp-sample"))) e.preventDefault();
+};
+const NO_COPY = { style: NO_COPY_STYLE, onCopy: blockCopy, onCut: blockCopy, onContextMenu: blockCopy, onDragStart: blockCopy };
+
 /* isOwner here means "on the round's team" (owner, co-author or tester): they
    read the problems early and submit without registering. */
 export function ContestProblemPage({ lang, slug, idx, board, phase, isOwner, signed, onPick, onSignIn, onSubmitted }: {
@@ -155,7 +167,7 @@ export function ContestProblemPage({ lang, slug, idx, board, phase, isOwner, sig
   return <>
     {picker}
     <div className="workspace cxp-workspace">
-      <article className="panel statement cxp-statement">
+      <article className="panel statement cxp-statement" {...(isOwner ? {} : NO_COPY)}>
         <header className="cxp-head">
           <span className="cxp-idx" style={{ ["--pc" as string]: ratingColor(p.rating) }}>{p.idx}</span>
           <div>
@@ -172,7 +184,7 @@ export function ContestProblemPage({ lang, slug, idx, board, phase, isOwner, sig
         {text("input_spec") && <><h3>{tr(lang, "algoYolApp.kirish")}</h3><Prose text={text("input_spec")} /></>}
         {text("output_spec") && <><h3>{tr(lang, "algoYolApp.chiqish")}</h3><Prose text={text("output_spec")} /></>}
         {p.samples.length > 0 && <h3>{tr(lang, "algoYolApp.namunalar")}</h3>}
-        {p.samples.map((s, i) => <div className="cxp-sample" key={i}>
+        {p.samples.map((s, i) => <div className="cxp-sample" key={i} style={SAMPLE_STYLE}>
           <div><b>{tr(lang, "contests.p_input_n", { n: i + 1 })}</b><pre>{s.input}</pre></div>
           <div><b>{tr(lang, "contests.p_output_n", { n: i + 1 })}</b><pre>{s.output}</pre></div>
         </div>)}
