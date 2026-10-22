@@ -47,6 +47,7 @@ import { loadProblemStatuses, markAttempt, syncProblemStatuses, type StatusMap }
 import { FriendsScreen, ProblemSubmissions, SiteSubmissions, SubmissionsScreen } from "./social-ui";
 import { DuelHistoryScreen } from "./DuelHistory";
 import { Contests, type ContestTab } from "./Contests";
+import { useContestInvites, InviteBell, InviteToast } from "./ContestInvites";
 import { readDraft, writeDraft } from "./drafts";
 import { judgeFetch, judgeRefusal } from "./judge-client";
 import {
@@ -594,8 +595,13 @@ void pushUnit(lesson,{solved:true});removeScoped("algoyol-active-lesson");window
   // people's code) is written by /api/judge itself; this is the local mark.
   markAttempt(activeProblem.judge,String(r.verdict||"")==="ACCEPTED");
  }catch{setVerdict(tr(lang,"algoYolApp.tekshiruvchi_bilan_aloqa_uzildi"))}};
+ /* Contest team invitations follow the learner everywhere (see ./ContestInvites):
+    accepting one opens the round they now help run. */
+ const contestInvites=useContestInvites(signed);
+ const openInvitedContest=(slug:string)=>pushScreen({view:"contests",contest:slug,contestTab:"problems",contestProblem:null,unit:null});
+ const answerContestInvite=async(inv:{slug:string},accept:boolean)=>{const ok=await contestInvites.respond(inv as Parameters<typeof contestInvites.respond>[0],accept);if(ok&&accept)openInvitedContest(inv.slug);return ok};
  const zone=(["duel","leaderboard","contests"] as View[]).includes(view)?"compete":"learn";
- return <div className="shell" data-zone={zone}><SiteHeader lang={lang} view={view} go={v=>go(v as View)} signed={signed} authLoading={auth.status==="loading"} name={profile?.display_name||profile?.username||null} unread={unread} setLang={applyLang} onSignOut={signOut} onAuth={openAuth} />
+ return <div className="shell" data-zone={zone}><SiteHeader lang={lang} view={view} go={v=>go(v as View)} signed={signed} authLoading={auth.status==="loading"} name={profile?.display_name||profile?.username||null} unread={unread} setLang={applyLang} onSignOut={signOut} onAuth={openAuth} bell={<InviteBell lang={lang} invites={contestInvites.invites} onAnswer={answerContestInvite} onOpen={openInvitedContest}/>} />
  {signed&&offerPlacement&&view!=="placement"&&<div className="placement-offer">
   <span className="po-ic" aria-hidden>◎</span>
   <span className="po-copy"><b>{tr(lang,"algoYolApp.darajangizni_aniqlaymizmi")}</b>
@@ -611,6 +617,7 @@ void pushUnit(lesson,{solved:true});removeScoped("algoyol-active-lesson");window
  <ChallengeOverlay lang={lang} challenge={duel?.challenge||null} serverNow={duel?.now||new Date().toISOString()}
   drawnAt={duelAt} notice={duelNotice} onAccept={id=>{void onAcceptChallenge(id)}}
   onDecline={id=>{void onDeclineChallenge(id)}} onExpire={()=>{void pullDuel()}}/>
+ <InviteToast lang={lang} invites={contestInvites.invites} onAnswer={answerContestInvite} onOpen={openInvitedContest}/>
  <FriendInviteOverlay lang={lang} invite={signed&&!duel?.duel?invites?.incoming||null:null} serverNow={invites?.now||new Date().toISOString()}
   drawnAt={invitesAt} onAccept={id=>{void onAcceptInvite(id)}} onDecline={id=>{void onDeclineInvite(id)}} onExpire={()=>{void pullInvites()}}/>
  {signed&&duel?.status==="searching"&&!duelOnline&&<div className="duel-toast" role="status">{tr(lang,"algoYolApp.aloqa_uzildi_qayta_ulanmoqda")}</div>}

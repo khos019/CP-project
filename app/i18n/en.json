@@ -761,5 +761,12 @@
   "contests.ed_needs_approval": "The round can be made public once the owner approves it.",
   "contests.ed_team_searching": "Searching…",
   "contests.ed_team_no_match": "No matching users",
-  "contests.ed_team_already": "On the team"
+  "contests.ed_team_already": "On the team",
+  "contests.inv_bell": "Invitations: {n}",
+  "contests.inv_none": "No new invitations.",
+  "contests.inv_new": "New invitation",
+  "contests.inv_later": "Later",
+  "contests.inv_view": "View round",
+  "contests.inv_starts": "Starts {t}",
+  "contests.inv_failed": "Could not send the answer. Sign in again and retry."
 }

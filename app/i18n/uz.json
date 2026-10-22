@@ -761,5 +761,12 @@
   "contests.ed_needs_approval": "Owner kontestni tasdiqlagandan keyin uni ochiq qilish mumkin.",
   "contests.ed_team_searching": "Qidirilmoqda…",
   "contests.ed_team_no_match": "Bunday foydalanuvchi topilmadi",
-  "contests.ed_team_already": "Jamoada"
+  "contests.ed_team_already": "Jamoada",
+  "contests.inv_bell": "Takliflar: {n}",
+  "contests.inv_none": "Yangi taklif yo‘q.",
+  "contests.inv_new": "Yangi taklif",
+  "contests.inv_later": "Keyinroq",
+  "contests.inv_view": "Kontestni ko‘rish",
+  "contests.inv_starts": "Boshlanadi: {t}",
+  "contests.inv_failed": "Javob yuborib bo‘lmadi. Hisobingizga qayta kirib, yana urinib ko‘ring."
 }

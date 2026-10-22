@@ -163,11 +163,13 @@ function LangMenu({ lang, setLang }: { lang: Lang; setLang: (l: Lang) => void })
 }
 
 export function SiteHeader({
-  lang, view, go, signed, authLoading, name, unread, setLang, onSignOut, onAuth,
+  lang, view, go, signed, authLoading, name, unread, setLang, onSignOut, onAuth, bell,
 }: {
   lang: Lang; view: string; go: Nav; signed: boolean; authLoading: boolean;
   name: string | null; unread: number; setLang: (l: Lang) => void; onSignOut: () => void;
   onAuth: (mode: "login" | "signup") => void;
+  /** Notifications that are not messages (contest invitations), beside the envelope. */
+  bell?: ReactNode;
 }) {
   const uz = lang === "uz";
   const [menu, setMenu] = useState(false);
@@ -232,6 +234,8 @@ export function SiteHeader({
             <span aria-hidden>🔥</span>{streak}
           </span>
         )}
+
+        {signed && bell}
 
         {signed && (
           <a className="icon-link" href="/messages" onClick={linkTo(() => go("messages"))}

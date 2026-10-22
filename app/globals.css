@@ -5511,3 +5511,46 @@ body[data-ads-quiet] > div[style*="--rdata"]{display:none!important}
 .cxe-picker-who b{color:var(--green);font-weight:800}
 .cxe-picker-rating{font-family:var(--font-mono);font-size:12.5px;font-weight:700}
 .cxe-picker-tag{font-size:11.5px;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--surface-2);color:var(--muted)}
+
+/* Kontest takliflari: sarlavhadagi qo‘ng‘iroqcha va burchakdagi karta. */
+.ci-bell-wrap{position:relative;display:inline-flex}
+.ci-bell{position:relative;border:0;background:transparent;cursor:pointer;color:inherit;font:inherit}
+.ci-bell svg{width:19px;height:19px}
+.ci-bell.has svg{animation:ci-ring 1.6s ease-in-out 2}
+@keyframes ci-ring{0%,100%{transform:rotate(0)}10%,30%{transform:rotate(14deg)}20%,40%{transform:rotate(-12deg)}50%{transform:rotate(0)}}
+@media(prefers-reduced-motion:reduce){.ci-bell.has svg{animation:none}}
+.ci-badge{position:absolute;top:-4px;right:-6px;background:#a46bff;color:#fff}
+.ci-panel{
+ position:absolute;right:0;top:calc(100% + 10px);z-index:60;width:min(420px,calc(92 * var(--vw)));
+ padding:12px;border-radius:16px;background:var(--surface);border:1px solid var(--line-strong);
+ box-shadow:0 24px 60px -16px color-mix(in srgb,var(--shadow-c) 60%,transparent);display:grid;gap:10px;
+}
+.ci-panel header{padding:2px 4px}
+.ci-empty{margin:0;padding:8px 4px 6px;color:var(--muted);font-size:13.5px}
+.ci-row{display:grid;gap:8px;padding:12px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line-faint)}
+.ci-role{justify-self:start;font-size:11.5px;font-weight:800;padding:2px 9px;border-radius:99px;color:#a46bff;background:color-mix(in srgb,#a46bff 14%,transparent)}
+.ci-role.tester{color:#4f8cff;background:color-mix(in srgb,#4f8cff 14%,transparent)}
+.ci-copy{display:grid;gap:3px}
+.ci-copy b{font-size:14px;line-height:1.4}
+.ci-copy small{font-size:12.5px;color:var(--muted)}
+.ci-link{border:0;background:none;padding:0;color:var(--green);font:inherit;font-weight:700;cursor:pointer}
+.ci-link:hover{text-decoration:underline}
+.ci-actions{display:flex;gap:8px}
+.ci-actions .primary{padding:8px 14px}
+.ci-toast{
+ position:fixed;right:20px;bottom:20px;z-index:70;width:min(380px,calc(100% - 32px));display:grid;gap:8px;
+ padding:14px;border-radius:18px;background:var(--surface);border:1px solid color-mix(in srgb,#a46bff 40%,var(--line-strong));
+ box-shadow:0 30px 70px -20px color-mix(in srgb,var(--shadow-c) 70%,transparent);animation:ci-in .25s var(--ease);
+}
+@keyframes ci-in{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@media(prefers-reduced-motion:reduce){.ci-toast{animation:none}}
+.ci-toast-head{display:flex;align-items:center;gap:10px}
+.ci-toast-ic{width:30px;height:30px;border-radius:10px;display:grid;place-items:center;color:#a46bff;background:color-mix(in srgb,#a46bff 15%,transparent)}
+.ci-toast-ic svg{width:16px;height:16px}
+.ci-close{margin-left:auto;border:0;background:none;color:var(--muted);font-size:14px;cursor:pointer;padding:4px 6px;border-radius:8px}
+.ci-close:hover{background:var(--surface-2);color:var(--ink)}
+.ci-toast .ci-row{background:transparent;border:0;padding:2px 0}
+.ci-later{justify-self:start;border:0;background:none;color:var(--muted);font-size:12.5px;cursor:pointer;padding:0}
+.ci-later:hover{color:var(--ink);text-decoration:underline}
+@media(max-width:760px){.ci-toast{right:16px;bottom:76px}}
+.ci-error{color:var(--bad);font-size:12.5px}
