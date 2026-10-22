@@ -5257,6 +5257,10 @@ body[data-ads-quiet] > div[style*="--rdata"]{display:none!important}
 .cxe-tabs button.on{color:var(--ink);border-bottom-color:var(--green)}
 .cxe-tabs .cxe-preview-btn{margin-left:auto;border:1px solid var(--line);border-radius:9px;padding:6px 12px;margin-bottom:6px;font-size:13px}
 .cxe-tabs .cxe-preview-btn.on{border-color:var(--green);color:var(--green);border-bottom-color:var(--green)}
+.cxe-text-lang{display:flex;align-items:center;flex-wrap:wrap;gap:6px 14px}
+.cxe-text-lang .cxe-seg{margin-bottom:0}
+.cxe-text-lang small{font-size:12.5px;line-height:1.45;flex:1 1 220px}
+.cxe-seg-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--green);vertical-align:middle}
 .cxe-statement.split{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:var(--s4);align-items:start}
 .cxe-preview{position:sticky;top:calc(var(--header-h) + 90px);max-height:calc(80 * var(--vh));overflow:auto;padding:var(--s4);border-radius:var(--r-lg);border:1px dashed var(--line-strong);background:var(--bg)}
 .cxe-preview h2{font-size:1.4rem;margin:4px 0 8px}

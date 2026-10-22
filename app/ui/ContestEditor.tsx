@@ -21,11 +21,14 @@ import { searchPeople, type Person } from "./session";
 
 type Sample = { input: string; output: string };
 type Test = { stdin: string; expected: string };
+/* The English text of a statement (073); a part left empty shows the Uzbek one. */
+type English = { statement: string; input_spec: string; output_spec: string; notes: string };
+const blankEnglish = (): English => ({ statement: "", input_spec: "", output_spec: "", notes: "" });
 type Problem = {
   key: number;                 // React key; idx can change when problems move
   origIdx: string | null;      // the slot it was loaded from, for "did its tests move"
   idx: string; title_uz: string; title_en: string; rating: number;
-  statement: string; input_spec: string; output_spec: string; notes: string;
+  statement: string; input_spec: string; output_spec: string; notes: string; en: English;
   time_limit_ms: number; memory_mb: number;
   samples: Sample[]; tests: Test[]; testsDirty: boolean; entries: number;
 };
@@ -37,8 +40,8 @@ type Draft = {
 type Loaded = {
   slug: string; kind: string; title_uz: string; title_en: string; description: string;
   starts_at: string; duration_minutes: number; penalty_minutes: number; hidden: boolean; entries: number;
-  problems: (Omit<Problem, "key" | "origIdx" | "testsDirty" | "samples" | "tests" | "statement" | "input_spec" | "output_spec" | "notes" | "time_limit_ms" | "memory_mb"> & {
-    statement: string | null; input_spec: string | null; output_spec: string | null; notes: string | null;
+  problems: (Omit<Problem, "key" | "origIdx" | "testsDirty" | "samples" | "tests" | "statement" | "input_spec" | "output_spec" | "notes" | "en" | "time_limit_ms" | "memory_mb"> & {
+    statement: string | null; en?: Partial<English> | null; input_spec: string | null; output_spec: string | null; notes: string | null;
     time_limit_ms: number | null; memory_mb: number | null; samples: Sample[] | null; tests: Test[];
   })[];
 };
@@ -47,7 +50,7 @@ const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 let nextKey = 1;
 const blankProblem = (idx: string): Problem => ({
   key: nextKey++, origIdx: null, idx, title_uz: "", title_en: "", rating: 800,
-  statement: "", input_spec: "", output_spec: "", notes: "", time_limit_ms: 1000, memory_mb: 256,
+  statement: "", input_spec: "", output_spec: "", notes: "", en: blankEnglish(), time_limit_ms: 1000, memory_mb: 256,
   samples: [{ input: "", output: "" }], tests: [], testsDirty: true, entries: 0,
 });
 const nextHour = () => {
@@ -195,7 +198,7 @@ export function ContestEditor({ lang, slug, isOwner, onDone, onCancel, onDeleted
         problems: c.kind !== "custom" ? [] : c.problems.map((p) => ({
           key: nextKey++, origIdx: p.idx, idx: p.idx, title_uz: p.title_uz, title_en: p.title_en === p.title_uz ? "" : p.title_en,
           rating: p.rating, statement: p.statement || "", input_spec: p.input_spec || "", output_spec: p.output_spec || "",
-          notes: p.notes || "", time_limit_ms: p.time_limit_ms || 1000, memory_mb: p.memory_mb || 256,
+          notes: p.notes || "", en: { ...blankEnglish(), ...(p.en || {}) }, time_limit_ms: p.time_limit_ms || 1000, memory_mb: p.memory_mb || 256,
           samples: p.samples || [], tests: p.tests || [], testsDirty: false, entries: p.entries || 0,
         })),
       });
@@ -293,7 +296,7 @@ export function ContestEditor({ lang, slug, isOwner, onDone, onCancel, onDeleted
       starts_at: fromTashkentInput(draft.starts), duration_minutes: draft.duration, penalty_minutes: draft.penalty, hidden: draft.hidden,
       problems: draft.problems.map((p) => ({
         idx: p.idx, title_uz: p.title_uz.trim(), title_en: p.title_en.trim(), rating: p.rating,
-        statement: p.statement, input_spec: p.input_spec, output_spec: p.output_spec, notes: p.notes,
+        statement: p.statement, input_spec: p.input_spec, output_spec: p.output_spec, notes: p.notes, en: p.en,
         time_limit_ms: p.time_limit_ms, memory_mb: p.memory_mb,
         samples: p.samples.filter((s) => s.input.trim() || s.output.trim()),
         ...(p.testsDirty ? { tests: p.tests } : {}),
@@ -475,6 +478,11 @@ function ProblemEditor({ lang, p, count, index, set, onMove, onRemove }: {
 }) {
   const [tab, setTab] = useState<"statement" | "samples" | "tests">("statement");
   const [showPreview, setShowPreview] = useState(false);
+  const [textLang, setTextLang] = useState<Lang>("uz");
+  // The four text parts, in whichever language is being written.
+  const text: English = textLang === "en" ? p.en : p;
+  const setText = (patch: Partial<English>) => set(textLang === "en" ? { en: { ...p.en, ...patch } } : patch);
+  const translated = Object.values(p.en).some((v) => v.trim());
   const tabs: { id: typeof tab; label: string; n?: number }[] = [
     { id: "statement", label: tr(lang, "contests.ed_tab_statement") },
     { id: "samples", label: tr(lang, "contests.ed_tab_samples"), n: p.samples.length },
@@ -521,20 +529,29 @@ function ProblemEditor({ lang, p, count, index, set, onMove, onRemove }: {
 
     {tab === "statement" && <div className={`cxe-statement${showPreview ? " split" : ""}`}>
       <div className="cxe-grid one">
+        <div className="cxe-text-lang">
+          <div className="cx-seg cxe-seg" role="group" aria-label={tr(lang, "contests.ed_text_lang")}>
+            <button type="button" className={textLang === "uz" ? "on" : undefined} onClick={() => setTextLang("uz")}>{tr(lang, "contests.ed_lang_uz")}</button>
+            <button type="button" className={textLang === "en" ? "on" : undefined} onClick={() => setTextLang("en")}>
+              {tr(lang, "contests.ed_lang_en")}{translated && <i className="cxe-seg-dot" aria-hidden />}
+            </button>
+          </div>
+          {textLang === "en" && <small className="muted">{tr(lang, "contests.ed_en_hint")}</small>}
+        </div>
         <Field label={tr(lang, "contests.ed_statement")} hint={tr(lang, "contests.ed_math_hint")} wide>
-          <textarea rows={10} value={p.statement} onChange={(e) => set({ statement: e.target.value })} placeholder={tr(lang, "contests.ed_statement_ph")} />
+          <textarea rows={10} value={text.statement} onChange={(e) => setText({ statement: e.target.value })} placeholder={tr(lang, "contests.ed_statement_ph")} />
         </Field>
         <Field label={tr(lang, "contests.ed_input")} wide>
-          <textarea rows={4} value={p.input_spec} onChange={(e) => set({ input_spec: e.target.value })} placeholder={tr(lang, "contests.ed_input_ph")} />
+          <textarea rows={4} value={text.input_spec} onChange={(e) => setText({ input_spec: e.target.value })} placeholder={tr(lang, "contests.ed_input_ph")} />
         </Field>
         <Field label={tr(lang, "contests.ed_output")} wide>
-          <textarea rows={3} value={p.output_spec} onChange={(e) => set({ output_spec: e.target.value })} placeholder={tr(lang, "contests.ed_output_ph")} />
+          <textarea rows={3} value={text.output_spec} onChange={(e) => setText({ output_spec: e.target.value })} placeholder={tr(lang, "contests.ed_output_ph")} />
         </Field>
         <Field label={tr(lang, "contests.ed_notes")} wide>
-          <textarea rows={3} value={p.notes} onChange={(e) => set({ notes: e.target.value })} placeholder={tr(lang, "contests.ed_notes_ph")} />
+          <textarea rows={3} value={text.notes} onChange={(e) => setText({ notes: e.target.value })} placeholder={tr(lang, "contests.ed_notes_ph")} />
         </Field>
       </div>
-      {showPreview && <StatementPreview lang={lang} p={p} />}
+      {showPreview && <StatementPreview lang={lang} p={p} textLang={textLang} />}
     </div>}
 
     {tab === "samples" && <SamplesEditor lang={lang} p={p} set={set} />}
@@ -542,21 +559,23 @@ function ProblemEditor({ lang, p, count, index, set, onMove, onRemove }: {
   </div>;
 }
 
-function StatementPreview({ lang, p }: { lang: Lang; p: Problem }) {
+function StatementPreview({ lang, p, textLang }: { lang: Lang; p: Problem; textLang: Lang }) {
+  const pick = (k: keyof English) => (textLang === "en" && p.en[k].trim() ? p.en[k] : p[k]);
+  const title = (textLang === "en" && p.title_en.trim()) || p.title_uz;
   const prose = (text: string) => text.split(/\n\s*\n/).map((x) => x.trim()).filter(Boolean)
     .map((x, i) => <p key={i} className="cxp-para"><MathText text={x} /></p>);
   return <article className="cxe-preview statement">
     <p className="eyebrow">{tr(lang, "contests.ed_preview")}</p>
-    <h2>{p.idx}. {p.title_uz || tr(lang, "contests.ed_untitled")}</h2>
+    <h2>{p.idx}. {title || tr(lang, "contests.ed_untitled")}</h2>
     <div className="cxp-limits"><span>⏱ {p.time_limit_ms / 1000} s</span><span>▦ {p.memory_mb} MB</span></div>
-    {prose(p.statement)}
-    {p.input_spec && <><h3>{tr(lang, "algoYolApp.kirish")}</h3>{prose(p.input_spec)}</>}
-    {p.output_spec && <><h3>{tr(lang, "algoYolApp.chiqish")}</h3>{prose(p.output_spec)}</>}
+    {prose(pick("statement"))}
+    {pick("input_spec") && <><h3>{tr(lang, "algoYolApp.kirish")}</h3>{prose(pick("input_spec"))}</>}
+    {pick("output_spec") && <><h3>{tr(lang, "algoYolApp.chiqish")}</h3>{prose(pick("output_spec"))}</>}
     {p.samples.filter((s) => s.input || s.output).map((s, i) => <div className="cxp-sample" key={i}>
       <div><b>{tr(lang, "contests.p_input_n", { n: i + 1 })}</b><pre>{s.input}</pre></div>
       <div><b>{tr(lang, "contests.p_output_n", { n: i + 1 })}</b><pre>{s.output}</pre></div>
     </div>)}
-    {p.notes && <><h3>{tr(lang, "contests.p_notes")}</h3>{prose(p.notes)}</>}
+    {pick("notes") && <><h3>{tr(lang, "contests.p_notes")}</h3>{prose(pick("notes"))}</>}
   </article>;
 }
 

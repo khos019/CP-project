@@ -22,6 +22,7 @@ type Spec = {
   ok: boolean; reason?: string; starts_at?: string;
   idx: string; problem_key: string; title_uz: string; title_en: string; rating: number;
   statement: string; input_spec: string; output_spec: string; notes: string;
+  en?: Partial<Record<"statement" | "input_spec" | "output_spec" | "notes", string>> | null;   // 073
   time_limit_ms: number; memory_mb: number; samples: { input: string; output: string }[]; tests: number;
 };
 type JudgeReply = { verdict?: string; passed?: number; total?: number; test?: number; runtimeMs?: number; memoryKb?: number; details?: string; error?: string };
@@ -148,6 +149,8 @@ export function ContestProblemPage({ lang, slug, idx, board, phase, isOwner, sig
       <span className="cx-upcoming"><Clock ms={start - Date.now()} lang={lang} big /></span></section></>;
   }
   const title = (lang === "uz" ? p.title_uz : p.title_en) || p.title_uz;
+  // Each part in the reader's language; an untranslated part stays Uzbek.
+  const text = (k: "statement" | "input_spec" | "output_spec" | "notes") => (lang === "en" && p.en?.[k]?.trim()) || p[k];
 
   return <>
     {picker}
@@ -165,15 +168,15 @@ export function ContestProblemPage({ lang, slug, idx, board, phase, isOwner, sig
             </div>
           </div>
         </header>
-        <Prose text={p.statement} />
-        {p.input_spec && <><h3>{tr(lang, "algoYolApp.kirish")}</h3><Prose text={p.input_spec} /></>}
-        {p.output_spec && <><h3>{tr(lang, "algoYolApp.chiqish")}</h3><Prose text={p.output_spec} /></>}
+        <Prose text={text("statement")} />
+        {text("input_spec") && <><h3>{tr(lang, "algoYolApp.kirish")}</h3><Prose text={text("input_spec")} /></>}
+        {text("output_spec") && <><h3>{tr(lang, "algoYolApp.chiqish")}</h3><Prose text={text("output_spec")} /></>}
         {p.samples.length > 0 && <h3>{tr(lang, "algoYolApp.namunalar")}</h3>}
         {p.samples.map((s, i) => <div className="cxp-sample" key={i}>
           <div><b>{tr(lang, "contests.p_input_n", { n: i + 1 })}</b><pre>{s.input}</pre></div>
           <div><b>{tr(lang, "contests.p_output_n", { n: i + 1 })}</b><pre>{s.output}</pre></div>
         </div>)}
-        {p.notes && <><h3>{tr(lang, "contests.p_notes")}</h3><Prose text={p.notes} /></>}
+        {text("notes") && <><h3>{tr(lang, "contests.p_notes")}</h3><Prose text={text("notes")} /></>}
       </article>
       <div className="cxp-side">
         {phase === "finished" && <p className="notice cxp-note">{tr(lang, "contests.p_practice")}</p>}
