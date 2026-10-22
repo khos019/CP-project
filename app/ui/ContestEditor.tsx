@@ -20,7 +20,9 @@ import { searchPeople, type Person } from "./session";
  * fixing a typo in a statement does not resend megabytes of input. */
 
 type Sample = { input: string; output: string };
-type Test = { stdin: string; expected: string };
+/* A test over 64 KB arrives as its start, its size and where it is stored (077);
+   saving hands `stored` back so the content never makes the round trip. */
+type Test = { stdin: string; expected: string; stored?: { idx: string; n: number }; bytes?: number };
 /* The English text of a statement (073); a part left empty shows the Uzbek one. */
 type English = { statement: string; input_spec: string; output_spec: string; notes: string };
 const blankEnglish = (): English => ({ statement: "", input_spec: "", output_spec: "", notes: "" });
@@ -69,7 +71,7 @@ const slugify = (s: string) => s.toLowerCase()
   .replace(/[‘’ʻʼ'`]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 64);
 
 const bytes = (n: number) => (n < 1024 ? `${n} B` : n < 1024 * 1024 ? `${(n / 1024).toFixed(1)} KB` : `${(n / 1048576).toFixed(2)} MB`);
-const sizeOf = (t: Test) => t.stdin.length + t.expected.length;
+const sizeOf = (t: Test) => t.bytes ?? t.stdin.length + t.expected.length;
 const preview = (s: string) => {
   const one = s.replace(/\s+/g, " ").trim();
   return one.length > 48 ? `${one.slice(0, 48)}…` : one || "∅";
@@ -299,7 +301,7 @@ export function ContestEditor({ lang, slug, isOwner, onDone, onCancel, onDeleted
         statement: p.statement, input_spec: p.input_spec, output_spec: p.output_spec, notes: p.notes, en: p.en,
         time_limit_ms: p.time_limit_ms, memory_mb: p.memory_mb,
         samples: p.samples.filter((s) => s.input.trim() || s.output.trim()),
-        ...(p.testsDirty ? { tests: p.tests } : {}),
+        ...(p.testsDirty ? { tests: p.tests.map((t) => (t.stored ? { stored: t.stored } : { stdin: t.stdin, expected: t.expected })) } : {}),
       })),
     };
     const got = await ownerRpc<{ ok: boolean; slug: string }>("owner_contest_save", { p_original: slug, p: payload });
@@ -691,11 +693,11 @@ function TestsEditor({ lang, p, set }: { lang: Lang; p: Problem; set: (patch: Pa
           </div>
           {open === i && <div className="cxe-io">
             <label><span>{tr(lang, "algoYolApp.kirish")}</span>
-              <textarea rows={6} className="mono" value={t.stdin.length > 200_000 ? t.stdin.slice(0, 200_000) : t.stdin} readOnly={t.stdin.length > 200_000}
+              <textarea rows={6} className="mono" value={t.stdin.length > 200_000 ? t.stdin.slice(0, 200_000) : t.stdin} readOnly={!!t.stored || t.stdin.length > 200_000}
                 onChange={(e) => update(i, { stdin: normalise(e.target.value) })} />
-              {t.stdin.length > 200_000 && <small className="cxe-hint">{tr(lang, "contests.ed_test_too_big")}</small>}</label>
+              {(t.stored || t.stdin.length > 200_000) && <small className="cxe-hint">{tr(lang, "contests.ed_test_too_big")}</small>}</label>
             <label><span>{tr(lang, "contests.ed_expected")}</span>
-              <textarea rows={6} className="mono" value={t.expected.length > 200_000 ? t.expected.slice(0, 200_000) : t.expected} readOnly={t.expected.length > 200_000}
+              <textarea rows={6} className="mono" value={t.expected.length > 200_000 ? t.expected.slice(0, 200_000) : t.expected} readOnly={!!t.stored || t.expected.length > 200_000}
                 onChange={(e) => update(i, { expected: normalise(e.target.value) })} /></label>
           </div>}
         </li>)}
