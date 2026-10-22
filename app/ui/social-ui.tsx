@@ -38,6 +38,8 @@ const T = {
     code: "Kod",
     view: "Ko‘rish",
     locked: "Qulflangan",
+    privateTag: "Faqat sizga",
+    privateHint: "Raund boshlanmasdan, yashirin paytda yoki jamoa a’zosi sifatida yuborilgan — boshqalar ko‘rmaydi.",
     buy: (n: number) => `${n} tangaga ochish`,
     bought: (n: number) => `${n} tanga yechildi.`,
     free: "Siz bu masalani yechgansiz — kod bepul ochildi.",
@@ -95,6 +97,8 @@ const T = {
     code: "Code",
     view: "View",
     locked: "Locked",
+    privateTag: "Only you",
+    privateHint: "Sent before the round, while it was hidden, or as its team — nobody else sees it.",
     buy: (n: number) => `Unlock for ${n} coins`,
     bought: (n: number) => `${n} coins spent.`,
     free: "You have solved this problem — the code opened for free.",
@@ -302,7 +306,10 @@ export function SubmissionHistory({
               {rows.map((row) => (
                 <tr key={row.id}>
                   <td className="mono sub-when">{when(row.created_at, lang)}</td>
-                  <td className="sub-prob">{row.problem_title || row.problem_key}</td>
+                  <td className="sub-prob">
+                    {row.problem_title || row.problem_key}
+                    {row.private && <span className="tag" title={t.privateHint}> <LockIcon /> {t.privateTag}</span>}
+                  </td>
                   <td className="mono sub-lang">{LANG_LABEL[row.language] || row.language}</td>
                   <td className="sub-res">
                     <span className={`sub-verdict ${row.verdict === "ACCEPTED" ? "ok" : "bad"}`}>

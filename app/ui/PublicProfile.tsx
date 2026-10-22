@@ -15,6 +15,7 @@ import {
   type FriendRow, type ProfileSummary, type PublicDuelRow, type SubmissionRow,
 } from "./social";
 import { AvatarZoom, FriendStar, SubmissionHistory, verdictLabel } from "./social-ui";
+import { LockIcon } from "./icons";
 
 type Lang = "uz" | "en";
 
@@ -58,6 +59,7 @@ const T = {
     self: "Profilni tahrirlash",
     signIn: "Kirish",
     signInToWrite: "Xabar yozish uchun kiring",
+    privateTag: "faqat sizga ko‘rinadi",
     roles: { user: "", admin: "ADMIN", owner: "EGA" } as Record<Role, string>,
     nav: { overview: "Umumiy", submissions: "Yechimlari", duels: "Duel tarixi", friends: "Do‘stlari" },
     rating: "Duel reytingi",
@@ -104,6 +106,7 @@ const T = {
     self: "Edit profile",
     signIn: "Sign in",
     signInToWrite: "Sign in to send a message",
+    privateTag: "only you can see this",
     roles: { user: "", admin: "ADMIN", owner: "OWNER" } as Record<Role, string>,
     nav: { overview: "Overview", submissions: "Submissions", duels: "Duel history", friends: "Friends" },
     rating: "Duel rating",
@@ -591,7 +594,10 @@ export function PublicProfile({
                             {s.problem_title || s.problem_key}
                           </button>
                         ) : <b>{s.problem_title || s.problem_key}</b>}
-                        <small className="muted">{shortDateTime(s.created_at, lang)}</small>
+                        <small className="muted">
+                          {shortDateTime(s.created_at, lang)}
+                          {s.private && <> · <LockIcon /> {t.privateTag}</>}
+                        </small>
                       </span>
                       {bank && <span className="mono pv-prob-rating" style={{ color: rankOf(bank.rating).color }}>{bank.rating}</span>}
                       <span className={`pv-verdict-text ${ok ? "dh-win" : "dh-loss"}`}>

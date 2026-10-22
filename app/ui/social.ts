@@ -36,6 +36,8 @@ export type SubmissionRow = {
   created_at: string;
   /** The server has already decided whether this viewer may read the source. */
   readable: boolean;
+  /** A round's test run (076): only its author ever gets it back. Absent before 076. */
+  private?: boolean;
 };
 
 export type CodeResult =
