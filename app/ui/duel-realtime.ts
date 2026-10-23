@@ -39,7 +39,9 @@ export type DuelEventName =
   | "friend_invite_cancelled"
   // Not a duel event, but it rides the same per-user channel: the socket is
   // already open, so an inbox badge need not wait for its next poll.
-  | "message_received";
+  // message_changed (080) is an edit, a deletion or a read on the other side.
+  | "message_received"
+  | "message_changed";
 
 export type DuelEvent = { event: DuelEventName; payload: Record<string, unknown> };
 export type ChannelStatus = "connecting" | "open" | "closed";

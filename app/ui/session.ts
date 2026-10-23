@@ -684,6 +684,9 @@ export type MessageThread = {
   last_mine: boolean;
   unread: number;
   blocked: boolean;
+  /* Migration 080; absent before it, which the inbox reads as "no ticks". */
+  last_read?: boolean;
+  last_edited?: boolean;
 };
 
 export type Message = {
@@ -694,6 +697,9 @@ export type Message = {
   as_site: boolean;
   created_at: string;
   read_at: string | null;
+  /* Present (null or a time) only once migration 080 is applied, so whether
+     the key exists is also whether this message can be edited yet. */
+  edited_at?: string | null;
 };
 
 export const fetchThreads = (limit = 50) => rpc<MessageThread[]>("my_message_threads", { p_limit: limit });
@@ -754,10 +760,15 @@ export async function fetchConversation(otherId: string, me: string): Promise<Me
   if (!url || !key || !token) return null;
   const pair = `or=(and(sender_id.eq.${me},recipient_id.eq.${otherId}),and(sender_id.eq.${otherId},recipient_id.eq.${me}))`;
   try {
-    const response = await fetch(
-      `${url}/rest/v1/messages?${pair}&select=id,sender_id,recipient_id,body,as_site,created_at,read_at&order=created_at.asc&limit=500`,
+    const read = (columns: string) => fetch(
+      `${url}/rest/v1/messages?${pair}&select=${columns}&order=created_at.asc&limit=500`,
       { headers: { apikey: key, Authorization: `Bearer ${token}` } },
     );
+    const base = "id,sender_id,recipient_id,body,as_site,created_at,read_at";
+    // edited_at arrives with migration 080. Until then asking for it is a 400,
+    // and the conversation is read the old way rather than not at all.
+    let response = await read(`${base},edited_at`);
+    if (response.status === 400) response = await read(base);
     if (!response.ok) return null;
     return (await response.json()) as Message[];
   } catch {
@@ -790,6 +801,29 @@ export async function sendMessage(recipientId: string, body: string, asSite = fa
     return { ok: false, error: rpcError(response.status, detail), message: detail.message };
   } catch {
     return { ok: false, error: "network" };
+  }
+}
+
+/* Only the author can change a message: editing goes through edit_message
+   (080), which checks the sender, and deleting is the delete policy 011
+   already has. RLS turns somebody else's id into "no rows" rather than an
+   error, so the delete asks for the row back and counts it. */
+export const editMessage = (id: string, body: string) => rpc<string | null>("edit_message", { p_id: id, p_body: body });
+
+export async function deleteMessage(id: string): Promise<boolean> {
+  const { url, key } = supabaseConfig();
+  const token = readToken();
+  if (!url || !key || !token) return false;
+  try {
+    const response = await fetch(`${url}/rest/v1/messages?id=eq.${encodeURIComponent(id)}&select=id`, {
+      method: "DELETE",
+      headers: { apikey: key, Authorization: `Bearer ${token}`, Prefer: "return=representation" },
+    });
+    if (!response.ok) return false;
+    const rows = (await response.json().catch(() => [])) as unknown[];
+    return rows.length > 0;
+  } catch {
+    return false;
   }
 }
 

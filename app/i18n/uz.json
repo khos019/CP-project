@@ -802,5 +802,19 @@
   "contests.inv_starts": "Boshlanadi: {t}",
   "contests.inv_failed": "Javob yuborib bo‘lmadi. Hisobingizga qayta kirib, yana urinib ko‘ring.",
   "chrome.contest_live_hint": "Kontest ketmoqda: «{title}» — tugashiga {t}",
-  "chrome.contest_soon_hint": "Yaqinda kontest: «{title}» — {t} dan keyin boshlanadi"
+  "chrome.contest_soon_hint": "Yaqinda kontest: «{title}» — {t} dan keyin boshlanadi",
+  "messages.edited": "tahrirlangan",
+  "messages.edit": "Tahrirlash",
+  "messages.delete": "O‘chirish",
+  "messages.confirm_delete": "Xabar o‘chirilsinmi? U ikkala tomonda ham yo‘qoladi.",
+  "messages.delete_failed": "Xabarni o‘chirib bo‘lmadi. Qaytadan urining.",
+  "messages.editing": "Xabarni tahrirlash",
+  "messages.cancel_edit": "Bekor qilish",
+  "messages.save": "Saqlash",
+  "messages.edit_failed": "Xabarni tahrirlab bo‘lmadi. Qaytadan urining.",
+  "messages.edit_not_migrated": "Tahrirlash hali yoqilmagan (080 migratsiyasi).",
+  "messages.sent": "Yuborildi",
+  "messages.read": "O‘qildi",
+  "messages.new_messages": "Yangi xabarlar",
+  "messages.unread_aria": "{n} ta o‘qilmagan xabar"
 }

@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  deleteMessage,
+  editMessage,
   fetchConversation,
   fetchThreads,
   markThreadRead,
@@ -16,6 +18,7 @@ import {
   type Role,
 } from "./session";
 import { EmptyState } from "./kit";
+import { tr } from "./i18n";
 import { ownerBroadcast, ownerBroadcastMissing, ownerBroadcastMissingCount, ownerBroadcastRecipients, ownerWelcomeGet, ownerWelcomeSet, type WelcomeMessage } from "./session";
 
 type Lang = "uz" | "en";
@@ -311,6 +314,7 @@ export function Messages({
   openWith,
   onOpened,
   onUnreadChange,
+  pulse = 0,
   onOpenProfile,
 }: {
   lang: Lang;
@@ -320,6 +324,9 @@ export function Messages({
   openWith?: string | null;
   onOpened?: () => void;
   onUnreadChange?: () => void;
+  /* Changes whenever the socket reports that a conversation changed, so an
+     open inbox re-reads rather than waiting to be reopened. */
+  pulse?: number;
   /* "Who am I talking to?" is the question a conversation raises, and until
      now it had no answer: the name at the top of the thread opens the
      account. */
@@ -338,12 +345,24 @@ export function Messages({
   const [people, setPeople] = useState<Person[] | null>(null);
   const [composing, setComposing] = useState(false);
   const [broadcasting, setBroadcasting] = useState(false);
+  const [editing, setEditing] = useState<Message | null>(null);
   const endRef = useRef<HTMLDivElement | null>(null);
+  /* The conversation the screen is showing now, for answers that arrive
+     after the learner has already moved to another one. */
+  const activeRef = useRef<string | null>(null);
+  /* Messages that were unread when they reached this screen. Opening a
+     conversation marks them read at once, so without this they would look
+     exactly like the old ones by the time anybody looked at them. */
+  const [freshIds, setFreshIds] = useState<Set<string>>(() => new Set());
+  const shownCount = useRef(0);
+  const tt = (key: string, vars?: Record<string, string | number>) => tr(lang, `messages.${key}`, vars);
 
   const loadThreads = useCallback(async () => {
     const result = await fetchThreads();
     if (result.ok) {
-      setThreads(result.data || []);
+      // The server already sorts newest first; sorting again here keeps that
+      // true for the rows this screen adds or updates on its own.
+      setThreads([...(result.data || [])].sort((a, b) => Date.parse(b.last_at) - Date.parse(a.last_at)));
       setFatal(null);
     } else if (result.error === "not-migrated") {
       setFatal("not-migrated");
@@ -363,9 +382,15 @@ export function Messages({
   const openThread = useCallback(
     async (otherId: string) => {
       setActive(otherId);
+      activeRef.current = otherId;
       setComposing(false);
+      setEditing(null);
+      setDraft("");
       setConversation(null);
+      shownCount.current = 0;
       const rows = await fetchConversation(otherId, me.id);
+      if (activeRef.current !== otherId) return;
+      setFreshIds(new Set((rows || []).filter((m) => m.recipient_id === me.id && !m.read_at).map((m) => m.id)));
       setConversation(rows || []);
       if (rows && rows.some((m) => m.recipient_id === me.id && !m.read_at)) {
         await markThreadRead(otherId);
@@ -387,8 +412,46 @@ export function Messages({
     onOpened?.();
   }, [openWith, openThread, onOpened]);
 
+  /* Re-reading after the socket says something changed, and every 20 seconds
+     while the tab is visible in case the socket is down. The open
+     conversation is read again too, and a message that lands in it while it
+     is on screen counts as read, as it would in any messenger. */
+  const refresh = useCallback(async () => {
+    const otherId = activeRef.current;
+    if (otherId) {
+      const rows = await fetchConversation(otherId, me.id);
+      if (rows && activeRef.current === otherId) {
+        const arrived = rows.filter((m) => m.recipient_id === me.id && !m.read_at).map((m) => m.id);
+        if (arrived.length) setFreshIds((seen) => new Set([...seen, ...arrived]));
+        setConversation(rows);
+        if (rows.some((m) => m.recipient_id === me.id && !m.read_at) && document.visibilityState === "visible") {
+          await markThreadRead(otherId);
+          onUnreadChange?.();
+        }
+      }
+    }
+    await loadThreads();
+  }, [me.id, loadThreads, onUnreadChange]);
+  const refreshRef = useRef(refresh);
   useEffect(() => {
-    endRef.current?.scrollIntoView({ block: "end" });
+    refreshRef.current = refresh;
+  }, [refresh]);
+  useEffect(() => {
+    if (pulse) void refreshRef.current();
+  }, [pulse]);
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (document.visibilityState === "visible") void refreshRef.current();
+    }, 20000);
+    return () => clearInterval(id);
+  }, []);
+
+  // Only a conversation that grew scrolls to the bottom: a background re-read
+  // must not yank the learner away from an older message they are reading.
+  useEffect(() => {
+    const count = conversation?.length || 0;
+    if (count > shownCount.current) endRef.current?.scrollIntoView({ block: "end" });
+    shownCount.current = count;
   }, [conversation]);
 
   useEffect(() => {
@@ -411,6 +474,23 @@ export function Messages({
     if (!body || !active || busy) return;
     setBusy(true);
     setNote(null);
+    if (editing) {
+      const target = editing;
+      const edited = await editMessage(target.id, body);
+      setBusy(false);
+      if (!edited.ok) {
+        setNote(edited.error === "not-migrated" ? tt("edit_not_migrated")
+          : edited.error === "network" || edited.error === "forbidden" ? tt("edit_failed")
+          : sendError(edited.error, t));
+        return;
+      }
+      const stamp = edited.data || (body === target.body ? target.edited_at ?? null : new Date().toISOString());
+      setEditing(null);
+      setDraft("");
+      setConversation((list) => (list || []).map((m) => (m.id === target.id ? { ...m, body, edited_at: stamp } : m)));
+      void loadThreads();
+      return;
+    }
     const result = await sendMessage(active, body, asSite && me.role === "owner");
     setBusy(false);
     if (!result.ok) {
@@ -419,6 +499,27 @@ export function Messages({
     }
     setDraft("");
     setConversation((list) => [...(list || []), result.data]);
+    void loadThreads();
+  };
+
+  const startEdit = (m: Message) => {
+    setEditing(m);
+    setDraft(m.body);
+    setNote(null);
+  };
+  const cancelEdit = () => {
+    setEditing(null);
+    setDraft("");
+  };
+  const remove = async (m: Message) => {
+    if (!confirm(tt("confirm_delete"))) return;
+    const ok = await deleteMessage(m.id);
+    if (!ok) {
+      setNote(tt("delete_failed"));
+      return;
+    }
+    if (editing?.id === m.id) cancelEdit();
+    setConversation((list) => (list || []).filter((x) => x.id !== m.id));
     void loadThreads();
   };
 
@@ -505,7 +606,7 @@ export function Messages({
             threads.map((th) => (
               <button
                 key={th.user_id}
-                className={th.user_id === active ? "msg-thread active" : "msg-thread"}
+                className={`msg-thread${th.user_id === active ? " active" : ""}${th.unread > 0 ? " unread" : ""}`}
                 onClick={() => void openThread(th.user_id)}
               >
                 <span className="ua-avatar" aria-hidden>
@@ -521,7 +622,21 @@ export function Messages({
                     {th.last_body.slice(0, 48) || "…"}
                   </small>
                 </span>
-                {th.unread > 0 && <span className="msg-badge">{th.unread}</span>}
+                <span className="msg-thread-meta">
+                  <small className="muted">
+                    {th.last_mine && th.last_body && th.last_read !== undefined && (
+                      <span className={th.last_read ? "msg-ticks read" : "msg-ticks"} title={th.last_read ? tt("read") : tt("sent")}>
+                        {th.last_read ? "✓✓" : "✓"}
+                      </span>
+                    )}
+                    {th.last_body ? clock(th.last_at, lang, t) : ""}
+                  </small>
+                  {th.unread > 0 && (
+                    <span className="msg-count" aria-label={tt("unread_aria", { n: th.unread })}>
+                      {th.unread > 99 ? "99+" : th.unread}
+                    </span>
+                  )}
+                </span>
               </button>
             ))
           )}
@@ -597,17 +712,39 @@ export function Messages({
                 {conversation === null ? (
                   <p className="muted">{t.loading}</p>
                 ) : (
-                  conversation.map((m) => {
+                  conversation.map((m, i) => {
                     const mine = m.sender_id === me.id;
+                    const fresh = !mine && freshIds.has(m.id);
+                    const firstFresh = fresh && !(i > 0 && freshIds.has(conversation[i - 1].id));
+                    const read = !!m.read_at;
                     return (
-                      <div key={m.id} className={mine ? "msg-bubble mine" : "msg-bubble"}>
-                        {m.as_site && (
-                          <span className="msg-site">
-                            <i>◆</i> {t.site} · {t.official}
-                          </span>
-                        )}
-                        <MessageBody text={m.body} />
-                        <small className="muted">{clock(m.created_at, lang, t)}</small>
+                      <div key={m.id} className={mine ? "msg-row mine" : "msg-row"}>
+                        {firstFresh && <div className="msg-new-divider"><span>{tt("new_messages")}</span></div>}
+                        <div className={`msg-bubble${mine ? " mine" : ""}${fresh ? " fresh" : ""}${editing?.id === m.id ? " editing" : ""}`}>
+                          {m.as_site && (
+                            <span className="msg-site">
+                              <i>◆</i> {t.site} · {t.official}
+                            </span>
+                          )}
+                          <MessageBody text={m.body} />
+                          <small className="muted msg-meta">
+                            {m.edited_at && <span className="msg-edited">{tt("edited")}</span>}
+                            {clock(m.created_at, lang, t)}
+                            {mine && (
+                              <span className={read ? "msg-ticks read" : "msg-ticks"} title={read ? tt("read") : tt("sent")}>
+                                {read ? "✓✓" : "✓"}
+                              </span>
+                            )}
+                          </small>
+                          {mine && (
+                            <span className="msg-tools">
+                              {"edited_at" in m && (
+                                <button type="button" onClick={() => startEdit(m)} title={tt("edit")} aria-label={tt("edit")}>✎</button>
+                              )}
+                              <button type="button" onClick={() => void remove(m)} title={tt("delete")} aria-label={tt("delete")}>🗑</button>
+                            </span>
+                          )}
+                        </div>
                       </div>
                     );
                   })
@@ -618,7 +755,16 @@ export function Messages({
               {note && <div className="notice notice-error">{note}</div>}
 
               <form className="msg-compose" onSubmit={submit}>
-                {me.role === "owner" && (
+                {editing && (
+                  <div className="msg-editing">
+                    <span>
+                      <b>✎ {tt("editing")}</b>
+                      <small className="muted">{editing.body.slice(0, 80)}</small>
+                    </span>
+                    <button type="button" className="secondary" onClick={cancelEdit}>{tt("cancel_edit")}</button>
+                  </div>
+                )}
+                {me.role === "owner" && !editing && (
                   <label className="msg-assite">
                     <input type="checkbox" checked={asSite} onChange={(e) => setAsSite(e.target.checked)} />
                     <span>
@@ -635,6 +781,11 @@ export function Messages({
                     maxLength={4000}
                     rows={2}
                     onKeyDown={(e) => {
+                      if (e.key === "Escape" && editing) {
+                        e.preventDefault();
+                        cancelEdit();
+                        return;
+                      }
                       if (e.key === "Enter" && !e.shiftKey) {
                         e.preventDefault();
                         void submit(e as unknown as React.FormEvent);
@@ -642,7 +793,7 @@ export function Messages({
                     }}
                   />
                   <button className="primary" type="submit" disabled={busy || !draft.trim()}>
-                    {busy ? t.sending : t.send}
+                    {busy ? t.sending : editing ? tt("save") : t.send}
                   </button>
                 </div>
               </form>

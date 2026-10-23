@@ -802,5 +802,19 @@
   "contests.inv_starts": "Starts {t}",
   "contests.inv_failed": "Could not send the answer. Sign in again and retry.",
   "chrome.contest_live_hint": "Contest live: “{title}” — {t} left",
-  "chrome.contest_soon_hint": "Upcoming contest: “{title}” — starts in {t}"
+  "chrome.contest_soon_hint": "Upcoming contest: “{title}” — starts in {t}",
+  "messages.edited": "edited",
+  "messages.edit": "Edit",
+  "messages.delete": "Delete",
+  "messages.confirm_delete": "Delete this message? It disappears for both of you.",
+  "messages.delete_failed": "Could not delete the message. Try again.",
+  "messages.editing": "Editing message",
+  "messages.cancel_edit": "Cancel",
+  "messages.save": "Save",
+  "messages.edit_failed": "Could not edit the message. Try again.",
+  "messages.edit_not_migrated": "Editing is not switched on yet (migration 080).",
+  "messages.sent": "Sent",
+  "messages.read": "Read",
+  "messages.new_messages": "New messages",
+  "messages.unread_aria": "{n} unread messages"
 }

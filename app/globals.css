@@ -5585,3 +5585,35 @@ body[data-ads-quiet] > div[style*="--rdata"]{display:none!important}
 .tab-ic{position:relative}
 .tab-pulse{position:absolute;top:-2px;right:-6px;width:8px;height:8px;border-radius:50%;background:#4f8cff;border:2px solid var(--surface)}
 .tab-pulse.live{background:#e2574c}
+
+/* ─── Xabarlar: o‘qilmaganlar, belgilar, tahrirlash ─────────────────── */
+/* The list's count is its own class: .msg-badge is pinned to a corner for the
+   header envelope, and inside a conversation row that put it somewhere else
+   on the page entirely. */
+.msg-thread-meta{display:grid;justify-items:end;gap:5px}
+.msg-thread-meta small{display:inline-flex;align-items:center;gap:3px;font-size:11.5px;white-space:nowrap}
+.msg-thread.unread{background:color-mix(in srgb,var(--lime) 8%,transparent)}
+.msg-thread.unread .msg-thread-copy b{font-weight:900}
+.msg-thread.unread .msg-thread-copy small{color:var(--ink);font-weight:650}
+.msg-count{display:inline-grid;place-items:center;min-width:20px;height:20px;padding:0 6px;border-radius:99px;background:var(--lime);color:color-mix(in srgb,var(--inset) 53%,var(--surface-2));font-size:11px;font-weight:900;line-height:1}
+.msg-ticks{margin-left:3px;font-weight:800;letter-spacing:-.2em;color:var(--dim)}
+.msg-ticks.read{color:var(--blue)}
+.msg-row{display:flex;flex-direction:column}
+.msg-bubble{position:relative}
+.msg-meta{display:inline-flex;align-items:center;gap:6px;justify-self:end}
+.msg-edited{font-style:italic}
+.msg-bubble.fresh{background:color-mix(in srgb,var(--lime) 10%,var(--surface-2));border-color:color-mix(in srgb,var(--lime) 45%,var(--line))}
+.msg-bubble.editing{outline:2px dashed color-mix(in srgb,var(--blue) 55%,transparent);outline-offset:2px}
+.msg-tools{position:absolute;top:-13px;right:8px;display:none;gap:4px}
+.msg-bubble:hover .msg-tools,.msg-bubble:focus-within .msg-tools{display:flex}
+.msg-tools button{width:26px;height:24px;padding:0;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font-size:12px;line-height:1;cursor:pointer}
+.msg-tools button:hover{background:var(--surface-2)}
+/* A phone has no hover, so the tools sit under the message instead. */
+@media (hover:none){
+  .msg-tools{position:static;display:flex;justify-self:end}
+}
+.msg-new-divider{display:flex;align-items:center;gap:10px;margin:6px 0;color:var(--lime);font-size:11.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+.msg-new-divider:before,.msg-new-divider:after{content:"";flex:1;height:1px;background:color-mix(in srgb,var(--lime) 35%,transparent)}
+.msg-editing{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;border-left:3px solid var(--blue);border-radius:8px;background:var(--surface-2)}
+.msg-editing span{display:grid;gap:2px;min-width:0}
+.msg-editing small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
