@@ -139,10 +139,14 @@ export function ContestProblemPage({ lang, slug, idx, board, phase, isOwner, sig
     }
   };
 
+  /* Neither the rating (nor the colour that encodes it) nor the number of tests
+     is shown on a custom round's problem: both hint at how hard a problem is
+     and how much an answer has to survive. The team sees both in the editor. */
+  const secret = board.contest.kind === "custom";
   const picker = <nav className="cxp-picker" aria-label={tr(lang, "contests.problems")}>
     {board.problems.map((p) => (
       <a key={p.idx} href={`/contests/${encodeURIComponent(slug)}/p/${p.idx}`} className={p.idx === idx ? "on" : undefined}
-        style={{ ["--pc" as string]: ratingColor(p.rating) }}
+        style={secret ? undefined : { ["--pc" as string]: ratingColor(p.rating) }}
         onClick={linkTo(() => { if (p.idx !== idx) onPick(p.idx); })}>
         <b>{p.idx}</b><span>{(lang === "uz" ? p.title_uz : p.title_en) || p.title_uz}</span>
       </a>
@@ -169,14 +173,14 @@ export function ContestProblemPage({ lang, slug, idx, board, phase, isOwner, sig
     <div className="workspace cxp-workspace">
       <article className="panel statement cxp-statement" {...(isOwner ? {} : NO_COPY)}>
         <header className="cxp-head">
-          <span className="cxp-idx" style={{ ["--pc" as string]: ratingColor(p.rating) }}>{p.idx}</span>
+          <span className="cxp-idx" style={secret ? undefined : { ["--pc" as string]: ratingColor(p.rating) }}>{p.idx}</span>
           <div>
             <h2>{title}</h2>
             <div className="cxp-limits">
               <span>⏱ {p.time_limit_ms / 1000} s</span>
               <span>▦ {p.memory_mb} MB</span>
-              <span>{tr(lang, "contests.p_tests", { n: p.tests })}</span>
-              <span style={{ color: ratingColor(p.rating) }}>★ {p.rating}</span>
+              {!secret && <span>{tr(lang, "contests.p_tests", { n: p.tests })}</span>}
+              {!secret && <span style={{ color: ratingColor(p.rating) }}>★ {p.rating}</span>}
             </div>
           </div>
         </header>

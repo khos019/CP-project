@@ -323,7 +323,8 @@ function PastCard({ lang, c, onOpen }: { lang: Lang; c: ContestSummary; onOpen: 
     </div>
     <div className="cx-side">
       <span className="cx-chips" aria-label={tr(lang, "contests.problems")}>
-        {c.problems.map((p) => <span key={p.idx} className="cx-chip" style={{ color: ratingColor(p.rating) }} title={`${p.idx} · ${p.rating}`}>{p.idx}</span>)}
+        {c.problems.map((p) => <span key={p.idx} className="cx-chip" style={c.kind === "custom" ? undefined : { color: ratingColor(p.rating) }}
+          title={c.kind === "custom" ? p.idx : `${p.idx} · ${p.rating}`}>{p.idx}</span>)}
       </span>
       <span className="cx-go" aria-hidden>→</span>
     </div>
@@ -589,6 +590,10 @@ function ProblemsTab({ lang, slug, board, people, phase, isOwner, onEdit, onOpen
   const { contest, problems, rows } = board;
   // How many took part decides the solve bars; the sidebar counts registrations.
   const onBoard = rows.length;
+  // A custom round's problems carry no rating on its pages: the number, and
+  // the colour that encodes it, would tell a participant which one is easiest.
+  // The team sees and sets it in the editor.
+  const secret = contest.kind === "custom";
   const winner = phase === "finished" ? rows[0] : undefined;
   const limitsOf = (p: ContestProblem) => {
     if (p.custom) return tr(lang, "contests.limits", { s: (p.time_limit_ms ?? 1000) / 1000, mb: p.memory_mb ?? 256 });
@@ -609,13 +614,13 @@ function ProblemsTab({ lang, slug, board, people, phase, isOwner, onEdit, onOpen
       <div className="cx-plist" role="list" aria-label={tr(lang, "contests.problems")}>
         {problems.map((p) => {
           const share = onBoard ? p.solved / onBoard : 0;
-          return <a key={p.idx} role="listitem" className="cx-pcard" href={hrefOf(p)} onClick={linkTo(() => open(p))} style={{ ["--pc" as string]: ratingColor(p.rating) }}>
+          return <a key={p.idx} role="listitem" className="cx-pcard" href={hrefOf(p)} onClick={linkTo(() => open(p))} style={secret ? undefined : { ["--pc" as string]: ratingColor(p.rating) }}>
             <span className="cx-idx">{p.idx}</span>
             <span className="cx-pname">
               <b>{titleOf(lang, p)}</b>
               <small>{limitsOf(p)}</small>
             </span>
-            <span className="cx-rating">{p.rating}</span>
+            <span className="cx-rating">{secret ? null : p.rating}</span>
             <span className="cx-solved" title={tr(lang, "contests.solved_by", { n: p.solved, of: onBoard })}>
               <span className="cx-solved-n"><CxIcon d={CX_USERS} />{p.solved}<small>/{p.tried}</small></span>
               <span className="cx-solve-bar"><i style={{ width: `${Math.round(share * 100)}%` }} /></span>
