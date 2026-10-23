@@ -309,7 +309,10 @@ function StatsBody({ lang, t, stats, duels, views, onPickDay, onOpenPerson }: {
   }, [stats]);
   const fill = (text: string, vars: Record<string, string | number>) =>
     Object.entries(vars).reduce((s, [k, v]) => s.replace(`{${k}}`, String(v)), text);
-  const pct = (n: number) => (stats.learners_total ? Math.round((n / stats.learners_total) * 100) : 0);
+  /* Real people when 079 is applied; every profile before it. */
+  const people = stats.learners_real ?? stats.learners_total;
+  const pct = (n: number) => (people ? Math.round((n / people) * 100) : 0);
+  const visited = stats.visited_7d !== undefined;
 
   return (
     <>
@@ -336,10 +339,16 @@ function StatsBody({ lang, t, stats, duels, views, onPickDay, onOpenPerson }: {
       <section className="os-section">
         <h2 className="os-h2">{t.accounts}</h2>
         <div className="os-tiles os-tiles-3">
-          <Tile icon="users" label={t.total} value={stats.learners_total} hint={t.totalHint} />
+          <Tile icon="users" label={t.total} value={stats.learners_total}
+            hint={stats.learners_real !== undefined ? fill(t.totalSplitHint, { real: stats.learners_real, seeded: stats.learners_seeded ?? 0 }) : t.totalHint} />
           <Tile icon="calendar" label={t.new7} value={stats.new_7d} hint={t.new7Hint} />
-          <Tile icon="key" label={t.active7} value={stats.active_7d} hint={t.activeHint} />
-          <Tile icon="key" label={t.active30} value={stats.active_30d} hint={t.activeHint} />
+          {visited ? <>
+            <Tile icon="eye" label={t.visited7} value={stats.visited_7d ?? 0} hint={t.visitedHint} />
+            <Tile icon="eye" label={t.visited30} value={stats.visited_30d ?? 0} hint={t.visitedHint} />
+          </> : <>
+            <Tile icon="key" label={t.active7} value={stats.active_7d} hint={t.activeHint} />
+            <Tile icon="key" label={t.active30} value={stats.active_30d} hint={t.activeHint} />
+          </>}
           <Tile icon="mail" label={t.confirmed} value={stats.confirmed} hint={fill(t.confirmedHint, { p: pct(stats.confirmed) })} />
           <Tile icon="ghost" label={t.neverIn} value={stats.never_signed_in} hint={t.neverInHint} />
         </div>
@@ -458,8 +467,8 @@ function StatsBody({ lang, t, stats, duels, views, onPickDay, onOpenPerson }: {
 
         <section className="panel">
           <h2 className="os-h2">{t.composition}</h2>
-          <Breakdown title={t.language} rows={langRows} total={stats.learners_total} />
-          <Breakdown title={t.roles} rows={roleRows} total={stats.learners_total} />
+          <Breakdown title={t.language} rows={langRows} total={people} />
+          <Breakdown title={t.roles} rows={roleRows} total={people} />
           <div className="os-rating">
             <span className="muted">{t.rating}</span>
             <span>

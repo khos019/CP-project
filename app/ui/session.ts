@@ -450,6 +450,11 @@ export type OwnerStats = {
   learners_total: number; new_today: number; new_7d: number; new_30d: number;
   active_today: number; active_7d: number; active_30d: number;
   never_signed_in: number; confirmed: number; unconfirmed: number;
+  /* Added by migration 079: people without the seeded accounts, and who
+     opened the site (presence heartbeat) rather than signed in afresh.
+     Optional so the page keeps its sign-in figures until 079 is applied. */
+  learners_real?: number; learners_seeded?: number;
+  visited_today?: number; visited_7d?: number; visited_30d?: number;
   signups_daily: { day: string; count: number }[];
   /* Time on the platform, added by migration 014. Optional because an owner
      whose database still has only 009 installed gets a reply without these
