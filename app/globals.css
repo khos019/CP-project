@@ -5604,7 +5604,11 @@ body[data-ads-quiet] > div[style*="--rdata"]{display:none!important}
 .msg-edited{font-style:italic}
 .msg-bubble.fresh{background:color-mix(in srgb,var(--lime) 10%,var(--surface-2));border-color:color-mix(in srgb,var(--lime) 45%,var(--line))}
 .msg-bubble.editing{outline:2px dashed color-mix(in srgb,var(--blue) 55%,transparent);outline-offset:2px}
-.msg-tools{position:absolute;top:-13px;right:8px;display:none;gap:4px}
+.msg-tools{position:absolute;top:-13px;right:8px;display:none;gap:4px;z-index:1}
+/* The tools ride 13px above a bubble, and the scroller clips whatever leaves
+   it, so the first message needs that much room above it (and the editing
+   outline a little at the sides). */
+.msg-scroll{padding-top:16px;padding-left:4px}
 .msg-bubble:hover .msg-tools,.msg-bubble:focus-within .msg-tools{display:flex}
 .msg-tools button{width:26px;height:24px;padding:0;border:1px solid var(--line);border-radius:8px;background:var(--surface);color:var(--ink);font-size:12px;line-height:1;cursor:pointer}
 .msg-tools button:hover{background:var(--surface-2)}
