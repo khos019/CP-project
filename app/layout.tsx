@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { THEME_INIT_SCRIPT } from "./ui/theme-script";
+import { ASSET_RECOVERY_SCRIPT } from "./ui/asset-recovery";
 
 // next/font/google emitted absolute build-machine paths
 // (file:///C:/.../.vinext/fonts/...) into the deployed stylesheet, so every
@@ -24,6 +25,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     // React hydrates against — hence suppressHydrationWarning on <html> only.
     <html lang="uz" data-theme="light" suppressHydrationWarning>
       <head>
+        <script dangerouslySetInnerHTML={{ __html: ASSET_RECOVERY_SCRIPT }} />
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         {/* Yandex Advertising Network, autoplacement block 20242049. yaContextCb
             must exist before context.js loads, or queued ad calls are lost. */}
