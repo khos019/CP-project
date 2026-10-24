@@ -167,7 +167,7 @@
   "contests.problems": "Problems",
   "contests.results": "Standings",
   "contests.round_n": "Round #{n}",
-  "contests.rules": "Ranked by problems solved, then by penalty: the accepted time in minutes for each solved problem plus {n} minutes for every rejected attempt before it.",
+  "contests.rules": "Ranked by problems solved, then by penalty: the accepted time in minutes for each solved problem plus {n} minutes for every rejected attempt before it. Compilation errors and solutions that fail on test 1 are not counted.",
   "contests.rules_toggle": "How it is scored",
   "contests.solved": "Problems solved",
   "contests.solved_by": "{n} / {of} solved",

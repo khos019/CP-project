@@ -167,7 +167,7 @@
   "contests.problems": "Masalalar",
   "contests.results": "Natijalar",
   "contests.round_n": "Raund #{n}",
-  "contests.rules": "O‘rin yechilgan masalalar soni, keyin jarima bo‘yicha. Jarima — har bir yechilgan masala uchun AC vaqti (daqiqa) va undan oldingi har bir xato urinish uchun {n} daqiqa.",
+  "contests.rules": "O‘rin yechilgan masalalar soni, keyin jarima bo‘yicha. Jarima — har bir yechilgan masala uchun AC vaqti (daqiqa) va undan oldingi har bir xato urinish uchun {n} daqiqa. Kompilyatsiya xatosi va 1-testda yiqilgan yechim xato urinish hisoblanmaydi.",
   "contests.rules_toggle": "Hisoblash qoidasi",
   "contests.solved": "Yechilgan masalalar",
   "contests.solved_by": "{n} / {of} yechdi",
