@@ -34,6 +34,9 @@ import {
 } from "./duel-client";
 import { fetchFriends, type FriendRow } from "./social";
 import { searchPeople } from "./session";
+import { noCopy, COPYABLE } from "./no-copy";
+
+const DUEL_NO_COPY = noCopy(".sample");
 
 type Lang = "uz" | "en";
 type CodeLang = "cpp20" | "python3";
@@ -1013,7 +1016,9 @@ function Arena({
                and reading a bound while checking your loop against it is most
                of what solving one of these actually is. */
             <div className="duel-work">
-              <div className="duel-problem">
+              {/* The opponent is a person against the clock, so the statement
+                  cannot be copied out (no-copy.ts); the sample can. */}
+              <div className="duel-problem" {...DUEL_NO_COPY}>
               <span className="tag">{problem.id} · {t.diff[problem.difficulty] || problem.difficulty.toUpperCase()} · {problem.rating}</span>
               <h2>{lang === "uz" ? problem.uz : problem.en}</h2>
               {statement.status === "loading" ? (
@@ -1041,7 +1046,7 @@ function Arena({
                     );
                   })()}
                   {prose?.samples?.[0] && (
-                    <pre className="sample">{prose.samples[0].input}{"\n"}{prose.samples[0].output}</pre>
+                    <pre className="sample" style={COPYABLE}>{prose.samples[0].input}{"\n"}{prose.samples[0].output}</pre>
                   )}
                 </>
               )}
