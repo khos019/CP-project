@@ -19,7 +19,7 @@
 
 import { tests, problemCpuSeconds } from "../judge/tests";
 import { serverEnv } from "./env";
-import { buildBatchSubmission, newBatchKey, parseBatchOutput } from "./judge-batch";
+import { buildBatchSubmission, newBatchKey, parseBatchOutput, STACK_KB } from "./judge-batch";
 import { bigTests } from "../judge/big-tests";
 import type { GeneratedTest } from "../judge/gen-lib";
 
@@ -74,6 +74,7 @@ type Result = {
 type Submission = {
   language_id: number; source_code?: string; additional_files?: string; stdin: string; expected_output?: string;
   cpu_time_limit: number; wall_time_limit: number; memory_limit: number; max_file_size: number;
+  stack_limit?: number;
   enable_per_process_and_thread_time_limit?: boolean;
   enable_per_process_and_thread_memory_limit?: boolean;
 };
@@ -319,7 +320,7 @@ export async function judgeSource(
     language_id: languageIds[language], source_code: sourceCode,
     stdin: test.stdin, expected_output: test.expected_output,
     cpu_time_limit: limits[language].cpu * scale, wall_time_limit: limits[language].wall * scale,
-    memory_limit: 262144, max_file_size: 1024,
+    memory_limit: 262144, max_file_size: 1024, stack_limit: STACK_KB,
     ...(language === "cpp20" ? cppOptions : {}),
   }));
 
@@ -369,7 +370,7 @@ export async function judgeCases(
     language_id: languageIds[language], source_code: sourceCode,
     stdin: test.stdin, expected_output: test.expected_output,
     cpu_time_limit: limits[language].cpu * scale, wall_time_limit: limits[language].wall * scale,
-    memory_limit: memoryKb, max_file_size: 1024,
+    memory_limit: memoryKb, max_file_size: 1024, stack_limit: STACK_KB,
     ...(language === "cpp20" ? cppOptions : {}),
   }));
   try {
@@ -449,7 +450,7 @@ async function judgeTests(
 export async function runSource(language: Language, sourceCode: string, stdin: string): Promise<RunOutcome> {
   const result = (await execute([{
     language_id: languageIds[language], source_code: sourceCode, stdin: stdin || "",
-    cpu_time_limit: 5, wall_time_limit: 10, memory_limit: 262144, max_file_size: 1024,
+    cpu_time_limit: 5, wall_time_limit: 10, memory_limit: 262144, max_file_size: 1024, stack_limit: STACK_KB,
     ...(language === "cpp20" ? cppOptions : {}),
   }]))[0];
   return {

@@ -54,6 +54,13 @@ export type BatchResult = {
 
 export const MULTI_FILE_LANGUAGE_ID = 89;
 
+/* The stack. Judge0 defaults to 64 MB, which Codeforces never imposes (its
+   stack is the whole memory limit), so a local array like dp[2001][3][2001]
+   of long long — 96 MB — crashed here and passed there (AlgoYo'l Raund #1 C,
+   2026-10-24). 128 MB is Judge0's stock max_stack_limit, the most a default
+   install accepts; each test the runner starts inherits it from the job. */
+export const STACK_KB = 128000;
+
 /* The job's own limits, not a test's. They only have to contain the runner,
    which enforces the real ones itself; they are kept at or under Judge0's
    stock maxima (15 s CPU, 20 s wall) so a default install accepts the job. A
@@ -277,6 +284,7 @@ export function buildBatchSubmission(
     }),
     cpu_time_limit: JOB_LIMITS.cpu, wall_time_limit: JOB_LIMITS.wall,
     memory_limit: limits.memoryKb, max_file_size: Math.max(limits.outputKb, JOB_LIMITS.fileKb),
+    stack_limit: STACK_KB,
     // Per process, as C++ is judged elsewhere: no cgroup, so the compile's
     // CPU and memory cannot be charged to the runner.
     enable_per_process_and_thread_time_limit: true,
