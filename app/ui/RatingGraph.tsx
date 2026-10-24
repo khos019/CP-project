@@ -61,7 +61,7 @@ const T = {
     tabDuel: "Duel reytingi",
     tabContest: "Kontest reytingi",
     contests: (n: number) => `${n} ta kontest`,
-    noContest: "Hali reytingli kontestda qatnashmagan — hamma 1200 dan boshlaydi",
+    noContest: "Hali reytingli kontestda qatnashmagan — hamma 0 dan boshlaydi",
     place: (p: number, n: number) => `${p}-o‘rin / ${n}`,
     perf: "Natija reytingi",
   },
@@ -78,7 +78,7 @@ const T = {
     tabDuel: "Duel rating",
     tabContest: "Contest rating",
     contests: (n: number) => `${n} contest${n === 1 ? "" : "s"}`,
-    noContest: "No rated contest yet — everybody starts from 1200",
+    noContest: "No rated contest yet — everybody starts from 0",
     place: (p: number, n: number) => `Place ${p} of ${n}`,
     perf: "Performance",
   },
@@ -101,8 +101,9 @@ type Step = {
 };
 type Point = { x: number; y: number; t: number; row: Step };
 
-/* The rating every account enters the contest curve from (078). */
-const CONTEST_START = 1200;
+/* What an account shows before its first rated round: 0, as on Codeforces
+   (083 keeps the real 1400 hidden and adds the newcomer boosts on top). */
+const CONTEST_START = 0;
 
 /* A y-axis on round hundreds, at least 400 points tall. Without the floor an
    account whose rating moved by 12 gets a curve like a mountain range. */
