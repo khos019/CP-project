@@ -5,5 +5,5 @@ import { AlgoYolApp } from "../ui/AlgoYolApp";
 // refresh on one of those URLs still resolve to the same single-page app,
 // which reads the path on mount to restore the matching screen.
 export default function CatchAll() {
-  return <AlgoYolApp deepLink />;
+  return <AlgoYolApp />;
 }
