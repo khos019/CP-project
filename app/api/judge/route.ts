@@ -6,7 +6,7 @@ import { NextResponse } from "next/server";
    are unchanged: the problem screen, the duel and the playground all read
    them, and this route is not the place to renegotiate that. */
 import { judgeSource, judgeCases, runSource, languageIds, isJudgeableProblem, type Language } from "../_lib/judge";
-import { bearerFrom, insertAsService, rpcAsService } from "../_lib/supabase";
+import { bearerFrom, insertAsService, rpcAsService, selectAsService } from "../_lib/supabase";
 import { bankProblems } from "../../ui/problem-bank";
 import { allow, verifiedUserId } from "../_lib/guard";
 
@@ -35,6 +35,59 @@ type ContestSpec = {
   tests: { stdin: string; expected_output: string }[];
 };
 const isContestKey = (key: string) => key.startsWith("cx:");
+
+/* contest_judge_spec hands back every test with every call, and a round's
+   problem can carry megabytes of them (Raund #1's E is 11.7 MB). Asking for
+   that on each submission is what stalled the whole database mid-round on
+   2026-10-24. So the common case — a public round that has started, submitted
+   to by somebody allowed to — is decided here from three small reads, and the
+   tests come from a per-isolate cache. Anything unusual (hidden, not started,
+   not registered: the owner and the team live there) still goes through the
+   RPC, which stays the authority on those. */
+type CachedTests = { at: number; spec: Promise<ContestSpec | null> };
+const TESTS_TTL_MS = 5 * 60_000;
+const testsCache = new Map<string, CachedTests>();
+
+function cachedTests(contestId: string, idx: string): Promise<ContestSpec | null> {
+  const key = `${contestId}:${idx}`;
+  const hit = testsCache.get(key);
+  if (hit && Date.now() - hit.at < TESTS_TTL_MS) return hit.spec;
+  const where = `contest_id=eq.${encodeURIComponent(contestId)}&idx=eq.${encodeURIComponent(idx)}`;
+  const spec = (async () => {
+    const [limits, tests] = await Promise.all([
+      selectAsService<{ time_limit_ms: number; memory_mb: number }[]>(`contest_problem_specs?${where}&select=time_limit_ms,memory_mb`),
+      selectAsService<{ stdin: string; expected: string }[]>(`contest_problem_tests?${where}&select=stdin,expected&order=n.asc`),
+    ]);
+    if (!limits?.[0] || !tests) return null;
+    return {
+      ok: true, time_limit_ms: limits[0].time_limit_ms, memory_mb: limits[0].memory_mb,
+      tests: tests.map((t) => ({ stdin: t.stdin, expected_output: t.expected })),
+    };
+  })();
+  testsCache.set(key, { at: Date.now(), spec });
+  // A failed read is not worth keeping for five minutes.
+  void spec.then((s) => { if (!s) testsCache.delete(key); }, () => testsCache.delete(key));
+  return spec;
+}
+
+/* The same gates contest_judge_spec applies, for the case where they all pass
+   without needing contest_can_preview. Null means "ask the RPC". */
+async function fastContestSpec(problemKey: string, userId: string): Promise<ContestSpec | null> {
+  const problem = (await selectAsService<{ contest_id: string; idx: string }[]>(
+    `contest_problems?problem_key=eq.${encodeURIComponent(problemKey)}&select=contest_id,idx`))?.[0];
+  if (!problem) return null;
+  const contest = (await selectAsService<{ hidden: boolean; starts_at: string; duration_minutes: number; kind: string }[]>(
+    `contests?id=eq.${encodeURIComponent(problem.contest_id)}&select=hidden,starts_at,duration_minutes,kind`))?.[0];
+  if (!contest || contest.hidden) return null;
+  const start = Date.parse(contest.starts_at);
+  if (!(Date.now() >= start)) return null;
+  if (contest.kind === "custom" && Date.now() < start + contest.duration_minutes * 60_000) {
+    const registered = await selectAsService<unknown[]>(
+      `contest_registrations?contest_id=eq.${encodeURIComponent(problem.contest_id)}&user_id=eq.${encodeURIComponent(userId)}&select=user_id`);
+    if (!registered?.length) return null;
+  }
+  return cachedTests(problem.contest_id, problem.idx);
+}
 
 async function recordContest(userId: string, problemId: string, language: Language, sourceCode: string, outcome: Outcome) {
   await rpcAsService("contest_record_submission", {
@@ -88,12 +141,16 @@ export async function POST(request: Request) {
   let judgeIt: (onProgress?: (settled: number, total: number) => void) => Promise<Outcome>;
   let save: (outcome: Outcome) => Promise<void>;
   if (isContestKey(problemId)) {
-    const spec = await rpcAsService<ContestSpec | null>("contest_judge_spec", { p_key: problemId, p_user: userId });
-    if (!spec.ok) return NextResponse.json({ error: spec.error }, { status: spec.error === "not_migrated" ? 501 : 502 });
-    if (!spec.data) return NextResponse.json({ error: "Invalid submission" }, { status: 400 });
-    if (!spec.data.ok) return NextResponse.json({ error: spec.data.reason || "forbidden" }, { status: 403 });
-    const s = spec.data;
-    judgeIt = (onProgress) => judgeCases(s.tests, s.time_limit_ms, s.memory_mb, body.language, body.sourceCode, onProgress);
+    let s = await fastContestSpec(problemId, userId);
+    if (!s) {
+      const spec = await rpcAsService<ContestSpec | null>("contest_judge_spec", { p_key: problemId, p_user: userId });
+      if (!spec.ok) return NextResponse.json({ error: spec.error }, { status: spec.error === "not_migrated" ? 501 : 502 });
+      if (!spec.data) return NextResponse.json({ error: "Invalid submission" }, { status: 400 });
+      if (!spec.data.ok) return NextResponse.json({ error: spec.data.reason || "forbidden" }, { status: 403 });
+      s = spec.data;
+    }
+    const tests = s;
+    judgeIt = (onProgress) => judgeCases(tests.tests, tests.time_limit_ms, tests.memory_mb, body.language, body.sourceCode, onProgress);
     save = (outcome) => recordContest(userId, problemId, body.language, body.sourceCode, outcome);
   } else {
     if (!isJudgeableProblem(problemId)) return NextResponse.json({ error: "Invalid submission" }, { status: 400 });
