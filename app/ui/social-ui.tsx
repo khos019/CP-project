@@ -144,6 +144,18 @@ const when = (iso: string, lang: Lang) => shortDateTime(iso, lang);
 /** A verdict in the reader's language -- one table for every list that shows
     one, so a profile and the submission table cannot word it differently. */
 export const verdictLabel = (verdict: string, lang: Lang) => T[lang].verdicts[verdict] || verdict;
+/** The verdict with the test it fell on, as Codeforces writes it ("Wrong
+    answer on test 2"). The judge stores passed = the index of the first
+    failing test, so that test is passed + 1; "1/9" read too much like "on
+    test 1" when it meant the opposite. Verdicts with no failing test (accepted,
+    compilation error, judge error) keep the bare label. */
+export function verdictOnTest(verdict: string, passed: number | null | undefined, total: number | null | undefined, lang: Lang) {
+  const name = verdictLabel(verdict, lang);
+  if (verdict === "ACCEPTED" || verdict === "COMPILATION_ERROR" || verdict === "JUDGE_ERROR") return name;
+  if (passed == null || total == null || passed >= total) return name;
+  const n = passed + 1;
+  return lang === "uz" ? `${n}-testda ${name.charAt(0).toLowerCase()}${name.slice(1)}` : `${name} on test ${n}`;
+}
 const LANG_LABEL: Record<string, string> = { cpp20: "C++17", python3: "Python 3" };
 
 /* Codeforces puts a star beside the handle and fills it in when the person is

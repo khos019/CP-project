@@ -6,7 +6,7 @@ import { tr, type Lang } from "./i18n";
 import { ratingColor } from "./rating";
 import { linkTo } from "./Chrome";
 import { bankProblems } from "./problem-bank";
-import { verdictLabel } from "./social-ui";
+import { verdictOnTest } from "./social-ui";
 import { fetchSubmissionCode, unlockSubmissionCode, type CodeResult } from "./social";
 import { CodeBlock } from "./CodeBlock";
 import { EmptyState } from "./kit";
@@ -869,8 +869,7 @@ function SubmissionsModal({ lang, title, subtitle, load, onClose, single }: {
                   <span className="cx-att-n mono">#{i + 1}</span>
                   <span className="cx-att-when mono">{clock(Math.max(0, a.minute))}</span>
                   <span className={`cx-att-verdict ${verdictClass(a.verdict)}`}>
-                    {verdictLabel(a.verdict, lang)}
-                    {a.verdict !== "ACCEPTED" && a.passed !== null && a.total !== null && <small className="mono"> {a.passed}/{a.total}</small>}
+                    {verdictOnTest(a.verdict, a.passed, a.total, lang)}
                   </span>
                   <span className="cx-att-stat mono">{LANGS[a.language] || a.language}</span>
                   <span className="cx-att-stat mono">{a.runtime_ms === null ? "—" : `${a.runtime_ms} ms`}</span>
@@ -882,7 +881,7 @@ function SubmissionsModal({ lang, title, subtitle, load, onClose, single }: {
 
           {current && <div className="cx-code">
             <div className="cx-code-bar">
-              <span className={`cx-att-verdict ${verdictClass(current.verdict)}`}>{verdictLabel(current.verdict, lang)}</span>
+              <span className={`cx-att-verdict ${verdictClass(current.verdict)}`}>{verdictOnTest(current.verdict, current.passed, current.total, lang)}</span>
               <span className="mono">{LANGS[current.language] || current.language}</span>
               <span className="mono">{current.runtime_ms === null ? "—" : `${current.runtime_ms} ms`}</span>
               <span className="mono">{current.memory_kb === null ? "—" : `${current.memory_kb} KB`}</span>
@@ -987,8 +986,7 @@ function StatusTab({ lang, slug, board, onOpenSubmissions }: {
             <td className="cs-lang mono">{LANGS[r.language] || r.language}</td>
             <td className="cs-verdict">
               <span className={`sub-verdict ${ok ? "ok" : "bad"}`}>
-                {verdictLabel(r.verdict, lang)}
-                {!ok && r.passed !== null && r.total !== null && <small className="mono"> {r.passed}/{r.total}</small>}
+                {verdictOnTest(r.verdict, r.passed, r.total, lang)}
               </span>
             </td>
             <td className="cs-time cx-r mono">{r.runtime_ms === null ? "—" : `${r.runtime_ms} ms`}</td>

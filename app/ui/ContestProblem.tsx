@@ -8,7 +8,7 @@ import { MathText } from "./math-text";
 import { CodeEditor, type EditorLang } from "./CodeEditor";
 import { judgeFetch, judgeRefusal } from "./judge-client";
 import { readDraft, writeDraft } from "./drafts";
-import { verdictLabel } from "./social-ui";
+import { verdictLabel, verdictOnTest } from "./social-ui";
 import { noCopy, COPYABLE } from "./no-copy";
 import { Clock } from "./Contests";
 import { publicRpc, windowOf, type Load, type Standings, type Phase } from "./contest-data";
@@ -80,10 +80,11 @@ export function ContestProblemPage({ lang, slug, idx, board, phase, isOwner, sig
   };
 
   const line = (r: JudgeReply) => {
-    const name = verdictLabel(String(r.verdict || "JUDGE_ERROR"), lang);
-    const at = r.test && r.verdict !== "ACCEPTED" ? (lang === "uz" ? ` · ${r.test}-test` : ` on test ${r.test}`) : "";
-    const stats = r.verdict === "ACCEPTED" ? ` · ${r.passed}/${r.total} · ${r.runtimeMs} ms · ${r.memoryKb} KB` : r.total ? ` · ${r.passed ?? 0}/${r.total}` : "";
-    return `${name}${at}${stats}${r.details ? `\n${String(r.details).slice(0, 900)}` : ""}`;
+    const verdict = String(r.verdict || "JUDGE_ERROR");
+    // The judge names the failing test; verdictOnTest wants how many passed.
+    const name = r.test ? verdictOnTest(verdict, r.test - 1, r.total ?? r.test, lang) : verdictLabel(verdict, lang);
+    const stats = verdict === "ACCEPTED" ? ` · ${r.passed}/${r.total} · ${r.runtimeMs} ms · ${r.memoryKb} KB` : "";
+    return `${name}${stats}${r.details ? `\n${String(r.details).slice(0, 900)}` : ""}`;
   };
 
   const submit = async () => {
