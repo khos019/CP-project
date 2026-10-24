@@ -191,7 +191,8 @@ export function ContestProblemPage({ lang, slug, idx, board, phase, isOwner, sig
         {phase === "finished" && <p className="notice cxp-note">{tr(lang, "contests.p_practice")}</p>}
         {phase === "upcoming" && isOwner && <p className="notice cxp-note">{tr(lang, "contests.p_owner_early")}</p>}
         {mustRegister && <div className="cx-reg cxp-reg closed">
-          <div className="cx-reg-copy"><b>{tr(lang, "contests.reg_closed")}</b><small>{tr(lang, "contests.reg_closed_problem")}</small></div>
+          <div className="cx-reg-copy"><b>{tr(lang, "contests.reg_needed_title")}</b><small>{tr(lang, "contests.reg_late_problem")}</small></div>
+          <a className="primary" href={`/contests/${encodeURIComponent(slug)}`}>{tr(lang, "contests.reg_button")}</a>
         </div>}
         {!mustRegister && <CodeEditor code={code} setCode={edit} lang={language} setLang={switchLang} onSubmit={submit}
           submitLabel={signed ? tr(lang, "contests.p_submit") : tr(lang, "contests.p_sign_in")} verdict={verdict} busy={busy} />}

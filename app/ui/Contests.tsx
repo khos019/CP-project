@@ -291,7 +291,7 @@ function FeatureCard({ lang, c, phase, now, signed, busy, error, onRegister, onO
       {staff ? <b className="cx-reg-badge big cx-role-badge">{tr(lang, `contests.role_${c.my_role}`)}</b>
         : canRegister && (c.me_registered
         ? <b className="cx-reg-badge big"><CxIcon d={CX_CHECK} />{tr(lang, "contests.reg_done_short")}</b>
-        : phase === "upcoming"
+        : phase !== "finished"
           ? <button type="button" className="primary cx-feature-reg-btn" disabled={busy} onClick={onRegister}>
               {tr(lang, signed ? "contests.reg_button" : "contests.reg_sign_in")}
             </button>
@@ -468,13 +468,10 @@ function ContestRound({ lang, slug, tab, problemIdx, isOwner, signed, onTab, onO
         <span className="cx-reg-copy"><b>{tr(lang, "contests.reg_done")}</b><small>{tr(lang, "contests.reg_count", { n: contest.registered ?? 0 })}</small></span>
         {livePhase === "upcoming" && <button type="button" className="cx-link-btn" disabled={regBusy} onClick={() => void register(false)}>{tr(lang, "contests.reg_cancel")}</button>}
       </div>
-    : livePhase === "live"
-      // Registration closed with the start: the round can be watched, not entered.
-      ? <div className="cx-side-reg closed">
-          <span className="cx-reg-copy"><b>{tr(lang, "contests.reg_closed")}</b><small>{tr(lang, "contests.reg_closed_body")}</small></span>
-        </div>
-      : <div className="cx-side-reg">
-          <span className="cx-reg-copy"><b>{tr(lang, "contests.reg_cta")}</b><small>{tr(lang, "contests.reg_count", { n: contest.registered ?? 0 })}</small></span>
+    // Registration stays open until the round ends (081): a late entrant just
+    // has less time.
+    : <div className="cx-side-reg">
+          <span className="cx-reg-copy"><b>{tr(lang, livePhase === "live" ? "contests.reg_cta_live" : "contests.reg_cta")}</b><small>{tr(lang, "contests.reg_count", { n: contest.registered ?? 0 })}</small></span>
           <button type="button" className="primary cx-reg-btn" disabled={regBusy} onClick={() => void register(true)}>{tr(lang, signed ? "contests.reg_button" : "contests.reg_sign_in")}</button>
         </div>);
   const hasSide = livePhase !== "finished" || Boolean(regBox);

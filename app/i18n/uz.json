@@ -748,6 +748,8 @@
   "contests.reg_closed_short": "Ro‘yxat yopilgan",
   "contests.reg_closed_body": "Kontest boshlandi. Masalalar va natijalarni ko‘rishingiz mumkin, lekin qatnasha olmaysiz.",
   "contests.reg_closed_problem": "Siz bu kontestda ro‘yxatdan o‘tmagansiz, shuning uchun yechim yubora olmaysiz. Kontest tugagach masala amaliyot uchun ochiladi.",
+  "contests.reg_needed_title": "Avval ro‘yxatdan o‘ting",
+  "contests.reg_late_problem": "Kontest ketmoqda, lekin hali ham qo‘shilishingiz mumkin. Kontest sahifasida ro‘yxatdan o‘ting, keyin yechim yubora olasiz.",
   "contests.role_owner": "Owner",
   "contests.role_author": "Co-author",
   "contests.role_tester": "Tester",

@@ -748,6 +748,8 @@
   "contests.reg_closed_short": "Registration closed",
   "contests.reg_closed_body": "The round has started. You can read the problems and the standings, but cannot take part.",
   "contests.reg_closed_problem": "You did not register for this round, so you cannot submit. The problem opens for practice when the round ends.",
+  "contests.reg_needed_title": "Register first",
+  "contests.reg_late_problem": "The round is running, but you can still join. Register on the round's page, then you can submit.",
   "contests.role_owner": "Owner",
   "contests.role_author": "Co-author",
   "contests.role_tester": "Tester",
